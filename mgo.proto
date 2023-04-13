@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package mgo.portfolio.v1;
+
+message PortfolioCreateMessage { string name = 1; }
+
+message Portfolio { string name = 1; }
+
+service PortfolioService {
+  rpc CreatePortfolio(PortfolioCreateMessage) returns (Portfolio);
+}

@@ -1,0 +1,21 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "go",
+			"label": "go: build cmd/mgo",
+			"command": "build",
+			"args": [
+				"${workspaceFolder}/cmd/mgo"
+			],
+			"problemMatcher": [
+				"$go"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"detail": "cd /Users/oxisto/Repositories/money-gopher; go build ${workspaceFolder}/cmd/mgo"
+		}
+	]
+}
