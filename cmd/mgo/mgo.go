@@ -16,6 +16,42 @@
 
 package main
 
-func main() {
+import (
+	"context"
+	"log"
+	"net/http"
 
+	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
+
+	"github.com/bufbuild/connect-go"
+	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
+)
+
+type PortfolioService struct {
+	portfoliov1connect.UnimplementedPortfolioServiceHandler
+}
+
+func (ps *PortfolioService) CreatePortfolio(ctx context.Context, req *connect.Request[portfoliov1.PortfolioCreateMessage]) (res *connect.Response[portfoliov1.Portfolio], err error) {
+	res = connect.NewResponse(&portfoliov1.Portfolio{Name: req.Msg.Name})
+	res.Header().Set("X-Money", "true")
+
+	return
+}
+
+func main() {
+	log.SetPrefix("[🤑] ")
+	log.SetFlags(log.Lmsgprefix | log.Ltime)
+	log.Print("Welcome to The Money Gopher")
+
+	mux := http.NewServeMux()
+	// The generated constructors return a path and a plain net/http
+	// handler.
+	mux.Handle(portfoliov1connect.NewPortfolioServiceHandler(&PortfolioService{}))
+	err := http.ListenAndServe(
+		"localhost:8080",
+		h2c.NewHandler(mux, &http2.Server{}),
+	)
+	log.Fatalf("listen failed: %v", err)
 }
