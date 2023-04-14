@@ -22,6 +22,7 @@ import (
 	"net/http"
 
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
+	"github.com/oxisto/money-gopher/persistence"
 
 	"github.com/bufbuild/connect-go"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
@@ -45,11 +46,16 @@ func main() {
 	log.SetFlags(log.Lmsgprefix | log.Ltime)
 	log.Print("Welcome to The Money Gopher")
 
+	_, err := persistence.OpenDB(persistence.Options{})
+	if err != nil {
+		log.Fatalf("Error while opening database: %v", err)
+	}
+
 	mux := http.NewServeMux()
 	// The generated constructors return a path and a plain net/http
 	// handler.
 	mux.Handle(portfoliov1connect.NewPortfolioServiceHandler(&PortfolioService{}))
-	err := http.ListenAndServe(
+	err = http.ListenAndServe(
 		"localhost:8080",
 		h2c.NewHandler(mux, &http2.Server{}),
 	)

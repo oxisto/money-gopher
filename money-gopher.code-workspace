@@ -5,6 +5,11 @@
 		}
 	],
 	"settings": {
-		"editor.wordWrapColumn": 120
+		"gopls": {
+			"ui.semanticTokens": true
+		},
+		"cSpell.words": [
+			"modernc"
+		]
 	}
 }
