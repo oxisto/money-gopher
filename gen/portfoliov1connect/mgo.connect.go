@@ -9,6 +9,7 @@ import (
 	errors "errors"
 	connect_go "github.com/bufbuild/connect-go"
 	gen "github.com/oxisto/money-gopher/gen"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
 	strings "strings"
 )
@@ -41,6 +42,18 @@ const (
 	// SecuritiesServiceListSecuritiesProcedure is the fully-qualified name of the SecuritiesService's
 	// ListSecurities RPC.
 	SecuritiesServiceListSecuritiesProcedure = "/mgo.portfolio.v1.SecuritiesService/ListSecurities"
+	// SecuritiesServiceGetSecurityProcedure is the fully-qualified name of the SecuritiesService's
+	// GetSecurity RPC.
+	SecuritiesServiceGetSecurityProcedure = "/mgo.portfolio.v1.SecuritiesService/GetSecurity"
+	// SecuritiesServiceCreateSecurityProcedure is the fully-qualified name of the SecuritiesService's
+	// CreateSecurity RPC.
+	SecuritiesServiceCreateSecurityProcedure = "/mgo.portfolio.v1.SecuritiesService/CreateSecurity"
+	// SecuritiesServiceUpdateSecurityProcedure is the fully-qualified name of the SecuritiesService's
+	// UpdateSecurity RPC.
+	SecuritiesServiceUpdateSecurityProcedure = "/mgo.portfolio.v1.SecuritiesService/UpdateSecurity"
+	// SecuritiesServiceDeleteSecurityProcedure is the fully-qualified name of the SecuritiesService's
+	// DeleteSecurity RPC.
+	SecuritiesServiceDeleteSecurityProcedure = "/mgo.portfolio.v1.SecuritiesService/DeleteSecurity"
 )
 
 // PortfolioServiceClient is a client for the mgo.portfolio.v1.PortfolioService service.
@@ -106,6 +119,10 @@ func (UnimplementedPortfolioServiceHandler) CreatePortfolio(context.Context, *co
 // SecuritiesServiceClient is a client for the mgo.portfolio.v1.SecuritiesService service.
 type SecuritiesServiceClient interface {
 	ListSecurities(context.Context, *connect_go.Request[gen.ListSecuritiesRequest]) (*connect_go.Response[gen.ListSecuritiesResponse], error)
+	GetSecurity(context.Context, *connect_go.Request[gen.GetSecurityRequest]) (*connect_go.Response[gen.Security], error)
+	CreateSecurity(context.Context, *connect_go.Request[gen.CreateSecurityRequest]) (*connect_go.Response[gen.Security], error)
+	UpdateSecurity(context.Context, *connect_go.Request[gen.UpdateSecurityRequest]) (*connect_go.Response[gen.Security], error)
+	DeleteSecurity(context.Context, *connect_go.Request[gen.DeleteSecurityRequest]) (*connect_go.Response[emptypb.Empty], error)
 }
 
 // NewSecuritiesServiceClient constructs a client for the mgo.portfolio.v1.SecuritiesService
@@ -123,12 +140,36 @@ func NewSecuritiesServiceClient(httpClient connect_go.HTTPClient, baseURL string
 			baseURL+SecuritiesServiceListSecuritiesProcedure,
 			opts...,
 		),
+		getSecurity: connect_go.NewClient[gen.GetSecurityRequest, gen.Security](
+			httpClient,
+			baseURL+SecuritiesServiceGetSecurityProcedure,
+			opts...,
+		),
+		createSecurity: connect_go.NewClient[gen.CreateSecurityRequest, gen.Security](
+			httpClient,
+			baseURL+SecuritiesServiceCreateSecurityProcedure,
+			opts...,
+		),
+		updateSecurity: connect_go.NewClient[gen.UpdateSecurityRequest, gen.Security](
+			httpClient,
+			baseURL+SecuritiesServiceUpdateSecurityProcedure,
+			opts...,
+		),
+		deleteSecurity: connect_go.NewClient[gen.DeleteSecurityRequest, emptypb.Empty](
+			httpClient,
+			baseURL+SecuritiesServiceDeleteSecurityProcedure,
+			opts...,
+		),
 	}
 }
 
 // securitiesServiceClient implements SecuritiesServiceClient.
 type securitiesServiceClient struct {
 	listSecurities *connect_go.Client[gen.ListSecuritiesRequest, gen.ListSecuritiesResponse]
+	getSecurity    *connect_go.Client[gen.GetSecurityRequest, gen.Security]
+	createSecurity *connect_go.Client[gen.CreateSecurityRequest, gen.Security]
+	updateSecurity *connect_go.Client[gen.UpdateSecurityRequest, gen.Security]
+	deleteSecurity *connect_go.Client[gen.DeleteSecurityRequest, emptypb.Empty]
 }
 
 // ListSecurities calls mgo.portfolio.v1.SecuritiesService.ListSecurities.
@@ -136,9 +177,33 @@ func (c *securitiesServiceClient) ListSecurities(ctx context.Context, req *conne
 	return c.listSecurities.CallUnary(ctx, req)
 }
 
+// GetSecurity calls mgo.portfolio.v1.SecuritiesService.GetSecurity.
+func (c *securitiesServiceClient) GetSecurity(ctx context.Context, req *connect_go.Request[gen.GetSecurityRequest]) (*connect_go.Response[gen.Security], error) {
+	return c.getSecurity.CallUnary(ctx, req)
+}
+
+// CreateSecurity calls mgo.portfolio.v1.SecuritiesService.CreateSecurity.
+func (c *securitiesServiceClient) CreateSecurity(ctx context.Context, req *connect_go.Request[gen.CreateSecurityRequest]) (*connect_go.Response[gen.Security], error) {
+	return c.createSecurity.CallUnary(ctx, req)
+}
+
+// UpdateSecurity calls mgo.portfolio.v1.SecuritiesService.UpdateSecurity.
+func (c *securitiesServiceClient) UpdateSecurity(ctx context.Context, req *connect_go.Request[gen.UpdateSecurityRequest]) (*connect_go.Response[gen.Security], error) {
+	return c.updateSecurity.CallUnary(ctx, req)
+}
+
+// DeleteSecurity calls mgo.portfolio.v1.SecuritiesService.DeleteSecurity.
+func (c *securitiesServiceClient) DeleteSecurity(ctx context.Context, req *connect_go.Request[gen.DeleteSecurityRequest]) (*connect_go.Response[emptypb.Empty], error) {
+	return c.deleteSecurity.CallUnary(ctx, req)
+}
+
 // SecuritiesServiceHandler is an implementation of the mgo.portfolio.v1.SecuritiesService service.
 type SecuritiesServiceHandler interface {
 	ListSecurities(context.Context, *connect_go.Request[gen.ListSecuritiesRequest]) (*connect_go.Response[gen.ListSecuritiesResponse], error)
+	GetSecurity(context.Context, *connect_go.Request[gen.GetSecurityRequest]) (*connect_go.Response[gen.Security], error)
+	CreateSecurity(context.Context, *connect_go.Request[gen.CreateSecurityRequest]) (*connect_go.Response[gen.Security], error)
+	UpdateSecurity(context.Context, *connect_go.Request[gen.UpdateSecurityRequest]) (*connect_go.Response[gen.Security], error)
+	DeleteSecurity(context.Context, *connect_go.Request[gen.DeleteSecurityRequest]) (*connect_go.Response[emptypb.Empty], error)
 }
 
 // NewSecuritiesServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -153,6 +218,26 @@ func NewSecuritiesServiceHandler(svc SecuritiesServiceHandler, opts ...connect_g
 		svc.ListSecurities,
 		opts...,
 	))
+	mux.Handle(SecuritiesServiceGetSecurityProcedure, connect_go.NewUnaryHandler(
+		SecuritiesServiceGetSecurityProcedure,
+		svc.GetSecurity,
+		opts...,
+	))
+	mux.Handle(SecuritiesServiceCreateSecurityProcedure, connect_go.NewUnaryHandler(
+		SecuritiesServiceCreateSecurityProcedure,
+		svc.CreateSecurity,
+		opts...,
+	))
+	mux.Handle(SecuritiesServiceUpdateSecurityProcedure, connect_go.NewUnaryHandler(
+		SecuritiesServiceUpdateSecurityProcedure,
+		svc.UpdateSecurity,
+		opts...,
+	))
+	mux.Handle(SecuritiesServiceDeleteSecurityProcedure, connect_go.NewUnaryHandler(
+		SecuritiesServiceDeleteSecurityProcedure,
+		svc.DeleteSecurity,
+		opts...,
+	))
 	return "/mgo.portfolio.v1.SecuritiesService/", mux
 }
 
@@ -161,4 +246,20 @@ type UnimplementedSecuritiesServiceHandler struct{}
 
 func (UnimplementedSecuritiesServiceHandler) ListSecurities(context.Context, *connect_go.Request[gen.ListSecuritiesRequest]) (*connect_go.Response[gen.ListSecuritiesResponse], error) {
 	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.SecuritiesService.ListSecurities is not implemented"))
+}
+
+func (UnimplementedSecuritiesServiceHandler) GetSecurity(context.Context, *connect_go.Request[gen.GetSecurityRequest]) (*connect_go.Response[gen.Security], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.SecuritiesService.GetSecurity is not implemented"))
+}
+
+func (UnimplementedSecuritiesServiceHandler) CreateSecurity(context.Context, *connect_go.Request[gen.CreateSecurityRequest]) (*connect_go.Response[gen.Security], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.SecuritiesService.CreateSecurity is not implemented"))
+}
+
+func (UnimplementedSecuritiesServiceHandler) UpdateSecurity(context.Context, *connect_go.Request[gen.UpdateSecurityRequest]) (*connect_go.Response[gen.Security], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.SecuritiesService.UpdateSecurity is not implemented"))
+}
+
+func (UnimplementedSecuritiesServiceHandler) DeleteSecurity(context.Context, *connect_go.Request[gen.DeleteSecurityRequest]) (*connect_go.Response[emptypb.Empty], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.SecuritiesService.DeleteSecurity is not implemented"))
 }

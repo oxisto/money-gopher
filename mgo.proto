@@ -2,6 +2,9 @@ syntax = "proto3";
 
 package mgo.portfolio.v1;
 
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+
 message PortfolioCreateMessage { string name = 1; }
 
 message Portfolio { string name = 1; }
@@ -11,9 +14,13 @@ service PortfolioService {
 }
 
 message Security {
+  // Name contains the resource name. For a security, this should be an ISIN.
   string name = 1;
-  string isin = 2;
-  repeated ListedSecurity listed_on = 3;
+
+  // DisplayName contains the human readable name.
+  string display_name = 2;
+  string isin = 3;
+  repeated ListedSecurity listed_on = 4;
 }
 
 message ListedSecurity {
@@ -25,6 +32,21 @@ message ListSecuritiesRequest {}
 
 message ListSecuritiesResponse { repeated Security securities = 1; }
 
+message GetSecurityRequest { string name = 1; }
+
+message CreateSecurityRequest { Security security = 1; }
+
+message UpdateSecurityRequest {
+  Security security = 1;
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeleteSecurityRequest { string name = 1; }
+
 service SecuritiesService {
   rpc ListSecurities(ListSecuritiesRequest) returns (ListSecuritiesResponse);
+  rpc GetSecurity(GetSecurityRequest) returns (Security);
+  rpc CreateSecurity(CreateSecurityRequest) returns (Security);
+  rpc UpdateSecurity(UpdateSecurityRequest) returns (Security);
+  rpc DeleteSecurity(DeleteSecurityRequest) returns (google.protobuf.Empty);
 }

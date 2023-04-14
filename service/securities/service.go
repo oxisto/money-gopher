@@ -23,21 +23,26 @@ import (
 	"github.com/bufbuild/connect-go"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
+	"golang.org/x/exp/maps"
 	"golang.org/x/text/currency"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type service struct {
 	// TODO(oxisto): convert this to sqlite
-	sec []*portfoliov1.Security
+	sec map[string]*portfoliov1.Security
+
+	portfoliov1connect.UnimplementedSecuritiesServiceHandler
 }
 
 func NewService() portfoliov1connect.SecuritiesServiceHandler {
 	return &service{
 		// Add some static data for testing
-		sec: []*portfoliov1.Security{
-			{
-				Name: "Apple Inc.",
-				Isin: "US0378331005",
+		sec: map[string]*portfoliov1.Security{
+			"US0378331005": {
+				Name:        "US0378331005",
+				DisplayName: "Apple Inc.",
+				Isin:        "US0378331005",
 				ListedOn: []*portfoliov1.ListedSecurity{
 					{
 						Ticker:   "APC.F",
@@ -53,10 +58,27 @@ func NewService() portfoliov1connect.SecuritiesServiceHandler {
 	}
 }
 
+func (svc *service) CreateSecurity(ctx context.Context, req *connect.Request[portfoliov1.CreateSecurityRequest]) (res *connect.Response[portfoliov1.Security], err error) {
+	svc.sec[req.Msg.Security.Name] = req.Msg.Security
+	return
+}
+
+func (svc *service) GetSecurity(ctx context.Context, req *connect.Request[portfoliov1.GetSecurityRequest]) (res *connect.Response[portfoliov1.Security], err error) {
+	return
+}
+
 func (svc *service) ListSecurities(ctx context.Context, req *connect.Request[portfoliov1.ListSecuritiesRequest]) (res *connect.Response[portfoliov1.ListSecuritiesResponse], err error) {
 	res = connect.NewResponse(&portfoliov1.ListSecuritiesResponse{
-		Securities: svc.sec,
+		Securities: maps.Values(svc.sec),
 	})
 
+	return
+}
+
+func (svc *service) UpdateSecurity(ctx context.Context, req *connect.Request[portfoliov1.UpdateSecurityRequest]) (res *connect.Response[portfoliov1.Security], err error) {
+	return
+}
+
+func (svc *service) DeleteSecurityRequest(ctx context.Context, req *connect.Request[portfoliov1.DeleteSecurityRequest]) (res *connect.Response[emptypb.Empty], err error) {
 	return
 }
