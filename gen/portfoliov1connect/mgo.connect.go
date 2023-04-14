@@ -23,6 +23,8 @@ const _ = connect_go.IsAtLeastVersion0_1_0
 const (
 	// PortfolioServiceName is the fully-qualified name of the PortfolioService service.
 	PortfolioServiceName = "mgo.portfolio.v1.PortfolioService"
+	// SecuritiesServiceName is the fully-qualified name of the SecuritiesService service.
+	SecuritiesServiceName = "mgo.portfolio.v1.SecuritiesService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -36,6 +38,9 @@ const (
 	// PortfolioServiceCreatePortfolioProcedure is the fully-qualified name of the PortfolioService's
 	// CreatePortfolio RPC.
 	PortfolioServiceCreatePortfolioProcedure = "/mgo.portfolio.v1.PortfolioService/CreatePortfolio"
+	// SecuritiesServiceListSecuritiesProcedure is the fully-qualified name of the SecuritiesService's
+	// ListSecurities RPC.
+	SecuritiesServiceListSecuritiesProcedure = "/mgo.portfolio.v1.SecuritiesService/ListSecurities"
 )
 
 // PortfolioServiceClient is a client for the mgo.portfolio.v1.PortfolioService service.
@@ -96,4 +101,64 @@ type UnimplementedPortfolioServiceHandler struct{}
 
 func (UnimplementedPortfolioServiceHandler) CreatePortfolio(context.Context, *connect_go.Request[gen.PortfolioCreateMessage]) (*connect_go.Response[gen.Portfolio], error) {
 	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.CreatePortfolio is not implemented"))
+}
+
+// SecuritiesServiceClient is a client for the mgo.portfolio.v1.SecuritiesService service.
+type SecuritiesServiceClient interface {
+	ListSecurities(context.Context, *connect_go.Request[gen.ListSecuritiesRequest]) (*connect_go.Response[gen.ListSecuritiesResponse], error)
+}
+
+// NewSecuritiesServiceClient constructs a client for the mgo.portfolio.v1.SecuritiesService
+// service. By default, it uses the Connect protocol with the binary Protobuf Codec, asks for
+// gzipped responses, and sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply
+// the connect.WithGRPC() or connect.WithGRPCWeb() options.
+//
+// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
+// http://api.acme.com or https://acme.com/grpc).
+func NewSecuritiesServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) SecuritiesServiceClient {
+	baseURL = strings.TrimRight(baseURL, "/")
+	return &securitiesServiceClient{
+		listSecurities: connect_go.NewClient[gen.ListSecuritiesRequest, gen.ListSecuritiesResponse](
+			httpClient,
+			baseURL+SecuritiesServiceListSecuritiesProcedure,
+			opts...,
+		),
+	}
+}
+
+// securitiesServiceClient implements SecuritiesServiceClient.
+type securitiesServiceClient struct {
+	listSecurities *connect_go.Client[gen.ListSecuritiesRequest, gen.ListSecuritiesResponse]
+}
+
+// ListSecurities calls mgo.portfolio.v1.SecuritiesService.ListSecurities.
+func (c *securitiesServiceClient) ListSecurities(ctx context.Context, req *connect_go.Request[gen.ListSecuritiesRequest]) (*connect_go.Response[gen.ListSecuritiesResponse], error) {
+	return c.listSecurities.CallUnary(ctx, req)
+}
+
+// SecuritiesServiceHandler is an implementation of the mgo.portfolio.v1.SecuritiesService service.
+type SecuritiesServiceHandler interface {
+	ListSecurities(context.Context, *connect_go.Request[gen.ListSecuritiesRequest]) (*connect_go.Response[gen.ListSecuritiesResponse], error)
+}
+
+// NewSecuritiesServiceHandler builds an HTTP handler from the service implementation. It returns
+// the path on which to mount the handler and the handler itself.
+//
+// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
+// and JSON codecs. They also support gzip compression.
+func NewSecuritiesServiceHandler(svc SecuritiesServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
+	mux := http.NewServeMux()
+	mux.Handle(SecuritiesServiceListSecuritiesProcedure, connect_go.NewUnaryHandler(
+		SecuritiesServiceListSecuritiesProcedure,
+		svc.ListSecurities,
+		opts...,
+	))
+	return "/mgo.portfolio.v1.SecuritiesService/", mux
+}
+
+// UnimplementedSecuritiesServiceHandler returns CodeUnimplemented from all methods.
+type UnimplementedSecuritiesServiceHandler struct{}
+
+func (UnimplementedSecuritiesServiceHandler) ListSecurities(context.Context, *connect_go.Request[gen.ListSecuritiesRequest]) (*connect_go.Response[gen.ListSecuritiesResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.SecuritiesService.ListSecurities is not implemented"))
 }

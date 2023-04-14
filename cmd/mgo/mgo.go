@@ -24,6 +24,8 @@ import (
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	"github.com/oxisto/money-gopher/persistence"
 	"github.com/oxisto/money-gopher/repl"
+	_ "github.com/oxisto/money-gopher/repl/commands"
+	"github.com/oxisto/money-gopher/service/securities"
 
 	"github.com/bufbuild/connect-go"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
@@ -56,6 +58,7 @@ func main() {
 	// The generated constructors return a path and a plain net/http
 	// handler.
 	mux.Handle(portfoliov1connect.NewPortfolioServiceHandler(&PortfolioService{}))
+	mux.Handle(portfoliov1connect.NewSecuritiesServiceHandler(securities.NewService()))
 
 	go func() {
 		err = http.ListenAndServe(

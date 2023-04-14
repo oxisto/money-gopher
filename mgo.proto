@@ -9,3 +9,22 @@ message Portfolio { string name = 1; }
 service PortfolioService {
   rpc CreatePortfolio(PortfolioCreateMessage) returns (Portfolio);
 }
+
+message Security {
+  string name = 1;
+  string isin = 2;
+  repeated ListedSecurity listed_on = 3;
+}
+
+message ListedSecurity {
+  string ticker = 3;
+  string currency = 4;
+}
+
+message ListSecuritiesRequest {}
+
+message ListSecuritiesResponse { repeated Security securities = 1; }
+
+service SecuritiesService {
+  rpc ListSecurities(ListSecuritiesRequest) returns (ListSecuritiesResponse);
+}
