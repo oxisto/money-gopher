@@ -1,2 +1,5 @@
 "persistence":
   - persistence/**/*
+
+"service/securities":
+  - service/securities/**/*
