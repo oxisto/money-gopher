@@ -64,6 +64,8 @@ func (svc *service) CreateSecurity(ctx context.Context, req *connect.Request[por
 }
 
 func (svc *service) GetSecurity(ctx context.Context, req *connect.Request[portfoliov1.GetSecurityRequest]) (res *connect.Response[portfoliov1.Security], err error) {
+	sec := svc.sec[req.Msg.Name]
+	res = connect.NewResponse(sec)
 	return
 }
 
@@ -80,5 +82,6 @@ func (svc *service) UpdateSecurity(ctx context.Context, req *connect.Request[por
 }
 
 func (svc *service) DeleteSecurityRequest(ctx context.Context, req *connect.Request[portfoliov1.DeleteSecurityRequest]) (res *connect.Response[emptypb.Empty], err error) {
+	delete(svc.sec, req.Msg.Name)
 	return
 }
