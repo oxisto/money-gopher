@@ -23,6 +23,7 @@ import (
 
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	"github.com/oxisto/money-gopher/persistence"
+	"github.com/oxisto/money-gopher/repl"
 
 	"github.com/bufbuild/connect-go"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
@@ -55,9 +56,15 @@ func main() {
 	// The generated constructors return a path and a plain net/http
 	// handler.
 	mux.Handle(portfoliov1connect.NewPortfolioServiceHandler(&PortfolioService{}))
-	err = http.ListenAndServe(
-		"localhost:8080",
-		h2c.NewHandler(mux, &http2.Server{}),
-	)
-	log.Fatalf("listen failed: %v", err)
+
+	go func() {
+		err = http.ListenAndServe(
+			"localhost:8080",
+			h2c.NewHandler(mux, &http2.Server{}),
+		)
+		log.Fatalf("listen failed: %v", err)
+	}()
+
+	r := repl.REPL{}
+	r.Run()
 }
