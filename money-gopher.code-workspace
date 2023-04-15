@@ -13,7 +13,8 @@
 			"bufbuild",
 			"modernc",
 			"oxisto",
-			"portfoliov"
+			"portfoliov",
+			"protoreflect"
 		]
 	}
 }

@@ -25,6 +25,7 @@ import (
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	"golang.org/x/exp/maps"
 	"golang.org/x/text/currency"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -78,6 +79,19 @@ func (svc *service) ListSecurities(ctx context.Context, req *connect.Request[por
 }
 
 func (svc *service) UpdateSecurity(ctx context.Context, req *connect.Request[portfoliov1.UpdateSecurityRequest]) (res *connect.Response[portfoliov1.Security], err error) {
+	sec := svc.sec[req.Msg.GetSecurity().GetName()]
+
+	// Update fields according to field mask
+	fields := sec.ProtoReflect().Descriptor().Fields()
+	for _, path := range req.Msg.UpdateMask.Paths {
+		desc := fields.ByName(protoreflect.Name(path))
+		value := req.Msg.Security.ProtoReflect().Get(desc)
+
+		sec.ProtoReflect().Set(desc, value)
+	}
+
+	res = connect.NewResponse(sec)
+
 	return
 }
 

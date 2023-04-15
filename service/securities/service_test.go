@@ -23,6 +23,8 @@ import (
 	"github.com/bufbuild/connect-go"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/internal/assert"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
 func TestNewService(t *testing.T) {
@@ -86,6 +88,49 @@ func Test_service_ListSecurities(t *testing.T) {
 				return
 			}
 			tt.wantRes(t, gotRes)
+		})
+	}
+}
+
+func Test_service_UpdateSecurity(t *testing.T) {
+	type fields struct {
+		sec map[string]*portfoliov1.Security
+	}
+	type args struct {
+		ctx context.Context
+		req *connect.Request[portfoliov1.UpdateSecurityRequest]
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantRes *connect.Response[portfoliov1.Security]
+		wantErr bool
+	}{
+		{
+			name:   "change display_name",
+			fields: fields{sec: map[string]*portfoliov1.Security{"My Stock": {Name: "My Stock", Isin: "Test"}}},
+			args: args{req: connect.NewRequest(&portfoliov1.UpdateSecurityRequest{
+				Security:   &portfoliov1.Security{Name: "My Stock", DisplayName: "Test"},
+				UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"display_name"}},
+			})},
+			wantRes: connect.NewResponse(&portfoliov1.Security{Name: "My Stock", DisplayName: "Test", Isin: "Test"}),
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := &service{
+				sec: tt.fields.sec,
+			}
+			gotRes, err := svc.UpdateSecurity(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("service.UpdateSecurity() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !proto.Equal(gotRes.Msg, tt.wantRes.Msg) {
+				t.Errorf("service.UpdateSecurity() = %v, want %v", gotRes, tt.wantRes)
+			}
 		})
 	}
 }
