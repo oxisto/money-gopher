@@ -24,6 +24,10 @@ type Command interface {
 type quitCmd struct{}
 
 // Exec implements [Command].
-func (q *quitCmd) Exec(r *REPL, args ...string) {
+func (*quitCmd) Exec(r *REPL, args ...string) {
 	r.done = true
+}
+
+func init() {
+	AddCommand("quit", &quitCmd{})
 }

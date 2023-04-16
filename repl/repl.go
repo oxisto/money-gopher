@@ -25,12 +25,11 @@ import (
 	"strings"
 )
 
-var cmdMap map[string]Command
+var cmdMap map[string]Command = make(map[string]Command)
 
-func init() {
-	cmdMap = map[string]Command{
-		"quit": &quitCmd{},
-	}
+// AddCommand adds a command using the specific symbol.
+func AddCommand(symbol string, cmd Command) {
+	cmdMap[symbol] = cmd
 }
 
 // REPL is a Read-Eval-Print-Loop (REPL).
@@ -52,6 +51,9 @@ func (r *REPL) Run() {
 
 		fmt.Print("(🤑) ")
 		s = bufio.NewScanner(os.Stdin)
+		// TODO(oxisto): We want to also split on tabs in the future to support
+		//  auto-completion
+		s.Split(bufio.ScanLines)
 		ok = s.Scan()
 		if !ok {
 			continue

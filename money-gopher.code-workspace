@@ -9,7 +9,12 @@
 			"ui.semanticTokens": true
 		},
 		"cSpell.words": [
-			"modernc"
+			"Banse",
+			"bufbuild",
+			"modernc",
+			"oxisto",
+			"portfoliov",
+			"protoreflect"
 		]
 	}
 }
