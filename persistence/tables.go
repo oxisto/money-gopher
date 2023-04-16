@@ -16,20 +16,7 @@
 
 package persistence
 
-import "fmt"
-
-const createSecurities = `
-CREATE TABLE IF NOT EXISTS securities (
-	id INTEGER NOT NULL PRIMARY KEY,
-	name TEXT
-);`
-
 func (db *DB) initTables() (err error) {
-	// Make sure our tables exist
-	_, err = db.Exec(createSecurities)
-	if err != nil {
-		return fmt.Errorf("could not create securities tables: %w", err)
-	}
-
+	// TODO(oxisto): Loop through registered objects and create tables
 	return
 }

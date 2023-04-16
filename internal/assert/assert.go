@@ -19,14 +19,21 @@ package assert
 
 import (
 	"testing"
+
+	"google.golang.org/protobuf/proto"
 )
 
 type Want[T any] func(*testing.T, T) bool
 
-// Equals compares expected to actual and returns true if they are equal.
-// Otherwise, the test fails (but continues) and false is returned.
+// Equals compares expected to actual and returns true if they are equal. If the
+// expected type is a protobuf message, [proto.Equals] will be used for
+// comparison Otherwise, the test fails (but continues) and false is returned.
 func Equals[T comparable](t *testing.T, expected T, actual T) (ok bool) {
-	ok = expected == actual
+	if msg, isMsg := any(expected).(proto.Message); isMsg {
+		ok = proto.Equal(msg, any(actual).(proto.Message))
+	} else {
+		ok = expected == actual
+	}
 
 	if !ok {
 		t.Errorf("%T = %v, want %v", actual, actual, expected)

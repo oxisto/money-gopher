@@ -11,9 +11,12 @@
 		"cSpell.words": [
 			"Banse",
 			"bufbuild",
+			"emptypb",
+			"fieldmaskpb",
 			"modernc",
 			"oxisto",
 			"portfoliov",
+			"protobuf",
 			"protoreflect"
 		]
 	}

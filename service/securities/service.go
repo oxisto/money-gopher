@@ -20,12 +20,12 @@ package securities
 import (
 	"context"
 
-	"github.com/bufbuild/connect-go"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
-	"golang.org/x/exp/maps"
+	"github.com/oxisto/money-gopher/persistence"
+
+	"github.com/bufbuild/connect-go"
 	"golang.org/x/text/currency"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -33,29 +33,35 @@ type service struct {
 	// TODO(oxisto): convert this to sqlite
 	sec map[string]*portfoliov1.Security
 
+	securities persistence.StorageOperations[*portfoliov1.Security]
+
 	portfoliov1connect.UnimplementedSecuritiesServiceHandler
 }
 
-func NewService() portfoliov1connect.SecuritiesServiceHandler {
-	return &service{
-		// Add some static data for testing
-		sec: map[string]*portfoliov1.Security{
-			"US0378331005": {
-				Name:        "US0378331005",
-				DisplayName: "Apple Inc.",
-				Isin:        "US0378331005",
-				ListedOn: []*portfoliov1.ListedSecurity{
-					{
-						Ticker:   "APC.F",
-						Currency: currency.EUR.String(),
-					},
-					{
-						Ticker:   "AAPL",
-						Currency: currency.USD.String(),
-					},
+func NewService(db *persistence.DB) portfoliov1connect.SecuritiesServiceHandler {
+	securities := persistence.Ops[*portfoliov1.Security](db)
+	secs := []*portfoliov1.Security{
+		{
+			Name:        "US0378331005",
+			DisplayName: "Apple Inc.",
+			ListedOn: []*portfoliov1.ListedSecurity{
+				{
+					Ticker:   "APC.F",
+					Currency: currency.EUR.String(),
+				},
+				{
+					Ticker:   "AAPL",
+					Currency: currency.USD.String(),
 				},
 			},
 		},
+	}
+	for _, sec := range secs {
+		securities.Replace(sec)
+	}
+
+	return &service{
+		securities: securities,
 	}
 }
 
@@ -65,37 +71,41 @@ func (svc *service) CreateSecurity(ctx context.Context, req *connect.Request[por
 }
 
 func (svc *service) GetSecurity(ctx context.Context, req *connect.Request[portfoliov1.GetSecurityRequest]) (res *connect.Response[portfoliov1.Security], err error) {
-	sec := svc.sec[req.Msg.Name]
-	res = connect.NewResponse(sec)
+	res = connect.NewResponse(&portfoliov1.Security{})
+	res.Msg, err = svc.securities.Get(req.Msg.Name)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
 	return
 }
 
 func (svc *service) ListSecurities(ctx context.Context, req *connect.Request[portfoliov1.ListSecuritiesRequest]) (res *connect.Response[portfoliov1.ListSecuritiesResponse], err error) {
-	res = connect.NewResponse(&portfoliov1.ListSecuritiesResponse{
-		Securities: maps.Values(svc.sec),
-	})
+	res = connect.NewResponse(&portfoliov1.ListSecuritiesResponse{})
+	res.Msg.Securities, err = svc.securities.List()
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
 
 	return
 }
 
 func (svc *service) UpdateSecurity(ctx context.Context, req *connect.Request[portfoliov1.UpdateSecurityRequest]) (res *connect.Response[portfoliov1.Security], err error) {
-	sec := svc.sec[req.Msg.GetSecurity().GetName()]
-
-	// Update fields according to field mask
-	fields := sec.ProtoReflect().Descriptor().Fields()
-	for _, path := range req.Msg.UpdateMask.Paths {
-		desc := fields.ByName(protoreflect.Name(path))
-		value := req.Msg.Security.ProtoReflect().Get(desc)
-
-		sec.ProtoReflect().Set(desc, value)
+	res = connect.NewResponse(&portfoliov1.Security{})
+	res.Msg, err = svc.securities.Update(req.Msg.Security.Name, req.Msg.Security, req.Msg.UpdateMask.Paths)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-
-	res = connect.NewResponse(sec)
 
 	return
 }
 
 func (svc *service) DeleteSecurityRequest(ctx context.Context, req *connect.Request[portfoliov1.DeleteSecurityRequest]) (res *connect.Response[emptypb.Empty], err error) {
-	delete(svc.sec, req.Msg.Name)
+	res = connect.NewResponse(&emptypb.Empty{})
+	err = svc.securities.Delete(req.Msg.Name)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
 	return
 }
