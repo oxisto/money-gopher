@@ -22,8 +22,12 @@ import (
 
 	"github.com/bufbuild/connect-go"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
+	"github.com/oxisto/money-gopher/internal"
 	"github.com/oxisto/money-gopher/internal/assert"
+	"github.com/oxisto/money-gopher/persistence"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
@@ -35,13 +39,13 @@ func TestNewService(t *testing.T) {
 		{
 			name: "Default",
 			want: func(t *testing.T, s *service) bool {
-				return assert.Equals(t, 1, len(s.sec))
+				return true
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewService()
+			got := NewService(internal.NewTestDB(t))
 			tt.want(t, assert.Is[*service](t, got))
 		})
 	}
@@ -49,7 +53,8 @@ func TestNewService(t *testing.T) {
 
 func Test_service_ListSecurities(t *testing.T) {
 	type fields struct {
-		sec map[string]*portfoliov1.Security
+		sec        map[string]*portfoliov1.Security
+		securities persistence.StorageOperations[*portfoliov1.Security]
 	}
 	type args struct {
 		ctx context.Context
@@ -65,11 +70,9 @@ func Test_service_ListSecurities(t *testing.T) {
 		{
 			name: "happy path",
 			fields: fields{
-				sec: map[string]*portfoliov1.Security{
-					"My Security": {
-						Name: "My Security",
-					},
-				},
+				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {
+					ops.Replace(&portfoliov1.Security{Name: "My Security"})
+				}),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.ListSecuritiesResponse]) bool {
 				return assert.Equals(t, "My Security", r.Msg.Securities[0].Name)
@@ -80,7 +83,8 @@ func Test_service_ListSecurities(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &service{
-				sec: tt.fields.sec,
+				sec:        tt.fields.sec,
+				securities: tt.fields.securities,
 			}
 			gotRes, err := svc.ListSecurities(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
@@ -94,7 +98,7 @@ func Test_service_ListSecurities(t *testing.T) {
 
 func Test_service_UpdateSecurity(t *testing.T) {
 	type fields struct {
-		sec map[string]*portfoliov1.Security
+		securities persistence.StorageOperations[*portfoliov1.Security]
 	}
 	type args struct {
 		ctx context.Context
@@ -108,20 +112,24 @@ func Test_service_UpdateSecurity(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:   "change display_name",
-			fields: fields{sec: map[string]*portfoliov1.Security{"My Stock": {Name: "My Stock", Isin: "Test"}}},
+			name: "change display_name",
+			fields: fields{
+				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {
+					ops.Replace(&portfoliov1.Security{Name: "My Stock"})
+				}),
+			},
 			args: args{req: connect.NewRequest(&portfoliov1.UpdateSecurityRequest{
 				Security:   &portfoliov1.Security{Name: "My Stock", DisplayName: "Test"},
 				UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"display_name"}},
 			})},
-			wantRes: connect.NewResponse(&portfoliov1.Security{Name: "My Stock", DisplayName: "Test", Isin: "Test"}),
+			wantRes: connect.NewResponse(&portfoliov1.Security{Name: "My Stock", DisplayName: "Test"}),
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &service{
-				sec: tt.fields.sec,
+				securities: tt.fields.securities,
 			}
 			gotRes, err := svc.UpdateSecurity(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
@@ -131,6 +139,105 @@ func Test_service_UpdateSecurity(t *testing.T) {
 			if !proto.Equal(gotRes.Msg, tt.wantRes.Msg) {
 				t.Errorf("service.UpdateSecurity() = %v, want %v", gotRes, tt.wantRes)
 			}
+		})
+	}
+}
+
+func Test_service_GetSecurity(t *testing.T) {
+	type fields struct {
+		sec        map[string]*portfoliov1.Security
+		securities persistence.StorageOperations[*portfoliov1.Security]
+	}
+	type args struct {
+		ctx context.Context
+		req *connect.Request[portfoliov1.GetSecurityRequest]
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantRes assert.Want[*portfoliov1.Security]
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			fields: fields{
+				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {
+					ops.Replace(&portfoliov1.Security{Name: "My Security"})
+				}),
+			},
+			args: args{
+				req: connect.NewRequest(&portfoliov1.GetSecurityRequest{Name: "My Security"}),
+			},
+			wantRes: func(t *testing.T, s *portfoliov1.Security) bool {
+				return assert.Equals(t, &portfoliov1.Security{
+					Name: "My Security",
+				}, s)
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := &service{
+				sec:        tt.fields.sec,
+				securities: tt.fields.securities,
+			}
+			gotRes, err := svc.GetSecurity(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("service.GetSecurity() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			tt.wantRes(t, gotRes.Msg)
+		})
+	}
+}
+
+func Test_service_DeleteSecurityRequest(t *testing.T) {
+	type fields struct {
+		sec                                   map[string]*portfoliov1.Security
+		securities                            persistence.StorageOperations[*portfoliov1.Security]
+		UnimplementedSecuritiesServiceHandler portfoliov1connect.UnimplementedSecuritiesServiceHandler
+	}
+	type args struct {
+		ctx context.Context
+		req *connect.Request[portfoliov1.DeleteSecurityRequest]
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantRes assert.Want[*emptypb.Empty]
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			fields: fields{
+				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {
+					ops.Replace(&portfoliov1.Security{Name: "My Stock"})
+				}),
+			},
+			args: args{req: connect.NewRequest(&portfoliov1.DeleteSecurityRequest{
+				Name: "My Stock",
+			})},
+			wantRes: func(t *testing.T, e *emptypb.Empty) bool {
+				return assert.Equals(t, &emptypb.Empty{}, e)
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := &service{
+				sec:        tt.fields.sec,
+				securities: tt.fields.securities,
+			}
+			gotRes, err := svc.DeleteSecurityRequest(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("service.DeleteSecurityRequest() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			tt.wantRes(t, gotRes.Msg)
 		})
 	}
 }

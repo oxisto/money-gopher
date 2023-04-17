@@ -49,7 +49,7 @@ func main() {
 	log.SetFlags(log.Lmsgprefix | log.Ltime)
 	log.Print("Welcome to The Money Gopher")
 
-	_, err := persistence.OpenDB(persistence.Options{})
+	db, err := persistence.OpenDB(persistence.Options{})
 	if err != nil {
 		log.Fatalf("Error while opening database: %v", err)
 	}
@@ -58,7 +58,7 @@ func main() {
 	// The generated constructors return a path and a plain net/http
 	// handler.
 	mux.Handle(portfoliov1connect.NewPortfolioServiceHandler(&PortfolioService{}))
-	mux.Handle(portfoliov1connect.NewSecuritiesServiceHandler(securities.NewService()))
+	mux.Handle(portfoliov1connect.NewSecuritiesServiceHandler(securities.NewService(db)))
 
 	go func() {
 		err = http.ListenAndServe(

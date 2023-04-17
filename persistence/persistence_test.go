@@ -20,7 +20,7 @@ import (
 	"path"
 	"testing"
 
-	"modernc.org/sqlite"
+	"github.com/mattn/go-sqlite3"
 )
 
 func TestOpenDB(t *testing.T) {
@@ -37,7 +37,7 @@ func TestOpenDB(t *testing.T) {
 			name: "Happy path with in-memory",
 			args: args{Options{UseInMemory: true}},
 			wantDb: func(t *testing.T, db *DB) bool {
-				_, ok := db.Driver().(*sqlite.Driver)
+				_, ok := db.Driver().(*sqlite3.SQLiteDriver)
 				return ok
 			},
 			wantErr: false,
@@ -46,7 +46,7 @@ func TestOpenDB(t *testing.T) {
 			name: "Happy path with in-memory",
 			args: args{Options{DSN: path.Join(t.TempDir(), "money.db")}},
 			wantDb: func(t *testing.T, db *DB) bool {
-				_, ok := db.Driver().(*sqlite.Driver)
+				_, ok := db.Driver().(*sqlite3.SQLiteDriver)
 				return ok
 			},
 			wantErr: false,
