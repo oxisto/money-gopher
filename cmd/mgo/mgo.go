@@ -20,6 +20,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	"github.com/oxisto/money-gopher/persistence"
@@ -63,11 +64,35 @@ func main() {
 	go func() {
 		err = http.ListenAndServe(
 			"localhost:8080",
-			h2c.NewHandler(mux, &http2.Server{}),
+			h2c.NewHandler(handleCORS(mux), &http2.Server{}),
 		)
 		log.Fatalf("listen failed: %v", err)
 	}()
 
 	r := repl.REPL{}
 	r.Run()
+}
+
+func handleCORS(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Add("Vary", "Origin")
+
+		if r.Method == "OPTIONS" && r.Header.Get("Access-Control-Request-Method") != "" {
+			w.Header().Set("Access-Control-Allow-Headers", strings.Join([]string{
+				"Connect-Protocol-Version",
+				"Content-Type",
+				"Accept",
+				"Authorization",
+			}, ","))
+			w.Header().Set("Access-Control-Allow-Methods", strings.Join([]string{
+				"GET",
+				"POST",
+				"PUT",
+				"DELETE",
+			}, ","))
+		} else {
+			h.ServeHTTP(w, r)
+		}
+	})
 }
