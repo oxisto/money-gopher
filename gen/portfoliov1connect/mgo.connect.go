@@ -19,7 +19,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect_go.IsAtLeastVersion1_7_0
 
 const (
 	// PortfolioServiceName is the fully-qualified name of the PortfolioService service.
@@ -138,12 +138,14 @@ func NewSecuritiesServiceClient(httpClient connect_go.HTTPClient, baseURL string
 		listSecurities: connect_go.NewClient[gen.ListSecuritiesRequest, gen.ListSecuritiesResponse](
 			httpClient,
 			baseURL+SecuritiesServiceListSecuritiesProcedure,
-			opts...,
+			connect_go.WithIdempotency(connect_go.IdempotencyNoSideEffects),
+			connect_go.WithClientOptions(opts...),
 		),
 		getSecurity: connect_go.NewClient[gen.GetSecurityRequest, gen.Security](
 			httpClient,
 			baseURL+SecuritiesServiceGetSecurityProcedure,
-			opts...,
+			connect_go.WithIdempotency(connect_go.IdempotencyNoSideEffects),
+			connect_go.WithClientOptions(opts...),
 		),
 		createSecurity: connect_go.NewClient[gen.CreateSecurityRequest, gen.Security](
 			httpClient,
@@ -216,12 +218,14 @@ func NewSecuritiesServiceHandler(svc SecuritiesServiceHandler, opts ...connect_g
 	mux.Handle(SecuritiesServiceListSecuritiesProcedure, connect_go.NewUnaryHandler(
 		SecuritiesServiceListSecuritiesProcedure,
 		svc.ListSecurities,
-		opts...,
+		connect_go.WithIdempotency(connect_go.IdempotencyNoSideEffects),
+		connect_go.WithHandlerOptions(opts...),
 	))
 	mux.Handle(SecuritiesServiceGetSecurityProcedure, connect_go.NewUnaryHandler(
 		SecuritiesServiceGetSecurityProcedure,
 		svc.GetSecurity,
-		opts...,
+		connect_go.WithIdempotency(connect_go.IdempotencyNoSideEffects),
+		connect_go.WithHandlerOptions(opts...),
 	))
 	mux.Handle(SecuritiesServiceCreateSecurityProcedure, connect_go.NewUnaryHandler(
 		SecuritiesServiceCreateSecurityProcedure,

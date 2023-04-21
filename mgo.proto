@@ -45,8 +45,12 @@ message UpdateSecurityRequest {
 message DeleteSecurityRequest { string name = 1; }
 
 service SecuritiesService {
-  rpc ListSecurities(ListSecuritiesRequest) returns (ListSecuritiesResponse);
-  rpc GetSecurity(GetSecurityRequest) returns (Security);
+  rpc ListSecurities(ListSecuritiesRequest) returns (ListSecuritiesResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  };
+  rpc GetSecurity(GetSecurityRequest) returns (Security) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  };
   rpc CreateSecurity(CreateSecurityRequest) returns (Security);
   rpc UpdateSecurity(UpdateSecurityRequest) returns (Security);
   rpc DeleteSecurity(DeleteSecurityRequest) returns (google.protobuf.Empty);
