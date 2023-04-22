@@ -60,7 +60,7 @@ type StorageObject interface {
 
 type StorageOperations[T StorageObject] interface {
 	Replace(o StorageObject) (err error)
-	List() (list []T, err error)
+	List(args ...any) (list []T, err error)
 	Get(key any) (obj T, err error)
 	Update(key any, in T, columns []string) (out T, err error)
 	Delete(key any) error
@@ -133,7 +133,7 @@ func (ops *ops[T]) Replace(o StorageObject) (err error) {
 // List lists stuff. Because methods cannot have type parameters (unless the
 // struct has one), we need to make this a function (for now) and pass the [DB]
 // as the first parameter.
-func (ops *ops[T]) List() (list []T, err error) {
+func (ops *ops[T]) List(args ...any) (list []T, err error) {
 	// We need to construct a pointer to the underlying type that fulfills T in
 	// order to access some of the database functions.
 	var t T
@@ -146,7 +146,7 @@ func (ops *ops[T]) List() (list []T, err error) {
 		return nil, fmt.Errorf("could not prepare query: %w", err)
 	}
 
-	rows, err := stmt.Query()
+	rows, err := stmt.Query(args...)
 	if err != nil {
 		return nil, fmt.Errorf("could not execute query: %w", err)
 	}

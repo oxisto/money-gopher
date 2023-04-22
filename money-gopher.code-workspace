@@ -17,10 +17,12 @@
 			"emptypb",
 			"fieldmaskpb",
 			"modernc",
+			"moneygopher",
 			"oxisto",
 			"portfoliov",
 			"protobuf",
-			"protoreflect"
+			"protoreflect",
+			"timestamppb"
 		]
 	}
 }

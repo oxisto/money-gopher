@@ -19,7 +19,9 @@ package securities
 
 import (
 	"context"
+	"time"
 
+	moneygopher "github.com/oxisto/money-gopher"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	"github.com/oxisto/money-gopher/persistence"
@@ -27,41 +29,56 @@ import (
 	"github.com/bufbuild/connect-go"
 	"golang.org/x/text/currency"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type service struct {
 	// TODO(oxisto): convert this to sqlite
 	sec map[string]*portfoliov1.Security
 
-	securities persistence.StorageOperations[*portfoliov1.Security]
+	securities       persistence.StorageOperations[*portfoliov1.Security]
+	listedSecurities persistence.StorageOperations[*portfoliov1.ListedSecurity]
 
 	portfoliov1connect.UnimplementedSecuritiesServiceHandler
 }
 
 func NewService(db *persistence.DB) portfoliov1connect.SecuritiesServiceHandler {
 	securities := persistence.Ops[*portfoliov1.Security](db)
+	listedSecurities := persistence.Ops[*portfoliov1.ListedSecurity](db)
 	secs := []*portfoliov1.Security{
 		{
 			Name:        "US0378331005",
 			DisplayName: "Apple Inc.",
 			ListedOn: []*portfoliov1.ListedSecurity{
 				{
-					Ticker:   "APC.F",
-					Currency: currency.EUR.String(),
+					SecurityName:         "US0378331005",
+					Ticker:               "APC.F",
+					Currency:             currency.EUR.String(),
+					LatestQuote:          moneygopher.Ref(float32(150.16)),
+					LatestQuoteTimestamp: timestamppb.New(time.Date(2023, 4, 21, 0, 0, 0, 0, time.Local)),
 				},
 				{
-					Ticker:   "AAPL",
-					Currency: currency.USD.String(),
+					SecurityName:         "US0378331005",
+					Ticker:               "AAPL",
+					Currency:             currency.USD.String(),
+					LatestQuote:          moneygopher.Ref(float32(165.02)),
+					LatestQuoteTimestamp: timestamppb.New(time.Date(2023, 4, 21, 0, 0, 0, 0, time.Local)),
 				},
 			},
 		},
 	}
 	for _, sec := range secs {
 		securities.Replace(sec)
+
+		// TODO: in the future, we might do this automatically
+		for _, ls := range sec.ListedOn {
+			listedSecurities.Replace(ls)
+		}
 	}
 
 	return &service{
-		securities: securities,
+		securities:       securities,
+		listedSecurities: listedSecurities,
 	}
 }
 
@@ -85,6 +102,13 @@ func (svc *service) ListSecurities(ctx context.Context, req *connect.Request[por
 	res.Msg.Securities, err = svc.securities.List()
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	for _, sec := range res.Msg.Securities {
+		sec.ListedOn, err = svc.listedSecurities.List(sec.Name)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
 	}
 
 	return
