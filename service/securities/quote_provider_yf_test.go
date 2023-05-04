@@ -17,8 +17,10 @@
 package securities
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -53,8 +55,66 @@ func Test_yf_LatestQuote(t *testing.T) {
 		args      args
 		wantQuote float32
 		wantTime  time.Time
-		wantErr   bool
+		wantErr   assert.Want[error]
 	}{
+		{
+			name: "http response error",
+			fields: fields{
+				Client: newMockClient(func(req *http.Request) (res *http.Response, err error) {
+					return nil, http.ErrNotSupported
+				}),
+			},
+			args: args{
+				ls: &portfoliov1.ListedSecurity{
+					SecurityName: "My Security",
+					Ticker:       "TICK",
+					Currency:     "USD",
+				},
+			},
+			wantErr: func(t *testing.T, err error) bool {
+				return errors.Is(err, http.ErrNotSupported)
+			},
+		},
+		{
+			name: "invalid JSON",
+			fields: fields{
+				Client: newMockClient(func(req *http.Request) (res *http.Response, err error) {
+					r := httptest.NewRecorder()
+					r.WriteString(`{]`)
+					return r.Result(), nil
+				}),
+			},
+			args: args{
+				ls: &portfoliov1.ListedSecurity{
+					SecurityName: "My Security",
+					Ticker:       "TICK",
+					Currency:     "USD",
+				},
+			},
+			wantErr: func(t *testing.T, err error) bool {
+				return strings.Contains(err.Error(), "invalid")
+			},
+		},
+		{
+			name: "invalid JSON",
+			fields: fields{
+				Client: newMockClient(func(req *http.Request) (res *http.Response, err error) {
+					r := httptest.NewRecorder()
+					r.WriteString(`{"chart":{"result":[]}}`)
+					return r.Result(), nil
+				}),
+			},
+			args: args{
+				ls: &portfoliov1.ListedSecurity{
+					SecurityName: "My Security",
+					Ticker:       "TICK",
+					Currency:     "USD",
+				},
+			},
+			wantErr: func(t *testing.T, err error) bool {
+				return errors.Is(err, ErrEmptyResult)
+			},
+		},
 		{
 			name: "happy path",
 			fields: fields{
@@ -73,6 +133,7 @@ func Test_yf_LatestQuote(t *testing.T) {
 			},
 			wantQuote: float32(100.0),
 			wantTime:  time.Date(2023, 05, 04, 20, 0, 0, 0, time.UTC),
+			wantErr:   func(t *testing.T, err error) bool { return true },
 		},
 	}
 	for _, tt := range tests {
@@ -81,11 +142,7 @@ func Test_yf_LatestQuote(t *testing.T) {
 				Client: tt.fields.Client,
 			}
 			gotQuote, gotTime, err := yf.LatestQuote(tt.args.ls)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("yf.LatestQuote() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
+			assert.Equals(t, true, tt.wantErr(t, err))
 			assert.Equals(t, tt.wantQuote, gotQuote)
 			assert.Equals(t, tt.wantTime.UTC(), gotTime.UTC())
 		})

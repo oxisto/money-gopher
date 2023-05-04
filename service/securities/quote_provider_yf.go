@@ -26,6 +26,8 @@ import (
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 )
 
+var ErrEmptyResult = errors.New("empty result")
+
 type yf struct {
 	http.Client
 }
@@ -58,7 +60,7 @@ func (yf *yf) LatestQuote(ls *portfoliov1.ListedSecurity) (quote float32, t time
 	}
 
 	if len(ch.Chart.Results) == 0 {
-		return 0, t, errors.New("result JSON is invalid")
+		return 0, t, ErrEmptyResult
 	}
 
 	return ch.Chart.Results[0].Meta.RegularMarketPrice,
