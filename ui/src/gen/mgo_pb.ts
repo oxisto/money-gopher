@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { FieldMask, Message, proto3 } from "@bufbuild/protobuf";
+import { FieldMask, Message, proto3, Timestamp } from "@bufbuild/protobuf";
 
 /**
  * @generated from message mgo.portfolio.v1.PortfolioCreateMessage
@@ -139,6 +139,11 @@ export class Security extends Message<Security> {
  */
 export class ListedSecurity extends Message<ListedSecurity> {
   /**
+   * @generated from field: string security_name = 1;
+   */
+  securityName = "";
+
+  /**
    * @generated from field: string ticker = 3;
    */
   ticker = "";
@@ -148,6 +153,16 @@ export class ListedSecurity extends Message<ListedSecurity> {
    */
   currency = "";
 
+  /**
+   * @generated from field: optional float latest_quote = 5;
+   */
+  latestQuote?: number;
+
+  /**
+   * @generated from field: optional google.protobuf.Timestamp latest_quote_timestamp = 6;
+   */
+  latestQuoteTimestamp?: Timestamp;
+
   constructor(data?: PartialMessage<ListedSecurity>) {
     super();
     proto3.util.initPartial(data, this);
@@ -156,8 +171,11 @@ export class ListedSecurity extends Message<ListedSecurity> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "mgo.portfolio.v1.ListedSecurity";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "ticker", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "currency", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "latest_quote", kind: "scalar", T: 2 /* ScalarType.FLOAT */, opt: true },
+    { no: 6, name: "latest_quote_timestamp", kind: "message", T: Timestamp, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListedSecurity {

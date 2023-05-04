@@ -26,6 +26,7 @@ import (
 	"github.com/oxisto/money-gopher/internal"
 	"github.com/oxisto/money-gopher/internal/assert"
 	"github.com/oxisto/money-gopher/persistence"
+	"golang.org/x/text/currency"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
@@ -71,11 +72,15 @@ func Test_service_ListSecurities(t *testing.T) {
 			name: "happy path",
 			fields: fields{
 				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {
-					ops.Replace(&portfoliov1.Security{Name: "My Security"})
+					assert.NoError(t, ops.Replace(&portfoliov1.Security{Name: "My Security"}))
+					rel := persistence.Relationship[*portfoliov1.ListedSecurity](ops)
+					assert.NoError(t, rel.Replace(&portfoliov1.ListedSecurity{SecurityName: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}))
 				}),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.ListSecuritiesResponse]) bool {
-				return assert.Equals(t, "My Security", r.Msg.Securities[0].Name)
+				return true &&
+					assert.Equals(t, "My Security", r.Msg.Securities[0].Name) &&
+					assert.Equals(t, 1, len(r.Msg.Securities[0].ListedOn))
 			},
 			wantErr: false,
 		},
@@ -83,8 +88,9 @@ func Test_service_ListSecurities(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &service{
-				sec:        tt.fields.sec,
-				securities: tt.fields.securities,
+				sec:              tt.fields.sec,
+				securities:       tt.fields.securities,
+				listedSecurities: persistence.Relationship[*portfoliov1.ListedSecurity](tt.fields.securities),
 			}
 			gotRes, err := svc.ListSecurities(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {

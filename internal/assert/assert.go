@@ -54,3 +54,8 @@ func Is[T any](t *testing.T, value any) T {
 
 	return cast
 }
+
+// NoError asserts that err does not contain an error.
+func NoError(t *testing.T, err error) bool {
+	return Equals(t, nil, err)
+}
