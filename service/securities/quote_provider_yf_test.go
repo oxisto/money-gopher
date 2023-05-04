@@ -72,7 +72,7 @@ func Test_yf_LatestQuote(t *testing.T) {
 				},
 			},
 			wantQuote: float32(100.0),
-			wantTime:  time.Date(2023, 05, 04, 22, 0, 0, 0, time.Local),
+			wantTime:  time.Date(2023, 05, 04, 20, 0, 0, 0, time.UTC),
 		},
 	}
 	for _, tt := range tests {
@@ -87,7 +87,7 @@ func Test_yf_LatestQuote(t *testing.T) {
 			}
 
 			assert.Equals(t, tt.wantQuote, gotQuote)
-			assert.Equals(t, tt.wantTime, gotTime)
+			assert.Equals(t, tt.wantTime.UTC(), gotTime.UTC())
 		})
 	}
 }
