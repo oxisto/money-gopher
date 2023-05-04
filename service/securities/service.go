@@ -27,6 +27,7 @@ import (
 	"github.com/oxisto/money-gopher/persistence"
 
 	"github.com/bufbuild/connect-go"
+	"golang.org/x/exp/slices"
 	"golang.org/x/text/currency"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -44,7 +45,7 @@ type service struct {
 
 func NewService(db *persistence.DB) portfoliov1connect.SecuritiesServiceHandler {
 	securities := persistence.Ops[*portfoliov1.Security](db)
-	listedSecurities := persistence.Ops[*portfoliov1.ListedSecurity](db)
+	listedSecurities := persistence.Relationship[*portfoliov1.ListedSecurity](securities)
 	secs := []*portfoliov1.Security{
 		{
 			Name:        "US0378331005",
@@ -119,6 +120,12 @@ func (svc *service) UpdateSecurity(ctx context.Context, req *connect.Request[por
 	res.Msg, err = svc.securities.Update(req.Msg.Security.Name, req.Msg.Security, req.Msg.UpdateMask.Paths)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	if slices.Contains(req.Msg.UpdateMask.Paths, "listed_on") {
+		for _, ls := range req.Msg.Security.ListedOn {
+			svc.listedSecurities.Replace(ls)
+		}
 	}
 
 	return

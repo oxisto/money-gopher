@@ -54,9 +54,8 @@ func TestNewService(t *testing.T) {
 
 func Test_service_ListSecurities(t *testing.T) {
 	type fields struct {
-		sec              map[string]*portfoliov1.Security
-		securities       persistence.StorageOperations[*portfoliov1.Security]
-		listedSecurities persistence.StorageOperations[*portfoliov1.ListedSecurity]
+		sec        map[string]*portfoliov1.Security
+		securities persistence.StorageOperations[*portfoliov1.Security]
 	}
 	type args struct {
 		ctx context.Context
@@ -73,14 +72,15 @@ func Test_service_ListSecurities(t *testing.T) {
 			name: "happy path",
 			fields: fields{
 				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {
-					ops.Replace(&portfoliov1.Security{Name: "My Security"})
-				}),
-				listedSecurities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.ListedSecurity]) {
-					ops.Replace(&portfoliov1.ListedSecurity{SecurityName: "My Security", Ticker: "SEC", Currency: currency.EUR.String()})
+					assert.NoError(t, ops.Replace(&portfoliov1.Security{Name: "My Security"}))
+					rel := persistence.Relationship[*portfoliov1.ListedSecurity](ops)
+					assert.NoError(t, rel.Replace(&portfoliov1.ListedSecurity{SecurityName: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}))
 				}),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.ListSecuritiesResponse]) bool {
-				return assert.Equals(t, "My Security", r.Msg.Securities[0].Name)
+				return true &&
+					assert.Equals(t, "My Security", r.Msg.Securities[0].Name) &&
+					assert.Equals(t, 1, len(r.Msg.Securities[0].ListedOn))
 			},
 			wantErr: false,
 		},
@@ -90,7 +90,7 @@ func Test_service_ListSecurities(t *testing.T) {
 			svc := &service{
 				sec:              tt.fields.sec,
 				securities:       tt.fields.securities,
-				listedSecurities: tt.fields.listedSecurities,
+				listedSecurities: persistence.Relationship[*portfoliov1.ListedSecurity](tt.fields.securities),
 			}
 			gotRes, err := svc.ListSecurities(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {

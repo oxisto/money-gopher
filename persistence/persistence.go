@@ -103,6 +103,10 @@ func Ops[T StorageObject](db *DB) StorageOperations[T] {
 	return &ops[T]{DB: db}
 }
 
+func Relationship[T StorageObject, S StorageObject](op StorageOperations[S]) StorageOperations[T] {
+	return &ops[T]{DB: op.(*ops[S]).DB}
+}
+
 func (ops *ops[T]) Replace(o StorageObject) (err error) {
 	// TODO(oxisto): Move to db.initTables
 	err = o.InitTables(ops.DB)

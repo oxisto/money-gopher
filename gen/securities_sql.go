@@ -27,8 +27,8 @@ func (*ListedSecurity) InitTables(db *persistence.DB) (err error) {
 security_name TEXT,
 ticker TEXT NOT NULL,
 currency TEXT NOT NULL,
-latest_quote REAL NOT NULL,
-latest_quote_timestamp DATETIME NOT NULL,
+latest_quote REAL,
+latest_quote_timestamp DATETIME,
 PRIMARY KEY (security_name, ticker)
 );`)
 	if err != nil {
