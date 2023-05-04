@@ -24,8 +24,9 @@ import (
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	"github.com/oxisto/money-gopher/internal"
-	"github.com/oxisto/money-gopher/internal/assert"
 	"github.com/oxisto/money-gopher/persistence"
+
+	"github.com/oxisto/assert"
 	"golang.org/x/text/currency"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
