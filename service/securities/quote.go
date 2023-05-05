@@ -39,6 +39,8 @@ func (svc *service) TriggerSecurityQuoteUpdate(ctx context.Context, req *connect
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
+	res = connect.NewResponse(&portfoliov1.TriggerQuoteUpdateResponse{})
+
 	if sec.QuoteProvider == nil {
 		return
 	}
@@ -64,7 +66,7 @@ func updateQuote(qp QuoteProvider, ls *portfoliov1.ListedSecurity) (err error) {
 		cancel context.CancelFunc
 	)
 
-	ctx, cancel = context.WithTimeout(ctx, time.Second*60)
+	ctx, cancel = context.WithTimeout(context.Background(), time.Second*60)
 	defer cancel()
 
 	quote, t, err = qp.LatestQuote(ctx, ls)
