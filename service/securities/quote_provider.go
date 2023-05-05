@@ -27,7 +27,7 @@ import (
 var providers map[string]QuoteProvider = make(map[string]QuoteProvider)
 
 func init() {
-	RegisterQuoteProvider("yf", &yf{})
+	RegisterQuoteProvider(QuoteProviderYF, &yf{})
 }
 
 // AddCommand adds a command using the specific symbol.

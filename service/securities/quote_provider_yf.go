@@ -29,6 +29,8 @@ import (
 
 var ErrEmptyResult = errors.New("empty result")
 
+const QuoteProviderYF = "yf"
+
 type yf struct {
 	http.Client
 }

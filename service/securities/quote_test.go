@@ -85,19 +85,30 @@ func (mockQuoteProvider) LatestQuote(_ context.Context, _ *portfoliov1.ListedSec
 	return 100, time.Date(1, 0, 0, 0, 0, 0, 0, time.UTC), nil
 }
 
-func Test_updateQuote(t *testing.T) {
+func Test_service_updateQuote(t *testing.T) {
+	type fields struct {
+		securities persistence.StorageOperations[*portfoliov1.Security]
+	}
 	type args struct {
 		qp QuoteProvider
 		ls *portfoliov1.ListedSecurity
 	}
 	tests := []struct {
 		name    string
+		fields  fields
 		args    args
 		want    assert.Want[*portfoliov1.ListedSecurity]
 		wantErr bool
 	}{
 		{
 			name: "happy path",
+			fields: fields{
+				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {
+					ops.Replace(&portfoliov1.Security{Name: "My Security"})
+					rel := persistence.Relationship[*portfoliov1.ListedSecurity](ops)
+					assert.NoError(t, rel.Replace(&portfoliov1.ListedSecurity{SecurityName: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}))
+				}),
+			},
 			args: args{
 				qp: &mockQuoteProvider{},
 				ls: &portfoliov1.ListedSecurity{SecurityName: "My Security", Ticker: "SEC", Currency: currency.EUR.String()},
@@ -109,7 +120,11 @@ func Test_updateQuote(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := updateQuote(tt.args.qp, tt.args.ls); (err != nil) != tt.wantErr {
+			svc := &service{
+				securities:       tt.fields.securities,
+				listedSecurities: persistence.Relationship[*portfoliov1.ListedSecurity](tt.fields.securities),
+			}
+			if err := svc.updateQuote(tt.args.qp, tt.args.ls); (err != nil) != tt.wantErr {
 				t.Errorf("updateQuote() error = %v, wantErr %v", err, tt.wantErr)
 			}
 

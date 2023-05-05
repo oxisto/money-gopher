@@ -66,6 +66,7 @@ func NewService(db *persistence.DB) portfoliov1connect.SecuritiesServiceHandler 
 					LatestQuoteTimestamp: timestamppb.New(time.Date(2023, 4, 21, 0, 0, 0, 0, time.Local)),
 				},
 			},
+			QuoteProvider: moneygopher.Ref(QuoteProviderYF),
 		},
 	}
 	for _, sec := range secs {

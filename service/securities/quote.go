@@ -52,13 +52,13 @@ func (svc *service) TriggerSecurityQuoteUpdate(ctx context.Context, req *connect
 
 	// Trigger update from quote provider in separate go-routine
 	for _, ls := range sec.ListedOn {
-		go updateQuote(qp, ls)
+		go svc.updateQuote(qp, ls)
 	}
 
 	return
 }
 
-func updateQuote(qp QuoteProvider, ls *portfoliov1.ListedSecurity) (err error) {
+func (svc *service) updateQuote(qp QuoteProvider, ls *portfoliov1.ListedSecurity) (err error) {
 	var (
 		quote  float32
 		t      time.Time
@@ -76,6 +76,14 @@ func updateQuote(qp QuoteProvider, ls *portfoliov1.ListedSecurity) (err error) {
 
 	ls.LatestQuote = &quote
 	ls.LatestQuoteTimestamp = timestamppb.New(t)
+
+	_, err = svc.listedSecurities.Update(
+		[]any{ls.SecurityName, ls.Ticker},
+		ls, []string{"latest_quote", "latest_quote_timestamp"},
+	)
+	if err != nil {
+		return err
+	}
 
 	return
 }

@@ -71,13 +71,12 @@ func (*Security) PrepareUpdate(db *persistence.DB, columns []string) (stmt *sql.
 		set   []string
 	)
 
-	query = `UPDATE securities`
 	set = make([]string, len(columns))
 	for i, col := range columns {
-		set[i] = "SET " + persistence.Quote(col) + " = ?"
+		set[i] = persistence.Quote(col) + " = ?"
 	}
 
-	query += " " + strings.Join(set, ", ") + " WHERE name = ?;"
+	query += "UPDATE securities SET " + strings.Join(set, ", ") + " WHERE name = ?;"
 
 	return db.Prepare(query)
 }
@@ -89,13 +88,12 @@ func (*ListedSecurity) PrepareUpdate(db *persistence.DB, columns []string) (stmt
 		set   []string
 	)
 
-	query = `UPDATE listed_securities`
 	set = make([]string, len(columns))
 	for i, col := range columns {
-		set[i] = "SET " + persistence.Quote(col) + " = ?"
+		set[i] = persistence.Quote(col) + " = ?"
 	}
 
-	query += " " + strings.Join(set, ", ") + " WHERE security_name = ? AND ticker = ?;"
+	query += "UPDATE listed_securities SET " + strings.Join(set, ", ") + " WHERE security_name = ? AND ticker = ?;"
 
 	return db.Prepare(query)
 }
@@ -150,6 +148,14 @@ func (l *ListedSecurity) UpdateArgs(columns []string) (args []any) {
 			args = append(args, l.Ticker)
 		case "currency":
 			args = append(args, l.Currency)
+		case "latest_quote":
+			args = append(args, l.LatestQuote)
+		case "latest_quote_timestamp":
+			if l.LatestQuoteTimestamp != nil {
+				args = append(args, l.LatestQuoteTimestamp.AsTime())
+			} else {
+				args = append(args, nil)
+			}
 		}
 	}
 
