@@ -17,6 +17,7 @@
 package securities
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -43,7 +44,7 @@ type chart struct {
 	} `json:"chart"`
 }
 
-func (yf *yf) LatestQuote(ls *portfoliov1.ListedSecurity) (quote float32, t time.Time, err error) {
+func (yf *yf) LatestQuote(ctx context.Context, ls *portfoliov1.ListedSecurity) (quote float32, t time.Time, err error) {
 	var (
 		res *http.Response
 		ch  chart

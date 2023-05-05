@@ -171,6 +171,8 @@ func Test_service_GetSecurity(t *testing.T) {
 			fields: fields{
 				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {
 					ops.Replace(&portfoliov1.Security{Name: "My Security"})
+					rel := persistence.Relationship[*portfoliov1.ListedSecurity](ops)
+					assert.NoError(t, rel.Replace(&portfoliov1.ListedSecurity{SecurityName: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}))
 				}),
 			},
 			args: args{
@@ -178,7 +180,8 @@ func Test_service_GetSecurity(t *testing.T) {
 			},
 			wantRes: func(t *testing.T, s *portfoliov1.Security) bool {
 				return assert.Equals(t, &portfoliov1.Security{
-					Name: "My Security",
+					Name:     "My Security",
+					ListedOn: []*portfoliov1.ListedSecurity{{SecurityName: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}},
 				}, s)
 			},
 			wantErr: false,
@@ -187,8 +190,9 @@ func Test_service_GetSecurity(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &service{
-				sec:        tt.fields.sec,
-				securities: tt.fields.securities,
+				sec:              tt.fields.sec,
+				securities:       tt.fields.securities,
+				listedSecurities: persistence.Relationship[*portfoliov1.ListedSecurity](tt.fields.securities),
 			}
 			gotRes, err := svc.GetSecurity(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {

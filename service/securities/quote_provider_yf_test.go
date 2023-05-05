@@ -17,6 +17,7 @@
 package securities
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -47,7 +48,8 @@ func Test_yf_LatestQuote(t *testing.T) {
 		Client http.Client
 	}
 	type args struct {
-		ls *portfoliov1.ListedSecurity
+		ctx context.Context
+		ls  *portfoliov1.ListedSecurity
 	}
 	tests := []struct {
 		name      string
@@ -65,6 +67,7 @@ func Test_yf_LatestQuote(t *testing.T) {
 				}),
 			},
 			args: args{
+				ctx: context.TODO(),
 				ls: &portfoliov1.ListedSecurity{
 					SecurityName: "My Security",
 					Ticker:       "TICK",
@@ -141,7 +144,7 @@ func Test_yf_LatestQuote(t *testing.T) {
 			yf := &yf{
 				Client: tt.fields.Client,
 			}
-			gotQuote, gotTime, err := yf.LatestQuote(tt.args.ls)
+			gotQuote, gotTime, err := yf.LatestQuote(tt.args.ctx, tt.args.ls)
 			assert.Equals(t, true, tt.wantErr(t, err))
 			assert.Equals(t, tt.wantQuote, gotQuote)
 			assert.Equals(t, tt.wantTime.UTC(), gotTime.UTC())

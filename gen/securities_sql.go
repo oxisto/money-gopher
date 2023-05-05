@@ -3,6 +3,7 @@ package portfoliov1
 import (
 	"database/sql"
 	"strings"
+	"time"
 
 	"github.com/oxisto/money-gopher/persistence"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -13,7 +14,8 @@ var _ persistence.StorageObject = &Security{}
 func (*Security) InitTables(db *persistence.DB) (err error) {
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS securities (
 name TEXT PRIMARY KEY,
-display_name TEXT NOT NULL
+display_name TEXT NOT NULL,
+quote_provider TEXT
 );`)
 	if err != nil {
 		return err
@@ -39,7 +41,7 @@ PRIMARY KEY (security_name, ticker)
 }
 
 func (*Security) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`REPLACE INTO securities (name, display_name) VALUES (?,?);`)
+	return db.Prepare(`REPLACE INTO securities (name, display_name, quote_provider) VALUES (?,?,?);`)
 }
 
 func (*ListedSecurity) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) {
@@ -47,7 +49,7 @@ func (*ListedSecurity) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err e
 }
 
 func (*Security) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`SELECT name, display_name FROM securities`)
+	return db.Prepare(`SELECT name, display_name, quote_provider FROM securities`)
 }
 
 func (*ListedSecurity) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err error) {
@@ -55,7 +57,7 @@ func (*ListedSecurity) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err erro
 }
 
 func (*Security) PrepareGet(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`SELECT name, display_name FROM securities WHERE name = ?`)
+	return db.Prepare(`SELECT name, display_name, quote_provider FROM securities WHERE name = ?`)
 }
 
 func (*ListedSecurity) PrepareGet(db *persistence.DB) (stmt *sql.Stmt, err error) {
@@ -107,11 +109,21 @@ func (*ListedSecurity) PrepareDelete(db *persistence.DB) (stmt *sql.Stmt, err er
 }
 
 func (s *Security) ReplaceIntoArgs() []any {
-	return []any{s.Name, s.DisplayName}
+	return []any{s.Name, s.DisplayName, s.QuoteProvider}
 }
 
 func (l *ListedSecurity) ReplaceIntoArgs() []any {
-	return []any{l.SecurityName, l.Ticker, l.Currency, l.LatestQuote, l.LatestQuoteTimestamp.AsTime()}
+	var (
+		pt *time.Time
+		t  time.Time
+	)
+
+	if l.LatestQuoteTimestamp != nil {
+		t = l.LatestQuoteTimestamp.AsTime()
+		pt = &t
+	}
+
+	return []any{l.SecurityName, l.Ticker, l.Currency, l.LatestQuote, pt}
 }
 
 func (s *Security) UpdateArgs(columns []string) (args []any) {
@@ -121,6 +133,8 @@ func (s *Security) UpdateArgs(columns []string) (args []any) {
 			args = append(args, s.Name)
 		case "display_name":
 			args = append(args, s.DisplayName)
+		case "quote_provider":
+			args = append(args, s.QuoteProvider)
 		}
 	}
 
@@ -147,7 +161,7 @@ func (*Security) Scan(sc persistence.Scanner) (obj persistence.StorageObject, er
 		s Security
 	)
 
-	err = sc.Scan(&s.Name, &s.DisplayName)
+	err = sc.Scan(&s.Name, &s.DisplayName, &s.QuoteProvider)
 	if err != nil {
 		return nil, err
 	}

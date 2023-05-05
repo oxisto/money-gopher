@@ -90,7 +90,7 @@ func (svc *service) CreateSecurity(ctx context.Context, req *connect.Request[por
 
 func (svc *service) GetSecurity(ctx context.Context, req *connect.Request[portfoliov1.GetSecurityRequest]) (res *connect.Response[portfoliov1.Security], err error) {
 	res = connect.NewResponse(&portfoliov1.Security{})
-	res.Msg, err = svc.securities.Get(req.Msg.Name)
+	res.Msg, err = svc.fetchSecurity(req.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -136,6 +136,20 @@ func (svc *service) DeleteSecurityRequest(ctx context.Context, req *connect.Requ
 	err = svc.securities.Delete(req.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return
+}
+
+func (svc *service) fetchSecurity(name string) (sec *portfoliov1.Security, err error) {
+	sec, err = svc.securities.Get(name)
+	if err != nil {
+		return nil, err
+	}
+
+	sec.ListedOn, err = svc.listedSecurities.List(name)
+	if err != nil {
+		return nil, err
 	}
 
 	return

@@ -23,6 +23,8 @@ message Security {
   string display_name = 2;
 
   repeated ListedSecurity listed_on = 4;
+
+  optional string quote_provider = 10;
 }
 
 message ListedSecurity {
@@ -49,6 +51,10 @@ message UpdateSecurityRequest {
 
 message DeleteSecurityRequest { string name = 1; }
 
+message TriggerQuoteUpdateRequest { string security_name = 1; }
+
+message TriggerQuoteUpdateResponse {}
+
 service SecuritiesService {
   rpc ListSecurities(ListSecuritiesRequest) returns (ListSecuritiesResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
@@ -59,4 +65,7 @@ service SecuritiesService {
   rpc CreateSecurity(CreateSecurityRequest) returns (Security);
   rpc UpdateSecurity(UpdateSecurityRequest) returns (Security);
   rpc DeleteSecurity(DeleteSecurityRequest) returns (google.protobuf.Empty);
+
+  rpc TriggerSecurityQuoteUpdate(TriggerQuoteUpdateRequest)
+      returns (TriggerQuoteUpdateResponse);
 }

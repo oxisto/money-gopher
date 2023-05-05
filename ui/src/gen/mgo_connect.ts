@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateSecurityRequest, DeleteSecurityRequest, GetSecurityRequest, ListSecuritiesRequest, ListSecuritiesResponse, Portfolio, PortfolioCreateMessage, Security, UpdateSecurityRequest } from "./mgo_pb.js";
+import { CreateSecurityRequest, DeleteSecurityRequest, GetSecurityRequest, ListSecuritiesRequest, ListSecuritiesResponse, Portfolio, PortfolioCreateMessage, Security, TriggerQuoteUpdateRequest, TriggerQuoteUpdateResponse, UpdateSecurityRequest } from "./mgo_pb.js";
 import { Empty, MethodIdempotency, MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -75,6 +75,15 @@ export const SecuritiesService = {
       name: "DeleteSecurity",
       I: DeleteSecurityRequest,
       O: Empty,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc mgo.portfolio.v1.SecuritiesService.TriggerSecurityQuoteUpdate
+     */
+    triggerSecurityQuoteUpdate: {
+      name: "TriggerSecurityQuoteUpdate",
+      I: TriggerQuoteUpdateRequest,
+      O: TriggerQuoteUpdateResponse,
       kind: MethodKind.Unary,
     },
   }
