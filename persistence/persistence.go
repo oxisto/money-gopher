@@ -171,8 +171,10 @@ func (ops *ops[T]) List(args ...any) (list []T, err error) {
 
 func (ops *ops[T]) Get(key any) (obj T, err error) {
 	var (
-		row *sql.Row
-		tmp StorageObject
+		row  *sql.Row
+		tmp  StorageObject
+		args []any
+		ok   bool
 	)
 
 	// TODO(oxisto): prepare query at DB init
@@ -181,7 +183,13 @@ func (ops *ops[T]) Get(key any) (obj T, err error) {
 		return obj, fmt.Errorf("could not prepare query: %w", err)
 	}
 
-	row = stmt.QueryRow(key)
+	// split composite keys
+	if args, ok = key.([]any); !ok {
+		// otherwise, use single key
+		args = []any{key}
+	}
+
+	row = stmt.QueryRow(args...)
 	tmp, err = obj.Scan(row)
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
 		return obj, nil
@@ -197,6 +205,8 @@ func (ops *ops[T]) Get(key any) (obj T, err error) {
 func (ops *ops[T]) Update(key any, in T, columns []string) (out T, err error) {
 	var (
 		args []any
+		keys []any
+		ok   bool
 	)
 	// TODO(oxisto): cache somehow
 	stmt, err := in.PrepareUpdate(ops.DB, columns)
@@ -206,7 +216,12 @@ func (ops *ops[T]) Update(key any, in T, columns []string) (out T, err error) {
 
 	args = make([]any, 0, 1+len(columns))
 	args = append(args, in.UpdateArgs(columns)...)
-	args = append(args, key)
+
+	if keys, ok = key.([]any); ok {
+		args = append(args, keys...)
+	} else {
+		args = append(args, key)
+	}
 
 	res, err := stmt.Exec(args...)
 	if err != nil {

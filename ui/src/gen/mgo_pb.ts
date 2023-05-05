@@ -104,6 +104,11 @@ export class Security extends Message<Security> {
    */
   listedOn: ListedSecurity[] = [];
 
+  /**
+   * @generated from field: optional string quote_provider = 10;
+   */
+  quoteProvider?: string;
+
   constructor(data?: PartialMessage<Security>) {
     super();
     proto3.util.initPartial(data, this);
@@ -115,6 +120,7 @@ export class Security extends Message<Security> {
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "listed_on", kind: "message", T: ListedSecurity, repeated: true },
+    { no: 10, name: "quote_provider", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Security {
@@ -414,6 +420,74 @@ export class DeleteSecurityRequest extends Message<DeleteSecurityRequest> {
 
   static equals(a: DeleteSecurityRequest | PlainMessage<DeleteSecurityRequest> | undefined, b: DeleteSecurityRequest | PlainMessage<DeleteSecurityRequest> | undefined): boolean {
     return proto3.util.equals(DeleteSecurityRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message mgo.portfolio.v1.TriggerQuoteUpdateRequest
+ */
+export class TriggerQuoteUpdateRequest extends Message<TriggerQuoteUpdateRequest> {
+  /**
+   * @generated from field: string security_name = 1;
+   */
+  securityName = "";
+
+  constructor(data?: PartialMessage<TriggerQuoteUpdateRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.TriggerQuoteUpdateRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TriggerQuoteUpdateRequest {
+    return new TriggerQuoteUpdateRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TriggerQuoteUpdateRequest {
+    return new TriggerQuoteUpdateRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TriggerQuoteUpdateRequest {
+    return new TriggerQuoteUpdateRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TriggerQuoteUpdateRequest | PlainMessage<TriggerQuoteUpdateRequest> | undefined, b: TriggerQuoteUpdateRequest | PlainMessage<TriggerQuoteUpdateRequest> | undefined): boolean {
+    return proto3.util.equals(TriggerQuoteUpdateRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message mgo.portfolio.v1.TriggerQuoteUpdateResponse
+ */
+export class TriggerQuoteUpdateResponse extends Message<TriggerQuoteUpdateResponse> {
+  constructor(data?: PartialMessage<TriggerQuoteUpdateResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.TriggerQuoteUpdateResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TriggerQuoteUpdateResponse {
+    return new TriggerQuoteUpdateResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TriggerQuoteUpdateResponse {
+    return new TriggerQuoteUpdateResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TriggerQuoteUpdateResponse {
+    return new TriggerQuoteUpdateResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TriggerQuoteUpdateResponse | PlainMessage<TriggerQuoteUpdateResponse> | undefined, b: TriggerQuoteUpdateResponse | PlainMessage<TriggerQuoteUpdateResponse> | undefined): boolean {
+    return proto3.util.equals(TriggerQuoteUpdateResponse, a, b);
   }
 }
 

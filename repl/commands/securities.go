@@ -41,6 +41,23 @@ func (cmd *listSecuritiesCmd) Exec(r *repl.REPL, args ...string) {
 	log.Println(res.Msg.Securities)
 }
 
+type triggerQuoteUpdate struct{}
+
+// Exec implements [repl.Command]
+func (cmd *triggerQuoteUpdate) Exec(r *repl.REPL, args ...string) {
+	client := portfoliov1connect.NewSecuritiesServiceClient(http.DefaultClient, "http://localhost:8080")
+	_, err := client.TriggerSecurityQuoteUpdate(
+		context.Background(),
+		connect.NewRequest(&portfoliov1.TriggerQuoteUpdateRequest{
+			SecurityName: args[0],
+		}),
+	)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 func init() {
 	repl.AddCommand("list-securities", &listSecuritiesCmd{})
+	repl.AddCommand("update-quote", &triggerQuoteUpdate{})
 }

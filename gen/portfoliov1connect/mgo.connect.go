@@ -54,6 +54,9 @@ const (
 	// SecuritiesServiceDeleteSecurityProcedure is the fully-qualified name of the SecuritiesService's
 	// DeleteSecurity RPC.
 	SecuritiesServiceDeleteSecurityProcedure = "/mgo.portfolio.v1.SecuritiesService/DeleteSecurity"
+	// SecuritiesServiceTriggerSecurityQuoteUpdateProcedure is the fully-qualified name of the
+	// SecuritiesService's TriggerSecurityQuoteUpdate RPC.
+	SecuritiesServiceTriggerSecurityQuoteUpdateProcedure = "/mgo.portfolio.v1.SecuritiesService/TriggerSecurityQuoteUpdate"
 )
 
 // PortfolioServiceClient is a client for the mgo.portfolio.v1.PortfolioService service.
@@ -123,6 +126,7 @@ type SecuritiesServiceClient interface {
 	CreateSecurity(context.Context, *connect_go.Request[gen.CreateSecurityRequest]) (*connect_go.Response[gen.Security], error)
 	UpdateSecurity(context.Context, *connect_go.Request[gen.UpdateSecurityRequest]) (*connect_go.Response[gen.Security], error)
 	DeleteSecurity(context.Context, *connect_go.Request[gen.DeleteSecurityRequest]) (*connect_go.Response[emptypb.Empty], error)
+	TriggerSecurityQuoteUpdate(context.Context, *connect_go.Request[gen.TriggerQuoteUpdateRequest]) (*connect_go.Response[gen.TriggerQuoteUpdateResponse], error)
 }
 
 // NewSecuritiesServiceClient constructs a client for the mgo.portfolio.v1.SecuritiesService
@@ -162,16 +166,22 @@ func NewSecuritiesServiceClient(httpClient connect_go.HTTPClient, baseURL string
 			baseURL+SecuritiesServiceDeleteSecurityProcedure,
 			opts...,
 		),
+		triggerSecurityQuoteUpdate: connect_go.NewClient[gen.TriggerQuoteUpdateRequest, gen.TriggerQuoteUpdateResponse](
+			httpClient,
+			baseURL+SecuritiesServiceTriggerSecurityQuoteUpdateProcedure,
+			opts...,
+		),
 	}
 }
 
 // securitiesServiceClient implements SecuritiesServiceClient.
 type securitiesServiceClient struct {
-	listSecurities *connect_go.Client[gen.ListSecuritiesRequest, gen.ListSecuritiesResponse]
-	getSecurity    *connect_go.Client[gen.GetSecurityRequest, gen.Security]
-	createSecurity *connect_go.Client[gen.CreateSecurityRequest, gen.Security]
-	updateSecurity *connect_go.Client[gen.UpdateSecurityRequest, gen.Security]
-	deleteSecurity *connect_go.Client[gen.DeleteSecurityRequest, emptypb.Empty]
+	listSecurities             *connect_go.Client[gen.ListSecuritiesRequest, gen.ListSecuritiesResponse]
+	getSecurity                *connect_go.Client[gen.GetSecurityRequest, gen.Security]
+	createSecurity             *connect_go.Client[gen.CreateSecurityRequest, gen.Security]
+	updateSecurity             *connect_go.Client[gen.UpdateSecurityRequest, gen.Security]
+	deleteSecurity             *connect_go.Client[gen.DeleteSecurityRequest, emptypb.Empty]
+	triggerSecurityQuoteUpdate *connect_go.Client[gen.TriggerQuoteUpdateRequest, gen.TriggerQuoteUpdateResponse]
 }
 
 // ListSecurities calls mgo.portfolio.v1.SecuritiesService.ListSecurities.
@@ -199,6 +209,11 @@ func (c *securitiesServiceClient) DeleteSecurity(ctx context.Context, req *conne
 	return c.deleteSecurity.CallUnary(ctx, req)
 }
 
+// TriggerSecurityQuoteUpdate calls mgo.portfolio.v1.SecuritiesService.TriggerSecurityQuoteUpdate.
+func (c *securitiesServiceClient) TriggerSecurityQuoteUpdate(ctx context.Context, req *connect_go.Request[gen.TriggerQuoteUpdateRequest]) (*connect_go.Response[gen.TriggerQuoteUpdateResponse], error) {
+	return c.triggerSecurityQuoteUpdate.CallUnary(ctx, req)
+}
+
 // SecuritiesServiceHandler is an implementation of the mgo.portfolio.v1.SecuritiesService service.
 type SecuritiesServiceHandler interface {
 	ListSecurities(context.Context, *connect_go.Request[gen.ListSecuritiesRequest]) (*connect_go.Response[gen.ListSecuritiesResponse], error)
@@ -206,6 +221,7 @@ type SecuritiesServiceHandler interface {
 	CreateSecurity(context.Context, *connect_go.Request[gen.CreateSecurityRequest]) (*connect_go.Response[gen.Security], error)
 	UpdateSecurity(context.Context, *connect_go.Request[gen.UpdateSecurityRequest]) (*connect_go.Response[gen.Security], error)
 	DeleteSecurity(context.Context, *connect_go.Request[gen.DeleteSecurityRequest]) (*connect_go.Response[emptypb.Empty], error)
+	TriggerSecurityQuoteUpdate(context.Context, *connect_go.Request[gen.TriggerQuoteUpdateRequest]) (*connect_go.Response[gen.TriggerQuoteUpdateResponse], error)
 }
 
 // NewSecuritiesServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -242,6 +258,11 @@ func NewSecuritiesServiceHandler(svc SecuritiesServiceHandler, opts ...connect_g
 		svc.DeleteSecurity,
 		opts...,
 	))
+	mux.Handle(SecuritiesServiceTriggerSecurityQuoteUpdateProcedure, connect_go.NewUnaryHandler(
+		SecuritiesServiceTriggerSecurityQuoteUpdateProcedure,
+		svc.TriggerSecurityQuoteUpdate,
+		opts...,
+	))
 	return "/mgo.portfolio.v1.SecuritiesService/", mux
 }
 
@@ -266,4 +287,8 @@ func (UnimplementedSecuritiesServiceHandler) UpdateSecurity(context.Context, *co
 
 func (UnimplementedSecuritiesServiceHandler) DeleteSecurity(context.Context, *connect_go.Request[gen.DeleteSecurityRequest]) (*connect_go.Response[emptypb.Empty], error) {
 	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.SecuritiesService.DeleteSecurity is not implemented"))
+}
+
+func (UnimplementedSecuritiesServiceHandler) TriggerSecurityQuoteUpdate(context.Context, *connect_go.Request[gen.TriggerQuoteUpdateRequest]) (*connect_go.Response[gen.TriggerQuoteUpdateResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.SecuritiesService.TriggerSecurityQuoteUpdate is not implemented"))
 }
