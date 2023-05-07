@@ -17,7 +17,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net/http"
 	"strings"
@@ -26,24 +25,12 @@ import (
 	"github.com/oxisto/money-gopher/persistence"
 	"github.com/oxisto/money-gopher/repl"
 	_ "github.com/oxisto/money-gopher/repl/commands"
+	"github.com/oxisto/money-gopher/service/portfolio"
 	"github.com/oxisto/money-gopher/service/securities"
 
-	"github.com/bufbuild/connect-go"
-	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
-
-type PortfolioService struct {
-	portfoliov1connect.UnimplementedPortfolioServiceHandler
-}
-
-func (ps *PortfolioService) CreatePortfolio(ctx context.Context, req *connect.Request[portfoliov1.PortfolioCreateMessage]) (res *connect.Response[portfoliov1.Portfolio], err error) {
-	res = connect.NewResponse(&portfoliov1.Portfolio{Name: req.Msg.Name})
-	res.Header().Set("X-Money", "true")
-
-	return
-}
 
 func main() {
 	log.SetPrefix("[🤑] ")
@@ -58,7 +45,7 @@ func main() {
 	mux := http.NewServeMux()
 	// The generated constructors return a path and a plain net/http
 	// handler.
-	mux.Handle(portfoliov1connect.NewPortfolioServiceHandler(&PortfolioService{}))
+	mux.Handle(portfoliov1connect.NewPortfolioServiceHandler(portfolio.NewService()))
 	mux.Handle(portfoliov1connect.NewSecuritiesServiceHandler(securities.NewService(db)))
 
 	go func() {

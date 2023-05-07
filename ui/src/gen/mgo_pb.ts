@@ -44,6 +44,54 @@ export class PortfolioCreateMessage extends Message<PortfolioCreateMessage> {
 }
 
 /**
+ * @generated from message mgo.portfolio.v1.GetPortfolioSnapshotRequest
+ */
+export class GetPortfolioSnapshotRequest extends Message<GetPortfolioSnapshotRequest> {
+  /**
+   * PortfolioName is the name / identifier of the portfolio we want to
+   * "snapshot".
+   *
+   * @generated from field: string portfolio_name = 1;
+   */
+  portfolioName = "";
+
+  /**
+   * Time is the point in time of the requested snapshot.
+   *
+   * @generated from field: google.protobuf.Timestamp time = 2;
+   */
+  time?: Timestamp;
+
+  constructor(data?: PartialMessage<GetPortfolioSnapshotRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.GetPortfolioSnapshotRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "portfolio_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "time", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPortfolioSnapshotRequest {
+    return new GetPortfolioSnapshotRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPortfolioSnapshotRequest {
+    return new GetPortfolioSnapshotRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPortfolioSnapshotRequest {
+    return new GetPortfolioSnapshotRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPortfolioSnapshotRequest | PlainMessage<GetPortfolioSnapshotRequest> | undefined, b: GetPortfolioSnapshotRequest | PlainMessage<GetPortfolioSnapshotRequest> | undefined): boolean {
+    return proto3.util.equals(GetPortfolioSnapshotRequest, a, b);
+  }
+}
+
+/**
  * @generated from message mgo.portfolio.v1.Portfolio
  */
 export class Portfolio extends Message<Portfolio> {
@@ -51,6 +99,14 @@ export class Portfolio extends Message<Portfolio> {
    * @generated from field: string name = 1;
    */
   name = "";
+
+  /**
+   * Events contains all portfolio events, such as buy/sell transactions,
+   * dividends or other. They need to be ordered by time (ascending).
+   *
+   * @generated from field: repeated mgo.portfolio.v1.PortfolioEvent events = 2;
+   */
+  events: PortfolioEvent[] = [];
 
   constructor(data?: PartialMessage<Portfolio>) {
     super();
@@ -61,6 +117,7 @@ export class Portfolio extends Message<Portfolio> {
   static readonly typeName = "mgo.portfolio.v1.Portfolio";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "events", kind: "message", T: PortfolioEvent, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Portfolio {
@@ -77,6 +134,366 @@ export class Portfolio extends Message<Portfolio> {
 
   static equals(a: Portfolio | PlainMessage<Portfolio> | undefined, b: Portfolio | PlainMessage<Portfolio> | undefined): boolean {
     return proto3.util.equals(Portfolio, a, b);
+  }
+}
+
+/**
+ * PortfolioSnapshot represents a snapshot in time of the portfolio. It can for
+ * example be the current state of the portfolio but also represent the state of
+ * the portfolio at a certain time in the past.
+ *
+ * @generated from message mgo.portfolio.v1.PortfolioSnapshot
+ */
+export class PortfolioSnapshot extends Message<PortfolioSnapshot> {
+  /**
+   * @generated from field: google.protobuf.Timestamp time = 1;
+   */
+  time?: Timestamp;
+
+  /**
+   * @generated from field: map<string, mgo.portfolio.v1.PortfolioPosition> positions = 2;
+   */
+  positions: { [key: string]: PortfolioPosition } = {};
+
+  /**
+   * @generated from field: float total_value = 10;
+   */
+  totalValue = 0;
+
+  constructor(data?: PartialMessage<PortfolioSnapshot>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.PortfolioSnapshot";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "time", kind: "message", T: Timestamp },
+    { no: 2, name: "positions", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: PortfolioPosition} },
+    { no: 10, name: "total_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PortfolioSnapshot {
+    return new PortfolioSnapshot().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PortfolioSnapshot {
+    return new PortfolioSnapshot().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PortfolioSnapshot {
+    return new PortfolioSnapshot().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PortfolioSnapshot | PlainMessage<PortfolioSnapshot> | undefined, b: PortfolioSnapshot | PlainMessage<PortfolioSnapshot> | undefined): boolean {
+    return proto3.util.equals(PortfolioSnapshot, a, b);
+  }
+}
+
+/**
+ * @generated from message mgo.portfolio.v1.PortfolioPosition
+ */
+export class PortfolioPosition extends Message<PortfolioPosition> {
+  /**
+   * @generated from field: string security_name = 1;
+   */
+  securityName = "";
+
+  /**
+   * @generated from field: int32 amount = 2;
+   */
+  amount = 0;
+
+  /**
+   * PurchaseValue was the market value of this position when it was bought
+   * (net; exclusive of any fees).
+   *
+   * @generated from field: float purchase_value = 5;
+   */
+  purchaseValue = 0;
+
+  /**
+   * PurchasePrice was the market price of this position when it was bought
+   * (net; exclusive of any fees).
+   *
+   * @generated from field: float purchase_price = 6;
+   */
+  purchasePrice = 0;
+
+  /**
+   * MarketValue is the current market value of this position, as retrieved from
+   * the securities service.
+   *
+   * @generated from field: float market_value = 10;
+   */
+  marketValue = 0;
+
+  /**
+   * TotalFees is the total amount of fees accumulating in this position through
+   * various transactions.
+   *
+   * @generated from field: float total_fees = 15;
+   */
+  totalFees = 0;
+
+  constructor(data?: PartialMessage<PortfolioPosition>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.PortfolioPosition";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "amount", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 5, name: "purchase_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 6, name: "purchase_price", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 10, name: "market_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 15, name: "total_fees", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PortfolioPosition {
+    return new PortfolioPosition().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PortfolioPosition {
+    return new PortfolioPosition().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PortfolioPosition {
+    return new PortfolioPosition().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PortfolioPosition | PlainMessage<PortfolioPosition> | undefined, b: PortfolioPosition | PlainMessage<PortfolioPosition> | undefined): boolean {
+    return proto3.util.equals(PortfolioPosition, a, b);
+  }
+}
+
+/**
+ * @generated from message mgo.portfolio.v1.PortfolioEvent
+ */
+export class PortfolioEvent extends Message<PortfolioEvent> {
+  /**
+   * @generated from oneof mgo.portfolio.v1.PortfolioEvent.event_oneof
+   */
+  eventOneof: {
+    /**
+     * @generated from field: mgo.portfolio.v1.BuySecurityTransaction buy = 1;
+     */
+    value: BuySecurityTransaction;
+    case: "buy";
+  } | {
+    /**
+     * @generated from field: mgo.portfolio.v1.SellSecurityTransaction sell = 2;
+     */
+    value: SellSecurityTransaction;
+    case: "sell";
+  } | {
+    /**
+     * @generated from field: mgo.portfolio.v1.SecurityDividendEvent dividend = 3;
+     */
+    value: SecurityDividendEvent;
+    case: "dividend";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<PortfolioEvent>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.PortfolioEvent";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "buy", kind: "message", T: BuySecurityTransaction, oneof: "event_oneof" },
+    { no: 2, name: "sell", kind: "message", T: SellSecurityTransaction, oneof: "event_oneof" },
+    { no: 3, name: "dividend", kind: "message", T: SecurityDividendEvent, oneof: "event_oneof" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PortfolioEvent {
+    return new PortfolioEvent().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PortfolioEvent {
+    return new PortfolioEvent().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PortfolioEvent {
+    return new PortfolioEvent().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PortfolioEvent | PlainMessage<PortfolioEvent> | undefined, b: PortfolioEvent | PlainMessage<PortfolioEvent> | undefined): boolean {
+    return proto3.util.equals(PortfolioEvent, a, b);
+  }
+}
+
+/**
+ * @generated from message mgo.portfolio.v1.BuySecurityTransaction
+ */
+export class BuySecurityTransaction extends Message<BuySecurityTransaction> {
+  /**
+   * @generated from field: string security_name = 1;
+   */
+  securityName = "";
+
+  /**
+   * @generated from field: int32 amount = 2;
+   */
+  amount = 0;
+
+  /**
+   * @generated from field: float price = 3;
+   */
+  price = 0;
+
+  /**
+   * @generated from field: float fees = 4;
+   */
+  fees = 0;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp time = 10;
+   */
+  time?: Timestamp;
+
+  constructor(data?: PartialMessage<BuySecurityTransaction>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.BuySecurityTransaction";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "amount", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "price", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 4, name: "fees", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 10, name: "time", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BuySecurityTransaction {
+    return new BuySecurityTransaction().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BuySecurityTransaction {
+    return new BuySecurityTransaction().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BuySecurityTransaction {
+    return new BuySecurityTransaction().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BuySecurityTransaction | PlainMessage<BuySecurityTransaction> | undefined, b: BuySecurityTransaction | PlainMessage<BuySecurityTransaction> | undefined): boolean {
+    return proto3.util.equals(BuySecurityTransaction, a, b);
+  }
+}
+
+/**
+ * @generated from message mgo.portfolio.v1.SellSecurityTransaction
+ */
+export class SellSecurityTransaction extends Message<SellSecurityTransaction> {
+  /**
+   * @generated from field: string security_name = 1;
+   */
+  securityName = "";
+
+  /**
+   * @generated from field: int32 amount = 2;
+   */
+  amount = 0;
+
+  /**
+   * @generated from field: float price = 3;
+   */
+  price = 0;
+
+  /**
+   * @generated from field: float fees = 4;
+   */
+  fees = 0;
+
+  /**
+   * @generated from field: float taxes = 5;
+   */
+  taxes = 0;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp time = 10;
+   */
+  time?: Timestamp;
+
+  constructor(data?: PartialMessage<SellSecurityTransaction>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.SellSecurityTransaction";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "amount", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "price", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 4, name: "fees", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 5, name: "taxes", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 10, name: "time", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SellSecurityTransaction {
+    return new SellSecurityTransaction().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SellSecurityTransaction {
+    return new SellSecurityTransaction().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SellSecurityTransaction {
+    return new SellSecurityTransaction().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SellSecurityTransaction | PlainMessage<SellSecurityTransaction> | undefined, b: SellSecurityTransaction | PlainMessage<SellSecurityTransaction> | undefined): boolean {
+    return proto3.util.equals(SellSecurityTransaction, a, b);
+  }
+}
+
+/**
+ * @generated from message mgo.portfolio.v1.SecurityDividendEvent
+ */
+export class SecurityDividendEvent extends Message<SecurityDividendEvent> {
+  /**
+   * @generated from field: string security_name = 1;
+   */
+  securityName = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp time = 10;
+   */
+  time?: Timestamp;
+
+  constructor(data?: PartialMessage<SecurityDividendEvent>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.SecurityDividendEvent";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "time", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityDividendEvent {
+    return new SecurityDividendEvent().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SecurityDividendEvent {
+    return new SecurityDividendEvent().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SecurityDividendEvent {
+    return new SecurityDividendEvent().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SecurityDividendEvent | PlainMessage<SecurityDividendEvent> | undefined, b: SecurityDividendEvent | PlainMessage<SecurityDividendEvent> | undefined): boolean {
+    return proto3.util.equals(SecurityDividendEvent, a, b);
   }
 }
 

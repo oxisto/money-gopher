@@ -60,4 +60,6 @@ func (cmd *triggerQuoteUpdate) Exec(r *repl.REPL, args ...string) {
 func init() {
 	repl.AddCommand("list-securities", &listSecuritiesCmd{})
 	repl.AddCommand("update-quote", &triggerQuoteUpdate{})
+
+	repl.AddCommand("portfolio-snapshot", &portfolioSnapshot{})
 }

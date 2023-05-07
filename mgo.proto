@@ -8,10 +8,89 @@ import "google/protobuf/field_mask.proto";
 
 message PortfolioCreateMessage { string name = 1; }
 
-message Portfolio { string name = 1; }
+message GetPortfolioSnapshotRequest {
+  // PortfolioName is the name / identifier of the portfolio we want to
+  // "snapshot".
+  string portfolio_name = 1;
+
+  // Time is the point in time of the requested snapshot.
+  google.protobuf.Timestamp time = 2;
+}
+
+message Portfolio {
+  string name = 1;
+
+  // Events contains all portfolio events, such as buy/sell transactions,
+  // dividends or other. They need to be ordered by time (ascending).
+  repeated PortfolioEvent events = 2;
+}
+
+// PortfolioSnapshot represents a snapshot in time of the portfolio. It can for
+// example be the current state of the portfolio but also represent the state of
+// the portfolio at a certain time in the past.
+message PortfolioSnapshot {
+  google.protobuf.Timestamp time = 1;
+  map<string, PortfolioPosition> positions = 2;
+
+  float total_value = 10;
+}
+
+message PortfolioPosition {
+  string security_name = 1;
+  int32 amount = 2;
+
+  // PurchaseValue was the market value of this position when it was bought
+  // (net; exclusive of any fees).
+  float purchase_value = 5;
+
+  // PurchasePrice was the market price of this position when it was bought
+  // (net; exclusive of any fees).
+  float purchase_price = 6;
+
+  // MarketValue is the current market value of this position, as retrieved from
+  // the securities service.
+  float market_value = 10;
+
+  // TotalFees is the total amount of fees accumulating in this position through
+  // various transactions.
+  float total_fees = 15;
+}
+
+message PortfolioEvent {
+  oneof event_oneof {
+    BuySecurityTransaction buy = 1;
+    SellSecurityTransaction sell = 2;
+    SecurityDividendEvent dividend = 3;
+  }
+}
+
+message BuySecurityTransaction {
+  string security_name = 1;
+  int32 amount = 2;
+  float price = 3;
+  float fees = 4;
+  google.protobuf.Timestamp time = 10;
+}
+message SellSecurityTransaction {
+  string security_name = 1;
+  int32 amount = 2;
+  float price = 3;
+  float fees = 4;
+  float taxes = 5;
+  google.protobuf.Timestamp time = 10;
+}
+message SecurityDividendEvent {
+  string security_name = 1;
+  google.protobuf.Timestamp time = 10;
+}
 
 service PortfolioService {
   rpc CreatePortfolio(PortfolioCreateMessage) returns (Portfolio);
+
+  rpc GetPortfolioSnapshot(GetPortfolioSnapshotRequest)
+      returns (PortfolioSnapshot) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  };
 }
 
 message Security {
