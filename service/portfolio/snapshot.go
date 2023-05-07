@@ -21,6 +21,7 @@ import (
 
 	"github.com/oxisto/money-gopher/finance"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bufbuild/connect-go"
 )
@@ -34,20 +35,31 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 	// Retrieve portfolio
 	p = svc.portfolio
 
+	// If no time is specified, we assume it to be now
+	if req.Msg.Time == nil {
+		req.Msg.Time = timestamppb.Now()
+	}
+
 	// Set up the snapshot
 	snap = &portfoliov1.PortfolioSnapshot{
 		Time:      req.Msg.Time,
 		Positions: make(map[string]*portfoliov1.PortfolioPosition),
 	}
 
+	m := p.EventMap()
+
 	// We need to look at the portfolio events up to the time of the snapshot
 	// and calculate the current positions.
-	// TODO(oxisto): We need to filter the tx per position
-	c := finance.NewCalculation(p.Events)
-	snap.Positions["US0378331005"] = &portfoliov1.PortfolioPosition{
-		SecurityName: "US0378331005",
-		Amount:       c.Amount,
-		EntryValue:   c.NetValue(),
+	for name, txs := range m {
+		txs = portfoliov1.EventsBefore(txs, snap.Time.AsTime())
+
+		c := finance.NewCalculation(txs)
+		snap.Positions[name] = &portfoliov1.PortfolioPosition{
+			SecurityName:  name,
+			Amount:        c.Amount,
+			PurchaseValue: c.NetValue(),
+			PurchasePrice: c.NetPrice(),
+		}
 	}
 
 	return connect.NewResponse(snap), nil

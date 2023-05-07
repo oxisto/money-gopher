@@ -205,20 +205,20 @@ export class PortfolioPosition extends Message<PortfolioPosition> {
   amount = 0;
 
   /**
-   * EntryValue was the market value of this position when it was bought
-   * (exclusive of any fees).
+   * PurchaseValue was the market value of this position when it was bought
+   * (net; exclusive of any fees).
    *
-   * @generated from field: float entry_value = 5;
+   * @generated from field: float purchase_value = 5;
    */
-  entryValue = 0;
+  purchaseValue = 0;
 
   /**
-   * TotalFees is the total amount of fees accumulating in this position through
-   * various transactions.
+   * PurchasePrice was the market price of this position when it was bought
+   * (net; exclusive of any fees).
    *
-   * @generated from field: float total_fees = 6;
+   * @generated from field: float purchase_price = 6;
    */
-  totalFees = 0;
+  purchasePrice = 0;
 
   /**
    * MarketValue is the current market value of this position, as retrieved from
@@ -227,6 +227,14 @@ export class PortfolioPosition extends Message<PortfolioPosition> {
    * @generated from field: float market_value = 10;
    */
   marketValue = 0;
+
+  /**
+   * TotalFees is the total amount of fees accumulating in this position through
+   * various transactions.
+   *
+   * @generated from field: float total_fees = 15;
+   */
+  totalFees = 0;
 
   constructor(data?: PartialMessage<PortfolioPosition>) {
     super();
@@ -238,9 +246,10 @@ export class PortfolioPosition extends Message<PortfolioPosition> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "amount", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 5, name: "entry_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
-    { no: 6, name: "total_fees", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 5, name: "purchase_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 6, name: "purchase_price", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
     { no: 10, name: "market_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 15, name: "total_fees", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PortfolioPosition {
@@ -450,6 +459,11 @@ export class SellSecurityTransaction extends Message<SellSecurityTransaction> {
  */
 export class SecurityDividendEvent extends Message<SecurityDividendEvent> {
   /**
+   * @generated from field: string security_name = 1;
+   */
+  securityName = "";
+
+  /**
    * @generated from field: google.protobuf.Timestamp time = 10;
    */
   time?: Timestamp;
@@ -462,6 +476,7 @@ export class SecurityDividendEvent extends Message<SecurityDividendEvent> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "mgo.portfolio.v1.SecurityDividendEvent";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "time", kind: "message", T: Timestamp },
   ]);
 

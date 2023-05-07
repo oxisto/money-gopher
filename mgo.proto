@@ -39,17 +39,21 @@ message PortfolioPosition {
   string security_name = 1;
   int32 amount = 2;
 
-  // EntryValue was the market value of this position when it was bought
-  // (exclusive of any fees).
-  float entry_value = 5;
+  // PurchaseValue was the market value of this position when it was bought
+  // (net; exclusive of any fees).
+  float purchase_value = 5;
 
-  // TotalFees is the total amount of fees accumulating in this position through
-  // various transactions.
-  float total_fees = 6;
+  // PurchasePrice was the market price of this position when it was bought
+  // (net; exclusive of any fees).
+  float purchase_price = 6;
 
   // MarketValue is the current market value of this position, as retrieved from
   // the securities service.
   float market_value = 10;
+
+  // TotalFees is the total amount of fees accumulating in this position through
+  // various transactions.
+  float total_fees = 15;
 }
 
 message PortfolioEvent {
@@ -75,7 +79,10 @@ message SellSecurityTransaction {
   float taxes = 5;
   google.protobuf.Timestamp time = 10;
 }
-message SecurityDividendEvent { google.protobuf.Timestamp time = 10; }
+message SecurityDividendEvent {
+  string security_name = 1;
+  google.protobuf.Timestamp time = 10;
+}
 
 service PortfolioService {
   rpc CreatePortfolio(PortfolioCreateMessage) returns (Portfolio);

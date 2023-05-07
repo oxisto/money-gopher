@@ -23,6 +23,9 @@ import (
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 )
 
+// fifoTx is a helper struct to store transaction-related information in a FIFO
+// list. We basically need to copy the values from the original transaction,
+// since we need to modify it.
 type fifoTx struct {
 	// amount of shares in this transaction
 	amount int32
@@ -35,11 +38,9 @@ type fifoTx struct {
 }
 
 type calculation struct {
-	Amount     int32
-	BuyerFees  float32
-	SellerFees float32
-	TotalFees  float32
-	Taxes      float32
+	Amount int32
+	Fees   float32
+	Taxes  float32
 
 	fifo []*fifoTx
 }
@@ -63,14 +64,13 @@ func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
 
 		// Increase the amount of shares and the fees by the value stored in the
 		// transaction
-		c.BuyerFees += v.Buy.Fees
-		c.TotalFees += v.Buy.Fees
+		c.Fees += v.Buy.Fees
 		c.Amount += v.Buy.Amount
 
-		// Add the transaction to the FIFO queue. We need to have a queue
-		// because sold shares are sold according to the FIFO principle. We
-		// therefore need to store this information to reduce the amount in the
-		// items later when a sell transaction occurs.
+		// Add the transaction to the FIFO list. We need to have a list because
+		// sold shares are sold according to the FIFO principle. We therefore
+		// need to store this information to reduce the amount in the items
+		// later when a sell transaction occurs.
 		c.fifo = append(c.fifo, &fifoTx{
 			amount: v.Buy.Amount,
 			ppu:    v.Buy.Price,
@@ -88,12 +88,11 @@ func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
 
 		// Increase the fees and taxes by the value stored in the
 		// transaction
-		c.SellerFees += v.Sell.Fees
-		c.TotalFees += v.Sell.Fees
+		c.Fees += v.Sell.Fees
 		c.Taxes += v.Sell.Taxes
 
 		// Store the amount of shares sold in this variable, since we later need
-		// to decrease it while looping through the FIFO queue
+		// to decrease it while looping through the FIFO list
 		sold = v.Sell.Amount
 
 		// Calculate the remaining shares (if any)
@@ -103,7 +102,7 @@ func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
 			c.Amount = 0
 		}
 
-		// We need to loop through our FIFO queue and reduce the amount of sold
+		// We need to loop through our FIFO list and reduce the amount of sold
 		// shares until it is 0.
 		for _, item := range c.fifo {
 			if sold <= 0 {
@@ -112,7 +111,7 @@ func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
 			}
 
 			// FIFO items could already be empty since we sold those shares
-			// already; we cannot really remove them from the queue properly, so
+			// already; we cannot really remove them from the list properly, so
 			// we can just skip them
 			if item.amount == 0 {
 				continue
