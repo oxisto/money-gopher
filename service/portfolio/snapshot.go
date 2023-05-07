@@ -19,6 +19,7 @@ package portfolio
 import (
 	"context"
 
+	"github.com/oxisto/money-gopher/finance"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 
 	"github.com/bufbuild/connect-go"
@@ -26,18 +27,28 @@ import (
 
 func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Request[portfoliov1.GetPortfolioSnapshotRequest]) (res *connect.Response[portfoliov1.PortfolioSnapshot], err error) {
 	var (
-		snap portfoliov1.PortfolioSnapshot
+		snap *portfoliov1.PortfolioSnapshot
 		p    *portfoliov1.Portfolio
 	)
 
 	// Retrieve portfolio
 	p = svc.portfolio
 
-	// We need to look at the portfolio events up to the time of the snapshot
-	// and calculate the current positions.
-	for _, e := range p.Events {
-		e.Apply(snap)
+	// Set up the snapshot
+	snap = &portfoliov1.PortfolioSnapshot{
+		Time:      req.Msg.Time,
+		Positions: make(map[string]*portfoliov1.PortfolioPosition),
 	}
 
-	return connect.NewResponse(&snap), nil
+	// We need to look at the portfolio events up to the time of the snapshot
+	// and calculate the current positions.
+	// TODO(oxisto): We need to filter the tx per position
+	c := finance.NewCalculation(p.Events)
+	snap.Positions["US0378331005"] = &portfoliov1.PortfolioPosition{
+		SecurityName: "US0378331005",
+		Amount:       c.Amount,
+		EntryValue:   c.NetValue(),
+	}
+
+	return connect.NewResponse(snap), nil
 }

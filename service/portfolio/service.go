@@ -22,6 +22,7 @@ import (
 
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
+
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -44,19 +45,10 @@ func NewService() portfoliov1connect.PortfolioServiceHandler {
 				EventOneof: &portfoliov1.PortfolioEvent_Buy{
 					Buy: &portfoliov1.BuySecurityTransaction{
 						SecurityName: "US0378331005",
-						Amount:       100,
-						Price:        150,
+						Amount:       20,
+						Price:        107.08,
+						Fees:         10.25,
 						Time:         timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)),
-					},
-				},
-			},
-			{
-				EventOneof: &portfoliov1.PortfolioEvent_Buy{
-					Buy: &portfoliov1.BuySecurityTransaction{
-						SecurityName: "US0378331005",
-						Amount:       100,
-						Price:        150,
-						Time:         timestamppb.New(time.Date(2020, 2, 1, 0, 0, 0, 0, time.UTC)),
 					},
 				},
 			},
@@ -64,8 +56,9 @@ func NewService() portfoliov1connect.PortfolioServiceHandler {
 				EventOneof: &portfoliov1.PortfolioEvent_Sell{
 					Sell: &portfoliov1.SellSecurityTransaction{
 						SecurityName: "US0378331005",
-						Amount:       100,
-						Price:        150,
+						Amount:       10,
+						Price:        145.88,
+						Fees:         8.55,
 						Time:         timestamppb.New(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)),
 					},
 				},

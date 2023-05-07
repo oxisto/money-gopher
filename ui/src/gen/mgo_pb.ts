@@ -205,12 +205,20 @@ export class PortfolioPosition extends Message<PortfolioPosition> {
   amount = 0;
 
   /**
-   * EntryValue was the market value of this position when it was bought. It
-   * consists of the original buy price + fees.
+   * EntryValue was the market value of this position when it was bought
+   * (exclusive of any fees).
    *
    * @generated from field: float entry_value = 5;
    */
   entryValue = 0;
+
+  /**
+   * TotalFees is the total amount of fees accumulating in this position through
+   * various transactions.
+   *
+   * @generated from field: float total_fees = 6;
+   */
+  totalFees = 0;
 
   /**
    * MarketValue is the current market value of this position, as retrieved from
@@ -231,6 +239,7 @@ export class PortfolioPosition extends Message<PortfolioPosition> {
     { no: 1, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "amount", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 5, name: "entry_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 6, name: "total_fees", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
     { no: 10, name: "market_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
   ]);
 
@@ -389,6 +398,16 @@ export class SellSecurityTransaction extends Message<SellSecurityTransaction> {
   price = 0;
 
   /**
+   * @generated from field: float fees = 4;
+   */
+  fees = 0;
+
+  /**
+   * @generated from field: float taxes = 5;
+   */
+  taxes = 0;
+
+  /**
    * @generated from field: google.protobuf.Timestamp time = 10;
    */
   time?: Timestamp;
@@ -404,6 +423,8 @@ export class SellSecurityTransaction extends Message<SellSecurityTransaction> {
     { no: 1, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "amount", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 3, name: "price", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 4, name: "fees", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 5, name: "taxes", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
     { no: 10, name: "time", kind: "message", T: Timestamp },
   ]);
 
