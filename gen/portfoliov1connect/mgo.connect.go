@@ -39,6 +39,9 @@ const (
 	// PortfolioServiceCreatePortfolioProcedure is the fully-qualified name of the PortfolioService's
 	// CreatePortfolio RPC.
 	PortfolioServiceCreatePortfolioProcedure = "/mgo.portfolio.v1.PortfolioService/CreatePortfolio"
+	// PortfolioServiceGetPortfolioSnapshotProcedure is the fully-qualified name of the
+	// PortfolioService's GetPortfolioSnapshot RPC.
+	PortfolioServiceGetPortfolioSnapshotProcedure = "/mgo.portfolio.v1.PortfolioService/GetPortfolioSnapshot"
 	// SecuritiesServiceListSecuritiesProcedure is the fully-qualified name of the SecuritiesService's
 	// ListSecurities RPC.
 	SecuritiesServiceListSecuritiesProcedure = "/mgo.portfolio.v1.SecuritiesService/ListSecurities"
@@ -62,6 +65,7 @@ const (
 // PortfolioServiceClient is a client for the mgo.portfolio.v1.PortfolioService service.
 type PortfolioServiceClient interface {
 	CreatePortfolio(context.Context, *connect_go.Request[gen.PortfolioCreateMessage]) (*connect_go.Response[gen.Portfolio], error)
+	GetPortfolioSnapshot(context.Context, *connect_go.Request[gen.GetPortfolioSnapshotRequest]) (*connect_go.Response[gen.PortfolioSnapshot], error)
 }
 
 // NewPortfolioServiceClient constructs a client for the mgo.portfolio.v1.PortfolioService service.
@@ -79,12 +83,19 @@ func NewPortfolioServiceClient(httpClient connect_go.HTTPClient, baseURL string,
 			baseURL+PortfolioServiceCreatePortfolioProcedure,
 			opts...,
 		),
+		getPortfolioSnapshot: connect_go.NewClient[gen.GetPortfolioSnapshotRequest, gen.PortfolioSnapshot](
+			httpClient,
+			baseURL+PortfolioServiceGetPortfolioSnapshotProcedure,
+			connect_go.WithIdempotency(connect_go.IdempotencyNoSideEffects),
+			connect_go.WithClientOptions(opts...),
+		),
 	}
 }
 
 // portfolioServiceClient implements PortfolioServiceClient.
 type portfolioServiceClient struct {
-	createPortfolio *connect_go.Client[gen.PortfolioCreateMessage, gen.Portfolio]
+	createPortfolio      *connect_go.Client[gen.PortfolioCreateMessage, gen.Portfolio]
+	getPortfolioSnapshot *connect_go.Client[gen.GetPortfolioSnapshotRequest, gen.PortfolioSnapshot]
 }
 
 // CreatePortfolio calls mgo.portfolio.v1.PortfolioService.CreatePortfolio.
@@ -92,9 +103,15 @@ func (c *portfolioServiceClient) CreatePortfolio(ctx context.Context, req *conne
 	return c.createPortfolio.CallUnary(ctx, req)
 }
 
+// GetPortfolioSnapshot calls mgo.portfolio.v1.PortfolioService.GetPortfolioSnapshot.
+func (c *portfolioServiceClient) GetPortfolioSnapshot(ctx context.Context, req *connect_go.Request[gen.GetPortfolioSnapshotRequest]) (*connect_go.Response[gen.PortfolioSnapshot], error) {
+	return c.getPortfolioSnapshot.CallUnary(ctx, req)
+}
+
 // PortfolioServiceHandler is an implementation of the mgo.portfolio.v1.PortfolioService service.
 type PortfolioServiceHandler interface {
 	CreatePortfolio(context.Context, *connect_go.Request[gen.PortfolioCreateMessage]) (*connect_go.Response[gen.Portfolio], error)
+	GetPortfolioSnapshot(context.Context, *connect_go.Request[gen.GetPortfolioSnapshotRequest]) (*connect_go.Response[gen.PortfolioSnapshot], error)
 }
 
 // NewPortfolioServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -109,6 +126,12 @@ func NewPortfolioServiceHandler(svc PortfolioServiceHandler, opts ...connect_go.
 		svc.CreatePortfolio,
 		opts...,
 	))
+	mux.Handle(PortfolioServiceGetPortfolioSnapshotProcedure, connect_go.NewUnaryHandler(
+		PortfolioServiceGetPortfolioSnapshotProcedure,
+		svc.GetPortfolioSnapshot,
+		connect_go.WithIdempotency(connect_go.IdempotencyNoSideEffects),
+		connect_go.WithHandlerOptions(opts...),
+	))
 	return "/mgo.portfolio.v1.PortfolioService/", mux
 }
 
@@ -117,6 +140,10 @@ type UnimplementedPortfolioServiceHandler struct{}
 
 func (UnimplementedPortfolioServiceHandler) CreatePortfolio(context.Context, *connect_go.Request[gen.PortfolioCreateMessage]) (*connect_go.Response[gen.Portfolio], error) {
 	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.CreatePortfolio is not implemented"))
+}
+
+func (UnimplementedPortfolioServiceHandler) GetPortfolioSnapshot(context.Context, *connect_go.Request[gen.GetPortfolioSnapshotRequest]) (*connect_go.Response[gen.PortfolioSnapshot], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.GetPortfolioSnapshot is not implemented"))
 }
 
 // SecuritiesServiceClient is a client for the mgo.portfolio.v1.SecuritiesService service.

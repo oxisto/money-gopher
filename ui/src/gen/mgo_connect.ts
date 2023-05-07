@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateSecurityRequest, DeleteSecurityRequest, GetSecurityRequest, ListSecuritiesRequest, ListSecuritiesResponse, Portfolio, PortfolioCreateMessage, Security, TriggerQuoteUpdateRequest, TriggerQuoteUpdateResponse, UpdateSecurityRequest } from "./mgo_pb.js";
+import { CreateSecurityRequest, DeleteSecurityRequest, GetPortfolioSnapshotRequest, GetSecurityRequest, ListSecuritiesRequest, ListSecuritiesResponse, Portfolio, PortfolioCreateMessage, PortfolioSnapshot, Security, TriggerQuoteUpdateRequest, TriggerQuoteUpdateResponse, UpdateSecurityRequest } from "./mgo_pb.js";
 import { Empty, MethodIdempotency, MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -20,6 +20,16 @@ export const PortfolioService = {
       I: PortfolioCreateMessage,
       O: Portfolio,
       kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc mgo.portfolio.v1.PortfolioService.GetPortfolioSnapshot
+     */
+    getPortfolioSnapshot: {
+      name: "GetPortfolioSnapshot",
+      I: GetPortfolioSnapshotRequest,
+      O: PortfolioSnapshot,
+      kind: MethodKind.Unary,
+    idempotency: MethodIdempotency.NoSideEffects,
     },
   }
 } as const;
