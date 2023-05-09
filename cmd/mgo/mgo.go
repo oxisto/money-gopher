@@ -47,7 +47,7 @@ func main() {
 	// handler.
 	mux.Handle(portfoliov1connect.NewPortfolioServiceHandler(portfolio.NewService(
 		portfolio.Options{
-			Securities: portfoliov1connect.NewSecuritiesServiceClient(http.DefaultClient, portfolio.DefaultSecuritiesServiceURL),
+			SecuritiesClient: portfoliov1connect.NewSecuritiesServiceClient(http.DefaultClient, portfolio.DefaultSecuritiesServiceURL),
 		},
 	)))
 	mux.Handle(portfoliov1connect.NewSecuritiesServiceHandler(securities.NewService(db)))

@@ -19,18 +19,21 @@ package portfolio
 import (
 	"context"
 
+	moneygopher "github.com/oxisto/money-gopher"
 	"github.com/oxisto/money-gopher/finance"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
-	"golang.org/x/exp/maps"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bufbuild/connect-go"
+	"golang.org/x/exp/maps"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Request[portfoliov1.GetPortfolioSnapshotRequest]) (res *connect.Response[portfoliov1.PortfolioSnapshot], err error) {
 	var (
 		snap   *portfoliov1.PortfolioSnapshot
 		p      *portfoliov1.Portfolio
+		m      map[string][]*portfoliov1.PortfolioEvent
+		names  []string
 		secres *connect.Response[portfoliov1.ListSecuritiesResponse]
 		secmap map[string]*portfoliov1.Security
 	)
@@ -49,9 +52,9 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 		Positions: make(map[string]*portfoliov1.PortfolioPosition),
 	}
 
-	m := p.EventMap()
-
-	names := maps.Keys(m)
+	// Retrieve the event map; a map of events indexed by their security name
+	m = p.EventMap()
+	names = maps.Keys(m)
 
 	// Retrieve market value of filtered securities
 	secres, err = svc.securities.ListSecurities(
@@ -66,8 +69,8 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	// Make a map out of the securities list
-	secmap = Map(secres.Msg.Securities, func(s *portfoliov1.Security) string {
+	// Make a map out of the securities list so we can access it easier
+	secmap = moneygopher.Map(secres.Msg.Securities, func(s *portfoliov1.Security) string {
 		return s.Name
 	})
 
@@ -83,18 +86,9 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 			PurchaseValue: c.NetValue(),
 			PurchasePrice: c.NetPrice(),
 			MarketValue:   *secmap[name].ListedOn[0].LatestQuote * float32(c.Amount),
+			MarketPrice:   *secmap[name].ListedOn[0].LatestQuote,
 		}
 	}
 
 	return connect.NewResponse(snap), nil
-}
-
-func Map[K comparable, V any](slice []V, key func(V) K) (m map[K]V) {
-	m = make(map[K]V)
-
-	for _, v := range slice {
-		m[key(v)] = v
-	}
-
-	return
 }

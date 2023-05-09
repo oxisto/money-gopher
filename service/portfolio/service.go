@@ -41,7 +41,7 @@ type service struct {
 }
 
 type Options struct {
-	Securities portfoliov1connect.SecuritiesServiceClient
+	SecuritiesClient portfoliov1connect.SecuritiesServiceClient
 }
 
 func NewService(opts Options) portfoliov1connect.PortfolioServiceHandler {
@@ -74,7 +74,7 @@ func NewService(opts Options) portfoliov1connect.PortfolioServiceHandler {
 			},
 		},
 	}
-	s.securities = opts.Securities
+	s.securities = opts.SecuritiesClient
 	if s.securities == nil {
 		s.securities = portfoliov1connect.NewSecuritiesServiceClient(http.DefaultClient, DefaultSecuritiesServiceURL)
 	}

@@ -229,6 +229,14 @@ export class PortfolioPosition extends Message<PortfolioPosition> {
   marketValue = 0;
 
   /**
+   * MarketPrice is the current market price of this position, as retrieved from
+   * the securities service.
+   *
+   * @generated from field: float market_price = 11;
+   */
+  marketPrice = 0;
+
+  /**
    * TotalFees is the total amount of fees accumulating in this position through
    * various transactions.
    *
@@ -249,6 +257,7 @@ export class PortfolioPosition extends Message<PortfolioPosition> {
     { no: 5, name: "purchase_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
     { no: 6, name: "purchase_price", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
     { no: 10, name: "market_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 11, name: "market_price", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
     { no: 15, name: "total_fees", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
   ]);
 

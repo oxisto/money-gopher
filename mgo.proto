@@ -51,6 +51,10 @@ message PortfolioPosition {
   // the securities service.
   float market_value = 10;
 
+  // MarketPrice is the current market price of this position, as retrieved from
+  // the securities service.
+  float market_price = 11;
+
   // TotalFees is the total amount of fees accumulating in this position through
   // various transactions.
   float total_fees = 15;

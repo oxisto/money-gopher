@@ -22,7 +22,9 @@ import (
 	"time"
 
 	"github.com/oxisto/assert"
+	moneygopher "github.com/oxisto/money-gopher"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"golang.org/x/text/currency"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -61,11 +63,15 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 				Time: timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC)),
 			})},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioSnapshot]) bool {
+				pos := r.Msg.Positions["US0378331005"]
+
 				return true &&
-					assert.Equals(t, "US0378331005", r.Msg.Positions["US0378331005"].SecurityName) &&
-					assert.Equals(t, 20, r.Msg.Positions["US0378331005"].Amount) &&
-					assert.Equals(t, 2141.6, r.Msg.Positions["US0378331005"].PurchaseValue) &&
-					assert.Equals(t, 107.08, r.Msg.Positions["US0378331005"].PurchasePrice)
+					assert.Equals(t, "US0378331005", pos.SecurityName) &&
+					assert.Equals(t, 20, pos.Amount) &&
+					assert.Equals(t, 2141.6, pos.PurchaseValue) &&
+					assert.Equals(t, 107.08, pos.PurchasePrice) &&
+					assert.Equals(t, 100.0, pos.MarketPrice) &&
+					assert.Equals(t, 2000.0, pos.MarketValue)
 			},
 		},
 	}
@@ -76,7 +82,7 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 			// 	portfolio: tt.fields.portfolio,
 			// }
 			svc := NewService(Options{
-				Securities: &mockSecuritiesClient{},
+				SecuritiesClient: &mockSecuritiesClient{},
 			})
 			gotRes, err := svc.GetPortfolioSnapshot(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
@@ -90,9 +96,42 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 
 type mockSecuritiesClient struct{}
 
-func (*mockSecuritiesClient) ListSecurities(context.Context, *connect.Request[portfoliov1.ListSecuritiesRequest]) (*connect.Response[portfoliov1.ListSecuritiesResponse], error)
-func (*mockSecuritiesClient) GetSecurity(context.Context, *connect.Request[portfoliov1.GetSecurityRequest]) (*connect.Response[portfoliov1.Security], error)
-func (*mockSecuritiesClient) CreateSecurity(context.Context, *connect.Request[portfoliov1.CreateSecurityRequest]) (*connect.Response[portfoliov1.Security], error)
-func (*mockSecuritiesClient) UpdateSecurity(context.Context, *connect.Request[portfoliov1.UpdateSecurityRequest]) (*connect.Response[portfoliov1.Security], error)
-func (*mockSecuritiesClient) DeleteSecurity(context.Context, *connect.Request[portfoliov1.DeleteSecurityRequest]) (*connect.Response[emptypb.Empty], error)
-func (*mockSecuritiesClient) TriggerSecurityQuoteUpdate(context.Context, *connect.Request[portfoliov1.TriggerQuoteUpdateRequest]) (*connect.Response[portfoliov1.TriggerQuoteUpdateResponse], error)
+func (*mockSecuritiesClient) ListSecurities(context.Context, *connect.Request[portfoliov1.ListSecuritiesRequest]) (*connect.Response[portfoliov1.ListSecuritiesResponse], error) {
+	return connect.NewResponse(&portfoliov1.ListSecuritiesResponse{
+		Securities: []*portfoliov1.Security{
+			{
+				Name:        "US0378331005",
+				DisplayName: "Apple, Inc.",
+				ListedOn: []*portfoliov1.ListedSecurity{
+					{
+						SecurityName:         "US0378331005",
+						Ticker:               "APC.F",
+						Currency:             currency.EUR.String(),
+						LatestQuote:          moneygopher.Ref(float32(100.0)),
+						LatestQuoteTimestamp: timestamppb.Now(),
+					},
+				},
+			},
+		},
+	}), nil
+}
+
+func (*mockSecuritiesClient) GetSecurity(context.Context, *connect.Request[portfoliov1.GetSecurityRequest]) (*connect.Response[portfoliov1.Security], error) {
+	return nil, nil
+}
+
+func (*mockSecuritiesClient) CreateSecurity(context.Context, *connect.Request[portfoliov1.CreateSecurityRequest]) (*connect.Response[portfoliov1.Security], error) {
+	return nil, nil
+}
+
+func (*mockSecuritiesClient) UpdateSecurity(context.Context, *connect.Request[portfoliov1.UpdateSecurityRequest]) (*connect.Response[portfoliov1.Security], error) {
+	return nil, nil
+}
+
+func (*mockSecuritiesClient) DeleteSecurity(context.Context, *connect.Request[portfoliov1.DeleteSecurityRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, nil
+}
+
+func (*mockSecuritiesClient) TriggerSecurityQuoteUpdate(context.Context, *connect.Request[portfoliov1.TriggerQuoteUpdateRequest]) (*connect.Response[portfoliov1.TriggerQuoteUpdateResponse], error) {
+	return nil, nil
+}
