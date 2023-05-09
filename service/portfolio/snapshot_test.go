@@ -18,12 +18,14 @@ package portfolio
 
 import (
 	"context"
+	"io"
 	"testing"
 	"time"
 
 	"github.com/oxisto/assert"
 	moneygopher "github.com/oxisto/money-gopher"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	"golang.org/x/text/currency"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -31,9 +33,28 @@ import (
 	"github.com/bufbuild/connect-go"
 )
 
+var mockSecuritiesClientWithData = &mockSecuritiesClient{
+	securities: []*portfoliov1.Security{
+		{
+			Name:        "US0378331005",
+			DisplayName: "Apple, Inc.",
+			ListedOn: []*portfoliov1.ListedSecurity{
+				{
+					SecurityName:         "US0378331005",
+					Ticker:               "APC.F",
+					Currency:             currency.EUR.String(),
+					LatestQuote:          moneygopher.Ref(float32(100.0)),
+					LatestQuoteTimestamp: timestamppb.Now(),
+				},
+			},
+		},
+	},
+}
+
 func Test_service_GetPortfolioSnapshot(t *testing.T) {
 	type fields struct {
 		// portfolio *portfoliov1.Portfolio
+		securities portfoliov1connect.SecuritiesServiceClient
 	}
 	type args struct {
 		ctx context.Context
@@ -48,6 +69,9 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 	}{
 		{
 			name: "happy path, now",
+			fields: fields{
+				securities: mockSecuritiesClientWithData,
+			},
 			args: args{req: connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{})},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioSnapshot]) bool {
 				return true &&
@@ -59,6 +83,9 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 		},
 		{
 			name: "happy path, before sell",
+			fields: fields{
+				securities: mockSecuritiesClientWithData,
+			},
 			args: args{req: connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
 				Time: timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC)),
 			})},
@@ -74,15 +101,29 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 					assert.Equals(t, 2000.0, pos.MarketValue)
 			},
 		},
+		{
+			name: "list error",
+			fields: fields{
+				securities: &mockSecuritiesClient{listSecuritiesError: io.EOF},
+			},
+			args: args{req: connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
+				Time: timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC)),
+			})},
+			wantErr: true,
+			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioSnapshot]) bool {
+				return true
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// For now, we just use the portfolio of NewService
 			// svc := &service{
 			// 	portfolio: tt.fields.portfolio,
+			//  securities: tt.fields.securities,
 			// }
 			svc := NewService(Options{
-				SecuritiesClient: &mockSecuritiesClient{},
+				SecuritiesClient: tt.fields.securities,
 			})
 			gotRes, err := svc.GetPortfolioSnapshot(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
@@ -94,26 +135,15 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 	}
 }
 
-type mockSecuritiesClient struct{}
+type mockSecuritiesClient struct {
+	securities          []*portfoliov1.Security
+	listSecuritiesError error
+}
 
-func (*mockSecuritiesClient) ListSecurities(context.Context, *connect.Request[portfoliov1.ListSecuritiesRequest]) (*connect.Response[portfoliov1.ListSecuritiesResponse], error) {
+func (m *mockSecuritiesClient) ListSecurities(context.Context, *connect.Request[portfoliov1.ListSecuritiesRequest]) (*connect.Response[portfoliov1.ListSecuritiesResponse], error) {
 	return connect.NewResponse(&portfoliov1.ListSecuritiesResponse{
-		Securities: []*portfoliov1.Security{
-			{
-				Name:        "US0378331005",
-				DisplayName: "Apple, Inc.",
-				ListedOn: []*portfoliov1.ListedSecurity{
-					{
-						SecurityName:         "US0378331005",
-						Ticker:               "APC.F",
-						Currency:             currency.EUR.String(),
-						LatestQuote:          moneygopher.Ref(float32(100.0)),
-						LatestQuoteTimestamp: timestamppb.Now(),
-					},
-				},
-			},
-		},
-	}), nil
+		Securities: m.securities,
+	}), m.listSecuritiesError
 }
 
 func (*mockSecuritiesClient) GetSecurity(context.Context, *connect.Request[portfoliov1.GetSecurityRequest]) (*connect.Response[portfoliov1.Security], error) {
