@@ -92,6 +92,191 @@ export class GetPortfolioSnapshotRequest extends Message<GetPortfolioSnapshotReq
 }
 
 /**
+ * @generated from message mgo.portfolio.v1.CreatePortfolioTransactionRequest
+ */
+export class CreatePortfolioTransactionRequest extends Message<CreatePortfolioTransactionRequest> {
+  /**
+   * @generated from field: mgo.portfolio.v1.PortfolioEvent transaction = 1;
+   */
+  transaction?: PortfolioEvent;
+
+  constructor(data?: PartialMessage<CreatePortfolioTransactionRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.CreatePortfolioTransactionRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "transaction", kind: "message", T: PortfolioEvent },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreatePortfolioTransactionRequest {
+    return new CreatePortfolioTransactionRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreatePortfolioTransactionRequest {
+    return new CreatePortfolioTransactionRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreatePortfolioTransactionRequest {
+    return new CreatePortfolioTransactionRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreatePortfolioTransactionRequest | PlainMessage<CreatePortfolioTransactionRequest> | undefined, b: CreatePortfolioTransactionRequest | PlainMessage<CreatePortfolioTransactionRequest> | undefined): boolean {
+    return proto3.util.equals(CreatePortfolioTransactionRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message mgo.portfolio.v1.ListPortfolioTransactionsRequest
+ */
+export class ListPortfolioTransactionsRequest extends Message<ListPortfolioTransactionsRequest> {
+  constructor(data?: PartialMessage<ListPortfolioTransactionsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.ListPortfolioTransactionsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListPortfolioTransactionsRequest {
+    return new ListPortfolioTransactionsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListPortfolioTransactionsRequest {
+    return new ListPortfolioTransactionsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListPortfolioTransactionsRequest {
+    return new ListPortfolioTransactionsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListPortfolioTransactionsRequest | PlainMessage<ListPortfolioTransactionsRequest> | undefined, b: ListPortfolioTransactionsRequest | PlainMessage<ListPortfolioTransactionsRequest> | undefined): boolean {
+    return proto3.util.equals(ListPortfolioTransactionsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message mgo.portfolio.v1.ListPortfolioTransactionsResponse
+ */
+export class ListPortfolioTransactionsResponse extends Message<ListPortfolioTransactionsResponse> {
+  /**
+   * @generated from field: repeated mgo.portfolio.v1.PortfolioEvent transactions = 1;
+   */
+  transactions: PortfolioEvent[] = [];
+
+  constructor(data?: PartialMessage<ListPortfolioTransactionsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.ListPortfolioTransactionsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "transactions", kind: "message", T: PortfolioEvent, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListPortfolioTransactionsResponse {
+    return new ListPortfolioTransactionsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListPortfolioTransactionsResponse {
+    return new ListPortfolioTransactionsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListPortfolioTransactionsResponse {
+    return new ListPortfolioTransactionsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListPortfolioTransactionsResponse | PlainMessage<ListPortfolioTransactionsResponse> | undefined, b: ListPortfolioTransactionsResponse | PlainMessage<ListPortfolioTransactionsResponse> | undefined): boolean {
+    return proto3.util.equals(ListPortfolioTransactionsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message mgo.portfolio.v1.UpdatePortfolioTransactionRequest
+ */
+export class UpdatePortfolioTransactionRequest extends Message<UpdatePortfolioTransactionRequest> {
+  /**
+   * @generated from field: mgo.portfolio.v1.PortfolioEvent transaction = 1;
+   */
+  transaction?: PortfolioEvent;
+
+  /**
+   * @generated from field: google.protobuf.FieldMask update_mask = 2;
+   */
+  updateMask?: FieldMask;
+
+  constructor(data?: PartialMessage<UpdatePortfolioTransactionRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.UpdatePortfolioTransactionRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "transaction", kind: "message", T: PortfolioEvent },
+    { no: 2, name: "update_mask", kind: "message", T: FieldMask },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdatePortfolioTransactionRequest {
+    return new UpdatePortfolioTransactionRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdatePortfolioTransactionRequest {
+    return new UpdatePortfolioTransactionRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdatePortfolioTransactionRequest {
+    return new UpdatePortfolioTransactionRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdatePortfolioTransactionRequest | PlainMessage<UpdatePortfolioTransactionRequest> | undefined, b: UpdatePortfolioTransactionRequest | PlainMessage<UpdatePortfolioTransactionRequest> | undefined): boolean {
+    return proto3.util.equals(UpdatePortfolioTransactionRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message mgo.portfolio.v1.DeletePortfolioTransactionRequest
+ */
+export class DeletePortfolioTransactionRequest extends Message<DeletePortfolioTransactionRequest> {
+  /**
+   * @generated from field: int32 transaction_id = 1;
+   */
+  transactionId = 0;
+
+  constructor(data?: PartialMessage<DeletePortfolioTransactionRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.DeletePortfolioTransactionRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "transaction_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeletePortfolioTransactionRequest {
+    return new DeletePortfolioTransactionRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeletePortfolioTransactionRequest {
+    return new DeletePortfolioTransactionRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeletePortfolioTransactionRequest {
+    return new DeletePortfolioTransactionRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeletePortfolioTransactionRequest | PlainMessage<DeletePortfolioTransactionRequest> | undefined, b: DeletePortfolioTransactionRequest | PlainMessage<DeletePortfolioTransactionRequest> | undefined): boolean {
+    return proto3.util.equals(DeletePortfolioTransactionRequest, a, b);
+  }
+}
+
+/**
  * @generated from message mgo.portfolio.v1.Portfolio
  */
 export class Portfolio extends Message<Portfolio> {
@@ -283,23 +468,28 @@ export class PortfolioPosition extends Message<PortfolioPosition> {
  */
 export class PortfolioEvent extends Message<PortfolioEvent> {
   /**
+   * @generated from field: int32 id = 1;
+   */
+  id = 0;
+
+  /**
    * @generated from oneof mgo.portfolio.v1.PortfolioEvent.event_oneof
    */
   eventOneof: {
     /**
-     * @generated from field: mgo.portfolio.v1.BuySecurityTransaction buy = 1;
+     * @generated from field: mgo.portfolio.v1.BuySecurityTransaction buy = 10;
      */
     value: BuySecurityTransaction;
     case: "buy";
   } | {
     /**
-     * @generated from field: mgo.portfolio.v1.SellSecurityTransaction sell = 2;
+     * @generated from field: mgo.portfolio.v1.SellSecurityTransaction sell = 11;
      */
     value: SellSecurityTransaction;
     case: "sell";
   } | {
     /**
-     * @generated from field: mgo.portfolio.v1.SecurityDividendEvent dividend = 3;
+     * @generated from field: mgo.portfolio.v1.SecurityDividendEvent dividend = 12;
      */
     value: SecurityDividendEvent;
     case: "dividend";
@@ -313,9 +503,10 @@ export class PortfolioEvent extends Message<PortfolioEvent> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "mgo.portfolio.v1.PortfolioEvent";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "buy", kind: "message", T: BuySecurityTransaction, oneof: "event_oneof" },
-    { no: 2, name: "sell", kind: "message", T: SellSecurityTransaction, oneof: "event_oneof" },
-    { no: 3, name: "dividend", kind: "message", T: SecurityDividendEvent, oneof: "event_oneof" },
+    { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 10, name: "buy", kind: "message", T: BuySecurityTransaction, oneof: "event_oneof" },
+    { no: 11, name: "sell", kind: "message", T: SellSecurityTransaction, oneof: "event_oneof" },
+    { no: 12, name: "dividend", kind: "message", T: SecurityDividendEvent, oneof: "event_oneof" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PortfolioEvent {
