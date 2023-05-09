@@ -23,6 +23,7 @@ import (
 
 	"github.com/oxisto/assert"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bufbuild/connect-go"
@@ -74,7 +75,9 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 			// svc := &service{
 			// 	portfolio: tt.fields.portfolio,
 			// }
-			svc := NewService()
+			svc := NewService(Options{
+				Securities: &mockSecuritiesClient{},
+			})
 			gotRes, err := svc.GetPortfolioSnapshot(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("service.GetPortfolioSnapshot() error = %v, wantErr %v", err, tt.wantErr)
@@ -84,3 +87,12 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 		})
 	}
 }
+
+type mockSecuritiesClient struct{}
+
+func (*mockSecuritiesClient) ListSecurities(context.Context, *connect.Request[portfoliov1.ListSecuritiesRequest]) (*connect.Response[portfoliov1.ListSecuritiesResponse], error)
+func (*mockSecuritiesClient) GetSecurity(context.Context, *connect.Request[portfoliov1.GetSecurityRequest]) (*connect.Response[portfoliov1.Security], error)
+func (*mockSecuritiesClient) CreateSecurity(context.Context, *connect.Request[portfoliov1.CreateSecurityRequest]) (*connect.Response[portfoliov1.Security], error)
+func (*mockSecuritiesClient) UpdateSecurity(context.Context, *connect.Request[portfoliov1.UpdateSecurityRequest]) (*connect.Response[portfoliov1.Security], error)
+func (*mockSecuritiesClient) DeleteSecurity(context.Context, *connect.Request[portfoliov1.DeleteSecurityRequest]) (*connect.Response[emptypb.Empty], error)
+func (*mockSecuritiesClient) TriggerSecurityQuoteUpdate(context.Context, *connect.Request[portfoliov1.TriggerQuoteUpdateRequest]) (*connect.Response[portfoliov1.TriggerQuoteUpdateResponse], error)

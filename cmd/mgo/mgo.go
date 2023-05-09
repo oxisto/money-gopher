@@ -45,7 +45,11 @@ func main() {
 	mux := http.NewServeMux()
 	// The generated constructors return a path and a plain net/http
 	// handler.
-	mux.Handle(portfoliov1connect.NewPortfolioServiceHandler(portfolio.NewService()))
+	mux.Handle(portfoliov1connect.NewPortfolioServiceHandler(portfolio.NewService(
+		portfolio.Options{
+			Securities: portfoliov1connect.NewSecuritiesServiceClient(http.DefaultClient, portfolio.DefaultSecuritiesServiceURL),
+		},
+	)))
 	mux.Handle(portfoliov1connect.NewSecuritiesServiceHandler(securities.NewService(db)))
 
 	go func() {

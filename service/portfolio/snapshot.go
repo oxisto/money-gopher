@@ -21,6 +21,7 @@ import (
 
 	"github.com/oxisto/money-gopher/finance"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bufbuild/connect-go"
@@ -28,8 +29,10 @@ import (
 
 func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Request[portfoliov1.GetPortfolioSnapshotRequest]) (res *connect.Response[portfoliov1.PortfolioSnapshot], err error) {
 	var (
-		snap *portfoliov1.PortfolioSnapshot
-		p    *portfoliov1.Portfolio
+		snap   *portfoliov1.PortfolioSnapshot
+		p      *portfoliov1.Portfolio
+		secres *connect.Response[portfoliov1.ListSecuritiesResponse]
+		secmap map[string]*portfoliov1.Security
 	)
 
 	// Retrieve portfolio
@@ -48,6 +51,26 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 
 	m := p.EventMap()
 
+	names := maps.Keys(m)
+
+	// Retrieve market value of filtered securities
+	secres, err = svc.securities.ListSecurities(
+		context.Background(),
+		connect.NewRequest(&portfoliov1.ListSecuritiesRequest{
+			Filter: &portfoliov1.ListSecuritiesRequest_Filter{
+				SecurityNames: names,
+			},
+		}),
+	)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	// Make a map out of the securities list
+	secmap = Map(secres.Msg.Securities, func(s *portfoliov1.Security) string {
+		return s.Name
+	})
+
 	// We need to look at the portfolio events up to the time of the snapshot
 	// and calculate the current positions.
 	for name, txs := range m {
@@ -59,8 +82,19 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 			Amount:        c.Amount,
 			PurchaseValue: c.NetValue(),
 			PurchasePrice: c.NetPrice(),
+			MarketValue:   *secmap[name].ListedOn[0].LatestQuote * float32(c.Amount),
 		}
 	}
 
 	return connect.NewResponse(snap), nil
+}
+
+func Map[K comparable, V any](slice []V, key func(V) K) (m map[K]V) {
+	m = make(map[K]V)
+
+	for _, v := range slice {
+		m[key(v)] = v
+	}
+
+	return
 }

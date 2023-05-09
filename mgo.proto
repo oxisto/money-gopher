@@ -115,7 +115,11 @@ message ListedSecurity {
   optional google.protobuf.Timestamp latest_quote_timestamp = 6;
 }
 
-message ListSecuritiesRequest {}
+message ListSecuritiesRequest {
+  message Filter { repeated string security_names = 1; }
+
+  optional Filter filter = 5;
+}
 
 message ListSecuritiesResponse { repeated Security securities = 1; }
 
