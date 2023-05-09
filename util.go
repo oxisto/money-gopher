@@ -19,3 +19,13 @@ package moneygopher
 func Ref[T any](value T) *T {
 	return &value
 }
+
+func Map[K comparable, V any](slice []V, key func(V) K) (m map[K]V) {
+	m = make(map[K]V)
+
+	for _, v := range slice {
+		m[key(v)] = v
+	}
+
+	return
+}

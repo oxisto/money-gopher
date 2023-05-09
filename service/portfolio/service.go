@@ -18,6 +18,7 @@
 package portfolio
 
 import (
+	"net/http"
 	"time"
 
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
@@ -26,6 +27,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const DefaultSecuritiesServiceURL = "http://localhost:8080"
+
 // service is the main struct fo the [PortfolioService] implementation.
 type service struct {
 	// a simple portfolio for testing, will be replaced by database later
@@ -33,9 +36,15 @@ type service struct {
 	//portfolios persistence.StorageOperations[*portfoliov1.Portfolio]
 
 	portfoliov1connect.UnimplementedPortfolioServiceHandler
+
+	securities portfoliov1connect.SecuritiesServiceClient
 }
 
-func NewService() portfoliov1connect.PortfolioServiceHandler {
+type Options struct {
+	SecuritiesClient portfoliov1connect.SecuritiesServiceClient
+}
+
+func NewService(opts Options) portfoliov1connect.PortfolioServiceHandler {
 	var s service
 
 	s.portfolio = &portfoliov1.Portfolio{
@@ -64,6 +73,10 @@ func NewService() portfoliov1connect.PortfolioServiceHandler {
 				},
 			},
 		},
+	}
+	s.securities = opts.SecuritiesClient
+	if s.securities == nil {
+		s.securities = portfoliov1connect.NewSecuritiesServiceClient(http.DefaultClient, DefaultSecuritiesServiceURL)
 	}
 
 	return &s

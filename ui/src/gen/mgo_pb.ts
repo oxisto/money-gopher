@@ -229,6 +229,14 @@ export class PortfolioPosition extends Message<PortfolioPosition> {
   marketValue = 0;
 
   /**
+   * MarketPrice is the current market price of this position, as retrieved from
+   * the securities service.
+   *
+   * @generated from field: float market_price = 11;
+   */
+  marketPrice = 0;
+
+  /**
    * TotalFees is the total amount of fees accumulating in this position through
    * various transactions.
    *
@@ -249,6 +257,7 @@ export class PortfolioPosition extends Message<PortfolioPosition> {
     { no: 5, name: "purchase_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
     { no: 6, name: "purchase_price", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
     { no: 10, name: "market_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 11, name: "market_price", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
     { no: 15, name: "total_fees", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
   ]);
 
@@ -622,6 +631,11 @@ export class ListedSecurity extends Message<ListedSecurity> {
  * @generated from message mgo.portfolio.v1.ListSecuritiesRequest
  */
 export class ListSecuritiesRequest extends Message<ListSecuritiesRequest> {
+  /**
+   * @generated from field: optional mgo.portfolio.v1.ListSecuritiesRequest.Filter filter = 5;
+   */
+  filter?: ListSecuritiesRequest_Filter;
+
   constructor(data?: PartialMessage<ListSecuritiesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -630,6 +644,7 @@ export class ListSecuritiesRequest extends Message<ListSecuritiesRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "mgo.portfolio.v1.ListSecuritiesRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 5, name: "filter", kind: "message", T: ListSecuritiesRequest_Filter, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListSecuritiesRequest {
@@ -646,6 +661,43 @@ export class ListSecuritiesRequest extends Message<ListSecuritiesRequest> {
 
   static equals(a: ListSecuritiesRequest | PlainMessage<ListSecuritiesRequest> | undefined, b: ListSecuritiesRequest | PlainMessage<ListSecuritiesRequest> | undefined): boolean {
     return proto3.util.equals(ListSecuritiesRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message mgo.portfolio.v1.ListSecuritiesRequest.Filter
+ */
+export class ListSecuritiesRequest_Filter extends Message<ListSecuritiesRequest_Filter> {
+  /**
+   * @generated from field: repeated string security_names = 1;
+   */
+  securityNames: string[] = [];
+
+  constructor(data?: PartialMessage<ListSecuritiesRequest_Filter>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.ListSecuritiesRequest.Filter";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "security_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListSecuritiesRequest_Filter {
+    return new ListSecuritiesRequest_Filter().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListSecuritiesRequest_Filter {
+    return new ListSecuritiesRequest_Filter().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListSecuritiesRequest_Filter {
+    return new ListSecuritiesRequest_Filter().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListSecuritiesRequest_Filter | PlainMessage<ListSecuritiesRequest_Filter> | undefined, b: ListSecuritiesRequest_Filter | PlainMessage<ListSecuritiesRequest_Filter> | undefined): boolean {
+    return proto3.util.equals(ListSecuritiesRequest_Filter, a, b);
   }
 }
 
