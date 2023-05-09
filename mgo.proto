@@ -17,6 +17,21 @@ message GetPortfolioSnapshotRequest {
   google.protobuf.Timestamp time = 2;
 }
 
+message CreatePortfolioTransactionRequest { PortfolioEvent transaction = 1; }
+
+message ListPortfolioTransactionsRequest {}
+
+message ListPortfolioTransactionsResponse {
+  repeated PortfolioEvent transactions = 1;
+}
+
+message UpdatePortfolioTransactionRequest {
+  PortfolioEvent transaction = 1;
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeletePortfolioTransactionRequest { int32 transaction_id = 1; }
+
 message Portfolio {
   string name = 1;
 
@@ -61,10 +76,12 @@ message PortfolioPosition {
 }
 
 message PortfolioEvent {
+  int32 id = 1;
+
   oneof event_oneof {
-    BuySecurityTransaction buy = 1;
-    SellSecurityTransaction sell = 2;
-    SecurityDividendEvent dividend = 3;
+    BuySecurityTransaction buy = 10;
+    SellSecurityTransaction sell = 11;
+    SecurityDividendEvent dividend = 12;
   }
 }
 
@@ -95,6 +112,15 @@ service PortfolioService {
       returns (PortfolioSnapshot) {
     option idempotency_level = NO_SIDE_EFFECTS;
   };
+
+  rpc CreatePortfolioTransaction(CreatePortfolioTransactionRequest)
+      returns (PortfolioEvent);
+  rpc ListPortfolioTransactions(ListPortfolioTransactionsRequest)
+      returns (ListPortfolioTransactionsResponse);
+  rpc UpdatePortfolioTransaction(UpdatePortfolioTransactionRequest)
+      returns (PortfolioEvent);
+  rpc DeletePortfolioTransaction(DeletePortfolioTransactionRequest)
+      returns (google.protobuf.Empty);
 }
 
 message Security {

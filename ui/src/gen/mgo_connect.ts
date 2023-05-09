@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateSecurityRequest, DeleteSecurityRequest, GetPortfolioSnapshotRequest, GetSecurityRequest, ListSecuritiesRequest, ListSecuritiesResponse, Portfolio, PortfolioCreateMessage, PortfolioSnapshot, Security, TriggerQuoteUpdateRequest, TriggerQuoteUpdateResponse, UpdateSecurityRequest } from "./mgo_pb.js";
+import { CreatePortfolioTransactionRequest, CreateSecurityRequest, DeletePortfolioTransactionRequest, DeleteSecurityRequest, GetPortfolioSnapshotRequest, GetSecurityRequest, ListPortfolioTransactionsRequest, ListPortfolioTransactionsResponse, ListSecuritiesRequest, ListSecuritiesResponse, Portfolio, PortfolioCreateMessage, PortfolioEvent, PortfolioSnapshot, Security, TriggerQuoteUpdateRequest, TriggerQuoteUpdateResponse, UpdatePortfolioTransactionRequest, UpdateSecurityRequest } from "./mgo_pb.js";
 import { Empty, MethodIdempotency, MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -30,6 +30,42 @@ export const PortfolioService = {
       O: PortfolioSnapshot,
       kind: MethodKind.Unary,
     idempotency: MethodIdempotency.NoSideEffects,
+    },
+    /**
+     * @generated from rpc mgo.portfolio.v1.PortfolioService.CreatePortfolioTransaction
+     */
+    createPortfolioTransaction: {
+      name: "CreatePortfolioTransaction",
+      I: CreatePortfolioTransactionRequest,
+      O: PortfolioEvent,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc mgo.portfolio.v1.PortfolioService.ListPortfolioTransactions
+     */
+    listPortfolioTransactions: {
+      name: "ListPortfolioTransactions",
+      I: ListPortfolioTransactionsRequest,
+      O: ListPortfolioTransactionsResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc mgo.portfolio.v1.PortfolioService.UpdatePortfolioTransaction
+     */
+    updatePortfolioTransaction: {
+      name: "UpdatePortfolioTransaction",
+      I: UpdatePortfolioTransactionRequest,
+      O: PortfolioEvent,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc mgo.portfolio.v1.PortfolioService.DeletePortfolioTransaction
+     */
+    deletePortfolioTransaction: {
+      name: "DeletePortfolioTransaction",
+      I: DeletePortfolioTransactionRequest,
+      O: Empty,
+      kind: MethodKind.Unary,
     },
   }
 } as const;
