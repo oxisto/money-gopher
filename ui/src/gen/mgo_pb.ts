@@ -286,10 +286,15 @@ export class Portfolio extends Message<Portfolio> {
   name = "";
 
   /**
+   * @generated from field: string display_name = 2;
+   */
+  displayName = "";
+
+  /**
    * Events contains all portfolio events, such as buy/sell transactions,
    * dividends or other. They need to be ordered by time (ascending).
    *
-   * @generated from field: repeated mgo.portfolio.v1.PortfolioEvent events = 2;
+   * @generated from field: repeated mgo.portfolio.v1.PortfolioEvent events = 5;
    */
   events: PortfolioEvent[] = [];
 
@@ -302,7 +307,8 @@ export class Portfolio extends Message<Portfolio> {
   static readonly typeName = "mgo.portfolio.v1.Portfolio";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "events", kind: "message", T: PortfolioEvent, repeated: true },
+    { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "events", kind: "message", T: PortfolioEvent, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Portfolio {

@@ -35,9 +35,11 @@ message DeletePortfolioTransactionRequest { int32 transaction_id = 1; }
 message Portfolio {
   string name = 1;
 
+  string display_name = 2;
+
   // Events contains all portfolio events, such as buy/sell transactions,
   // dividends or other. They need to be ordered by time (ascending).
-  repeated PortfolioEvent events = 2;
+  repeated PortfolioEvent events = 5;
 }
 
 // PortfolioSnapshot represents a snapshot in time of the portfolio. It can for
