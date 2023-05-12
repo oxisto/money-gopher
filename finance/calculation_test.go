@@ -37,56 +37,49 @@ func TestNewCalculation(t *testing.T) {
 			name: "buy and sell",
 			args: args{
 				txs: []*portfoliov1.PortfolioEvent{
-					{EventOneof: &portfoliov1.PortfolioEvent_Buy{
-						Buy: &portfoliov1.BuySecurityTransaction{
-							Amount: 5,
-							Price:  181.10,
-							Fees:   7.16,
-						},
-					}},
-					{EventOneof: &portfoliov1.PortfolioEvent_Sell{
-						Sell: &portfoliov1.SellSecurityTransaction{
-							Amount: 2,
-							Price:  304.30,
-							Fees:   6.42,
-							Taxes:  16.32,
-						},
-					}},
-					{EventOneof: &portfoliov1.PortfolioEvent_Buy{
-						Buy: &portfoliov1.BuySecurityTransaction{
-							Amount: 5,
-							Price:  290,
-							Fees:   8.53,
-						},
-					}},
-					{EventOneof: &portfoliov1.PortfolioEvent_Sell{
-						Sell: &portfoliov1.SellSecurityTransaction{
-							Amount: 3,
-							Price:  220,
-							Fees:   8.45,
-						},
-					}},
-					{EventOneof: &portfoliov1.PortfolioEvent_Buy{
-						Buy: &portfoliov1.BuySecurityTransaction{
-							Amount: 5,
-							Price:  203.30,
-							Fees:   7.44,
-						},
-					}},
-					{EventOneof: &portfoliov1.PortfolioEvent_Buy{
-						Buy: &portfoliov1.BuySecurityTransaction{
-							Amount: 5,
-							Price:  196.45,
-							Fees:   7.36,
-						},
-					}},
-					{EventOneof: &portfoliov1.PortfolioEvent_Buy{
-						Buy: &portfoliov1.BuySecurityTransaction{
-							Amount: 10,
-							Price:  146.55,
-							Fees:   8.56,
-						},
-					}},
+					{
+						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+						Amount: 5,
+						Price:  181.10,
+						Fees:   7.16,
+					},
+					{
+						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
+						Amount: 2,
+						Price:  304.30,
+						Fees:   6.42,
+						Taxes:  16.32,
+					},
+					{
+						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+						Amount: 5,
+						Price:  290,
+						Fees:   8.53,
+					},
+					{
+						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
+						Amount: 3,
+						Price:  220,
+						Fees:   8.45,
+					},
+					{
+						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+						Amount: 5,
+						Price:  203.30,
+						Fees:   7.44,
+					},
+					{
+						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+						Amount: 5,
+						Price:  196.45,
+						Fees:   7.36,
+					},
+					{
+						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+						Amount: 10,
+						Price:  146.55,
+						Fees:   8.56,
+					},
 				},
 			},
 			want: func(t *testing.T, c *calculation) bool {

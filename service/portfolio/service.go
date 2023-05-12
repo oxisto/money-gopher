@@ -51,26 +51,20 @@ func NewService(opts Options) portfoliov1connect.PortfolioServiceHandler {
 		Name: "My Portfolio",
 		Events: []*portfoliov1.PortfolioEvent{
 			{
-				EventOneof: &portfoliov1.PortfolioEvent_Buy{
-					Buy: &portfoliov1.BuySecurityTransaction{
-						SecurityName: "US0378331005",
-						Amount:       20,
-						Price:        107.08,
-						Fees:         10.25,
-						Time:         timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)),
-					},
-				},
+				Type:         portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+				SecurityName: "US0378331005",
+				Amount:       20,
+				Price:        107.08,
+				Fees:         10.25,
+				Time:         timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)),
 			},
 			{
-				EventOneof: &portfoliov1.PortfolioEvent_Sell{
-					Sell: &portfoliov1.SellSecurityTransaction{
-						SecurityName: "US0378331005",
-						Amount:       10,
-						Price:        145.88,
-						Fees:         8.55,
-						Time:         timestamppb.New(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)),
-					},
-				},
+				Type:         portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
+				SecurityName: "US0378331005",
+				Amount:       10,
+				Price:        145.88,
+				Fees:         8.55,
+				Time:         timestamppb.New(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)),
 			},
 		},
 	}

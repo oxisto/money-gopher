@@ -7,6 +7,38 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { FieldMask, Message, proto3, Timestamp } from "@bufbuild/protobuf";
 
 /**
+ * @generated from enum mgo.portfolio.v1.PortfolioEventType
+ */
+export enum PortfolioEventType {
+  /**
+   * @generated from enum value: PORTFOLIO_EVENT_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: PORTFOLIO_EVENT_TYPE_BUY = 1;
+   */
+  BUY = 1,
+
+  /**
+   * @generated from enum value: PORTFOLIO_EVENT_TYPE_SELL = 2;
+   */
+  SELL = 2,
+
+  /**
+   * @generated from enum value: PORTFOLIO_EVENT_TYPE_DIVIDEND = 3;
+   */
+  DIVIDEND = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(PortfolioEventType)
+proto3.util.setEnumType(PortfolioEventType, "mgo.portfolio.v1.PortfolioEventType", [
+  { no: 0, name: "PORTFOLIO_EVENT_TYPE_UNSPECIFIED" },
+  { no: 1, name: "PORTFOLIO_EVENT_TYPE_BUY" },
+  { no: 2, name: "PORTFOLIO_EVENT_TYPE_SELL" },
+  { no: 3, name: "PORTFOLIO_EVENT_TYPE_DIVIDEND" },
+]);
+
+/**
  * @generated from message mgo.portfolio.v1.PortfolioCreateMessage
  */
 export class PortfolioCreateMessage extends Message<PortfolioCreateMessage> {
@@ -479,27 +511,39 @@ export class PortfolioEvent extends Message<PortfolioEvent> {
   id = 0;
 
   /**
-   * @generated from oneof mgo.portfolio.v1.PortfolioEvent.event_oneof
+   * @generated from field: mgo.portfolio.v1.PortfolioEventType type = 2;
    */
-  eventOneof: {
-    /**
-     * @generated from field: mgo.portfolio.v1.BuySecurityTransaction buy = 10;
-     */
-    value: BuySecurityTransaction;
-    case: "buy";
-  } | {
-    /**
-     * @generated from field: mgo.portfolio.v1.SellSecurityTransaction sell = 11;
-     */
-    value: SellSecurityTransaction;
-    case: "sell";
-  } | {
-    /**
-     * @generated from field: mgo.portfolio.v1.SecurityDividendEvent dividend = 12;
-     */
-    value: SecurityDividendEvent;
-    case: "dividend";
-  } | { case: undefined; value?: undefined } = { case: undefined };
+  type = PortfolioEventType.UNSPECIFIED;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp time = 3;
+   */
+  time?: Timestamp;
+
+  /**
+   * @generated from field: string security_name = 4;
+   */
+  securityName = "";
+
+  /**
+   * @generated from field: int32 amount = 10;
+   */
+  amount = 0;
+
+  /**
+   * @generated from field: float price = 11;
+   */
+  price = 0;
+
+  /**
+   * @generated from field: float fees = 12;
+   */
+  fees = 0;
+
+  /**
+   * @generated from field: float taxes = 13;
+   */
+  taxes = 0;
 
   constructor(data?: PartialMessage<PortfolioEvent>) {
     super();
@@ -510,9 +554,13 @@ export class PortfolioEvent extends Message<PortfolioEvent> {
   static readonly typeName = "mgo.portfolio.v1.PortfolioEvent";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 10, name: "buy", kind: "message", T: BuySecurityTransaction, oneof: "event_oneof" },
-    { no: 11, name: "sell", kind: "message", T: SellSecurityTransaction, oneof: "event_oneof" },
-    { no: 12, name: "dividend", kind: "message", T: SecurityDividendEvent, oneof: "event_oneof" },
+    { no: 2, name: "type", kind: "enum", T: proto3.getEnumType(PortfolioEventType) },
+    { no: 3, name: "time", kind: "message", T: Timestamp },
+    { no: 4, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "amount", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 11, name: "price", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 12, name: "fees", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 13, name: "taxes", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PortfolioEvent {
@@ -529,177 +577,6 @@ export class PortfolioEvent extends Message<PortfolioEvent> {
 
   static equals(a: PortfolioEvent | PlainMessage<PortfolioEvent> | undefined, b: PortfolioEvent | PlainMessage<PortfolioEvent> | undefined): boolean {
     return proto3.util.equals(PortfolioEvent, a, b);
-  }
-}
-
-/**
- * @generated from message mgo.portfolio.v1.BuySecurityTransaction
- */
-export class BuySecurityTransaction extends Message<BuySecurityTransaction> {
-  /**
-   * @generated from field: string security_name = 1;
-   */
-  securityName = "";
-
-  /**
-   * @generated from field: int32 amount = 2;
-   */
-  amount = 0;
-
-  /**
-   * @generated from field: float price = 3;
-   */
-  price = 0;
-
-  /**
-   * @generated from field: float fees = 4;
-   */
-  fees = 0;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp time = 10;
-   */
-  time?: Timestamp;
-
-  constructor(data?: PartialMessage<BuySecurityTransaction>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "mgo.portfolio.v1.BuySecurityTransaction";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "amount", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 3, name: "price", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
-    { no: 4, name: "fees", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
-    { no: 10, name: "time", kind: "message", T: Timestamp },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BuySecurityTransaction {
-    return new BuySecurityTransaction().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BuySecurityTransaction {
-    return new BuySecurityTransaction().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BuySecurityTransaction {
-    return new BuySecurityTransaction().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: BuySecurityTransaction | PlainMessage<BuySecurityTransaction> | undefined, b: BuySecurityTransaction | PlainMessage<BuySecurityTransaction> | undefined): boolean {
-    return proto3.util.equals(BuySecurityTransaction, a, b);
-  }
-}
-
-/**
- * @generated from message mgo.portfolio.v1.SellSecurityTransaction
- */
-export class SellSecurityTransaction extends Message<SellSecurityTransaction> {
-  /**
-   * @generated from field: string security_name = 1;
-   */
-  securityName = "";
-
-  /**
-   * @generated from field: int32 amount = 2;
-   */
-  amount = 0;
-
-  /**
-   * @generated from field: float price = 3;
-   */
-  price = 0;
-
-  /**
-   * @generated from field: float fees = 4;
-   */
-  fees = 0;
-
-  /**
-   * @generated from field: float taxes = 5;
-   */
-  taxes = 0;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp time = 10;
-   */
-  time?: Timestamp;
-
-  constructor(data?: PartialMessage<SellSecurityTransaction>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "mgo.portfolio.v1.SellSecurityTransaction";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "amount", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 3, name: "price", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
-    { no: 4, name: "fees", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
-    { no: 5, name: "taxes", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
-    { no: 10, name: "time", kind: "message", T: Timestamp },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SellSecurityTransaction {
-    return new SellSecurityTransaction().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SellSecurityTransaction {
-    return new SellSecurityTransaction().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SellSecurityTransaction {
-    return new SellSecurityTransaction().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: SellSecurityTransaction | PlainMessage<SellSecurityTransaction> | undefined, b: SellSecurityTransaction | PlainMessage<SellSecurityTransaction> | undefined): boolean {
-    return proto3.util.equals(SellSecurityTransaction, a, b);
-  }
-}
-
-/**
- * @generated from message mgo.portfolio.v1.SecurityDividendEvent
- */
-export class SecurityDividendEvent extends Message<SecurityDividendEvent> {
-  /**
-   * @generated from field: string security_name = 1;
-   */
-  securityName = "";
-
-  /**
-   * @generated from field: google.protobuf.Timestamp time = 10;
-   */
-  time?: Timestamp;
-
-  constructor(data?: PartialMessage<SecurityDividendEvent>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "mgo.portfolio.v1.SecurityDividendEvent";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "time", kind: "message", T: Timestamp },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityDividendEvent {
-    return new SecurityDividendEvent().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SecurityDividendEvent {
-    return new SecurityDividendEvent().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SecurityDividendEvent {
-    return new SecurityDividendEvent().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: SecurityDividendEvent | PlainMessage<SecurityDividendEvent> | undefined, b: SecurityDividendEvent | PlainMessage<SecurityDividendEvent> | undefined): boolean {
-    return proto3.util.equals(SecurityDividendEvent, a, b);
   }
 }
 

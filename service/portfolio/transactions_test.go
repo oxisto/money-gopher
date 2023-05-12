@@ -54,10 +54,8 @@ func Test_service_CreatePortfolioTransaction(t *testing.T) {
 			args: args{
 				req: connect.NewRequest(&portfoliov1.CreatePortfolioTransactionRequest{
 					Transaction: &portfoliov1.PortfolioEvent{
-						EventOneof: &portfoliov1.PortfolioEvent_Buy{
-							Buy: &portfoliov1.BuySecurityTransaction{
-								SecurityName: "My Security",
-							}},
+						Type:         portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+						SecurityName: "My Security",
 					},
 				}),
 			},
@@ -109,10 +107,8 @@ func Test_service_ListPortfolioTransactions(t *testing.T) {
 					Name: "My Portfolio",
 					Events: []*portfoliov1.PortfolioEvent{
 						{
-							EventOneof: &portfoliov1.PortfolioEvent_Buy{
-								Buy: &portfoliov1.BuySecurityTransaction{
-									SecurityName: "My Security",
-								}},
+							Type:         portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+							SecurityName: "My Security",
 						},
 					},
 				},
@@ -162,10 +158,8 @@ func Test_service_UpdatePortfolioTransactions(t *testing.T) {
 					Name: "My Portfolio",
 					Events: []*portfoliov1.PortfolioEvent{
 						{
-							EventOneof: &portfoliov1.PortfolioEvent_Buy{
-								Buy: &portfoliov1.BuySecurityTransaction{
-									SecurityName: "My Security",
-								}},
+							Type:         portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+							SecurityName: "My Security",
 						},
 					},
 				},
@@ -173,11 +167,9 @@ func Test_service_UpdatePortfolioTransactions(t *testing.T) {
 			args: args{
 				req: connect.NewRequest(&portfoliov1.UpdatePortfolioTransactionRequest{
 					Transaction: &portfoliov1.PortfolioEvent{
-						Id: 0,
-						EventOneof: &portfoliov1.PortfolioEvent_Buy{
-							Buy: &portfoliov1.BuySecurityTransaction{
-								SecurityName: "My Second Security",
-							}},
+						Id:           0,
+						Type:         portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+						SecurityName: "My Second Security",
 					},
 				}),
 			},
@@ -229,10 +221,8 @@ func Test_service_DeletePortfolioTransactions(t *testing.T) {
 					Name: "My Portfolio",
 					Events: []*portfoliov1.PortfolioEvent{
 						{
-							EventOneof: &portfoliov1.PortfolioEvent_Buy{
-								Buy: &portfoliov1.BuySecurityTransaction{
-									SecurityName: "My Security",
-								}},
+							Type:         portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+							SecurityName: "My Security",
 						},
 					},
 				},

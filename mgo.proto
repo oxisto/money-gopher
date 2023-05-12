@@ -77,34 +77,23 @@ message PortfolioPosition {
   float total_fees = 15;
 }
 
+enum PortfolioEventType {
+  PORTFOLIO_EVENT_TYPE_UNSPECIFIED = 0;
+  PORTFOLIO_EVENT_TYPE_BUY = 1;
+  PORTFOLIO_EVENT_TYPE_SELL = 2;
+  PORTFOLIO_EVENT_TYPE_DIVIDEND = 3;
+}
+
 message PortfolioEvent {
   int32 id = 1;
+  PortfolioEventType type = 2;
+  google.protobuf.Timestamp time = 3;
+  string security_name = 4;
 
-  oneof event_oneof {
-    BuySecurityTransaction buy = 10;
-    SellSecurityTransaction sell = 11;
-    SecurityDividendEvent dividend = 12;
-  }
-}
-
-message BuySecurityTransaction {
-  string security_name = 1;
-  int32 amount = 2;
-  float price = 3;
-  float fees = 4;
-  google.protobuf.Timestamp time = 10;
-}
-message SellSecurityTransaction {
-  string security_name = 1;
-  int32 amount = 2;
-  float price = 3;
-  float fees = 4;
-  float taxes = 5;
-  google.protobuf.Timestamp time = 10;
-}
-message SecurityDividendEvent {
-  string security_name = 1;
-  google.protobuf.Timestamp time = 10;
+  int32 amount = 10;
+  float price = 11;
+  float fees = 12;
+  float taxes = 13;
 }
 
 service PortfolioService {

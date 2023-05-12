@@ -3,11 +3,9 @@ package portfoliov1
 import (
 	"database/sql"
 	"strings"
-	"time"
 
 	"github.com/oxisto/money-gopher/persistence"
 	"golang.org/x/exp/slog"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var _ persistence.StorageObject = &Portfolio{}
@@ -89,14 +87,13 @@ func (*Portfolio) Scan(sc persistence.Scanner) (obj persistence.StorageObject, e
 	return &p, nil
 }
 
+/*
 func (*PortfolioEvent) InitTables(db *persistence.DB) (err error) {
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS listed_securities (
-security_name TEXT,
-ticker TEXT NOT NULL,
-currency TEXT NOT NULL,
-latest_quote REAL,
-latest_quote_timestamp DATETIME,
-PRIMARY KEY (security_name, ticker)
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS portfolio_events (
+transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
+security_name TEXT NOT NULL,
+type TEXT NOT NULL,
+payload TEXT NOT NULL
 );`)
 	if err != nil {
 		return err
@@ -192,3 +189,4 @@ func (*ListedSecurity) Scan(sc persistence.Scanner) (obj persistence.StorageObje
 
 	return &l, nil
 }
+*/
