@@ -38,13 +38,15 @@ func (svc *service) CreatePortfolioTransaction(ctx context.Context, req *connect
 }
 
 func (svc *service) ListPortfolioTransactions(ctx context.Context, req *connect.Request[portfoliov1.ListPortfolioTransactionsRequest]) (res *connect.Response[portfoliov1.ListPortfolioTransactionsResponse], err error) {
-	res = connect.NewResponse(&portfoliov1.ListPortfolioTransactionsResponse{})
-	res.Msg.Transactions, err = svc.events.List(req.Msg.PortfolioName)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	return
+	return common.List(
+		req.Msg.PortfolioName,
+		svc.events,
+		func(
+			res *connect.Response[portfoliov1.ListPortfolioTransactionsResponse],
+			list []*portfoliov1.PortfolioEvent,
+		) {
+			res.Msg.Transactions = list
+		})
 }
 
 func (svc *service) UpdatePortfolioTransactions(ctx context.Context, req *connect.Request[portfoliov1.UpdatePortfolioTransactionRequest]) (res *connect.Response[portfoliov1.PortfolioEvent], err error) {
