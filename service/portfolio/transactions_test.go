@@ -24,11 +24,13 @@ import (
 	"github.com/oxisto/assert"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
+	"github.com/oxisto/money-gopher/persistence"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
 func Test_service_CreatePortfolioTransaction(t *testing.T) {
 	type fields struct {
-		portfolio  *portfoliov1.Portfolio
+		portfolios persistence.StorageOperations[*portfoliov1.Portfolio]
 		securities portfoliov1connect.SecuritiesServiceClient
 	}
 	type args struct {
@@ -46,16 +48,14 @@ func Test_service_CreatePortfolioTransaction(t *testing.T) {
 		{
 			name: "happy path",
 			fields: fields{
-				portfolio: &portfoliov1.Portfolio{
-					Name:   "My Portfolio",
-					Events: []*portfoliov1.PortfolioEvent{},
-				},
+				portfolios: myPortfolio(t),
 			},
 			args: args{
 				req: connect.NewRequest(&portfoliov1.CreatePortfolioTransactionRequest{
 					Transaction: &portfoliov1.PortfolioEvent{
-						Type:         portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
-						SecurityName: "My Security",
+						PortfolioName: "bank/myportfolio",
+						Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+						SecurityName:  "My Security",
 					},
 				}),
 			},
@@ -63,14 +63,16 @@ func Test_service_CreatePortfolioTransaction(t *testing.T) {
 				return assert.Equals(t, "My Security", r.Msg.GetSecurityName())
 			},
 			wantSvc: func(t *testing.T, s *service) bool {
-				return assert.Equals(t, 1, len(s.portfolio.Events))
+				list, _ := s.events.List("bank/myportfolio")
+				return assert.Equals(t, 2, len(list))
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &service{
-				portfolio:  tt.fields.portfolio,
+				portfolios: tt.fields.portfolios,
+				events:     persistence.Relationship[*portfoliov1.PortfolioEvent](tt.fields.portfolios),
 				securities: tt.fields.securities,
 			}
 			gotRes, err := svc.CreatePortfolioTransaction(tt.args.ctx, tt.args.req)
@@ -86,7 +88,7 @@ func Test_service_CreatePortfolioTransaction(t *testing.T) {
 
 func Test_service_ListPortfolioTransactions(t *testing.T) {
 	type fields struct {
-		portfolio  *portfoliov1.Portfolio
+		portfolios persistence.StorageOperations[*portfoliov1.Portfolio]
 		securities portfoliov1connect.SecuritiesServiceClient
 	}
 	type args struct {
@@ -103,15 +105,12 @@ func Test_service_ListPortfolioTransactions(t *testing.T) {
 		{
 			name: "happy path",
 			fields: fields{
-				portfolio: &portfoliov1.Portfolio{
-					Name: "My Portfolio",
-					Events: []*portfoliov1.PortfolioEvent{
-						{
-							Type:         portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
-							SecurityName: "My Security",
-						},
-					},
-				},
+				portfolios: myPortfolio(t),
+			},
+			args: args{
+				req: connect.NewRequest(&portfoliov1.ListPortfolioTransactionsRequest{
+					PortfolioName: "bank/myportfolio",
+				}),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.ListPortfolioTransactionsResponse]) bool {
 				return assert.Equals(t, 1, len(r.Msg.Transactions))
@@ -121,7 +120,8 @@ func Test_service_ListPortfolioTransactions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &service{
-				portfolio:  tt.fields.portfolio,
+				portfolios: tt.fields.portfolios,
+				events:     persistence.Relationship[*portfoliov1.PortfolioEvent](tt.fields.portfolios),
 				securities: tt.fields.securities,
 			}
 			gotRes, err := svc.ListPortfolioTransactions(tt.args.ctx, tt.args.req)
@@ -136,7 +136,7 @@ func Test_service_ListPortfolioTransactions(t *testing.T) {
 
 func Test_service_UpdatePortfolioTransactions(t *testing.T) {
 	type fields struct {
-		portfolio  *portfoliov1.Portfolio
+		portfolios persistence.StorageOperations[*portfoliov1.Portfolio]
 		securities portfoliov1connect.SecuritiesServiceClient
 	}
 	type args struct {
@@ -148,43 +148,33 @@ func Test_service_UpdatePortfolioTransactions(t *testing.T) {
 		fields  fields
 		args    args
 		wantRes assert.Want[*connect.Response[portfoliov1.PortfolioEvent]]
-		wantSvc assert.Want[*service]
 		wantErr bool
 	}{
 		{
 			name: "happy path",
 			fields: fields{
-				portfolio: &portfoliov1.Portfolio{
-					Name: "My Portfolio",
-					Events: []*portfoliov1.PortfolioEvent{
-						{
-							Type:         portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
-							SecurityName: "My Security",
-						},
-					},
-				},
+				portfolios: myPortfolio(t),
 			},
 			args: args{
 				req: connect.NewRequest(&portfoliov1.UpdatePortfolioTransactionRequest{
 					Transaction: &portfoliov1.PortfolioEvent{
-						Id:           0,
+						Id:           1,
 						Type:         portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
 						SecurityName: "My Second Security",
 					},
+					UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"security_name"}},
 				}),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioEvent]) bool {
-				return assert.Equals(t, "My Second Security", r.Msg.GetSecurityName())
-			},
-			wantSvc: func(t *testing.T, s *service) bool {
-				return assert.Equals(t, 1, len(s.portfolio.Events))
+				return assert.Equals(t, "My Second Security", r.Msg.SecurityName)
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &service{
-				portfolio:  tt.fields.portfolio,
+				portfolios: tt.fields.portfolios,
+				events:     persistence.Relationship[*portfoliov1.PortfolioEvent](tt.fields.portfolios),
 				securities: tt.fields.securities,
 			}
 			gotRes, err := svc.UpdatePortfolioTransactions(tt.args.ctx, tt.args.req)
@@ -193,14 +183,13 @@ func Test_service_UpdatePortfolioTransactions(t *testing.T) {
 				return
 			}
 			tt.wantRes(t, gotRes)
-			tt.wantSvc(t, svc)
 		})
 	}
 }
 
 func Test_service_DeletePortfolioTransactions(t *testing.T) {
 	type fields struct {
-		portfolio  *portfoliov1.Portfolio
+		portfolios persistence.StorageOperations[*portfoliov1.Portfolio]
 		securities portfoliov1connect.SecuritiesServiceClient
 	}
 	type args struct {
@@ -217,30 +206,24 @@ func Test_service_DeletePortfolioTransactions(t *testing.T) {
 		{
 			name: "happy path",
 			fields: fields{
-				portfolio: &portfoliov1.Portfolio{
-					Name: "My Portfolio",
-					Events: []*portfoliov1.PortfolioEvent{
-						{
-							Type:         portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
-							SecurityName: "My Security",
-						},
-					},
-				},
+				portfolios: myPortfolio(t),
 			},
 			args: args{
 				req: connect.NewRequest(&portfoliov1.DeletePortfolioTransactionRequest{
-					TransactionId: 0,
+					TransactionId: 1,
 				}),
 			},
 			wantSvc: func(t *testing.T, s *service) bool {
-				return assert.Equals(t, 1, len(s.portfolio.Events))
+				list, _ := s.portfolios.List("bank/myportfolio")
+				return assert.Equals(t, 0, len(list))
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &service{
-				portfolio:  tt.fields.portfolio,
+				portfolios: tt.fields.portfolios,
+				events:     persistence.Relationship[*portfoliov1.PortfolioEvent](tt.fields.portfolios),
 				securities: tt.fields.securities,
 			}
 			_, err := svc.DeletePortfolioTransactions(tt.args.ctx, tt.args.req)

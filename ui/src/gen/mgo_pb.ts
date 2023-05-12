@@ -312,6 +312,11 @@ export class CreatePortfolioTransactionRequest extends Message<CreatePortfolioTr
  * @generated from message mgo.portfolio.v1.ListPortfolioTransactionsRequest
  */
 export class ListPortfolioTransactionsRequest extends Message<ListPortfolioTransactionsRequest> {
+  /**
+   * @generated from field: string portfolio_name = 1;
+   */
+  portfolioName = "";
+
   constructor(data?: PartialMessage<ListPortfolioTransactionsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -320,6 +325,7 @@ export class ListPortfolioTransactionsRequest extends Message<ListPortfolioTrans
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "mgo.portfolio.v1.ListPortfolioTransactionsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "portfolio_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListPortfolioTransactionsRequest {

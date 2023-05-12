@@ -31,7 +31,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func dbWithEvent(t *testing.T) persistence.StorageOperations[*portfoliov1.Portfolio] {
+func myPortfolio(t *testing.T) persistence.StorageOperations[*portfoliov1.Portfolio] {
 	return internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Portfolio]) {
 		assert.NoError(t, ops.Replace(&portfoliov1.Portfolio{
 			Name:        "bank/myportfolio",
@@ -128,7 +128,7 @@ func Test_service_ListPortfolios(t *testing.T) {
 		{
 			name: "happy path",
 			fields: fields{
-				portfolios: dbWithEvent(t),
+				portfolios: myPortfolio(t),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.ListPortfolioResponse]) bool {
 				return true &&
@@ -174,7 +174,7 @@ func Test_service_UpdatePortfolio(t *testing.T) {
 		{
 			name: "happy path",
 			fields: fields{
-				portfolios: dbWithEvent(t),
+				portfolios: myPortfolio(t),
 			},
 			args: args{
 				req: connect.NewRequest(&portfoliov1.UpdatePortfolioRequest{
@@ -229,7 +229,7 @@ func Test_service_DeletePortfolio(t *testing.T) {
 		{
 			name: "happy path",
 			fields: fields{
-				portfolios: dbWithEvent(t),
+				portfolios: myPortfolio(t),
 			},
 			args: args{
 				req: connect.NewRequest(&portfoliov1.DeletePortfolioRequest{
