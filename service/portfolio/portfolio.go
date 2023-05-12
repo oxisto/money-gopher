@@ -20,9 +20,20 @@ import (
 	"context"
 
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"golang.org/x/exp/slices"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bufbuild/connect-go"
 )
+
+func (svc *service) CreatePortfolio(ctx context.Context, req *connect.Request[portfoliov1.CreatePortfolioRequest]) (res *connect.Response[portfoliov1.Portfolio], err error) {
+	// TODO(oxisto): We probably want to have a pure create instead of replace here
+	svc.portfolios.Replace(req.Msg.Portfolio)
+
+	res = connect.NewResponse(req.Msg.Portfolio)
+
+	return
+}
 
 func (svc *service) ListPortfolios(ctx context.Context, req *connect.Request[portfoliov1.ListPortfolioRequest]) (res *connect.Response[portfoliov1.ListPortfolioResponse], err error) {
 	res = connect.NewResponse(&portfoliov1.ListPortfolioResponse{})
@@ -36,6 +47,32 @@ func (svc *service) ListPortfolios(ctx context.Context, req *connect.Request[por
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
+	}
+
+	return
+}
+
+func (svc *service) UpdatePortfolio(ctx context.Context, req *connect.Request[portfoliov1.UpdatePortfolioRequest]) (res *connect.Response[portfoliov1.Portfolio], err error) {
+	res = connect.NewResponse(&portfoliov1.Portfolio{})
+	res.Msg, err = svc.portfolios.Update(req.Msg.Portfolio.Name, req.Msg.Portfolio, req.Msg.UpdateMask.Paths)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	if slices.Contains(req.Msg.UpdateMask.Paths, "events") {
+		for _, ls := range req.Msg.Portfolio.Events {
+			svc.events.Replace(ls)
+		}
+	}
+
+	return
+}
+
+func (svc *service) DeletePortfolio(ctx context.Context, req *connect.Request[portfoliov1.DeletePortfolioRequest]) (res *connect.Response[emptypb.Empty], err error) {
+	res = connect.NewResponse(&emptypb.Empty{})
+	err = svc.portfolios.Delete(req.Msg.Name)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	return

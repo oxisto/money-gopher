@@ -36,10 +36,9 @@ type service struct {
 	portfolio  *portfoliov1.Portfolio
 	portfolios persistence.StorageOperations[*portfoliov1.Portfolio]
 	events     persistence.StorageOperations[*portfoliov1.PortfolioEvent]
+	securities portfoliov1connect.SecuritiesServiceClient
 
 	portfoliov1connect.UnimplementedPortfolioServiceHandler
-
-	securities portfoliov1connect.SecuritiesServiceClient
 }
 
 type Options struct {

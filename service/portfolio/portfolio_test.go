@@ -21,15 +21,93 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bufbuild/connect-go"
 	"github.com/oxisto/assert"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	"github.com/oxisto/money-gopher/internal"
 	"github.com/oxisto/money-gopher/persistence"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/bufbuild/connect-go"
 )
+
+func dbWithEvent(t *testing.T) persistence.StorageOperations[*portfoliov1.Portfolio] {
+	return internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Portfolio]) {
+		assert.NoError(t, ops.Replace(&portfoliov1.Portfolio{
+			Name:        "bank/myportfolio",
+			DisplayName: "My Portfolio",
+		}))
+		rel := persistence.Relationship[*portfoliov1.PortfolioEvent](ops)
+		assert.NoError(t, rel.Replace(&portfoliov1.PortfolioEvent{
+			Id:            1,
+			PortfolioName: "bank/myportfolio",
+			SecurityName:  "My Security",
+			Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+			Time:          timestamppb.New(time.Date(2022, 1, 0, 0, 0, 0, 0, time.UTC)),
+			Amount:        10,
+			Price:         100.0,
+		}))
+	})
+}
+
+func Test_service_CreatePortfolio(t *testing.T) {
+	type fields struct {
+		portfolios persistence.StorageOperations[*portfoliov1.Portfolio]
+		securities portfoliov1connect.SecuritiesServiceClient
+	}
+	type args struct {
+		ctx context.Context
+		req *connect.Request[portfoliov1.CreatePortfolioRequest]
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantRes assert.Want[*connect.Response[portfoliov1.Portfolio]]
+		wantSvc assert.Want[*service]
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			fields: fields{
+				portfolios: internal.NewTestDBOps[*portfoliov1.Portfolio](t),
+			},
+			args: args{
+				req: connect.NewRequest(&portfoliov1.CreatePortfolioRequest{
+					Portfolio: &portfoliov1.Portfolio{
+						Name:        "bank/myportfolio",
+						DisplayName: "My Portfolio",
+					},
+				}),
+			},
+			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.Portfolio]) bool {
+				return true &&
+					assert.Equals(t, "bank/myportfolio", r.Msg.Name) &&
+					assert.Equals(t, "My Portfolio", r.Msg.DisplayName)
+			},
+			wantSvc: func(t *testing.T, s *service) bool {
+				list, _ := s.portfolios.List()
+				return assert.Equals(t, 1, len(list))
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := &service{
+				portfolios: tt.fields.portfolios,
+				events:     persistence.Relationship[*portfoliov1.PortfolioEvent](tt.fields.portfolios),
+				securities: tt.fields.securities,
+			}
+			gotRes, err := svc.CreatePortfolio(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("service.CreatePortfolio() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			tt.wantRes(t, gotRes)
+			tt.wantSvc(t, svc)
+		})
+	}
+}
 
 func Test_service_ListPortfolios(t *testing.T) {
 	type fields struct {
@@ -50,22 +128,7 @@ func Test_service_ListPortfolios(t *testing.T) {
 		{
 			name: "happy path",
 			fields: fields{
-				portfolios: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Portfolio]) {
-					assert.NoError(t, ops.Replace(&portfoliov1.Portfolio{
-						Name:        "bank/myportfolio",
-						DisplayName: "My Portfolio",
-					}))
-					rel := persistence.Relationship[*portfoliov1.PortfolioEvent](ops)
-					assert.NoError(t, rel.Replace(&portfoliov1.PortfolioEvent{
-						Id:            1,
-						PortfolioName: "bank/myportfolio",
-						SecurityName:  "My Security",
-						Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
-						Time:          timestamppb.New(time.Date(2022, 1, 0, 0, 0, 0, 0, time.UTC)),
-						Amount:        10,
-						Price:         100.0,
-					}))
-				}),
+				portfolios: dbWithEvent(t),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.ListPortfolioResponse]) bool {
 				return true &&
@@ -88,6 +151,112 @@ func Test_service_ListPortfolios(t *testing.T) {
 				return
 			}
 			tt.wantRes(t, gotRes)
+		})
+	}
+}
+
+func Test_service_UpdatePortfolio(t *testing.T) {
+	type fields struct {
+		portfolios persistence.StorageOperations[*portfoliov1.Portfolio]
+		securities portfoliov1connect.SecuritiesServiceClient
+	}
+	type args struct {
+		ctx context.Context
+		req *connect.Request[portfoliov1.UpdatePortfolioRequest]
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantRes assert.Want[*connect.Response[portfoliov1.Portfolio]]
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			fields: fields{
+				portfolios: dbWithEvent(t),
+			},
+			args: args{
+				req: connect.NewRequest(&portfoliov1.UpdatePortfolioRequest{
+					Portfolio: &portfoliov1.Portfolio{
+						Name:        "bank/myportfolio",
+						DisplayName: "My Second Portfolio",
+					},
+					UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"display_name"}},
+				}),
+			},
+			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.Portfolio]) bool {
+				return assert.Equals(t, "My Second Portfolio", r.Msg.DisplayName)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := &service{
+				portfolios: tt.fields.portfolios,
+				events:     persistence.Relationship[*portfoliov1.PortfolioEvent](tt.fields.portfolios),
+				securities: tt.fields.securities,
+			}
+			gotRes, err := svc.UpdatePortfolio(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("service.UpdatePortfolio() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			tt.wantRes(t, gotRes)
+		})
+	}
+}
+
+func Test_service_DeletePortfolio(t *testing.T) {
+	type fields struct {
+		portfolio                            *portfoliov1.Portfolio
+		portfolios                           persistence.StorageOperations[*portfoliov1.Portfolio]
+		events                               persistence.StorageOperations[*portfoliov1.PortfolioEvent]
+		securities                           portfoliov1connect.SecuritiesServiceClient
+		UnimplementedPortfolioServiceHandler portfoliov1connect.UnimplementedPortfolioServiceHandler
+	}
+	type args struct {
+		ctx context.Context
+		req *connect.Request[portfoliov1.DeletePortfolioRequest]
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantSvc assert.Want[*service]
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			fields: fields{
+				portfolios: dbWithEvent(t),
+			},
+			args: args{
+				req: connect.NewRequest(&portfoliov1.DeletePortfolioRequest{
+					Name: "bank/myportfolio",
+				}),
+			},
+			wantSvc: func(t *testing.T, s *service) bool {
+				list, _ := s.portfolios.List()
+				return assert.Equals(t, 0, len(list))
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := &service{
+				portfolio:                            tt.fields.portfolio,
+				portfolios:                           tt.fields.portfolios,
+				events:                               tt.fields.events,
+				securities:                           tt.fields.securities,
+				UnimplementedPortfolioServiceHandler: tt.fields.UnimplementedPortfolioServiceHandler,
+			}
+			_, err := svc.DeletePortfolio(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("service.DeletePortfolio() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			tt.wantSvc(t, svc)
 		})
 	}
 }

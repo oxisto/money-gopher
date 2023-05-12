@@ -6,10 +6,17 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/field_mask.proto";
 
-message PortfolioCreateMessage { string name = 1; }
+message CreatePortfolioRequest { Portfolio portfolio = 1; }
 
 message ListPortfolioRequest {}
 message ListPortfolioResponse { repeated Portfolio portfolios = 1; }
+
+message UpdatePortfolioRequest {
+  Portfolio portfolio = 1;
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeletePortfolioRequest { string name = 1; }
 
 message GetPortfolioSnapshotRequest {
   // PortfolioName is the name / identifier of the portfolio we want to
@@ -101,8 +108,10 @@ message PortfolioEvent {
 }
 
 service PortfolioService {
-  rpc CreatePortfolio(PortfolioCreateMessage) returns (Portfolio);
+  rpc CreatePortfolio(CreatePortfolioRequest) returns (Portfolio);
   rpc ListPortfolio(ListPortfolioRequest) returns (ListPortfolioResponse);
+  rpc UpdatePortfolio(UpdatePortfolioRequest) returns (Portfolio);
+  rpc DeletePortfolio(DeletePortfolioRequest) returns (google.protobuf.Empty);
 
   rpc GetPortfolioSnapshot(GetPortfolioSnapshotRequest)
       returns (PortfolioSnapshot) {

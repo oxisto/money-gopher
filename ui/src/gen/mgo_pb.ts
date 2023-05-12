@@ -39,39 +39,39 @@ proto3.util.setEnumType(PortfolioEventType, "mgo.portfolio.v1.PortfolioEventType
 ]);
 
 /**
- * @generated from message mgo.portfolio.v1.PortfolioCreateMessage
+ * @generated from message mgo.portfolio.v1.CreatePortfolioRequest
  */
-export class PortfolioCreateMessage extends Message<PortfolioCreateMessage> {
+export class CreatePortfolioRequest extends Message<CreatePortfolioRequest> {
   /**
-   * @generated from field: string name = 1;
+   * @generated from field: mgo.portfolio.v1.Portfolio portfolio = 1;
    */
-  name = "";
+  portfolio?: Portfolio;
 
-  constructor(data?: PartialMessage<PortfolioCreateMessage>) {
+  constructor(data?: PartialMessage<CreatePortfolioRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "mgo.portfolio.v1.PortfolioCreateMessage";
+  static readonly typeName = "mgo.portfolio.v1.CreatePortfolioRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "portfolio", kind: "message", T: Portfolio },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PortfolioCreateMessage {
-    return new PortfolioCreateMessage().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreatePortfolioRequest {
+    return new CreatePortfolioRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PortfolioCreateMessage {
-    return new PortfolioCreateMessage().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreatePortfolioRequest {
+    return new CreatePortfolioRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PortfolioCreateMessage {
-    return new PortfolioCreateMessage().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreatePortfolioRequest {
+    return new CreatePortfolioRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: PortfolioCreateMessage | PlainMessage<PortfolioCreateMessage> | undefined, b: PortfolioCreateMessage | PlainMessage<PortfolioCreateMessage> | undefined): boolean {
-    return proto3.util.equals(PortfolioCreateMessage, a, b);
+  static equals(a: CreatePortfolioRequest | PlainMessage<CreatePortfolioRequest> | undefined, b: CreatePortfolioRequest | PlainMessage<CreatePortfolioRequest> | undefined): boolean {
+    return proto3.util.equals(CreatePortfolioRequest, a, b);
   }
 }
 
@@ -140,6 +140,86 @@ export class ListPortfolioResponse extends Message<ListPortfolioResponse> {
 
   static equals(a: ListPortfolioResponse | PlainMessage<ListPortfolioResponse> | undefined, b: ListPortfolioResponse | PlainMessage<ListPortfolioResponse> | undefined): boolean {
     return proto3.util.equals(ListPortfolioResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message mgo.portfolio.v1.UpdatePortfolioRequest
+ */
+export class UpdatePortfolioRequest extends Message<UpdatePortfolioRequest> {
+  /**
+   * @generated from field: mgo.portfolio.v1.Portfolio portfolio = 1;
+   */
+  portfolio?: Portfolio;
+
+  /**
+   * @generated from field: google.protobuf.FieldMask update_mask = 2;
+   */
+  updateMask?: FieldMask;
+
+  constructor(data?: PartialMessage<UpdatePortfolioRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.UpdatePortfolioRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "portfolio", kind: "message", T: Portfolio },
+    { no: 2, name: "update_mask", kind: "message", T: FieldMask },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdatePortfolioRequest {
+    return new UpdatePortfolioRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdatePortfolioRequest {
+    return new UpdatePortfolioRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdatePortfolioRequest {
+    return new UpdatePortfolioRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdatePortfolioRequest | PlainMessage<UpdatePortfolioRequest> | undefined, b: UpdatePortfolioRequest | PlainMessage<UpdatePortfolioRequest> | undefined): boolean {
+    return proto3.util.equals(UpdatePortfolioRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message mgo.portfolio.v1.DeletePortfolioRequest
+ */
+export class DeletePortfolioRequest extends Message<DeletePortfolioRequest> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<DeletePortfolioRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.DeletePortfolioRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeletePortfolioRequest {
+    return new DeletePortfolioRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeletePortfolioRequest {
+    return new DeletePortfolioRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeletePortfolioRequest {
+    return new DeletePortfolioRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeletePortfolioRequest | PlainMessage<DeletePortfolioRequest> | undefined, b: DeletePortfolioRequest | PlainMessage<DeletePortfolioRequest> | undefined): boolean {
+    return proto3.util.equals(DeletePortfolioRequest, a, b);
   }
 }
 
