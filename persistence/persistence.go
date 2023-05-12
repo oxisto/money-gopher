@@ -63,7 +63,7 @@ type StorageOperations[T StorageObject] interface {
 	List(args ...any) (list []T, err error)
 	Get(key any) (obj T, err error)
 	Update(key any, in T, columns []string) (out T, err error)
-	Delete(key any) error
+	Delete(key any) (err error)
 }
 
 type Scanner interface {

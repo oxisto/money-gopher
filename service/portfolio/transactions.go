@@ -20,6 +20,7 @@ import (
 	"context"
 
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"github.com/oxisto/money-gopher/service/common"
 
 	"github.com/bufbuild/connect-go"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -61,11 +62,5 @@ func (svc *service) UpdatePortfolioTransactions(ctx context.Context, req *connec
 }
 
 func (svc *service) DeletePortfolioTransactions(ctx context.Context, req *connect.Request[portfoliov1.DeletePortfolioTransactionRequest]) (res *connect.Response[emptypb.Empty], err error) {
-	res = connect.NewResponse(&emptypb.Empty{})
-	err = svc.portfolios.Delete(req.Msg.TransactionId)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	return
+	return common.Delete(req.Msg.TransactionId, svc.events)
 }
