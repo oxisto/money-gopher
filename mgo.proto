@@ -8,6 +8,9 @@ import "google/protobuf/field_mask.proto";
 
 message PortfolioCreateMessage { string name = 1; }
 
+message ListPortfolioRequest {}
+message ListPortfolioResponse { repeated Portfolio portfolios = 1; }
+
 message GetPortfolioSnapshotRequest {
   // PortfolioName is the name / identifier of the portfolio we want to
   // "snapshot".
@@ -88,7 +91,8 @@ message PortfolioEvent {
   int32 id = 1;
   PortfolioEventType type = 2;
   google.protobuf.Timestamp time = 3;
-  string security_name = 4;
+  string portfolio_name = 4;
+  string security_name = 5;
 
   int32 amount = 10;
   float price = 11;
@@ -98,6 +102,7 @@ message PortfolioEvent {
 
 service PortfolioService {
   rpc CreatePortfolio(PortfolioCreateMessage) returns (Portfolio);
+  rpc ListPortfolio(ListPortfolioRequest) returns (ListPortfolioResponse);
 
   rpc GetPortfolioSnapshot(GetPortfolioSnapshotRequest)
       returns (PortfolioSnapshot) {

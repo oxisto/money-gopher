@@ -76,6 +76,74 @@ export class PortfolioCreateMessage extends Message<PortfolioCreateMessage> {
 }
 
 /**
+ * @generated from message mgo.portfolio.v1.ListPortfolioRequest
+ */
+export class ListPortfolioRequest extends Message<ListPortfolioRequest> {
+  constructor(data?: PartialMessage<ListPortfolioRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.ListPortfolioRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListPortfolioRequest {
+    return new ListPortfolioRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListPortfolioRequest {
+    return new ListPortfolioRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListPortfolioRequest {
+    return new ListPortfolioRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListPortfolioRequest | PlainMessage<ListPortfolioRequest> | undefined, b: ListPortfolioRequest | PlainMessage<ListPortfolioRequest> | undefined): boolean {
+    return proto3.util.equals(ListPortfolioRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message mgo.portfolio.v1.ListPortfolioResponse
+ */
+export class ListPortfolioResponse extends Message<ListPortfolioResponse> {
+  /**
+   * @generated from field: repeated mgo.portfolio.v1.Portfolio portfolios = 1;
+   */
+  portfolios: Portfolio[] = [];
+
+  constructor(data?: PartialMessage<ListPortfolioResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.ListPortfolioResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "portfolios", kind: "message", T: Portfolio, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListPortfolioResponse {
+    return new ListPortfolioResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListPortfolioResponse {
+    return new ListPortfolioResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListPortfolioResponse {
+    return new ListPortfolioResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListPortfolioResponse | PlainMessage<ListPortfolioResponse> | undefined, b: ListPortfolioResponse | PlainMessage<ListPortfolioResponse> | undefined): boolean {
+    return proto3.util.equals(ListPortfolioResponse, a, b);
+  }
+}
+
+/**
  * @generated from message mgo.portfolio.v1.GetPortfolioSnapshotRequest
  */
 export class GetPortfolioSnapshotRequest extends Message<GetPortfolioSnapshotRequest> {
@@ -521,7 +589,12 @@ export class PortfolioEvent extends Message<PortfolioEvent> {
   time?: Timestamp;
 
   /**
-   * @generated from field: string security_name = 4;
+   * @generated from field: string portfolio_name = 4;
+   */
+  portfolioName = "";
+
+  /**
+   * @generated from field: string security_name = 5;
    */
   securityName = "";
 
@@ -556,7 +629,8 @@ export class PortfolioEvent extends Message<PortfolioEvent> {
     { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "type", kind: "enum", T: proto3.getEnumType(PortfolioEventType) },
     { no: 3, name: "time", kind: "message", T: Timestamp },
-    { no: 4, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "portfolio_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "amount", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 11, name: "price", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
     { no: 12, name: "fees", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },

@@ -3,9 +3,11 @@ package portfoliov1
 import (
 	"database/sql"
 	"strings"
+	"time"
 
 	"github.com/oxisto/money-gopher/persistence"
 	"golang.org/x/exp/slog"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var _ persistence.StorageObject = &Portfolio{}
@@ -25,7 +27,7 @@ display_name TEXT NOT NULL
 }
 
 func (*Portfolio) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`REPLACE INTO portfolios (name, display_name) VALUES (?,?,?);`)
+	return db.Prepare(`REPLACE INTO portfolios (name, display_name) VALUES (?,?);`)
 }
 
 func (*Portfolio) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err error) {
@@ -87,13 +89,16 @@ func (*Portfolio) Scan(sc persistence.Scanner) (obj persistence.StorageObject, e
 	return &p, nil
 }
 
-/*
 func (*PortfolioEvent) InitTables(db *persistence.DB) (err error) {
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS portfolio_events (
-transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+time DATETIME NOT NULL,
+portfolio_name TEXT NOT NULL, 
 security_name TEXT NOT NULL,
-type TEXT NOT NULL,
-payload TEXT NOT NULL
+amount REAL,
+price REAL,
+fees REAL,
+taxes REAL
 );`)
 	if err != nil {
 		return err
@@ -102,19 +107,22 @@ payload TEXT NOT NULL
 	return
 }
 
-func (*ListedSecurity) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`REPLACE INTO listed_securities (security_name, ticker, currency, latest_quote, latest_quote_timestamp) VALUES (?,?,?,?,?);`)
+func (*PortfolioEvent) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) {
+	return db.Prepare(`REPLACE INTO portfolio_events
+(id, time, portfolio_name, security_name, amount, price, fees, taxes)
+VALUES (?,?,?,?,?,?,?,?);`)
 }
 
-func (*ListedSecurity) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`SELECT security_name, ticker, currency, latest_quote, latest_quote_timestamp FROM listed_securities WHERE security_name = ?`)
+func (*PortfolioEvent) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err error) {
+	return db.Prepare(`SELECT id, time, portfolio_name, security_name, amount, price, fees, taxes
+FROM portfolio_events WHERE portfolio_name = ?`)
 }
 
-func (*ListedSecurity) PrepareGet(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`SELECT * FROM listed_securities WHERE security_name = ? AND ticker = ?`)
+func (*PortfolioEvent) PrepareGet(db *persistence.DB) (stmt *sql.Stmt, err error) {
+	return db.Prepare(`SELECT * FROM portfolio_events WHERE id = ?`)
 }
 
-func (*ListedSecurity) PrepareUpdate(db *persistence.DB, columns []string) (stmt *sql.Stmt, err error) {
+func (*PortfolioEvent) PrepareUpdate(db *persistence.DB, columns []string) (stmt *sql.Stmt, err error) {
 	// We need to make sure to quote columns here because they are potentially evil user input
 	var (
 		query string
@@ -126,67 +134,74 @@ func (*ListedSecurity) PrepareUpdate(db *persistence.DB, columns []string) (stmt
 		set[i] = persistence.Quote(col) + " = ?"
 	}
 
-	query += "UPDATE listed_securities SET " + strings.Join(set, ", ") + " WHERE security_name = ? AND ticker = ?;"
+	query += "UPDATE portfolio_events SET " + strings.Join(set, ", ") + " WHERE id = ?;"
 
 	return db.Prepare(query)
 }
 
-func (*ListedSecurity) PrepareDelete(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`DELETE FROM listed_securities WHERE security_name = ? AND ticker = ?`)
+func (*PortfolioEvent) PrepareDelete(db *persistence.DB) (stmt *sql.Stmt, err error) {
+	return db.Prepare(`DELETE FROM portfolio_events WHERE id = ?`)
 }
 
-func (l *ListedSecurity) ReplaceIntoArgs() []any {
-	var (
-		pt *time.Time
-		t  time.Time
-	)
-
-	if l.LatestQuoteTimestamp != nil {
-		t = l.LatestQuoteTimestamp.AsTime()
-		pt = &t
+func (e *PortfolioEvent) ReplaceIntoArgs() []any {
+	return []any{
+		e.Id,
+		e.Time.AsTime(),
+		e.PortfolioName,
+		e.SecurityName,
+		e.Amount,
+		e.Price,
+		e.Fees,
+		e.Taxes,
 	}
-
-	return []any{l.SecurityName, l.Ticker, l.Currency, l.LatestQuote, pt}
 }
 
-func (l *ListedSecurity) UpdateArgs(columns []string) (args []any) {
+func (e *PortfolioEvent) UpdateArgs(columns []string) (args []any) {
 	for _, col := range columns {
 		switch col {
+		case "id":
+			args = append(args, e.Id)
+		case "time":
+			args = append(args, e.Time.AsTime())
+		case "portfolio_name":
+			args = append(args, e.PortfolioName)
 		case "security_name":
-			args = append(args, l.SecurityName)
-		case "ticker":
-			args = append(args, l.Ticker)
-		case "currency":
-			args = append(args, l.Currency)
-		case "latest_quote":
-			args = append(args, l.LatestQuote)
-		case "latest_quote_timestamp":
-			if l.LatestQuoteTimestamp != nil {
-				args = append(args, l.LatestQuoteTimestamp.AsTime())
-			} else {
-				args = append(args, nil)
-			}
+			args = append(args, e.SecurityName)
+		case "amount":
+			args = append(args, e.Amount)
+		case "price":
+			args = append(args, e.Price)
+		case "fees":
+			args = append(args, e.Fees)
+		case "taxes":
+			args = append(args, e.Taxes)
 		}
 	}
 
 	return args
 }
 
-func (*ListedSecurity) Scan(sc persistence.Scanner) (obj persistence.StorageObject, err error) {
+func (*PortfolioEvent) Scan(sc persistence.Scanner) (obj persistence.StorageObject, err error) {
 	var (
-		l ListedSecurity
-		t sql.NullTime
+		e PortfolioEvent
+		t time.Time
 	)
 
-	err = sc.Scan(&l.SecurityName, &l.Ticker, &l.Currency, &l.LatestQuote, &t)
+	err = sc.Scan(
+		&e.Id,
+		&t,
+		&e.PortfolioName,
+		&e.SecurityName,
+		&e.Amount,
+		&e.Price,
+		&e.Fees,
+		&e.Taxes,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	if t.Valid {
-		l.LatestQuoteTimestamp = timestamppb.New(t.Time)
-	}
+	e.Time = timestamppb.New(t)
 
-	return &l, nil
+	return &e, nil
 }
-*/
