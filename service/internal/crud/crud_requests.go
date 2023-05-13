@@ -20,8 +20,9 @@
 package crud
 
 import (
-	"github.com/bufbuild/connect-go"
 	"github.com/oxisto/money-gopher/persistence"
+
+	"github.com/bufbuild/connect-go"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -37,8 +38,8 @@ func Create[T any, S persistence.StorageObject](obj S, op persistence.StorageOpe
 	return
 }
 
-func List[T any, S persistence.StorageObject](key any, op persistence.StorageOperations[S], setter func(res *connect.Response[T], list []S)) (res *connect.Response[T], err error) {
-	obj, err := op.List(key)
+func List[T any, S persistence.StorageObject](op persistence.StorageOperations[S], setter func(res *connect.Response[T], list []S), args ...any) (res *connect.Response[T], err error) {
+	obj, err := op.List(args)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

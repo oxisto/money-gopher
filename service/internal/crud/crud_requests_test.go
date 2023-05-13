@@ -40,9 +40,9 @@ func (e *errorOp[T]) Delete(key any) (err error) {
 
 func TestList(t *testing.T) {
 	type args struct {
-		key    any
 		op     persistence.StorageOperations[*portfoliov1.Portfolio]
 		setter func(res *connect.Response[portfoliov1.ListPortfolioResponse], list []*portfoliov1.Portfolio)
+		args   []any
 	}
 	tests := []struct {
 		name    string
@@ -53,20 +53,20 @@ func TestList(t *testing.T) {
 		{
 			name: "error",
 			args: args{
-				key: "some-key",
 				op: &errorOp[*portfoliov1.Portfolio]{
 					listErr: errors.New("some-error"),
 				},
 				setter: func(res *connect.Response[portfoliov1.ListPortfolioResponse], list []*portfoliov1.Portfolio) {
 					res.Msg.Portfolios = list
 				},
+				args: []any{"some-key"},
 			},
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotRes, err := List(tt.args.key, tt.args.op, tt.args.setter)
+			gotRes, err := List(tt.args.op, tt.args.setter, tt.args.args...)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("List() error = %v, wantErr %v", err, tt.wantErr)
 				return

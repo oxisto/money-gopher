@@ -37,6 +37,16 @@ func (svc *service) CreatePortfolio(ctx context.Context, req *connect.Request[po
 }
 
 func (svc *service) ListPortfolios(ctx context.Context, req *connect.Request[portfoliov1.ListPortfolioRequest]) (res *connect.Response[portfoliov1.ListPortfolioResponse], err error) {
+	/*return crud.List(
+	req.Msg.PortfolioName,
+	svc.portfolios,
+	func(
+		res *connect.Response[portfoliov1.ListPortfolioTransactionsResponse],
+		list []*portfoliov1.PortfolioEvent,
+	) {
+		res.Msg.Transactions = list
+	})*/
+
 	res = connect.NewResponse(&portfoliov1.ListPortfolioResponse{})
 	res.Msg.Portfolios, err = svc.portfolios.List()
 	if err != nil {
