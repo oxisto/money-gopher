@@ -1,4 +1,4 @@
-package common
+package crud
 
 import (
 	"errors"
@@ -13,8 +13,9 @@ import (
 )
 
 type errorOp[T any] struct {
-	listErr error
-	delErr  error
+	listErr   error
+	updateErr error
+	delErr    error
 }
 
 func (e *errorOp[T]) Replace(o persistence.StorageObject) (err error) {
@@ -30,7 +31,7 @@ func (e *errorOp[T]) Get(key any) (obj T, err error) {
 }
 
 func (e *errorOp[T]) Update(key any, in T, columns []string) (out T, err error) {
-	return
+	return out, e.updateErr
 }
 
 func (e *errorOp[T]) Delete(key any) (err error) {
@@ -72,6 +73,48 @@ func TestList(t *testing.T) {
 			}
 			if !assert.Equals(t, tt.wantRes, gotRes) {
 				t.Errorf("List() = %v, want %v", gotRes, tt.wantRes)
+			}
+		})
+	}
+}
+
+func TestUpdate(t *testing.T) {
+	type args struct {
+		key     any
+		in      *portfoliov1.Portfolio
+		paths   []string
+		op      persistence.StorageOperations[*portfoliov1.Portfolio]
+		convert func(obj *portfoliov1.Portfolio) *portfoliov1.Portfolio
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantRes *connect.Response[portfoliov1.Portfolio]
+		wantErr bool
+	}{
+		{
+			name: "error",
+			args: args{
+				key: "some-key",
+				op: &errorOp[*portfoliov1.Portfolio]{
+					updateErr: errors.New("some-error"),
+				},
+				convert: func(obj *portfoliov1.Portfolio) *portfoliov1.Portfolio {
+					return obj
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotRes, err := Update(tt.args.key, tt.args.in, tt.args.paths, tt.args.op, tt.args.convert)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Update() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotRes, tt.wantRes) {
+				t.Errorf("Update() = %v, want %v", gotRes, tt.wantRes)
 			}
 		})
 	}

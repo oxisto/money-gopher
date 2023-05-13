@@ -20,25 +20,23 @@ import (
 	"context"
 
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
-	"github.com/oxisto/money-gopher/service/common"
+	"github.com/oxisto/money-gopher/service/internal/crud"
 
 	"github.com/bufbuild/connect-go"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func (svc *service) CreatePortfolioTransaction(ctx context.Context, req *connect.Request[portfoliov1.CreatePortfolioTransactionRequest]) (res *connect.Response[portfoliov1.PortfolioEvent], err error) {
-	err = svc.events.Replace(req.Msg.Transaction)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	res = connect.NewResponse(req.Msg.Transaction)
-
-	return
+	return crud.Create(
+		req.Msg.Transaction,
+		svc.events,
+		func(obj *portfoliov1.PortfolioEvent) *portfoliov1.PortfolioEvent {
+			return obj
+		})
 }
 
 func (svc *service) ListPortfolioTransactions(ctx context.Context, req *connect.Request[portfoliov1.ListPortfolioTransactionsRequest]) (res *connect.Response[portfoliov1.ListPortfolioTransactionsResponse], err error) {
-	return common.List(
+	return crud.List(
 		req.Msg.PortfolioName,
 		svc.events,
 		func(
@@ -50,19 +48,20 @@ func (svc *service) ListPortfolioTransactions(ctx context.Context, req *connect.
 }
 
 func (svc *service) UpdatePortfolioTransactions(ctx context.Context, req *connect.Request[portfoliov1.UpdatePortfolioTransactionRequest]) (res *connect.Response[portfoliov1.PortfolioEvent], err error) {
-	res = connect.NewResponse(&portfoliov1.PortfolioEvent{})
-	res.Msg, err = svc.events.Update(
+	return crud.Update(
 		req.Msg.Transaction.Id,
 		req.Msg.Transaction,
 		req.Msg.UpdateMask.Paths,
+		svc.events,
+		func(obj *portfoliov1.PortfolioEvent) *portfoliov1.PortfolioEvent {
+			return obj
+		},
 	)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	return
 }
 
 func (svc *service) DeletePortfolioTransactions(ctx context.Context, req *connect.Request[portfoliov1.DeletePortfolioTransactionRequest]) (res *connect.Response[emptypb.Empty], err error) {
-	return common.Delete(req.Msg.TransactionId, svc.events)
+	return crud.Delete(
+		req.Msg.TransactionId,
+		svc.events,
+	)
 }

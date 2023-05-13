@@ -20,6 +20,7 @@ import (
 	"context"
 
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"github.com/oxisto/money-gopher/service/internal/crud"
 	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/emptypb"
 
@@ -27,12 +28,12 @@ import (
 )
 
 func (svc *service) CreatePortfolio(ctx context.Context, req *connect.Request[portfoliov1.CreatePortfolioRequest]) (res *connect.Response[portfoliov1.Portfolio], err error) {
-	// TODO(oxisto): We probably want to have a pure create instead of replace here
-	svc.portfolios.Replace(req.Msg.Portfolio)
-
-	res = connect.NewResponse(req.Msg.Portfolio)
-
-	return
+	return crud.Create(
+		req.Msg.Portfolio,
+		svc.portfolios,
+		func(obj *portfoliov1.Portfolio) *portfoliov1.Portfolio {
+			return obj
+		})
 }
 
 func (svc *service) ListPortfolios(ctx context.Context, req *connect.Request[portfoliov1.ListPortfolioRequest]) (res *connect.Response[portfoliov1.ListPortfolioResponse], err error) {
@@ -69,11 +70,5 @@ func (svc *service) UpdatePortfolio(ctx context.Context, req *connect.Request[po
 }
 
 func (svc *service) DeletePortfolio(ctx context.Context, req *connect.Request[portfoliov1.DeletePortfolioRequest]) (res *connect.Response[emptypb.Empty], err error) {
-	res = connect.NewResponse(&emptypb.Empty{})
-	err = svc.portfolios.Delete(req.Msg.Name)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	return
+	return crud.Delete(req.Msg.Name, svc.portfolios)
 }
