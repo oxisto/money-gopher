@@ -122,7 +122,7 @@ func Test_service_ListPortfolios(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		wantRes assert.Want[*connect.Response[portfoliov1.ListPortfolioResponse]]
+		wantRes assert.Want[*connect.Response[portfoliov1.ListPortfoliosResponse]]
 		wantErr bool
 	}{
 		{
@@ -130,7 +130,7 @@ func Test_service_ListPortfolios(t *testing.T) {
 			fields: fields{
 				portfolios: myPortfolio(t),
 			},
-			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.ListPortfolioResponse]) bool {
+			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.ListPortfoliosResponse]) bool {
 				return true &&
 					assert.Equals(t, "bank/myportfolio", r.Msg.Portfolios[0].Name) &&
 					assert.Equals(t, "My Portfolio", r.Msg.Portfolios[0].DisplayName) &&

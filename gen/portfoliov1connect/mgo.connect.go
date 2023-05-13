@@ -86,7 +86,7 @@ const (
 // PortfolioServiceClient is a client for the mgo.portfolio.v1.PortfolioService service.
 type PortfolioServiceClient interface {
 	CreatePortfolio(context.Context, *connect_go.Request[gen.CreatePortfolioRequest]) (*connect_go.Response[gen.Portfolio], error)
-	ListPortfolio(context.Context, *connect_go.Request[gen.ListPortfolioRequest]) (*connect_go.Response[gen.ListPortfolioResponse], error)
+	ListPortfolio(context.Context, *connect_go.Request[gen.ListPortfolioRequest]) (*connect_go.Response[gen.ListPortfoliosResponse], error)
 	UpdatePortfolio(context.Context, *connect_go.Request[gen.UpdatePortfolioRequest]) (*connect_go.Response[gen.Portfolio], error)
 	DeletePortfolio(context.Context, *connect_go.Request[gen.DeletePortfolioRequest]) (*connect_go.Response[emptypb.Empty], error)
 	GetPortfolioSnapshot(context.Context, *connect_go.Request[gen.GetPortfolioSnapshotRequest]) (*connect_go.Response[gen.PortfolioSnapshot], error)
@@ -111,7 +111,7 @@ func NewPortfolioServiceClient(httpClient connect_go.HTTPClient, baseURL string,
 			baseURL+PortfolioServiceCreatePortfolioProcedure,
 			opts...,
 		),
-		listPortfolio: connect_go.NewClient[gen.ListPortfolioRequest, gen.ListPortfolioResponse](
+		listPortfolio: connect_go.NewClient[gen.ListPortfolioRequest, gen.ListPortfoliosResponse](
 			httpClient,
 			baseURL+PortfolioServiceListPortfolioProcedure,
 			opts...,
@@ -158,7 +158,7 @@ func NewPortfolioServiceClient(httpClient connect_go.HTTPClient, baseURL string,
 // portfolioServiceClient implements PortfolioServiceClient.
 type portfolioServiceClient struct {
 	createPortfolio            *connect_go.Client[gen.CreatePortfolioRequest, gen.Portfolio]
-	listPortfolio              *connect_go.Client[gen.ListPortfolioRequest, gen.ListPortfolioResponse]
+	listPortfolio              *connect_go.Client[gen.ListPortfolioRequest, gen.ListPortfoliosResponse]
 	updatePortfolio            *connect_go.Client[gen.UpdatePortfolioRequest, gen.Portfolio]
 	deletePortfolio            *connect_go.Client[gen.DeletePortfolioRequest, emptypb.Empty]
 	getPortfolioSnapshot       *connect_go.Client[gen.GetPortfolioSnapshotRequest, gen.PortfolioSnapshot]
@@ -174,7 +174,7 @@ func (c *portfolioServiceClient) CreatePortfolio(ctx context.Context, req *conne
 }
 
 // ListPortfolio calls mgo.portfolio.v1.PortfolioService.ListPortfolio.
-func (c *portfolioServiceClient) ListPortfolio(ctx context.Context, req *connect_go.Request[gen.ListPortfolioRequest]) (*connect_go.Response[gen.ListPortfolioResponse], error) {
+func (c *portfolioServiceClient) ListPortfolio(ctx context.Context, req *connect_go.Request[gen.ListPortfolioRequest]) (*connect_go.Response[gen.ListPortfoliosResponse], error) {
 	return c.listPortfolio.CallUnary(ctx, req)
 }
 
@@ -216,7 +216,7 @@ func (c *portfolioServiceClient) DeletePortfolioTransaction(ctx context.Context,
 // PortfolioServiceHandler is an implementation of the mgo.portfolio.v1.PortfolioService service.
 type PortfolioServiceHandler interface {
 	CreatePortfolio(context.Context, *connect_go.Request[gen.CreatePortfolioRequest]) (*connect_go.Response[gen.Portfolio], error)
-	ListPortfolio(context.Context, *connect_go.Request[gen.ListPortfolioRequest]) (*connect_go.Response[gen.ListPortfolioResponse], error)
+	ListPortfolio(context.Context, *connect_go.Request[gen.ListPortfolioRequest]) (*connect_go.Response[gen.ListPortfoliosResponse], error)
 	UpdatePortfolio(context.Context, *connect_go.Request[gen.UpdatePortfolioRequest]) (*connect_go.Response[gen.Portfolio], error)
 	DeletePortfolio(context.Context, *connect_go.Request[gen.DeletePortfolioRequest]) (*connect_go.Response[emptypb.Empty], error)
 	GetPortfolioSnapshot(context.Context, *connect_go.Request[gen.GetPortfolioSnapshotRequest]) (*connect_go.Response[gen.PortfolioSnapshot], error)
@@ -289,7 +289,7 @@ func (UnimplementedPortfolioServiceHandler) CreatePortfolio(context.Context, *co
 	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.CreatePortfolio is not implemented"))
 }
 
-func (UnimplementedPortfolioServiceHandler) ListPortfolio(context.Context, *connect_go.Request[gen.ListPortfolioRequest]) (*connect_go.Response[gen.ListPortfolioResponse], error) {
+func (UnimplementedPortfolioServiceHandler) ListPortfolio(context.Context, *connect_go.Request[gen.ListPortfolioRequest]) (*connect_go.Response[gen.ListPortfoliosResponse], error) {
 	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.ListPortfolio is not implemented"))
 }
 

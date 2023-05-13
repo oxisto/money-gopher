@@ -36,31 +36,20 @@ func (svc *service) CreatePortfolio(ctx context.Context, req *connect.Request[po
 		})
 }
 
-func (svc *service) ListPortfolios(ctx context.Context, req *connect.Request[portfoliov1.ListPortfolioRequest]) (res *connect.Response[portfoliov1.ListPortfolioResponse], err error) {
-	/*return crud.List(
-	req.Msg.PortfolioName,
-	svc.portfolios,
-	func(
-		res *connect.Response[portfoliov1.ListPortfolioTransactionsResponse],
-		list []*portfoliov1.PortfolioEvent,
-	) {
-		res.Msg.Transactions = list
-	})*/
+func (svc *service) ListPortfolios(ctx context.Context, req *connect.Request[portfoliov1.ListPortfolioRequest]) (res *connect.Response[portfoliov1.ListPortfoliosResponse], err error) {
+	return crud.List(
+		svc.portfolios,
+		func(
+			res *connect.Response[portfoliov1.ListPortfoliosResponse],
+			list []*portfoliov1.Portfolio,
+		) {
+			res.Msg.Portfolios = list
 
-	res = connect.NewResponse(&portfoliov1.ListPortfolioResponse{})
-	res.Msg.Portfolios, err = svc.portfolios.List()
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	for _, p := range res.Msg.Portfolios {
-		p.Events, err = svc.events.List(p.Name)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-	}
-
-	return
+			for _, p := range res.Msg.Portfolios {
+				p.Events, _ = svc.events.List(p.Name)
+			}
+		},
+	)
 }
 
 func (svc *service) UpdatePortfolio(ctx context.Context, req *connect.Request[portfoliov1.UpdatePortfolioRequest]) (res *connect.Response[portfoliov1.Portfolio], err error) {

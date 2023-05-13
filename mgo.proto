@@ -9,7 +9,7 @@ import "google/protobuf/field_mask.proto";
 message CreatePortfolioRequest { Portfolio portfolio = 1; }
 
 message ListPortfolioRequest {}
-message ListPortfolioResponse { repeated Portfolio portfolios = 1; }
+message ListPortfoliosResponse { repeated Portfolio portfolios = 1; }
 
 message UpdatePortfolioRequest {
   Portfolio portfolio = 1;
@@ -109,7 +109,7 @@ message PortfolioEvent {
 
 service PortfolioService {
   rpc CreatePortfolio(CreatePortfolioRequest) returns (Portfolio);
-  rpc ListPortfolio(ListPortfolioRequest) returns (ListPortfolioResponse);
+  rpc ListPortfolio(ListPortfolioRequest) returns (ListPortfoliosResponse);
   rpc UpdatePortfolio(UpdatePortfolioRequest) returns (Portfolio);
   rpc DeletePortfolio(DeletePortfolioRequest) returns (google.protobuf.Empty);
 

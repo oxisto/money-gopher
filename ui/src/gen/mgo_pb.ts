@@ -107,39 +107,39 @@ export class ListPortfolioRequest extends Message<ListPortfolioRequest> {
 }
 
 /**
- * @generated from message mgo.portfolio.v1.ListPortfolioResponse
+ * @generated from message mgo.portfolio.v1.ListPortfoliosResponse
  */
-export class ListPortfolioResponse extends Message<ListPortfolioResponse> {
+export class ListPortfoliosResponse extends Message<ListPortfoliosResponse> {
   /**
    * @generated from field: repeated mgo.portfolio.v1.Portfolio portfolios = 1;
    */
   portfolios: Portfolio[] = [];
 
-  constructor(data?: PartialMessage<ListPortfolioResponse>) {
+  constructor(data?: PartialMessage<ListPortfoliosResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "mgo.portfolio.v1.ListPortfolioResponse";
+  static readonly typeName = "mgo.portfolio.v1.ListPortfoliosResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "portfolios", kind: "message", T: Portfolio, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListPortfolioResponse {
-    return new ListPortfolioResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListPortfoliosResponse {
+    return new ListPortfoliosResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListPortfolioResponse {
-    return new ListPortfolioResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListPortfoliosResponse {
+    return new ListPortfoliosResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListPortfolioResponse {
-    return new ListPortfolioResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListPortfoliosResponse {
+    return new ListPortfoliosResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ListPortfolioResponse | PlainMessage<ListPortfolioResponse> | undefined, b: ListPortfolioResponse | PlainMessage<ListPortfolioResponse> | undefined): boolean {
-    return proto3.util.equals(ListPortfolioResponse, a, b);
+  static equals(a: ListPortfoliosResponse | PlainMessage<ListPortfoliosResponse> | undefined, b: ListPortfoliosResponse | PlainMessage<ListPortfoliosResponse> | undefined): boolean {
+    return proto3.util.equals(ListPortfoliosResponse, a, b);
   }
 }
 

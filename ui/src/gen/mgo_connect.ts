@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreatePortfolioRequest, CreatePortfolioTransactionRequest, CreateSecurityRequest, DeletePortfolioRequest, DeletePortfolioTransactionRequest, DeleteSecurityRequest, GetPortfolioSnapshotRequest, GetSecurityRequest, ListPortfolioRequest, ListPortfolioResponse, ListPortfolioTransactionsRequest, ListPortfolioTransactionsResponse, ListSecuritiesRequest, ListSecuritiesResponse, Portfolio, PortfolioEvent, PortfolioSnapshot, Security, TriggerQuoteUpdateRequest, TriggerQuoteUpdateResponse, UpdatePortfolioRequest, UpdatePortfolioTransactionRequest, UpdateSecurityRequest } from "./mgo_pb.js";
+import { CreatePortfolioRequest, CreatePortfolioTransactionRequest, CreateSecurityRequest, DeletePortfolioRequest, DeletePortfolioTransactionRequest, DeleteSecurityRequest, GetPortfolioSnapshotRequest, GetSecurityRequest, ListPortfolioRequest, ListPortfoliosResponse, ListPortfolioTransactionsRequest, ListPortfolioTransactionsResponse, ListSecuritiesRequest, ListSecuritiesResponse, Portfolio, PortfolioEvent, PortfolioSnapshot, Security, TriggerQuoteUpdateRequest, TriggerQuoteUpdateResponse, UpdatePortfolioRequest, UpdatePortfolioTransactionRequest, UpdateSecurityRequest } from "./mgo_pb.js";
 import { Empty, MethodIdempotency, MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -27,7 +27,7 @@ export const PortfolioService = {
     listPortfolio: {
       name: "ListPortfolio",
       I: ListPortfolioRequest,
-      O: ListPortfolioResponse,
+      O: ListPortfoliosResponse,
       kind: MethodKind.Unary,
     },
     /**

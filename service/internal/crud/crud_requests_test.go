@@ -41,13 +41,13 @@ func (e *errorOp[T]) Delete(key any) (err error) {
 func TestList(t *testing.T) {
 	type args struct {
 		op     persistence.StorageOperations[*portfoliov1.Portfolio]
-		setter func(res *connect.Response[portfoliov1.ListPortfolioResponse], list []*portfoliov1.Portfolio)
+		setter func(res *connect.Response[portfoliov1.ListPortfoliosResponse], list []*portfoliov1.Portfolio)
 		args   []any
 	}
 	tests := []struct {
 		name    string
 		args    args
-		wantRes *connect.Response[portfoliov1.ListPortfolioResponse]
+		wantRes *connect.Response[portfoliov1.ListPortfoliosResponse]
 		wantErr bool
 	}{
 		{
@@ -56,7 +56,7 @@ func TestList(t *testing.T) {
 				op: &errorOp[*portfoliov1.Portfolio]{
 					listErr: errors.New("some-error"),
 				},
-				setter: func(res *connect.Response[portfoliov1.ListPortfolioResponse], list []*portfoliov1.Portfolio) {
+				setter: func(res *connect.Response[portfoliov1.ListPortfoliosResponse], list []*portfoliov1.Portfolio) {
 					res.Msg.Portfolios = list
 				},
 				args: []any{"some-key"},
