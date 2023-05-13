@@ -56,44 +56,36 @@ func NewCalculation(txs []*portfoliov1.PortfolioEvent) *calculation {
 }
 
 func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
-	switch v := tx.EventOneof.(type) {
-	case *portfoliov1.PortfolioEvent_Buy:
-		if v.Buy == nil {
-			return
-		}
-
+	switch tx.Type {
+	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY:
 		// Increase the amount of shares and the fees by the value stored in the
 		// transaction
-		c.Fees += v.Buy.Fees
-		c.Amount += v.Buy.Amount
+		c.Fees += tx.Fees
+		c.Amount += tx.Amount
 
 		// Add the transaction to the FIFO list. We need to have a list because
 		// sold shares are sold according to the FIFO principle. We therefore
 		// need to store this information to reduce the amount in the items
 		// later when a sell transaction occurs.
 		c.fifo = append(c.fifo, &fifoTx{
-			amount: v.Buy.Amount,
-			ppu:    v.Buy.Price,
-			value:  v.Buy.Price * float32(v.Buy.Amount),
-			fees:   v.Buy.Fees,
+			amount: tx.Amount,
+			ppu:    tx.Price,
+			value:  tx.Price * float32(tx.Amount),
+			fees:   tx.Fees,
 		})
-	case *portfoliov1.PortfolioEvent_Sell:
+	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL:
 		var (
 			sold int32
 		)
 
-		if v.Sell == nil {
-			return
-		}
-
 		// Increase the fees and taxes by the value stored in the
 		// transaction
-		c.Fees += v.Sell.Fees
-		c.Taxes += v.Sell.Taxes
+		c.Fees += tx.Fees
+		c.Taxes += tx.Taxes
 
 		// Store the amount of shares sold in this variable, since we later need
 		// to decrease it while looping through the FIFO list
-		sold = v.Sell.Amount
+		sold = tx.Amount
 
 		// Calculate the remaining shares (if any)
 		c.Amount -= sold

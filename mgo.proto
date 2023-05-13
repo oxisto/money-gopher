@@ -6,7 +6,17 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/field_mask.proto";
 
-message PortfolioCreateMessage { string name = 1; }
+message CreatePortfolioRequest { Portfolio portfolio = 1; }
+
+message ListPortfolioRequest {}
+message ListPortfoliosResponse { repeated Portfolio portfolios = 1; }
+
+message UpdatePortfolioRequest {
+  Portfolio portfolio = 1;
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeletePortfolioRequest { string name = 1; }
 
 message GetPortfolioSnapshotRequest {
   // PortfolioName is the name / identifier of the portfolio we want to
@@ -19,7 +29,7 @@ message GetPortfolioSnapshotRequest {
 
 message CreatePortfolioTransactionRequest { PortfolioEvent transaction = 1; }
 
-message ListPortfolioTransactionsRequest {}
+message ListPortfolioTransactionsRequest { string portfolio_name = 1; }
 
 message ListPortfolioTransactionsResponse {
   repeated PortfolioEvent transactions = 1;
@@ -35,9 +45,11 @@ message DeletePortfolioTransactionRequest { int32 transaction_id = 1; }
 message Portfolio {
   string name = 1;
 
+  string display_name = 2;
+
   // Events contains all portfolio events, such as buy/sell transactions,
   // dividends or other. They need to be ordered by time (ascending).
-  repeated PortfolioEvent events = 2;
+  repeated PortfolioEvent events = 5;
 }
 
 // PortfolioSnapshot represents a snapshot in time of the portfolio. It can for
@@ -75,38 +87,31 @@ message PortfolioPosition {
   float total_fees = 15;
 }
 
+enum PortfolioEventType {
+  PORTFOLIO_EVENT_TYPE_UNSPECIFIED = 0;
+  PORTFOLIO_EVENT_TYPE_BUY = 1;
+  PORTFOLIO_EVENT_TYPE_SELL = 2;
+  PORTFOLIO_EVENT_TYPE_DIVIDEND = 3;
+}
+
 message PortfolioEvent {
   int32 id = 1;
+  PortfolioEventType type = 2;
+  google.protobuf.Timestamp time = 3;
+  string portfolio_name = 4;
+  string security_name = 5;
 
-  oneof event_oneof {
-    BuySecurityTransaction buy = 10;
-    SellSecurityTransaction sell = 11;
-    SecurityDividendEvent dividend = 12;
-  }
-}
-
-message BuySecurityTransaction {
-  string security_name = 1;
-  int32 amount = 2;
-  float price = 3;
-  float fees = 4;
-  google.protobuf.Timestamp time = 10;
-}
-message SellSecurityTransaction {
-  string security_name = 1;
-  int32 amount = 2;
-  float price = 3;
-  float fees = 4;
-  float taxes = 5;
-  google.protobuf.Timestamp time = 10;
-}
-message SecurityDividendEvent {
-  string security_name = 1;
-  google.protobuf.Timestamp time = 10;
+  int32 amount = 10;
+  float price = 11;
+  float fees = 12;
+  float taxes = 13;
 }
 
 service PortfolioService {
-  rpc CreatePortfolio(PortfolioCreateMessage) returns (Portfolio);
+  rpc CreatePortfolio(CreatePortfolioRequest) returns (Portfolio);
+  rpc ListPortfolio(ListPortfolioRequest) returns (ListPortfoliosResponse);
+  rpc UpdatePortfolio(UpdatePortfolioRequest) returns (Portfolio);
+  rpc DeletePortfolio(DeletePortfolioRequest) returns (google.protobuf.Empty);
 
   rpc GetPortfolioSnapshot(GetPortfolioSnapshotRequest)
       returns (PortfolioSnapshot) {

@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreatePortfolioTransactionRequest, CreateSecurityRequest, DeletePortfolioTransactionRequest, DeleteSecurityRequest, GetPortfolioSnapshotRequest, GetSecurityRequest, ListPortfolioTransactionsRequest, ListPortfolioTransactionsResponse, ListSecuritiesRequest, ListSecuritiesResponse, Portfolio, PortfolioCreateMessage, PortfolioEvent, PortfolioSnapshot, Security, TriggerQuoteUpdateRequest, TriggerQuoteUpdateResponse, UpdatePortfolioTransactionRequest, UpdateSecurityRequest } from "./mgo_pb.js";
+import { CreatePortfolioRequest, CreatePortfolioTransactionRequest, CreateSecurityRequest, DeletePortfolioRequest, DeletePortfolioTransactionRequest, DeleteSecurityRequest, GetPortfolioSnapshotRequest, GetSecurityRequest, ListPortfolioRequest, ListPortfoliosResponse, ListPortfolioTransactionsRequest, ListPortfolioTransactionsResponse, ListSecuritiesRequest, ListSecuritiesResponse, Portfolio, PortfolioEvent, PortfolioSnapshot, Security, TriggerQuoteUpdateRequest, TriggerQuoteUpdateResponse, UpdatePortfolioRequest, UpdatePortfolioTransactionRequest, UpdateSecurityRequest } from "./mgo_pb.js";
 import { Empty, MethodIdempotency, MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -17,8 +17,35 @@ export const PortfolioService = {
      */
     createPortfolio: {
       name: "CreatePortfolio",
-      I: PortfolioCreateMessage,
+      I: CreatePortfolioRequest,
       O: Portfolio,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc mgo.portfolio.v1.PortfolioService.ListPortfolio
+     */
+    listPortfolio: {
+      name: "ListPortfolio",
+      I: ListPortfolioRequest,
+      O: ListPortfoliosResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc mgo.portfolio.v1.PortfolioService.UpdatePortfolio
+     */
+    updatePortfolio: {
+      name: "UpdatePortfolio",
+      I: UpdatePortfolioRequest,
+      O: Portfolio,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc mgo.portfolio.v1.PortfolioService.DeletePortfolio
+     */
+    deletePortfolio: {
+      name: "DeletePortfolio",
+      I: DeletePortfolioRequest,
+      O: Empty,
       kind: MethodKind.Unary,
     },
     /**

@@ -23,6 +23,7 @@ import (
 
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
+	"github.com/oxisto/money-gopher/persistence"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -32,45 +33,43 @@ const DefaultSecuritiesServiceURL = "http://localhost:8080"
 // service is the main struct fo the [PortfolioService] implementation.
 type service struct {
 	// a simple portfolio for testing, will be replaced by database later
-	portfolio *portfoliov1.Portfolio
-	//portfolios persistence.StorageOperations[*portfoliov1.Portfolio]
+	portfolio  *portfoliov1.Portfolio
+	portfolios persistence.StorageOperations[*portfoliov1.Portfolio]
+	events     persistence.StorageOperations[*portfoliov1.PortfolioEvent]
+	securities portfoliov1connect.SecuritiesServiceClient
 
 	portfoliov1connect.UnimplementedPortfolioServiceHandler
-
-	securities portfoliov1connect.SecuritiesServiceClient
 }
 
 type Options struct {
 	SecuritiesClient portfoliov1connect.SecuritiesServiceClient
+	DB               *persistence.DB
 }
 
 func NewService(opts Options) portfoliov1connect.PortfolioServiceHandler {
 	var s service
 
+	s.portfolios = persistence.Ops[*portfoliov1.Portfolio](opts.DB)
+	s.events = persistence.Relationship[*portfoliov1.PortfolioEvent](s.portfolios)
+
 	s.portfolio = &portfoliov1.Portfolio{
 		Name: "My Portfolio",
 		Events: []*portfoliov1.PortfolioEvent{
 			{
-				EventOneof: &portfoliov1.PortfolioEvent_Buy{
-					Buy: &portfoliov1.BuySecurityTransaction{
-						SecurityName: "US0378331005",
-						Amount:       20,
-						Price:        107.08,
-						Fees:         10.25,
-						Time:         timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)),
-					},
-				},
+				Type:         portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+				SecurityName: "US0378331005",
+				Amount:       20,
+				Price:        107.08,
+				Fees:         10.25,
+				Time:         timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)),
 			},
 			{
-				EventOneof: &portfoliov1.PortfolioEvent_Sell{
-					Sell: &portfoliov1.SellSecurityTransaction{
-						SecurityName: "US0378331005",
-						Amount:       10,
-						Price:        145.88,
-						Fees:         8.55,
-						Time:         timestamppb.New(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)),
-					},
-				},
+				Type:         portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
+				SecurityName: "US0378331005",
+				Amount:       10,
+				Price:        145.88,
+				Fees:         8.55,
+				Time:         timestamppb.New(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)),
 			},
 		},
 	}
