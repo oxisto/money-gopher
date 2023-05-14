@@ -50,6 +50,17 @@ func List[T any, S persistence.StorageObject](op persistence.StorageOperations[S
 	return
 }
 
+func Get[T any, S persistence.StorageObject](key any, op persistence.StorageOperations[S], convert func(obj S) *T) (res *connect.Response[T], err error) {
+	obj, err := op.Get(key)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	res = connect.NewResponse(convert(obj))
+
+	return
+}
+
 func Update[T any, S persistence.StorageObject](key any, in S, paths []string, op persistence.StorageOperations[S], convert func(obj S) *T) (res *connect.Response[T], err error) {
 	out, err := op.Update(key, in, paths)
 	if err != nil {
