@@ -3,3 +3,9 @@
 
 "service/securities":
   - service/securities/**/*
+
+"service/portfolio":
+  - service/portfolio/**/*
+
+"internal":
+  - "**/internal/**/*"

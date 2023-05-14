@@ -26,13 +26,16 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+var portfolioEventSetter = func(obj *portfoliov1.PortfolioEvent) *portfoliov1.PortfolioEvent {
+	return obj
+}
+
 func (svc *service) CreatePortfolioTransaction(ctx context.Context, req *connect.Request[portfoliov1.CreatePortfolioTransactionRequest]) (res *connect.Response[portfoliov1.PortfolioEvent], err error) {
 	return crud.Create(
 		req.Msg.Transaction,
 		svc.events,
-		func(obj *portfoliov1.PortfolioEvent) *portfoliov1.PortfolioEvent {
-			return obj
-		})
+		portfolioEventSetter,
+	)
 }
 
 func (svc *service) ListPortfolioTransactions(ctx context.Context, req *connect.Request[portfoliov1.ListPortfolioTransactionsRequest]) (res *connect.Response[portfoliov1.ListPortfolioTransactionsResponse], err error) {
@@ -54,9 +57,7 @@ func (svc *service) UpdatePortfolioTransactions(ctx context.Context, req *connec
 		req.Msg.Transaction,
 		req.Msg.UpdateMask.Paths,
 		svc.events,
-		func(obj *portfoliov1.PortfolioEvent) *portfoliov1.PortfolioEvent {
-			return obj
-		},
+		portfolioEventSetter,
 	)
 }
 
