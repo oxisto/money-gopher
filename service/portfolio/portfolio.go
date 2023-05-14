@@ -27,13 +27,16 @@ import (
 	"github.com/bufbuild/connect-go"
 )
 
+var portfolioSetter = func(obj *portfoliov1.Portfolio) *portfoliov1.Portfolio {
+	return obj
+}
+
 func (svc *service) CreatePortfolio(ctx context.Context, req *connect.Request[portfoliov1.CreatePortfolioRequest]) (res *connect.Response[portfoliov1.Portfolio], err error) {
 	return crud.Create(
 		req.Msg.Portfolio,
 		svc.portfolios,
-		func(obj *portfoliov1.Portfolio) *portfoliov1.Portfolio {
-			return obj
-		})
+		portfolioSetter,
+	)
 }
 
 func (svc *service) ListPortfolios(ctx context.Context, req *connect.Request[portfoliov1.ListPortfolioRequest]) (res *connect.Response[portfoliov1.ListPortfoliosResponse], err error) {
@@ -53,19 +56,21 @@ func (svc *service) ListPortfolios(ctx context.Context, req *connect.Request[por
 }
 
 func (svc *service) UpdatePortfolio(ctx context.Context, req *connect.Request[portfoliov1.UpdatePortfolioRequest]) (res *connect.Response[portfoliov1.Portfolio], err error) {
-	res = connect.NewResponse(&portfoliov1.Portfolio{})
-	res.Msg, err = svc.portfolios.Update(req.Msg.Portfolio.Name, req.Msg.Portfolio, req.Msg.UpdateMask.Paths)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
+	return crud.Update(
+		req.Msg.Portfolio.Name,
+		req.Msg.Portfolio,
+		req.Msg.UpdateMask.Paths,
+		svc.portfolios,
+		func(obj *portfoliov1.Portfolio) *portfoliov1.Portfolio {
+			if slices.Contains(req.Msg.UpdateMask.Paths, "events") {
+				for _, ls := range req.Msg.Portfolio.Events {
+					svc.events.Replace(ls)
+				}
+			}
 
-	if slices.Contains(req.Msg.UpdateMask.Paths, "events") {
-		for _, ls := range req.Msg.Portfolio.Events {
-			svc.events.Replace(ls)
-		}
-	}
-
-	return
+			return obj
+		},
+	)
 }
 
 func (svc *service) DeletePortfolio(ctx context.Context, req *connect.Request[portfoliov1.DeletePortfolioRequest]) (res *connect.Response[emptypb.Empty], err error) {

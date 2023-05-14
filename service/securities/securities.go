@@ -26,13 +26,15 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+var securitiesSetter = func(obj *portfoliov1.Security) *portfoliov1.Security {
+	return obj
+}
+
 func (svc *service) CreateSecurity(ctx context.Context, req *connect.Request[portfoliov1.CreateSecurityRequest]) (res *connect.Response[portfoliov1.Security], err error) {
 	return crud.Create(
 		req.Msg.Security,
 		svc.securities,
-		func(obj *portfoliov1.Security) *portfoliov1.Security {
-			return obj
-		},
+		securitiesSetter,
 	)
 }
 
@@ -62,19 +64,21 @@ func (svc *service) ListSecurities(ctx context.Context, req *connect.Request[por
 }
 
 func (svc *service) UpdateSecurity(ctx context.Context, req *connect.Request[portfoliov1.UpdateSecurityRequest]) (res *connect.Response[portfoliov1.Security], err error) {
-	res = connect.NewResponse(&portfoliov1.Security{})
-	res.Msg, err = svc.securities.Update(req.Msg.Security.Name, req.Msg.Security, req.Msg.UpdateMask.Paths)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
+	return crud.Update(
+		req.Msg.Security.Name,
+		req.Msg.Security,
+		req.Msg.UpdateMask.Paths,
+		svc.securities,
+		func(obj *portfoliov1.Security) *portfoliov1.Security {
+			if slices.Contains(req.Msg.UpdateMask.Paths, "listed_on") {
+				for _, ls := range req.Msg.Security.ListedOn {
+					svc.listedSecurities.Replace(ls)
+				}
+			}
 
-	if slices.Contains(req.Msg.UpdateMask.Paths, "listed_on") {
-		for _, ls := range req.Msg.Security.ListedOn {
-			svc.listedSecurities.Replace(ls)
-		}
-	}
-
-	return
+			return obj
+		},
+	)
 }
 
 func (svc *service) DeleteSecurity(ctx context.Context, req *connect.Request[portfoliov1.DeleteSecurityRequest]) (res *connect.Response[emptypb.Empty], err error) {
