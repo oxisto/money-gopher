@@ -463,6 +463,49 @@ export class DeletePortfolioTransactionRequest extends Message<DeletePortfolioTr
 }
 
 /**
+ * @generated from message mgo.portfolio.v1.ImportTransactionsRequest
+ */
+export class ImportTransactionsRequest extends Message<ImportTransactionsRequest> {
+  /**
+   * @generated from field: string portfolio_name = 1;
+   */
+  portfolioName = "";
+
+  /**
+   * @generated from field: string from_csv = 2;
+   */
+  fromCsv = "";
+
+  constructor(data?: PartialMessage<ImportTransactionsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.ImportTransactionsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "portfolio_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "from_csv", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ImportTransactionsRequest {
+    return new ImportTransactionsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ImportTransactionsRequest {
+    return new ImportTransactionsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ImportTransactionsRequest {
+    return new ImportTransactionsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ImportTransactionsRequest | PlainMessage<ImportTransactionsRequest> | undefined, b: ImportTransactionsRequest | PlainMessage<ImportTransactionsRequest> | undefined): boolean {
+    return proto3.util.equals(ImportTransactionsRequest, a, b);
+  }
+}
+
+/**
  * @generated from message mgo.portfolio.v1.Portfolio
  */
 export class Portfolio extends Message<Portfolio> {
@@ -660,9 +703,9 @@ export class PortfolioPosition extends Message<PortfolioPosition> {
  */
 export class PortfolioEvent extends Message<PortfolioEvent> {
   /**
-   * @generated from field: int32 id = 1;
+   * @generated from field: string name = 1;
    */
-  id = 0;
+  name = "";
 
   /**
    * @generated from field: mgo.portfolio.v1.PortfolioEventType type = 2;
@@ -712,7 +755,7 @@ export class PortfolioEvent extends Message<PortfolioEvent> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "mgo.portfolio.v1.PortfolioEvent";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "type", kind: "enum", T: proto3.getEnumType(PortfolioEventType) },
     { no: 3, name: "time", kind: "message", T: Timestamp },
     { no: 4, name: "portfolio_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },

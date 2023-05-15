@@ -16,6 +16,19 @@
 				"isDefault": true
 			},
 			"detail": "cd /Users/oxisto/Repositories/money-gopher; go build ${workspaceFolder}/cmd/mgo"
+		},
+		{
+			"type": "shell",
+			"label": "go: generate cmd/mgo",
+			"command": "go generate",
+			"problemMatcher": [
+				"$go"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"detail": "cd /Users/oxisto/Repositories/money-gopher; go generate ${workspaceFolder}/cmd/mgo"
 		}
 	]
 }

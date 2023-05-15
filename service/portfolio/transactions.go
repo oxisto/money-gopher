@@ -17,9 +17,11 @@
 package portfolio
 
 import (
+	"bytes"
 	"context"
 
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"github.com/oxisto/money-gopher/import/csv"
 	"github.com/oxisto/money-gopher/service/internal/crud"
 
 	"github.com/bufbuild/connect-go"
@@ -31,6 +33,9 @@ var portfolioEventSetter = func(obj *portfoliov1.PortfolioEvent) *portfoliov1.Po
 }
 
 func (svc *service) CreatePortfolioTransaction(ctx context.Context, req *connect.Request[portfoliov1.CreatePortfolioTransactionRequest]) (res *connect.Response[portfoliov1.PortfolioEvent], err error) {
+	// Create a unique name for the transaction
+	req.Msg.Transaction.MakeUniqueName()
+
 	return crud.Create(
 		req.Msg.Transaction,
 		svc.events,
@@ -53,7 +58,7 @@ func (svc *service) ListPortfolioTransactions(ctx context.Context, req *connect.
 
 func (svc *service) UpdatePortfolioTransactions(ctx context.Context, req *connect.Request[portfoliov1.UpdatePortfolioTransactionRequest]) (res *connect.Response[portfoliov1.PortfolioEvent], err error) {
 	return crud.Update(
-		req.Msg.Transaction.Id,
+		req.Msg.Transaction.Name,
 		req.Msg.Transaction,
 		req.Msg.UpdateMask.Paths,
 		svc.events,
@@ -66,4 +71,33 @@ func (svc *service) DeletePortfolioTransactions(ctx context.Context, req *connec
 		req.Msg.TransactionId,
 		svc.events,
 	)
+}
+
+func (svc *service) ImportTransactions(ctx context.Context, req *connect.Request[portfoliov1.ImportTransactionsRequest]) (res *connect.Response[emptypb.Empty], err error) {
+	var (
+		txs  []*portfoliov1.PortfolioEvent
+		secs []*portfoliov1.Security
+	)
+
+	txs, secs = csv.Import(bytes.NewReader([]byte(req.Msg.FromCsv)), req.Msg.PortfolioName)
+
+	for _, sec := range secs {
+		// TODO(oxisto): Once "Create" is really create and not replace, we need
+		//  to change this to something else.
+		svc.securities.CreateSecurity(
+			context.Background(),
+			connect.NewRequest(&portfoliov1.CreateSecurityRequest{
+				Security: sec,
+			}),
+		)
+	}
+
+	for _, tx := range txs {
+		err = svc.events.Replace(tx)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+	}
+
+	return
 }

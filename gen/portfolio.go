@@ -1,6 +1,10 @@
 package portfoliov1
 
-import "time"
+import (
+	"hash/fnv"
+	"strconv"
+	"time"
+)
 
 func (p *Portfolio) EventMap() (m map[string][]*PortfolioEvent) {
 	m = make(map[string][]*PortfolioEvent)
@@ -27,4 +31,20 @@ func EventsBefore(txs []*PortfolioEvent, t time.Time) (out []*PortfolioEvent) {
 	}
 
 	return
+}
+
+func (tx *PortfolioEvent) MakeUniqueName() {
+	// Create a unique name based on a hash containing:
+	//  - security name
+	//  - portfolio name
+	//  - date
+	//  - amount
+	h := fnv.New64a()
+	h.Write([]byte(tx.SecurityName))
+	h.Write([]byte(tx.PortfolioName))
+	h.Write([]byte(tx.Time.AsTime().Local().Format(time.DateTime)))
+	h.Write([]byte(strconv.FormatInt(int64(tx.Type), 10)))
+	h.Write([]byte(strconv.FormatInt(int64(tx.Amount), 10)))
+
+	tx.Name = strconv.FormatUint(h.Sum64(), 16)
 }

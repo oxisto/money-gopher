@@ -63,6 +63,9 @@ const (
 	// PortfolioServiceDeletePortfolioTransactionProcedure is the fully-qualified name of the
 	// PortfolioService's DeletePortfolioTransaction RPC.
 	PortfolioServiceDeletePortfolioTransactionProcedure = "/mgo.portfolio.v1.PortfolioService/DeletePortfolioTransaction"
+	// PortfolioServiceImportTransactionsProcedure is the fully-qualified name of the PortfolioService's
+	// ImportTransactions RPC.
+	PortfolioServiceImportTransactionsProcedure = "/mgo.portfolio.v1.PortfolioService/ImportTransactions"
 	// SecuritiesServiceListSecuritiesProcedure is the fully-qualified name of the SecuritiesService's
 	// ListSecurities RPC.
 	SecuritiesServiceListSecuritiesProcedure = "/mgo.portfolio.v1.SecuritiesService/ListSecurities"
@@ -94,6 +97,7 @@ type PortfolioServiceClient interface {
 	ListPortfolioTransactions(context.Context, *connect_go.Request[gen.ListPortfolioTransactionsRequest]) (*connect_go.Response[gen.ListPortfolioTransactionsResponse], error)
 	UpdatePortfolioTransaction(context.Context, *connect_go.Request[gen.UpdatePortfolioTransactionRequest]) (*connect_go.Response[gen.PortfolioEvent], error)
 	DeletePortfolioTransaction(context.Context, *connect_go.Request[gen.DeletePortfolioTransactionRequest]) (*connect_go.Response[emptypb.Empty], error)
+	ImportTransactions(context.Context, *connect_go.Request[gen.ImportTransactionsRequest]) (*connect_go.Response[emptypb.Empty], error)
 }
 
 // NewPortfolioServiceClient constructs a client for the mgo.portfolio.v1.PortfolioService service.
@@ -152,6 +156,11 @@ func NewPortfolioServiceClient(httpClient connect_go.HTTPClient, baseURL string,
 			baseURL+PortfolioServiceDeletePortfolioTransactionProcedure,
 			opts...,
 		),
+		importTransactions: connect_go.NewClient[gen.ImportTransactionsRequest, emptypb.Empty](
+			httpClient,
+			baseURL+PortfolioServiceImportTransactionsProcedure,
+			opts...,
+		),
 	}
 }
 
@@ -166,6 +175,7 @@ type portfolioServiceClient struct {
 	listPortfolioTransactions  *connect_go.Client[gen.ListPortfolioTransactionsRequest, gen.ListPortfolioTransactionsResponse]
 	updatePortfolioTransaction *connect_go.Client[gen.UpdatePortfolioTransactionRequest, gen.PortfolioEvent]
 	deletePortfolioTransaction *connect_go.Client[gen.DeletePortfolioTransactionRequest, emptypb.Empty]
+	importTransactions         *connect_go.Client[gen.ImportTransactionsRequest, emptypb.Empty]
 }
 
 // CreatePortfolio calls mgo.portfolio.v1.PortfolioService.CreatePortfolio.
@@ -213,6 +223,11 @@ func (c *portfolioServiceClient) DeletePortfolioTransaction(ctx context.Context,
 	return c.deletePortfolioTransaction.CallUnary(ctx, req)
 }
 
+// ImportTransactions calls mgo.portfolio.v1.PortfolioService.ImportTransactions.
+func (c *portfolioServiceClient) ImportTransactions(ctx context.Context, req *connect_go.Request[gen.ImportTransactionsRequest]) (*connect_go.Response[emptypb.Empty], error) {
+	return c.importTransactions.CallUnary(ctx, req)
+}
+
 // PortfolioServiceHandler is an implementation of the mgo.portfolio.v1.PortfolioService service.
 type PortfolioServiceHandler interface {
 	CreatePortfolio(context.Context, *connect_go.Request[gen.CreatePortfolioRequest]) (*connect_go.Response[gen.Portfolio], error)
@@ -224,6 +239,7 @@ type PortfolioServiceHandler interface {
 	ListPortfolioTransactions(context.Context, *connect_go.Request[gen.ListPortfolioTransactionsRequest]) (*connect_go.Response[gen.ListPortfolioTransactionsResponse], error)
 	UpdatePortfolioTransaction(context.Context, *connect_go.Request[gen.UpdatePortfolioTransactionRequest]) (*connect_go.Response[gen.PortfolioEvent], error)
 	DeletePortfolioTransaction(context.Context, *connect_go.Request[gen.DeletePortfolioTransactionRequest]) (*connect_go.Response[emptypb.Empty], error)
+	ImportTransactions(context.Context, *connect_go.Request[gen.ImportTransactionsRequest]) (*connect_go.Response[emptypb.Empty], error)
 }
 
 // NewPortfolioServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -279,6 +295,11 @@ func NewPortfolioServiceHandler(svc PortfolioServiceHandler, opts ...connect_go.
 		svc.DeletePortfolioTransaction,
 		opts...,
 	))
+	mux.Handle(PortfolioServiceImportTransactionsProcedure, connect_go.NewUnaryHandler(
+		PortfolioServiceImportTransactionsProcedure,
+		svc.ImportTransactions,
+		opts...,
+	))
 	return "/mgo.portfolio.v1.PortfolioService/", mux
 }
 
@@ -319,6 +340,10 @@ func (UnimplementedPortfolioServiceHandler) UpdatePortfolioTransaction(context.C
 
 func (UnimplementedPortfolioServiceHandler) DeletePortfolioTransaction(context.Context, *connect_go.Request[gen.DeletePortfolioTransactionRequest]) (*connect_go.Response[emptypb.Empty], error) {
 	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.DeletePortfolioTransaction is not implemented"))
+}
+
+func (UnimplementedPortfolioServiceHandler) ImportTransactions(context.Context, *connect_go.Request[gen.ImportTransactionsRequest]) (*connect_go.Response[emptypb.Empty], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.ImportTransactions is not implemented"))
 }
 
 // SecuritiesServiceClient is a client for the mgo.portfolio.v1.SecuritiesService service.

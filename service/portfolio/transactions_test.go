@@ -158,7 +158,7 @@ func Test_service_UpdatePortfolioTransactions(t *testing.T) {
 			args: args{
 				req: connect.NewRequest(&portfoliov1.UpdatePortfolioTransactionRequest{
 					Transaction: &portfoliov1.PortfolioEvent{
-						Id:           1,
+						Name:         "transaction1",
 						Type:         portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
 						SecurityName: "My Second Security",
 					},
@@ -229,6 +229,62 @@ func Test_service_DeletePortfolioTransactions(t *testing.T) {
 			_, err := svc.DeletePortfolioTransactions(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("service.DeletePortfolioTransactions() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			tt.wantSvc(t, svc)
+		})
+	}
+}
+
+func Test_service_ImportTransactions(t *testing.T) {
+	type fields struct {
+		portfolios persistence.StorageOperations[*portfoliov1.Portfolio]
+		securities portfoliov1connect.SecuritiesServiceClient
+	}
+	type args struct {
+		ctx context.Context
+		req *connect.Request[portfoliov1.ImportTransactionsRequest]
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantSvc assert.Want[*service]
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			fields: fields{
+				portfolios: emptyPortfolio(t),
+				securities: &mockSecuritiesClient{},
+			},
+			args: args{
+				req: connect.NewRequest(&portfoliov1.ImportTransactionsRequest{
+					PortfolioName: "bank/myportfolio",
+					FromCsv: `Date;Type;Value;Transaction Currency;Gross Amount;Currency Gross Amount;Exchange Rate;Fees;Taxes;Shares;ISIN;WKN;Ticker Symbol;Security Name;Note
+2021-06-05T00:00;Buy;2.151,85;EUR;;;;10,25;0,00;20;US0378331005;865985;APC.F;Apple Inc.;
+2021-06-05T00:00;Sell;-2.151,85;EUR;;;;10,25;0,00;20;US0378331005;865985;APC.F;Apple Inc.;
+2021-06-18T00:00;Buy;912,66;EUR;;;;7,16;0,00;5;US09075V1026;A2PSR2;22UA.F;BioNTech SE;`,
+				}),
+			},
+			wantSvc: func(t *testing.T, s *service) bool {
+				txs, err := s.events.List("bank/myportfolio")
+				return true &&
+					assert.NoError(t, err) &&
+					assert.Equals(t, 3, len(txs))
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := &service{
+				portfolios: tt.fields.portfolios,
+				events:     persistence.Relationship[*portfoliov1.PortfolioEvent](tt.fields.portfolios),
+				securities: tt.fields.securities,
+			}
+			_, err := svc.ImportTransactions(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("service.ImportTransactions() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			tt.wantSvc(t, svc)
