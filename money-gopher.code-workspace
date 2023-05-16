@@ -16,15 +16,15 @@
 			"bufbuild",
 			"emptypb",
 			"fieldmaskpb",
+			"ISIN",
 			"modernc",
 			"moneygopher",
-			"portfoliov",
-			"secmap",
-			"secres",
 			"oxisto",
 			"portfoliov",
 			"protobuf",
 			"protoreflect",
+			"secmap",
+			"secres",
 			"timestamppb"
 		]
 	}

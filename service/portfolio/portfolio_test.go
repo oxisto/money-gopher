@@ -39,13 +39,22 @@ func myPortfolio(t *testing.T) persistence.StorageOperations[*portfoliov1.Portfo
 		}))
 		rel := persistence.Relationship[*portfoliov1.PortfolioEvent](ops)
 		assert.NoError(t, rel.Replace(&portfoliov1.PortfolioEvent{
-			Id:            1,
+			Name:          "transaction1",
 			PortfolioName: "bank/myportfolio",
 			SecurityName:  "My Security",
 			Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
 			Time:          timestamppb.New(time.Date(2022, 1, 0, 0, 0, 0, 0, time.UTC)),
 			Amount:        10,
 			Price:         100.0,
+		}))
+	})
+}
+
+func emptyPortfolio(t *testing.T) persistence.StorageOperations[*portfoliov1.Portfolio] {
+	return internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Portfolio]) {
+		assert.NoError(t, ops.Replace(&portfoliov1.Portfolio{
+			Name:        "bank/myportfolio",
+			DisplayName: "My Portfolio",
 		}))
 	})
 }

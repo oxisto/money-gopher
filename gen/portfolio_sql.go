@@ -91,7 +91,7 @@ func (*Portfolio) Scan(sc persistence.Scanner) (obj persistence.StorageObject, e
 
 func (*PortfolioEvent) InitTables(db *persistence.DB) (err error) {
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS portfolio_events (
-id INTEGER PRIMARY KEY AUTOINCREMENT,
+name TEXT PRIMARY KEY,
 time DATETIME NOT NULL,
 portfolio_name TEXT NOT NULL, 
 security_name TEXT NOT NULL,
@@ -109,17 +109,17 @@ taxes REAL
 
 func (*PortfolioEvent) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) {
 	return db.Prepare(`REPLACE INTO portfolio_events
-(id, time, portfolio_name, security_name, amount, price, fees, taxes)
+(name, time, portfolio_name, security_name, amount, price, fees, taxes)
 VALUES (?,?,?,?,?,?,?,?);`)
 }
 
 func (*PortfolioEvent) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`SELECT id, time, portfolio_name, security_name, amount, price, fees, taxes
+	return db.Prepare(`SELECT name, time, portfolio_name, security_name, amount, price, fees, taxes
 FROM portfolio_events WHERE portfolio_name = ?`)
 }
 
 func (*PortfolioEvent) PrepareGet(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`SELECT * FROM portfolio_events WHERE id = ?`)
+	return db.Prepare(`SELECT * FROM portfolio_events WHERE name = ?`)
 }
 
 func (*PortfolioEvent) PrepareUpdate(db *persistence.DB, columns []string) (stmt *sql.Stmt, err error) {
@@ -134,18 +134,18 @@ func (*PortfolioEvent) PrepareUpdate(db *persistence.DB, columns []string) (stmt
 		set[i] = persistence.Quote(col) + " = ?"
 	}
 
-	query += "UPDATE portfolio_events SET " + strings.Join(set, ", ") + " WHERE id = ?;"
+	query += "UPDATE portfolio_events SET " + strings.Join(set, ", ") + " WHERE name = ?;"
 
 	return db.Prepare(query)
 }
 
 func (*PortfolioEvent) PrepareDelete(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`DELETE FROM portfolio_events WHERE id = ?`)
+	return db.Prepare(`DELETE FROM portfolio_events WHERE name = ?`)
 }
 
 func (e *PortfolioEvent) ReplaceIntoArgs() []any {
 	return []any{
-		e.Id,
+		e.Name,
 		e.Time.AsTime(),
 		e.PortfolioName,
 		e.SecurityName,
@@ -159,8 +159,8 @@ func (e *PortfolioEvent) ReplaceIntoArgs() []any {
 func (e *PortfolioEvent) UpdateArgs(columns []string) (args []any) {
 	for _, col := range columns {
 		switch col {
-		case "id":
-			args = append(args, e.Id)
+		case "name":
+			args = append(args, e.Name)
 		case "time":
 			args = append(args, e.Time.AsTime())
 		case "portfolio_name":
@@ -188,7 +188,7 @@ func (*PortfolioEvent) Scan(sc persistence.Scanner) (obj persistence.StorageObje
 	)
 
 	err = sc.Scan(
-		&e.Id,
+		&e.Name,
 		&t,
 		&e.PortfolioName,
 		&e.SecurityName,
