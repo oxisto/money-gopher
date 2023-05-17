@@ -26,6 +26,7 @@
 			"secmap",
 			"secres",
 			"timestamppb"
-		]
+		],
+		"editor.tabSize": 2
 	}
 }
