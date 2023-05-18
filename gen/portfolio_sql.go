@@ -2,6 +2,7 @@ package portfoliov1
 
 import (
 	"database/sql"
+	"errors"
 	"strings"
 	"time"
 
@@ -12,15 +13,13 @@ import (
 var _ persistence.StorageObject = &Portfolio{}
 
 func (*Portfolio) InitTables(db *persistence.DB) (err error) {
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS portfolios (
+	_, err1 := db.Exec(`CREATE TABLE IF NOT EXISTS portfolios (
 name TEXT PRIMARY KEY,
 display_name TEXT NOT NULL
 );`)
-	if err != nil {
-		return err
-	}
+	err2 := (&PortfolioEvent{}).InitTables(db)
 
-	return (&PortfolioEvent{}).InitTables(db)
+	return errors.Join(err1, err2)
 }
 
 func (*Portfolio) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) {

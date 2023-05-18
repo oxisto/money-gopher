@@ -26,6 +26,7 @@ import (
 	moneygopher "github.com/oxisto/money-gopher"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
+	"github.com/oxisto/money-gopher/internal"
 	"github.com/oxisto/money-gopher/persistence"
 	"golang.org/x/text/currency"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -53,8 +54,11 @@ var mockSecuritiesClientWithData = &mockSecuritiesClient{
 }
 
 func Test_service_GetPortfolioSnapshot(t *testing.T) {
+	var portfolios = myPortfolio(t)
+
 	type fields struct {
 		portfolios persistence.StorageOperations[*portfoliov1.Portfolio]
+		events     persistence.StorageOperations[*portfoliov1.PortfolioEvent]
 		securities portfoliov1connect.SecuritiesServiceClient
 	}
 	type args struct {
@@ -71,7 +75,8 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 		{
 			name: "happy path, now",
 			fields: fields{
-				portfolios: myPortfolio(t),
+				portfolios: portfolios,
+				events:     persistence.Relationship[*portfoliov1.PortfolioEvent](portfolios),
 				securities: mockSecuritiesClientWithData,
 			},
 			args: args{req: connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
@@ -89,7 +94,8 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 		{
 			name: "happy path, before sell",
 			fields: fields{
-				portfolios: myPortfolio(t),
+				portfolios: portfolios,
+				events:     persistence.Relationship[*portfoliov1.PortfolioEvent](portfolios),
 				securities: mockSecuritiesClientWithData,
 			},
 			args: args{req: connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
@@ -109,9 +115,26 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 			},
 		},
 		{
-			name: "list error",
+			name: "events list error",
 			fields: fields{
 				portfolios: emptyPortfolio(t),
+				events:     internal.ErrOps[*portfoliov1.PortfolioEvent](io.EOF),
+				securities: &mockSecuritiesClient{listSecuritiesError: io.EOF},
+			},
+			args: args{req: connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
+				PortfolioName: "bank/myportfolio",
+				Time:          timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC)),
+			})},
+			wantErr: true,
+			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioSnapshot]) bool {
+				return true
+			},
+		},
+		{
+			name: "securities list error",
+			fields: fields{
+				portfolios: portfolios,
+				events:     persistence.Relationship[*portfoliov1.PortfolioEvent](portfolios),
 				securities: &mockSecuritiesClient{listSecuritiesError: io.EOF},
 			},
 			args: args{req: connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
@@ -128,7 +151,7 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &service{
 				portfolios: tt.fields.portfolios,
-				events:     persistence.Relationship[*portfoliov1.PortfolioEvent](tt.fields.portfolios),
+				events:     tt.fields.events,
 				securities: tt.fields.securities,
 			}
 			gotRes, err := svc.GetPortfolioSnapshot(tt.args.ctx, tt.args.req)
