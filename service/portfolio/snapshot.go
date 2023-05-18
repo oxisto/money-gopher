@@ -31,15 +31,18 @@ import (
 func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Request[portfoliov1.GetPortfolioSnapshotRequest]) (res *connect.Response[portfoliov1.PortfolioSnapshot], err error) {
 	var (
 		snap   *portfoliov1.PortfolioSnapshot
-		p      *portfoliov1.Portfolio
+		p      portfoliov1.Portfolio
 		m      map[string][]*portfoliov1.PortfolioEvent
 		names  []string
 		secres *connect.Response[portfoliov1.ListSecuritiesResponse]
 		secmap map[string]*portfoliov1.Security
 	)
 
-	// Retrieve portfolio
-	p = svc.portfolio
+	// Retrieve transactions
+	p.Events, err = svc.events.List(req.Msg.PortfolioName)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
 
 	// If no time is specified, we assume it to be now
 	if req.Msg.Time == nil {
@@ -88,6 +91,9 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 			MarketValue:   *secmap[name].ListedOn[0].LatestQuote * float32(c.Amount),
 			MarketPrice:   *secmap[name].ListedOn[0].LatestQuote,
 		}
+
+		// Add to total market value
+		snap.TotalValue += snap.Positions[name].MarketValue
 	}
 
 	return connect.NewResponse(snap), nil

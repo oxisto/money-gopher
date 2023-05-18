@@ -19,13 +19,10 @@ package portfolio
 
 import (
 	"net/http"
-	"time"
 
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	"github.com/oxisto/money-gopher/persistence"
-
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const DefaultSecuritiesServiceURL = "http://localhost:8080"
@@ -52,27 +49,6 @@ func NewService(opts Options) portfoliov1connect.PortfolioServiceHandler {
 	s.portfolios = persistence.Ops[*portfoliov1.Portfolio](opts.DB)
 	s.events = persistence.Relationship[*portfoliov1.PortfolioEvent](s.portfolios)
 
-	s.portfolio = &portfoliov1.Portfolio{
-		Name: "My Portfolio",
-		Events: []*portfoliov1.PortfolioEvent{
-			{
-				Type:         portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
-				SecurityName: "US0378331005",
-				Amount:       20,
-				Price:        107.08,
-				Fees:         10.25,
-				Time:         timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)),
-			},
-			{
-				Type:         portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
-				SecurityName: "US0378331005",
-				Amount:       10,
-				Price:        145.88,
-				Fees:         8.55,
-				Time:         timestamppb.New(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)),
-			},
-		},
-	}
 	s.securities = opts.SecuritiesClient
 	if s.securities == nil {
 		s.securities = portfoliov1connect.NewSecuritiesServiceClient(http.DefaultClient, DefaultSecuritiesServiceURL)

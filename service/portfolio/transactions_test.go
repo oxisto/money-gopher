@@ -64,7 +64,7 @@ func Test_service_CreatePortfolioTransaction(t *testing.T) {
 			},
 			wantSvc: func(t *testing.T, s *service) bool {
 				list, _ := s.events.List("bank/myportfolio")
-				return assert.Equals(t, 2, len(list))
+				return assert.Equals(t, 3, len(list))
 			},
 		},
 	}
@@ -113,7 +113,7 @@ func Test_service_ListPortfolioTransactions(t *testing.T) {
 				}),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.ListPortfolioTransactionsResponse]) bool {
-				return assert.Equals(t, 1, len(r.Msg.Transactions))
+				return assert.Equals(t, 2, len(r.Msg.Transactions))
 			},
 		},
 	}
@@ -158,7 +158,7 @@ func Test_service_UpdatePortfolioTransactions(t *testing.T) {
 			args: args{
 				req: connect.NewRequest(&portfoliov1.UpdatePortfolioTransactionRequest{
 					Transaction: &portfoliov1.PortfolioEvent{
-						Name:         "transaction1",
+						Name:         "buy",
 						Type:         portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
 						SecurityName: "My Second Security",
 					},

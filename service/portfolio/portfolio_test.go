@@ -39,13 +39,24 @@ func myPortfolio(t *testing.T) persistence.StorageOperations[*portfoliov1.Portfo
 		}))
 		rel := persistence.Relationship[*portfoliov1.PortfolioEvent](ops)
 		assert.NoError(t, rel.Replace(&portfoliov1.PortfolioEvent{
-			Name:          "transaction1",
-			PortfolioName: "bank/myportfolio",
-			SecurityName:  "My Security",
+			Name:          "buy",
 			Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
-			Time:          timestamppb.New(time.Date(2022, 1, 0, 0, 0, 0, 0, time.UTC)),
+			PortfolioName: "bank/myportfolio",
+			SecurityName:  "US0378331005",
+			Amount:        20,
+			Price:         107.08,
+			Fees:          10.25,
+			Time:          timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)),
+		}))
+		assert.NoError(t, rel.Replace(&portfoliov1.PortfolioEvent{
+			Name:          "sell",
+			Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
+			PortfolioName: "bank/myportfolio",
+			SecurityName:  "US0378331005",
 			Amount:        10,
-			Price:         100.0,
+			Price:         145.88,
+			Fees:          8.55,
+			Time:          timestamppb.New(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)),
 		}))
 	})
 }
@@ -143,7 +154,7 @@ func Test_service_ListPortfolios(t *testing.T) {
 				return true &&
 					assert.Equals(t, "bank/myportfolio", r.Msg.Portfolios[0].Name) &&
 					assert.Equals(t, "My Portfolio", r.Msg.Portfolios[0].DisplayName) &&
-					assert.Equals(t, 1, len(r.Msg.Portfolios[0].Events))
+					assert.Equals(t, 2, len(r.Msg.Portfolios[0].Events))
 			},
 		},
 	}
