@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/oxisto/money-gopher/persistence"
-	"golang.org/x/exp/slog"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -21,9 +20,7 @@ display_name TEXT NOT NULL
 		return err
 	}
 
-	slog.Info("Some test")
-
-	return
+	return (&PortfolioEvent{}).InitTables(db)
 }
 
 func (*Portfolio) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) {
