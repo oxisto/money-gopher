@@ -2,28 +2,24 @@ package portfoliov1
 
 import (
 	"database/sql"
+	"errors"
 	"strings"
 	"time"
 
 	"github.com/oxisto/money-gopher/persistence"
-	"golang.org/x/exp/slog"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var _ persistence.StorageObject = &Portfolio{}
 
 func (*Portfolio) InitTables(db *persistence.DB) (err error) {
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS portfolios (
+	_, err1 := db.Exec(`CREATE TABLE IF NOT EXISTS portfolios (
 name TEXT PRIMARY KEY,
 display_name TEXT NOT NULL
 );`)
-	if err != nil {
-		return err
-	}
+	err2 := (&PortfolioEvent{}).InitTables(db)
 
-	slog.Info("Some test")
-
-	return
+	return errors.Join(err1, err2)
 }
 
 func (*Portfolio) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) {
@@ -92,6 +88,7 @@ func (*Portfolio) Scan(sc persistence.Scanner) (obj persistence.StorageObject, e
 func (*PortfolioEvent) InitTables(db *persistence.DB) (err error) {
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS portfolio_events (
 name TEXT PRIMARY KEY,
+type INTEGER NOT NULL,
 time DATETIME NOT NULL,
 portfolio_name TEXT NOT NULL, 
 security_name TEXT NOT NULL,
@@ -109,13 +106,13 @@ taxes REAL
 
 func (*PortfolioEvent) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) {
 	return db.Prepare(`REPLACE INTO portfolio_events
-(name, time, portfolio_name, security_name, amount, price, fees, taxes)
-VALUES (?,?,?,?,?,?,?,?);`)
+(name, type, time, portfolio_name, security_name, amount, price, fees, taxes)
+VALUES (?,?,?,?,?,?,?,?,?);`)
 }
 
 func (*PortfolioEvent) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`SELECT name, time, portfolio_name, security_name, amount, price, fees, taxes
-FROM portfolio_events WHERE portfolio_name = ?`)
+	return db.Prepare(`SELECT name, type, time, portfolio_name, security_name, amount, price, fees, taxes
+FROM portfolio_events WHERE portfolio_name = ? ORDER BY time ASC`)
 }
 
 func (*PortfolioEvent) PrepareGet(db *persistence.DB) (stmt *sql.Stmt, err error) {
@@ -146,6 +143,7 @@ func (*PortfolioEvent) PrepareDelete(db *persistence.DB) (stmt *sql.Stmt, err er
 func (e *PortfolioEvent) ReplaceIntoArgs() []any {
 	return []any{
 		e.Name,
+		e.Type,
 		e.Time.AsTime(),
 		e.PortfolioName,
 		e.SecurityName,
@@ -161,6 +159,8 @@ func (e *PortfolioEvent) UpdateArgs(columns []string) (args []any) {
 		switch col {
 		case "name":
 			args = append(args, e.Name)
+		case "type":
+			args = append(args, e.Type)
 		case "time":
 			args = append(args, e.Time.AsTime())
 		case "portfolio_name":
@@ -189,6 +189,7 @@ func (*PortfolioEvent) Scan(sc persistence.Scanner) (obj persistence.StorageObje
 
 	err = sc.Scan(
 		&e.Name,
+		&e.Type,
 		&t,
 		&e.PortfolioName,
 		&e.SecurityName,
