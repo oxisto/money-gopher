@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreatePortfolioRequest, CreatePortfolioTransactionRequest, CreateSecurityRequest, DeletePortfolioRequest, DeletePortfolioTransactionRequest, DeleteSecurityRequest, GetPortfolioSnapshotRequest, GetSecurityRequest, ImportTransactionsRequest, ListPortfolioRequest, ListPortfoliosResponse, ListPortfolioTransactionsRequest, ListPortfolioTransactionsResponse, ListSecuritiesRequest, ListSecuritiesResponse, Portfolio, PortfolioEvent, PortfolioSnapshot, Security, TriggerQuoteUpdateRequest, TriggerQuoteUpdateResponse, UpdatePortfolioRequest, UpdatePortfolioTransactionRequest, UpdateSecurityRequest } from "./mgo_pb.js";
+import { CreatePortfolioRequest, CreatePortfolioTransactionRequest, CreateSecurityRequest, DeletePortfolioRequest, DeletePortfolioTransactionRequest, DeleteSecurityRequest, GetPortfolioSnapshotRequest, GetSecurityRequest, ImportTransactionsRequest, ListPortfoliosRequest, ListPortfoliosResponse, ListPortfolioTransactionsRequest, ListPortfolioTransactionsResponse, ListSecuritiesRequest, ListSecuritiesResponse, Portfolio, PortfolioEvent, PortfolioSnapshot, Security, TriggerQuoteUpdateRequest, TriggerQuoteUpdateResponse, UpdatePortfolioRequest, UpdatePortfolioTransactionRequest, UpdateSecurityRequest } from "./mgo_pb.js";
 import { Empty, MethodIdempotency, MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -22,11 +22,11 @@ export const PortfolioService = {
       kind: MethodKind.Unary,
     },
     /**
-     * @generated from rpc mgo.portfolio.v1.PortfolioService.ListPortfolio
+     * @generated from rpc mgo.portfolio.v1.PortfolioService.ListPortfolios
      */
-    listPortfolio: {
-      name: "ListPortfolio",
-      I: ListPortfolioRequest,
+    listPortfolios: {
+      name: "ListPortfolios",
+      I: ListPortfoliosRequest,
       O: ListPortfoliosResponse,
       kind: MethodKind.Unary,
     },

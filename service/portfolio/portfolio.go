@@ -39,7 +39,7 @@ func (svc *service) CreatePortfolio(ctx context.Context, req *connect.Request[po
 	)
 }
 
-func (svc *service) ListPortfolios(ctx context.Context, req *connect.Request[portfoliov1.ListPortfolioRequest]) (res *connect.Response[portfoliov1.ListPortfoliosResponse], err error) {
+func (svc *service) ListPortfolios(ctx context.Context, req *connect.Request[portfoliov1.ListPortfoliosRequest]) (res *connect.Response[portfoliov1.ListPortfoliosResponse], err error) {
 	return crud.List(
 		svc.portfolios,
 		func(

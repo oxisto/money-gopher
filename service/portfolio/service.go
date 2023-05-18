@@ -54,5 +54,10 @@ func NewService(opts Options) portfoliov1connect.PortfolioServiceHandler {
 		s.securities = portfoliov1connect.NewSecuritiesServiceClient(http.DefaultClient, DefaultSecuritiesServiceURL)
 	}
 
+	(&portfoliov1.Portfolio{}).InitTables(opts.DB)
+
+	// Add a simple starter portfolio
+	s.portfolios.Replace(s.portfolio)
+
 	return &s
 }

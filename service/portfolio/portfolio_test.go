@@ -136,7 +136,7 @@ func Test_service_ListPortfolios(t *testing.T) {
 	}
 	type args struct {
 		ctx context.Context
-		req *connect.Request[portfoliov1.ListPortfolioRequest]
+		req *connect.Request[portfoliov1.ListPortfoliosRequest]
 	}
 	tests := []struct {
 		name    string

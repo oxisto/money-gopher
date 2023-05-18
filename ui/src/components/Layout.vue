@@ -31,9 +31,9 @@ const navigation = [
   { name: 'Performance', href: '/', icon: ChartPieIcon, current: false },
 ]
 const teams = [
-  { id: 1, name: 'Heroicons', href: '#', initial: 'H', current: false },
-  { id: 2, name: 'Tailwind Labs', href: '#', initial: 'T', current: false },
-  { id: 3, name: 'Workcation', href: '#', initial: 'W', current: false },
+  { id: 1, name: 'Personal', href: '#', initial: 'H', current: false },
+  { id: 2, name: 'Parents', href: '#', initial: 'T', current: false },
+  { id: 3, name: 'Child', href: '#', initial: 'W', current: false },
 ]
 const userNavigation = [
   { name: 'Your profile', href: '#' },
@@ -97,7 +97,7 @@ const sidebarOpen = ref(false)
                       </ul>
                     </li>
                     <li>
-                      <div class="text-xs font-semibold leading-6 text-indigo-200">Your teams</div>
+                      <div class="text-xs font-semibold leading-6 text-indigo-200">Your Portfolio Group</div>
                       <ul role="list" class="-mx-2 mt-2 space-y-1">
                         <li v-for="team in teams" :key="team.name">
                           <a :href="team.href"
@@ -150,7 +150,7 @@ const sidebarOpen = ref(false)
               </ul>
             </li>
             <li>
-              <div class="text-xs font-semibold leading-6 text-indigo-200">Your teams</div>
+              <div class="text-xs font-semibold leading-6 text-indigo-200">Your Portfolio Group</div>
               <ul role="list" class="-mx-2 mt-2 space-y-1">
                 <li v-for="team in teams" :key="team.name">
                   <a :href="team.href"
