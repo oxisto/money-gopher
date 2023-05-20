@@ -1,15 +1,26 @@
 <script setup lang="ts">
+import { Portfolio, PortfolioSnapshot } from '@/gen/mgo_pb';
+import { PortfolioServiceClientKey } from '@/symbols';
 import { CalendarDaysIcon, CreditCardIcon, UserCircleIcon } from '@heroicons/vue/20/solid'
+import { inject } from 'vue';
+
+const props = defineProps({
+  portfolio: { type: Portfolio, required: true },
+})
+
+// TODO(oxisto): Do we really want to have this in the component?
+let client = inject(PortfolioServiceClientKey)
+let snapshot = await client?.getPortfolioSnapshot({ portfolioName: props.portfolio.name })
 </script>
 
 <template>
-  <div class="lg:col-start-3 lg:row-end-1">
+  <div class="lg:col-start-3 lg:row-end-1" v-if="portfolio && snapshot">
     <h2 class="sr-only">Summary</h2>
     <div class="rounded-lg bg-gray-50 shadow-sm ring-1 ring-gray-900/5">
       <dl class="flex flex-wrap">
         <div class="flex-auto pl-6 pt-6">
-          <dt class="text-sm font-semibold leading-6 text-gray-900">Amount</dt>
-          <dd class="mt-1 text-base font-semibold leading-6 text-gray-900">$10,560.00</dd>
+          <dt class="text-sm font-semibold leading-6 text-gray-900">{{ portfolio.displayName }}</dt>
+          <dd class="mt-1 text-base font-semibold leading-6 text-gray-900">{{ snapshot.totalValue }}</dd>
         </div>
         <div class="flex-none self-end px-6 pt-4">
           <dt class="sr-only">Status</dt>

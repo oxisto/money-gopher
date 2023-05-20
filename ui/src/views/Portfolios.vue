@@ -1,19 +1,11 @@
 <script setup lang="ts">
 import Button from '@/components/Button.vue';
 import Portfolio from '@/components/Portfolio.vue';
-import { createPromiseClient } from '@bufbuild/connect'
-import { createConnectTransport } from '@bufbuild/connect-web'
-import type { PromiseClient } from '@bufbuild/connect'
-import { PortfolioService } from "@/gen/mgo_connect"
+import { PortfolioServiceClientKey } from '@/symbols'
+import { inject } from 'vue';
 
-let client: PromiseClient<typeof PortfolioService> = createPromiseClient(
-  PortfolioService,
-  createConnectTransport({
-    baseUrl: 'http://localhost:8080',
-  })
-)
-
-let portfolios = (await client.listPortfolios({}, {})).portfolios;
+let client = inject(PortfolioServiceClientKey)
+let portfolios = ((await client?.listPortfolios({}, {}))?.portfolios) ?? [];
 </script>
 
 <template>
@@ -34,7 +26,7 @@ let portfolios = (await client.listPortfolios({}, {})).portfolios;
   <ul role="list" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
     <li v-for="portfolio in portfolios" :key="portfolio.name"
       class="col-span-1 divide-y divide-gray-200 rounded-lg bg-white shadow">
-      <Portfolio></Portfolio>
+      <Portfolio :portfolio="portfolio"></Portfolio>
     </li>
   </ul>
 </template>

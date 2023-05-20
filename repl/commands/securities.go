@@ -62,4 +62,5 @@ func init() {
 	repl.AddCommand("update-quote", &triggerQuoteUpdate{})
 
 	repl.AddCommand("portfolio-snapshot", &portfolioSnapshot{})
+	repl.AddCommand("import-transactions", &importTransactions{})
 }

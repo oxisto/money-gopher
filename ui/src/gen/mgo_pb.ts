@@ -615,12 +615,12 @@ export class PortfolioSnapshot extends Message<PortfolioSnapshot> {
  */
 export class PortfolioPosition extends Message<PortfolioPosition> {
   /**
-   * @generated from field: string security_name = 1;
+   * @generated from field: mgo.portfolio.v1.Security security = 1;
    */
-  securityName = "";
+  security?: Security;
 
   /**
-   * @generated from field: int32 amount = 2;
+   * @generated from field: float amount = 2;
    */
   amount = 0;
 
@@ -672,8 +672,8 @@ export class PortfolioPosition extends Message<PortfolioPosition> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "mgo.portfolio.v1.PortfolioPosition";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "amount", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 1, name: "security", kind: "message", T: Security },
+    { no: 2, name: "amount", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
     { no: 5, name: "purchase_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
     { no: 6, name: "purchase_price", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
     { no: 10, name: "market_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
@@ -728,7 +728,7 @@ export class PortfolioEvent extends Message<PortfolioEvent> {
   securityName = "";
 
   /**
-   * @generated from field: int32 amount = 10;
+   * @generated from field: float amount = 10;
    */
   amount = 0;
 
@@ -760,7 +760,7 @@ export class PortfolioEvent extends Message<PortfolioEvent> {
     { no: 3, name: "time", kind: "message", T: Timestamp },
     { no: 4, name: "portfolio_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "amount", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 10, name: "amount", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
     { no: 11, name: "price", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
     { no: 12, name: "fees", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
     { no: 13, name: "taxes", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },

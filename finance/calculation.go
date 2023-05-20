@@ -28,7 +28,7 @@ import (
 // since we need to modify it.
 type fifoTx struct {
 	// amount of shares in this transaction
-	amount int32
+	amount float32
 	// value contains the net value of this transaction, i.e., without taxes and fees
 	value float32
 	// fees contain any fees associated to this transaction
@@ -38,7 +38,7 @@ type fifoTx struct {
 }
 
 type calculation struct {
-	Amount int32
+	Amount float32
 	Fees   float32
 	Taxes  float32
 
@@ -75,7 +75,7 @@ func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
 		})
 	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL:
 		var (
-			sold int32
+			sold float32
 		)
 
 		// Increase the fees and taxes by the value stored in the
@@ -111,7 +111,7 @@ func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
 
 			// Reduce the number of shares in this entry by the sold amount (but
 			// max it to the item's amount).
-			n := int32(math.Min(float64(sold), float64(item.amount)))
+			n := float32(math.Min(float64(sold), float64(item.amount)))
 			item.amount -= n
 
 			// Adjust the value with the new amount

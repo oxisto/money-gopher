@@ -99,5 +99,7 @@ func (svc *service) ImportTransactions(ctx context.Context, req *connect.Request
 		}
 	}
 
+	res = connect.NewResponse(&emptypb.Empty{})
+
 	return
 }

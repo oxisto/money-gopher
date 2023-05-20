@@ -84,7 +84,7 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 			})},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioSnapshot]) bool {
 				return true &&
-					assert.Equals(t, "US0378331005", r.Msg.Positions["US0378331005"].SecurityName) &&
+					assert.Equals(t, "US0378331005", r.Msg.Positions["US0378331005"].Security.Name) &&
 					assert.Equals(t, 10, r.Msg.Positions["US0378331005"].Amount) &&
 					assert.Equals(t, 1070.8, r.Msg.Positions["US0378331005"].PurchaseValue) &&
 					assert.Equals(t, 107.08, r.Msg.Positions["US0378331005"].PurchasePrice) &&
@@ -106,7 +106,7 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 				pos := r.Msg.Positions["US0378331005"]
 
 				return true &&
-					assert.Equals(t, "US0378331005", pos.SecurityName) &&
+					assert.Equals(t, "US0378331005", pos.Security.Name) &&
 					assert.Equals(t, 20, pos.Amount) &&
 					assert.Equals(t, 2141.6, pos.PurchaseValue) &&
 					assert.Equals(t, 107.08, pos.PurchasePrice) &&

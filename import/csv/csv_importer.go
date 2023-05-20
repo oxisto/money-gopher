@@ -33,6 +33,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -67,6 +68,10 @@ func Import(r io.Reader, pname string) (txs []*portfoliov1.PortfolioEvent, secs 
 		tx, sec, err := readLine(cr, pname)
 		if errors.Is(err, io.EOF) {
 			break
+		} else if err != nil {
+			// Skip this transaction
+			log.Printf("Could not parse line: %v\n", err)
+			continue
 		}
 
 		txs = append(txs, tx)
@@ -75,6 +80,10 @@ func Import(r io.Reader, pname string) (txs []*portfoliov1.PortfolioEvent, secs 
 
 	// Compact securities
 	secs = slices.CompactFunc(secs, func(a *portfoliov1.Security, b *portfoliov1.Security) bool {
+		if a == nil || b == nil {
+			// Should not happen but it seems it does
+			return false
+		}
 		return a.Name == b.Name
 	})
 
@@ -118,7 +127,7 @@ func readLine(cr *csv.Reader, pname string) (tx *portfoliov1.PortfolioEvent, sec
 		return nil, nil, fmt.Errorf("%w: %w", ErrParsingTaxes, err)
 	}
 
-	tx.Amount, err = parseInt32(record[9])
+	tx.Amount, err = parseFloat32(record[9])
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %w", ErrParsingAmount, err)
 	}
