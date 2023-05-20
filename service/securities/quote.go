@@ -18,6 +18,7 @@ package securities
 
 import (
 	"context"
+	"log"
 	"time"
 
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
@@ -33,26 +34,30 @@ func (svc *service) TriggerSecurityQuoteUpdate(ctx context.Context, req *connect
 		ok  bool
 	)
 
-	// Fetch security
-	sec, err = svc.fetchSecurity(req.Msg.SecurityName)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
+	// TODO(oxisto): Support a "list" with filtered values instead
+	for _, name := range req.Msg.SecurityNames {
+		// Fetch security
+		sec, err = svc.fetchSecurity(name)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
 
-	res = connect.NewResponse(&portfoliov1.TriggerQuoteUpdateResponse{})
+		res = connect.NewResponse(&portfoliov1.TriggerQuoteUpdateResponse{})
 
-	if sec.QuoteProvider == nil {
-		return
-	}
+		if sec.QuoteProvider == nil {
+			log.Printf("No quote provider configured for %s\n", sec.Name)
+			return
+		}
 
-	qp, ok = providers[*sec.QuoteProvider]
-	if !ok {
-		return
-	}
+		qp, ok = providers[*sec.QuoteProvider]
+		if !ok {
+			return
+		}
 
-	// Trigger update from quote provider in separate go-routine
-	for _, ls := range sec.ListedOn {
-		go svc.updateQuote(qp, ls)
+		// Trigger update from quote provider in separate go-routine
+		for _, ls := range sec.ListedOn {
+			go svc.updateQuote(qp, ls)
+		}
 	}
 
 	return

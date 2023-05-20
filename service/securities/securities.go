@@ -19,22 +19,25 @@ package securities
 import (
 	"context"
 
-	"github.com/bufbuild/connect-go"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/service/internal/crud"
+
+	"github.com/bufbuild/connect-go"
 	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
-
-var securitiesSetter = func(obj *portfoliov1.Security) *portfoliov1.Security {
-	return obj
-}
 
 func (svc *service) CreateSecurity(ctx context.Context, req *connect.Request[portfoliov1.CreateSecurityRequest]) (res *connect.Response[portfoliov1.Security], err error) {
 	return crud.Create(
 		req.Msg.Security,
 		svc.securities,
-		securitiesSetter,
+		func(obj *portfoliov1.Security) *portfoliov1.Security {
+			for _, ls := range obj.ListedOn {
+				svc.listedSecurities.Replace(ls)
+			}
+
+			return obj
+		},
 	)
 }
 

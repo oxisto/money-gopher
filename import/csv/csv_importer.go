@@ -38,9 +38,11 @@ import (
 	"strings"
 	"time"
 
+	moneygopher "github.com/oxisto/money-gopher"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
-	"golang.org/x/exp/slices"
+	"github.com/oxisto/money-gopher/service/securities"
 
+	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -149,6 +151,7 @@ func readLine(cr *csv.Reader, pname string) (tx *portfoliov1.PortfolioEvent, sec
 			Currency:     lsCurrency(record[3], record[5]),
 		},
 	}
+	sec.QuoteProvider = moneygopher.Ref(securities.QuoteProviderYF)
 
 	tx.PortfolioName = pname
 	tx.SecurityName = sec.Name
@@ -197,15 +200,6 @@ func parseFloat32(s string) (f float32, err error) {
 	}
 
 	return float32(f64), nil
-}
-
-func parseInt32(s string) (i int32, err error) {
-	i64, err := strconv.ParseInt(s, 10, 32)
-	if err != nil {
-		return 0, err
-	}
-
-	return int32(i64), nil
 }
 
 func lsCurrency(txCurrency string, tickerCurrency string) string {

@@ -78,6 +78,10 @@ func (r *REPL) Run() {
 			rr2 = append(rr2, strings.Trim(s, "\""))
 		}
 
+		if len(rr2) == 0 {
+			continue
+		}
+
 		// Try to look up command in our command map
 		cmd, ok = cmdMap[rr2[0]]
 		if ok {

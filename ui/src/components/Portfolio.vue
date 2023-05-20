@@ -20,7 +20,8 @@ let snapshot = await client?.getPortfolioSnapshot({ portfolioName: props.portfol
       <dl class="flex flex-wrap">
         <div class="flex-auto pl-6 pt-6">
           <dt class="text-sm font-semibold leading-6 text-gray-900">{{ portfolio.displayName }}</dt>
-          <dd class="mt-1 text-base font-semibold leading-6 text-gray-900">{{ snapshot.totalValue }}</dd>
+          <dd class="mt-1 text-base font-semibold leading-6 text-gray-900">{{ $filters.currency(snapshot.totalValue,
+            "EUR") }}</dd>
         </div>
         <div class="flex-none self-end px-6 pt-4">
           <dt class="sr-only">Status</dt>

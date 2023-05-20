@@ -49,7 +49,36 @@ func (cmd *triggerQuoteUpdate) Exec(r *repl.REPL, args ...string) {
 	_, err := client.TriggerSecurityQuoteUpdate(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.TriggerQuoteUpdateRequest{
-			SecurityName: args[0],
+			SecurityNames: []string{args[0]},
+		}),
+	)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+type triggerQuoteUpdateAll struct{}
+
+// Exec implements [repl.Command]
+func (cmd *triggerQuoteUpdateAll) Exec(r *repl.REPL, args ...string) {
+	client := portfoliov1connect.NewSecuritiesServiceClient(http.DefaultClient, "http://localhost:8080")
+
+	res, err := client.ListSecurities(context.Background(), connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	var names []string
+
+	for _, sec := range res.Msg.Securities {
+		names = append(names, sec.Name)
+	}
+
+	_, err = client.TriggerSecurityQuoteUpdate(
+		context.Background(),
+		connect.NewRequest(&portfoliov1.TriggerQuoteUpdateRequest{
+			SecurityNames: names,
 		}),
 	)
 	if err != nil {
@@ -60,6 +89,7 @@ func (cmd *triggerQuoteUpdate) Exec(r *repl.REPL, args ...string) {
 func init() {
 	repl.AddCommand("list-securities", &listSecuritiesCmd{})
 	repl.AddCommand("update-quote", &triggerQuoteUpdate{})
+	repl.AddCommand("update-all-quotes", &triggerQuoteUpdateAll{})
 
 	repl.AddCommand("portfolio-snapshot", &portfolioSnapshot{})
 	repl.AddCommand("import-transactions", &importTransactions{})

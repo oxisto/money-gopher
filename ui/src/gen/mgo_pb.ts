@@ -1174,9 +1174,9 @@ export class DeleteSecurityRequest extends Message<DeleteSecurityRequest> {
  */
 export class TriggerQuoteUpdateRequest extends Message<TriggerQuoteUpdateRequest> {
   /**
-   * @generated from field: string security_name = 1;
+   * @generated from field: repeated string security_names = 1;
    */
-  securityName = "";
+  securityNames: string[] = [];
 
   constructor(data?: PartialMessage<TriggerQuoteUpdateRequest>) {
     super();
@@ -1186,7 +1186,7 @@ export class TriggerQuoteUpdateRequest extends Message<TriggerQuoteUpdateRequest
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "mgo.portfolio.v1.TriggerQuoteUpdateRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "security_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TriggerQuoteUpdateRequest {

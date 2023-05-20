@@ -16,7 +16,25 @@ let client: PromiseClient<typeof PortfolioService> = createPromiseClient(
   })
 )
 
-createApp(App)
+let app = createApp(App)
   .use(router)
   .provide(PortfolioServiceClientKey, client)
-  .mount('#app')
+
+app.config.globalProperties.$filters = {
+  currency(value: number, currency: string): string {
+    var formatter = Intl.NumberFormat('de', {
+      style: "currency",
+      currency: currency
+    })
+
+    return formatter.format(value)
+  }
+}
+
+app.mount('#app')
+
+declare module 'vue' {
+  interface ComponentCustomProperties {
+    $filters: { currency(value: number, currency: string): string }
+  }
+}
