@@ -82,10 +82,6 @@ func Import(r io.Reader, pname string) (txs []*portfoliov1.PortfolioEvent, secs 
 
 	// Compact securities
 	secs = slices.CompactFunc(secs, func(a *portfoliov1.Security, b *portfoliov1.Security) bool {
-		if a == nil || b == nil {
-			// Should not happen but it seems it does
-			return false
-		}
 		return a.Name == b.Name
 	})
 

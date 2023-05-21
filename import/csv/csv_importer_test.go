@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/oxisto/assert"
+	moneygopher "github.com/oxisto/money-gopher"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -52,6 +53,19 @@ func TestImport(t *testing.T) {
 			},
 			wantSecs: func(t *testing.T, secs []*portfoliov1.Security) bool {
 				return assert.Equals(t, 2, len(secs))
+			},
+		},
+		{
+			name: "error",
+			args: args{
+				r: bytes.NewReader([]byte(`Date;Type;Value;Transaction Currency;Gross Amount;Currency Gross Amount;Exchange Rate;Fees;Taxes;Shares;ISIN;WKN;Ticker Symbol;Security Name;Note
+this;will;be;an;error`)),
+			},
+			wantTxs: func(t *testing.T, txs []*portfoliov1.PortfolioEvent) bool {
+				return assert.Equals(t, 0, len(txs))
+			},
+			wantSecs: func(t *testing.T, secs []*portfoliov1.Security) bool {
+				return assert.Equals(t, 0, len(secs))
 			},
 		},
 	}
@@ -95,8 +109,9 @@ func Test_readLine(t *testing.T) {
 				Price:        107.08,
 			},
 			wantSec: &portfoliov1.Security{
-				Name:        "US0378331005",
-				DisplayName: "Apple Inc.",
+				Name:          "US0378331005",
+				DisplayName:   "Apple Inc.",
+				QuoteProvider: moneygopher.Ref("yf"),
 				ListedOn: []*portfoliov1.ListedSecurity{
 					{
 						SecurityName: "US0378331005",
@@ -124,8 +139,9 @@ func Test_readLine(t *testing.T) {
 				Price:        60.395,
 			},
 			wantSec: &portfoliov1.Security{
-				Name:        "US00827B1061",
-				DisplayName: "Affirm Holdings Inc.",
+				Name:          "US00827B1061",
+				DisplayName:   "Affirm Holdings Inc.",
+				QuoteProvider: moneygopher.Ref("yf"),
 				ListedOn: []*portfoliov1.ListedSecurity{
 					{
 						SecurityName: "US00827B1061",
@@ -155,8 +171,9 @@ func Test_readLine(t *testing.T) {
 				Price:        15.52,
 			},
 			wantSec: &portfoliov1.Security{
-				Name:        "DE0005557508",
-				DisplayName: "Deutsche Telekom AG",
+				Name:          "DE0005557508",
+				DisplayName:   "Deutsche Telekom AG",
+				QuoteProvider: moneygopher.Ref("yf"),
 				ListedOn: []*portfoliov1.ListedSecurity{
 					{
 						SecurityName: "DE0005557508",
