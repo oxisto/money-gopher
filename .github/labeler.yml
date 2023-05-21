@@ -9,3 +9,9 @@
 
 "internal":
   - "**/internal/**/*"
+
+"finance":
+  - "finance/**/*"
+
+"repl":
+  - "repl/**/*"
