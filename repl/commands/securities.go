@@ -32,7 +32,10 @@ type listSecuritiesCmd struct{}
 
 // Exec implements [repl.Command]
 func (cmd *listSecuritiesCmd) Exec(r *repl.REPL, args ...string) {
-	client := portfoliov1connect.NewSecuritiesServiceClient(http.DefaultClient, "http://localhost:8080")
+	client := portfoliov1connect.NewSecuritiesServiceClient(
+		http.DefaultClient, "http://localhost:8080",
+		connect.WithHTTPGet(),
+	)
 	res, err := client.ListSecurities(context.Background(), connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}))
 	if err != nil {
 		log.Println(err)
@@ -45,7 +48,10 @@ type triggerQuoteUpdate struct{}
 
 // Exec implements [repl.Command]
 func (cmd *triggerQuoteUpdate) Exec(r *repl.REPL, args ...string) {
-	client := portfoliov1connect.NewSecuritiesServiceClient(http.DefaultClient, "http://localhost:8080")
+	client := portfoliov1connect.NewSecuritiesServiceClient(
+		http.DefaultClient, "http://localhost:8080",
+		connect.WithHTTPGet(),
+	)
 	_, err := client.TriggerSecurityQuoteUpdate(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.TriggerQuoteUpdateRequest{
@@ -61,8 +67,10 @@ type triggerQuoteUpdateAll struct{}
 
 // Exec implements [repl.Command]
 func (cmd *triggerQuoteUpdateAll) Exec(r *repl.REPL, args ...string) {
-	client := portfoliov1connect.NewSecuritiesServiceClient(http.DefaultClient, "http://localhost:8080")
-
+	client := portfoliov1connect.NewSecuritiesServiceClient(
+		http.DefaultClient, "http://localhost:8080",
+		connect.WithHTTPGet(),
+	)
 	res, err := client.ListSecurities(context.Background(), connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}))
 	if err != nil {
 		log.Println(err)

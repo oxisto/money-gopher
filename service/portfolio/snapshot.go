@@ -55,6 +55,11 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 		Positions: make(map[string]*portfoliov1.PortfolioPosition),
 	}
 
+	// Record the first transaction time
+	if len(p.Events) > 0 {
+		snap.FirstTransactionTime = p.Events[0].Time
+	}
+
 	// Retrieve the event map; a map of events indexed by their security name
 	m = p.EventMap()
 	names = maps.Keys(m)

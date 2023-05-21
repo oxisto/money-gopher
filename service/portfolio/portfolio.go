@@ -55,6 +55,14 @@ func (svc *service) ListPortfolios(ctx context.Context, req *connect.Request[por
 	)
 }
 
+func (svc *service) GetPortfolio(ctx context.Context, req *connect.Request[portfoliov1.GetPortfolioRequest]) (res *connect.Response[portfoliov1.Portfolio], err error) {
+	return crud.Get(
+		req.Msg.Name,
+		svc.portfolios,
+		portfolioSetter,
+	)
+}
+
 func (svc *service) UpdatePortfolio(ctx context.Context, req *connect.Request[portfoliov1.UpdatePortfolioRequest]) (res *connect.Response[portfoliov1.Portfolio], err error) {
 	return crud.Update(
 		req.Msg.Portfolio.Name,

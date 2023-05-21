@@ -13,6 +13,7 @@ let client: PromiseClient<typeof PortfolioService> = createPromiseClient(
   PortfolioService,
   createConnectTransport({
     baseUrl: 'http://localhost:8080',
+    useHttpGet: true
   })
 )
 

@@ -35,7 +35,10 @@ type portfolioSnapshot struct{}
 
 // Exec implements [repl.Command]
 func (cmd *portfolioSnapshot) Exec(r *repl.REPL, args ...string) {
-	client := portfoliov1connect.NewPortfolioServiceClient(http.DefaultClient, "http://localhost:8080")
+	client := portfoliov1connect.NewPortfolioServiceClient(
+		http.DefaultClient, "http://localhost:8080",
+		connect.WithHTTPGet(),
+	)
 	res, err := client.GetPortfolioSnapshot(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
@@ -68,7 +71,10 @@ func (cmd *importTransactions) Exec(r *repl.REPL, args ...string) {
 		return
 	}
 
-	client := portfoliov1connect.NewPortfolioServiceClient(http.DefaultClient, "http://localhost:8080")
+	client := portfoliov1connect.NewPortfolioServiceClient(
+		http.DefaultClient, "http://localhost:8080",
+		connect.WithHTTPGet(),
+	)
 	res, err := client.ImportTransactions(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.ImportTransactionsRequest{

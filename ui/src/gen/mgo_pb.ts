@@ -144,6 +144,43 @@ export class ListPortfoliosResponse extends Message<ListPortfoliosResponse> {
 }
 
 /**
+ * @generated from message mgo.portfolio.v1.GetPortfolioRequest
+ */
+export class GetPortfolioRequest extends Message<GetPortfolioRequest> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<GetPortfolioRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.GetPortfolioRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPortfolioRequest {
+    return new GetPortfolioRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPortfolioRequest {
+    return new GetPortfolioRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPortfolioRequest {
+    return new GetPortfolioRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPortfolioRequest | PlainMessage<GetPortfolioRequest> | undefined, b: GetPortfolioRequest | PlainMessage<GetPortfolioRequest> | undefined): boolean {
+    return proto3.util.equals(GetPortfolioRequest, a, b);
+  }
+}
+
+/**
  * @generated from message mgo.portfolio.v1.UpdatePortfolioRequest
  */
 export class UpdatePortfolioRequest extends Message<UpdatePortfolioRequest> {
@@ -566,16 +603,30 @@ export class Portfolio extends Message<Portfolio> {
  */
 export class PortfolioSnapshot extends Message<PortfolioSnapshot> {
   /**
+   * Time is the time when this snapshot was taken.
+   *
    * @generated from field: google.protobuf.Timestamp time = 1;
    */
   time?: Timestamp;
 
   /**
+   * Positions holds the current positions within the snapshot and their value.
+   *
    * @generated from field: map<string, mgo.portfolio.v1.PortfolioPosition> positions = 2;
    */
   positions: { [key: string]: PortfolioPosition } = {};
 
   /**
+   * FirstTransactionTime is the time of the first transaction with the
+   * snapshot.
+   *
+   * @generated from field: optional google.protobuf.Timestamp first_transaction_time = 3;
+   */
+  firstTransactionTime?: Timestamp;
+
+  /**
+   * TotalValue contains the total market value of all positions
+   *
    * @generated from field: float total_value = 10;
    */
   totalValue = 0;
@@ -590,6 +641,7 @@ export class PortfolioSnapshot extends Message<PortfolioSnapshot> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "time", kind: "message", T: Timestamp },
     { no: 2, name: "positions", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: PortfolioPosition} },
+    { no: 3, name: "first_transaction_time", kind: "message", T: Timestamp, opt: true },
     { no: 10, name: "total_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
   ]);
 
