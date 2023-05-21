@@ -205,6 +205,55 @@ func Test_service_ListPortfolios(t *testing.T) {
 	}
 }
 
+func Test_service_GetPortfolio(t *testing.T) {
+	type fields struct {
+		portfolios persistence.StorageOperations[*portfoliov1.Portfolio]
+		securities portfoliov1connect.SecuritiesServiceClient
+	}
+	type args struct {
+		ctx context.Context
+		req *connect.Request[portfoliov1.GetPortfolioRequest]
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantRes assert.Want[*connect.Response[portfoliov1.Portfolio]]
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			fields: fields{
+				portfolios: myPortfolio(t),
+			},
+			args: args{
+				req: connect.NewRequest(&portfoliov1.GetPortfolioRequest{
+					Name: "bank/myportfolio",
+				}),
+			},
+			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.Portfolio]) bool {
+				return true &&
+					assert.Equals(t, 2, len(r.Msg.Events))
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := &service{
+				portfolios: tt.fields.portfolios,
+				events:     persistence.Relationship[*portfoliov1.PortfolioEvent](tt.fields.portfolios),
+				securities: tt.fields.securities,
+			}
+			gotRes, err := svc.GetPortfolio(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("service.GetPortfolio() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			tt.wantRes(t, gotRes)
+		})
+	}
+}
+
 func Test_service_UpdatePortfolio(t *testing.T) {
 	type fields struct {
 		portfolios persistence.StorageOperations[*portfoliov1.Portfolio]

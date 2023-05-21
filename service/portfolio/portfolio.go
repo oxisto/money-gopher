@@ -21,7 +21,6 @@ import (
 
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/service/internal/crud"
-	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bufbuild/connect-go"
@@ -59,7 +58,11 @@ func (svc *service) GetPortfolio(ctx context.Context, req *connect.Request[portf
 	return crud.Get(
 		req.Msg.Name,
 		svc.portfolios,
-		portfolioSetter,
+		func(obj *portfoliov1.Portfolio) *portfoliov1.Portfolio {
+			obj.Events, _ = svc.events.List(obj.Name)
+
+			return obj
+		},
 	)
 }
 
@@ -70,12 +73,6 @@ func (svc *service) UpdatePortfolio(ctx context.Context, req *connect.Request[po
 		req.Msg.UpdateMask.Paths,
 		svc.portfolios,
 		func(obj *portfoliov1.Portfolio) *portfoliov1.Portfolio {
-			if slices.Contains(req.Msg.UpdateMask.Paths, "events") {
-				for _, ls := range req.Msg.Portfolio.Events {
-					svc.events.Replace(ls)
-				}
-			}
-
 			return obj
 		},
 	)
