@@ -625,11 +625,18 @@ export class PortfolioSnapshot extends Message<PortfolioSnapshot> {
   firstTransactionTime?: Timestamp;
 
   /**
-   * TotalValue contains the total market value of all positions
+   * TotalPurchaseValue contains the total purchase value of all positions
    *
-   * @generated from field: float total_value = 10;
+   * @generated from field: float total_purchase_value = 10;
    */
-  totalValue = 0;
+  totalPurchaseValue = 0;
+
+  /**
+   * TotalMarketValue contains the total market value of all positions
+   *
+   * @generated from field: float total_market_value = 11;
+   */
+  totalMarketValue = 0;
 
   constructor(data?: PartialMessage<PortfolioSnapshot>) {
     super();
@@ -642,7 +649,8 @@ export class PortfolioSnapshot extends Message<PortfolioSnapshot> {
     { no: 1, name: "time", kind: "message", T: Timestamp },
     { no: 2, name: "positions", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: PortfolioPosition} },
     { no: 3, name: "first_transaction_time", kind: "message", T: Timestamp, opt: true },
-    { no: 10, name: "total_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 10, name: "total_purchase_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 11, name: "total_market_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PortfolioSnapshot {

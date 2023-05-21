@@ -85,7 +85,7 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 					assert.Equals(t, 10, r.Msg.Positions["US0378331005"].Amount) &&
 					assert.Equals(t, 1070.8, r.Msg.Positions["US0378331005"].PurchaseValue) &&
 					assert.Equals(t, 107.08, r.Msg.Positions["US0378331005"].PurchasePrice) &&
-					assert.Equals(t, 1000.0, r.Msg.TotalValue)
+					assert.Equals(t, 1000.0, r.Msg.TotalMarketValue)
 			},
 		},
 		{

@@ -102,8 +102,9 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 			MarketPrice:   marketPrice(secmap, name, c.NetPrice()),
 		}
 
-		// Add to total market value
-		snap.TotalValue += snap.Positions[name].MarketValue
+		// Add to total value(s)
+		snap.TotalPurchaseValue += snap.Positions[name].PurchaseValue
+		snap.TotalMarketValue += snap.Positions[name].MarketValue
 	}
 
 	return connect.NewResponse(snap), nil

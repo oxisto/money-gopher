@@ -73,8 +73,11 @@ message PortfolioSnapshot {
   // snapshot.
   optional google.protobuf.Timestamp first_transaction_time = 3;
 
-  // TotalValue contains the total market value of all positions
-  float total_value = 10;
+  // TotalPurchaseValue contains the total purchase value of all positions
+  float total_purchase_value = 10;
+
+  // TotalMarketValue contains the total market value of all positions
+  float total_market_value = 11;
 }
 
 message PortfolioPosition {

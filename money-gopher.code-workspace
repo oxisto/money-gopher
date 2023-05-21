@@ -16,6 +16,8 @@
 			"bufbuild",
 			"emptypb",
 			"fieldmaskpb",
+			"headlessui",
+			"heroicons",
 			"ISIN",
 			"modernc",
 			"moneygopher",

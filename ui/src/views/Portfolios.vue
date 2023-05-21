@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Button from '@/components/Button.vue';
-import Portfolio from '@/components/Portfolio.vue';
+import PortfolioCard from '@/components/PortfolioCard.vue';
 import { PortfolioServiceClientKey } from '@/symbols'
 import { inject } from 'vue';
 
@@ -26,7 +26,7 @@ let portfolios = ((await client?.listPortfolios({}, {}))?.portfolios) ?? [];
   <ul role="list" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
     <li v-for="portfolio in portfolios" :key="portfolio.name"
       class="col-span-1 divide-y divide-gray-200 rounded-lg bg-white shadow">
-      <Portfolio :portfolio="portfolio"></Portfolio>
+      <PortfolioCard :portfolio="portfolio"></PortfolioCard>
     </li>
   </ul>
 </template>
