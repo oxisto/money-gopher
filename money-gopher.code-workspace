@@ -16,6 +16,8 @@
 			"bufbuild",
 			"emptypb",
 			"fieldmaskpb",
+			"headlessui",
+			"heroicons",
 			"ISIN",
 			"modernc",
 			"moneygopher",
@@ -26,6 +28,7 @@
 			"secmap",
 			"secres",
 			"timestamppb"
-		]
+		],
+		"editor.tabSize": 2
 	}
 }

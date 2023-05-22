@@ -8,8 +8,10 @@ import "google/protobuf/field_mask.proto";
 
 message CreatePortfolioRequest { Portfolio portfolio = 1; }
 
-message ListPortfolioRequest {}
+message ListPortfoliosRequest {}
 message ListPortfoliosResponse { repeated Portfolio portfolios = 1; }
+
+message GetPortfolioRequest { string name = 1; }
 
 message UpdatePortfolioRequest {
   Portfolio portfolio = 1;
@@ -61,15 +63,27 @@ message Portfolio {
 // example be the current state of the portfolio but also represent the state of
 // the portfolio at a certain time in the past.
 message PortfolioSnapshot {
+  // Time is the time when this snapshot was taken.
   google.protobuf.Timestamp time = 1;
+
+  // Positions holds the current positions within the snapshot and their value.
   map<string, PortfolioPosition> positions = 2;
 
-  float total_value = 10;
+  // FirstTransactionTime is the time of the first transaction with the
+  // snapshot.
+  optional google.protobuf.Timestamp first_transaction_time = 3;
+
+  // TotalPurchaseValue contains the total purchase value of all positions
+  float total_purchase_value = 10;
+
+  // TotalMarketValue contains the total market value of all positions
+  float total_market_value = 11;
 }
 
 message PortfolioPosition {
-  string security_name = 1;
-  int32 amount = 2;
+  Security security = 1;
+
+  float amount = 2;
 
   // PurchaseValue was the market value of this position when it was bought
   // (net; exclusive of any fees).
@@ -106,7 +120,7 @@ message PortfolioEvent {
   string portfolio_name = 4;
   string security_name = 5;
 
-  int32 amount = 10;
+  float amount = 10;
   float price = 11;
   float fees = 12;
   float taxes = 13;
@@ -114,7 +128,12 @@ message PortfolioEvent {
 
 service PortfolioService {
   rpc CreatePortfolio(CreatePortfolioRequest) returns (Portfolio);
-  rpc ListPortfolio(ListPortfolioRequest) returns (ListPortfoliosResponse);
+  rpc ListPortfolios(ListPortfoliosRequest) returns (ListPortfoliosResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+  rpc GetPortfolio(GetPortfolioRequest) returns (Portfolio) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
   rpc UpdatePortfolio(UpdatePortfolioRequest) returns (Portfolio);
   rpc DeletePortfolio(DeletePortfolioRequest) returns (google.protobuf.Empty);
 
@@ -177,7 +196,7 @@ message UpdateSecurityRequest {
 
 message DeleteSecurityRequest { string name = 1; }
 
-message TriggerQuoteUpdateRequest { string security_name = 1; }
+message TriggerQuoteUpdateRequest { repeated string security_names = 1; }
 
 message TriggerQuoteUpdateResponse {}
 

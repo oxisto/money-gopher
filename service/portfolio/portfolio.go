@@ -21,7 +21,6 @@ import (
 
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/service/internal/crud"
-	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bufbuild/connect-go"
@@ -39,7 +38,7 @@ func (svc *service) CreatePortfolio(ctx context.Context, req *connect.Request[po
 	)
 }
 
-func (svc *service) ListPortfolios(ctx context.Context, req *connect.Request[portfoliov1.ListPortfolioRequest]) (res *connect.Response[portfoliov1.ListPortfoliosResponse], err error) {
+func (svc *service) ListPortfolios(ctx context.Context, req *connect.Request[portfoliov1.ListPortfoliosRequest]) (res *connect.Response[portfoliov1.ListPortfoliosResponse], err error) {
 	return crud.List(
 		svc.portfolios,
 		func(
@@ -55,6 +54,18 @@ func (svc *service) ListPortfolios(ctx context.Context, req *connect.Request[por
 	)
 }
 
+func (svc *service) GetPortfolio(ctx context.Context, req *connect.Request[portfoliov1.GetPortfolioRequest]) (res *connect.Response[portfoliov1.Portfolio], err error) {
+	return crud.Get(
+		req.Msg.Name,
+		svc.portfolios,
+		func(obj *portfoliov1.Portfolio) *portfoliov1.Portfolio {
+			obj.Events, _ = svc.events.List(obj.Name)
+
+			return obj
+		},
+	)
+}
+
 func (svc *service) UpdatePortfolio(ctx context.Context, req *connect.Request[portfoliov1.UpdatePortfolioRequest]) (res *connect.Response[portfoliov1.Portfolio], err error) {
 	return crud.Update(
 		req.Msg.Portfolio.Name,
@@ -62,12 +73,6 @@ func (svc *service) UpdatePortfolio(ctx context.Context, req *connect.Request[po
 		req.Msg.UpdateMask.Paths,
 		svc.portfolios,
 		func(obj *portfoliov1.Portfolio) *portfoliov1.Portfolio {
-			if slices.Contains(req.Msg.UpdateMask.Paths, "events") {
-				for _, ls := range req.Msg.Portfolio.Events {
-					svc.events.Replace(ls)
-				}
-			}
-
 			return obj
 		},
 	)

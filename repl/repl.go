@@ -59,15 +59,33 @@ func (r *REPL) Run() {
 			continue
 		}
 
-		// Retrieve a line of text and split strings by white-space to compute
-		// our command and arguments
+		// Retrieve a line of text and split strings by white-space (expect within a
+		// quote) to compute our command and arguments
 		line = s.Text()
-		rr = strings.Split(line, " ")
+		var q = false
+		rr = strings.FieldsFunc(line, func(r rune) bool {
+			if r == '"' {
+				// Flip in-quote status
+				q = !q
+			}
+
+			return !q && r == ' '
+		})
+
+		// Cleanup any remaining quotes
+		rr2 := make([]string, 0, len(rr))
+		for _, s := range rr {
+			rr2 = append(rr2, strings.Trim(s, "\""))
+		}
+
+		if len(rr2) == 0 {
+			continue
+		}
 
 		// Try to look up command in our command map
-		cmd, ok = cmdMap[rr[0]]
+		cmd, ok = cmdMap[rr2[0]]
 		if ok {
-			cmd.Exec(r, rr[1:]...)
+			cmd.Exec(r, rr2[1:]...)
 		} else {
 			fmt.Print("Command not found.\n")
 		}

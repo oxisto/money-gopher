@@ -55,7 +55,7 @@ func Test_service_TriggerSecurityQuoteUpdate(t *testing.T) {
 			},
 			args: args{
 				req: connect.NewRequest(&portfoliov1.TriggerQuoteUpdateRequest{
-					SecurityName: "My Security",
+					SecurityNames: []string{"My Security"},
 				}),
 			},
 			wantRes: func(t *testing.T, tqur *portfoliov1.TriggerQuoteUpdateResponse) bool {

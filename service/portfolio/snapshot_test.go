@@ -54,8 +54,6 @@ var mockSecuritiesClientWithData = &mockSecuritiesClient{
 }
 
 func Test_service_GetPortfolioSnapshot(t *testing.T) {
-	var portfolios = myPortfolio(t)
-
 	type fields struct {
 		portfolios persistence.StorageOperations[*portfoliov1.Portfolio]
 		events     persistence.StorageOperations[*portfoliov1.PortfolioEvent]
@@ -75,8 +73,7 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 		{
 			name: "happy path, now",
 			fields: fields{
-				portfolios: portfolios,
-				events:     persistence.Relationship[*portfoliov1.PortfolioEvent](portfolios),
+				portfolios: myPortfolio(t),
 				securities: mockSecuritiesClientWithData,
 			},
 			args: args{req: connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
@@ -84,18 +81,17 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 			})},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioSnapshot]) bool {
 				return true &&
-					assert.Equals(t, "US0378331005", r.Msg.Positions["US0378331005"].SecurityName) &&
+					assert.Equals(t, "US0378331005", r.Msg.Positions["US0378331005"].Security.Name) &&
 					assert.Equals(t, 10, r.Msg.Positions["US0378331005"].Amount) &&
 					assert.Equals(t, 1070.8, r.Msg.Positions["US0378331005"].PurchaseValue) &&
 					assert.Equals(t, 107.08, r.Msg.Positions["US0378331005"].PurchasePrice) &&
-					assert.Equals(t, 1000.0, r.Msg.TotalValue)
+					assert.Equals(t, 1000.0, r.Msg.TotalMarketValue)
 			},
 		},
 		{
 			name: "happy path, before sell",
 			fields: fields{
-				portfolios: portfolios,
-				events:     persistence.Relationship[*portfoliov1.PortfolioEvent](portfolios),
+				portfolios: myPortfolio(t),
 				securities: mockSecuritiesClientWithData,
 			},
 			args: args{req: connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
@@ -106,12 +102,27 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 				pos := r.Msg.Positions["US0378331005"]
 
 				return true &&
-					assert.Equals(t, "US0378331005", pos.SecurityName) &&
+					assert.Equals(t, "US0378331005", pos.Security.Name) &&
 					assert.Equals(t, 20, pos.Amount) &&
 					assert.Equals(t, 2141.6, pos.PurchaseValue) &&
 					assert.Equals(t, 107.08, pos.PurchasePrice) &&
 					assert.Equals(t, 100.0, pos.MarketPrice) &&
 					assert.Equals(t, 2000.0, pos.MarketValue)
+			},
+		},
+		{
+			name: "happy path, position zero'd out",
+			fields: fields{
+				portfolios: zeroPositions(t),
+				securities: mockSecuritiesClientWithData,
+			},
+			args: args{req: connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
+				PortfolioName: "bank/myportfolio",
+				Time:          timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC)),
+			})},
+			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioSnapshot]) bool {
+				return true &&
+					len(r.Msg.Positions) == 0
 			},
 		},
 		{
@@ -133,8 +144,7 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 		{
 			name: "securities list error",
 			fields: fields{
-				portfolios: portfolios,
-				events:     persistence.Relationship[*portfoliov1.PortfolioEvent](portfolios),
+				portfolios: myPortfolio(t),
 				securities: &mockSecuritiesClient{listSecuritiesError: io.EOF},
 			},
 			args: args{req: connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
@@ -151,9 +161,14 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &service{
 				portfolios: tt.fields.portfolios,
-				events:     tt.fields.events,
+				events:     persistence.Relationship[*portfoliov1.PortfolioEvent](tt.fields.portfolios),
 				securities: tt.fields.securities,
 			}
+
+			if tt.fields.events != nil {
+				svc.events = tt.fields.events
+			}
+
 			gotRes, err := svc.GetPortfolioSnapshot(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("service.GetPortfolioSnapshot() error = %v, wantErr %v", err, tt.wantErr)

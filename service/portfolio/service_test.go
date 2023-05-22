@@ -21,6 +21,7 @@ import (
 
 	"github.com/oxisto/assert"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
+	"github.com/oxisto/money-gopher/internal"
 )
 
 func TestNewService(t *testing.T) {
@@ -34,7 +35,9 @@ func TestNewService(t *testing.T) {
 	}{
 		{
 			name: "with default client",
-			args: args{opts: Options{}},
+			args: args{opts: Options{
+				DB: internal.NewTestDB(t),
+			}},
 			want: func(t *testing.T, psh portfoliov1connect.PortfolioServiceHandler) bool {
 				s := assert.Is[*service](t, psh)
 				return assert.NotNil(t, s.securities)

@@ -55,6 +55,11 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 		Positions: make(map[string]*portfoliov1.PortfolioPosition),
 	}
 
+	// Record the first transaction time
+	if len(p.Events) > 0 {
+		snap.FirstTransactionTime = p.Events[0].Time
+	}
+
 	// Retrieve the event map; a map of events indexed by their security name
 	m = p.EventMap()
 	names = maps.Keys(m)
@@ -83,18 +88,34 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 		txs = portfoliov1.EventsBefore(txs, snap.Time.AsTime())
 
 		c := finance.NewCalculation(txs)
+
+		if c.Amount == 0 {
+			continue
+		}
+
 		snap.Positions[name] = &portfoliov1.PortfolioPosition{
-			SecurityName:  name,
+			Security:      secmap[name],
 			Amount:        c.Amount,
 			PurchaseValue: c.NetValue(),
 			PurchasePrice: c.NetPrice(),
-			MarketValue:   *secmap[name].ListedOn[0].LatestQuote * float32(c.Amount),
-			MarketPrice:   *secmap[name].ListedOn[0].LatestQuote,
+			MarketValue:   marketPrice(secmap, name, c.NetPrice()) * float32(c.Amount),
+			MarketPrice:   marketPrice(secmap, name, c.NetPrice()),
 		}
 
-		// Add to total market value
-		snap.TotalValue += snap.Positions[name].MarketValue
+		// Add to total value(s)
+		snap.TotalPurchaseValue += snap.Positions[name].PurchaseValue
+		snap.TotalMarketValue += snap.Positions[name].MarketValue
 	}
 
 	return connect.NewResponse(snap), nil
+}
+
+func marketPrice(secmap map[string]*portfoliov1.Security, name string, netPrice float32) float32 {
+	ls := secmap[name].ListedOn
+
+	if ls == nil || ls[0].LatestQuote == nil {
+		return netPrice
+	} else {
+		return *ls[0].LatestQuote
+	}
 }

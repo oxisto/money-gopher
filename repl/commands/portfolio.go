@@ -18,8 +18,10 @@ package commands
 
 import (
 	"context"
+	"io"
 	"log"
 	"net/http"
+	"os"
 
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
@@ -33,12 +35,51 @@ type portfolioSnapshot struct{}
 
 // Exec implements [repl.Command]
 func (cmd *portfolioSnapshot) Exec(r *repl.REPL, args ...string) {
-	client := portfoliov1connect.NewPortfolioServiceClient(http.DefaultClient, "http://localhost:8080")
+	client := portfoliov1connect.NewPortfolioServiceClient(
+		http.DefaultClient, "http://localhost:8080",
+		connect.WithHTTPGet(),
+	)
 	res, err := client.GetPortfolioSnapshot(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
 			PortfolioName: "My Portfolio",
 			Time:          timestamppb.Now(),
+		}),
+	)
+	if err != nil {
+		log.Println(err)
+	} else {
+		log.Println(res.Msg)
+	}
+}
+
+type importTransactions struct{}
+
+// Exec implements [repl.Command]
+func (cmd *importTransactions) Exec(r *repl.REPL, args ...string) {
+	// Read from args[1]
+	f, err := os.Open(args[1])
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer f.Close()
+
+	b, err := io.ReadAll(f)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	client := portfoliov1connect.NewPortfolioServiceClient(
+		http.DefaultClient, "http://localhost:8080",
+		connect.WithHTTPGet(),
+	)
+	res, err := client.ImportTransactions(
+		context.Background(),
+		connect.NewRequest(&portfoliov1.ImportTransactionsRequest{
+			PortfolioName: args[0],
+			FromCsv:       string(b),
 		}),
 	)
 	if err != nil {

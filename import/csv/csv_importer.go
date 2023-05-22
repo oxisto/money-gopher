@@ -33,13 +33,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"strconv"
 	"strings"
 	"time"
 
+	moneygopher "github.com/oxisto/money-gopher"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
-	"golang.org/x/exp/slices"
+	"github.com/oxisto/money-gopher/service/securities"
 
+	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -67,6 +70,10 @@ func Import(r io.Reader, pname string) (txs []*portfoliov1.PortfolioEvent, secs 
 		tx, sec, err := readLine(cr, pname)
 		if errors.Is(err, io.EOF) {
 			break
+		} else if err != nil {
+			// Skip this transaction
+			log.Printf("Could not parse line: %v\n", err)
+			continue
 		}
 
 		txs = append(txs, tx)
@@ -118,7 +125,7 @@ func readLine(cr *csv.Reader, pname string) (tx *portfoliov1.PortfolioEvent, sec
 		return nil, nil, fmt.Errorf("%w: %w", ErrParsingTaxes, err)
 	}
 
-	tx.Amount, err = parseInt32(record[9])
+	tx.Amount, err = parseFloat32(record[9])
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %w", ErrParsingAmount, err)
 	}
@@ -140,6 +147,7 @@ func readLine(cr *csv.Reader, pname string) (tx *portfoliov1.PortfolioEvent, sec
 			Currency:     lsCurrency(record[3], record[5]),
 		},
 	}
+	sec.QuoteProvider = moneygopher.Ref(securities.QuoteProviderYF)
 
 	tx.PortfolioName = pname
 	tx.SecurityName = sec.Name
@@ -188,15 +196,6 @@ func parseFloat32(s string) (f float32, err error) {
 	}
 
 	return float32(f64), nil
-}
-
-func parseInt32(s string) (i int32, err error) {
-	i64, err := strconv.ParseInt(s, 10, 32)
-	if err != nil {
-		return 0, err
-	}
-
-	return int32(i64), nil
 }
 
 func lsCurrency(txCurrency string, tickerCurrency string) string {

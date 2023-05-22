@@ -61,6 +61,36 @@ func myPortfolio(t *testing.T) persistence.StorageOperations[*portfoliov1.Portfo
 	})
 }
 
+func zeroPositions(t *testing.T) persistence.StorageOperations[*portfoliov1.Portfolio] {
+	return internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Portfolio]) {
+		assert.NoError(t, ops.Replace(&portfoliov1.Portfolio{
+			Name:        "bank/myportfolio",
+			DisplayName: "My Portfolio",
+		}))
+		rel := persistence.Relationship[*portfoliov1.PortfolioEvent](ops)
+		assert.NoError(t, rel.Replace(&portfoliov1.PortfolioEvent{
+			Name:          "buy",
+			Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+			PortfolioName: "bank/myportfolio",
+			SecurityName:  "sec123",
+			Amount:        10,
+			Price:         100.0,
+			Fees:          0,
+			Time:          timestamppb.New(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)),
+		}))
+		assert.NoError(t, rel.Replace(&portfoliov1.PortfolioEvent{
+			Name:          "sell",
+			Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
+			PortfolioName: "bank/myportfolio",
+			SecurityName:  "sec123",
+			Amount:        10,
+			Price:         100.0,
+			Fees:          0,
+			Time:          timestamppb.New(time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)),
+		}))
+	})
+}
+
 func emptyPortfolio(t *testing.T) persistence.StorageOperations[*portfoliov1.Portfolio] {
 	return internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Portfolio]) {
 		assert.NoError(t, ops.Replace(&portfoliov1.Portfolio{
@@ -136,7 +166,7 @@ func Test_service_ListPortfolios(t *testing.T) {
 	}
 	type args struct {
 		ctx context.Context
-		req *connect.Request[portfoliov1.ListPortfolioRequest]
+		req *connect.Request[portfoliov1.ListPortfoliosRequest]
 	}
 	tests := []struct {
 		name    string
@@ -168,6 +198,55 @@ func Test_service_ListPortfolios(t *testing.T) {
 			gotRes, err := svc.ListPortfolios(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("service.ListPortfolios() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			tt.wantRes(t, gotRes)
+		})
+	}
+}
+
+func Test_service_GetPortfolio(t *testing.T) {
+	type fields struct {
+		portfolios persistence.StorageOperations[*portfoliov1.Portfolio]
+		securities portfoliov1connect.SecuritiesServiceClient
+	}
+	type args struct {
+		ctx context.Context
+		req *connect.Request[portfoliov1.GetPortfolioRequest]
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantRes assert.Want[*connect.Response[portfoliov1.Portfolio]]
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			fields: fields{
+				portfolios: myPortfolio(t),
+			},
+			args: args{
+				req: connect.NewRequest(&portfoliov1.GetPortfolioRequest{
+					Name: "bank/myportfolio",
+				}),
+			},
+			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.Portfolio]) bool {
+				return true &&
+					assert.Equals(t, 2, len(r.Msg.Events))
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := &service{
+				portfolios: tt.fields.portfolios,
+				events:     persistence.Relationship[*portfoliov1.PortfolioEvent](tt.fields.portfolios),
+				securities: tt.fields.securities,
+			}
+			gotRes, err := svc.GetPortfolio(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("service.GetPortfolio() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			tt.wantRes(t, gotRes)
@@ -229,7 +308,6 @@ func Test_service_UpdatePortfolio(t *testing.T) {
 
 func Test_service_DeletePortfolio(t *testing.T) {
 	type fields struct {
-		portfolio                            *portfoliov1.Portfolio
 		portfolios                           persistence.StorageOperations[*portfoliov1.Portfolio]
 		events                               persistence.StorageOperations[*portfoliov1.PortfolioEvent]
 		securities                           portfoliov1connect.SecuritiesServiceClient
@@ -265,7 +343,6 @@ func Test_service_DeletePortfolio(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &service{
-				portfolio:                            tt.fields.portfolio,
 				portfolios:                           tt.fields.portfolios,
 				events:                               tt.fields.events,
 				securities:                           tt.fields.securities,
