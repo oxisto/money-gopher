@@ -225,3 +225,51 @@ func Test_service_DeleteSecurity(t *testing.T) {
 		})
 	}
 }
+
+func Test_service_CreateSecurity(t *testing.T) {
+	type fields struct {
+		securities persistence.StorageOperations[*portfoliov1.Security]
+	}
+	type args struct {
+		ctx context.Context
+		req *connect.Request[portfoliov1.CreateSecurityRequest]
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantRes assert.Want[*connect.Response[portfoliov1.Security]]
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			fields: fields{
+				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {}),
+			},
+			args: args{
+				req: connect.NewRequest(&portfoliov1.CreateSecurityRequest{
+					Security: &portfoliov1.Security{
+						Name:        "sec1",
+						DisplayName: "My Security",
+					},
+				}),
+			},
+			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.Security]) bool {
+				return assert.Equals(t, "sec1", r.Msg.Name)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := &service{
+				securities: tt.fields.securities,
+			}
+			gotRes, err := svc.CreateSecurity(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("service.CreateSecurity() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			tt.wantRes(t, gotRes)
+		})
+	}
+}
