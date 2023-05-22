@@ -1,16 +1,11 @@
 <script setup lang="ts">
 import { Portfolio, PortfolioSnapshot } from '@/gen/mgo_pb';
-import { PortfolioServiceClientKey } from '@/symbols';
 import { CalendarDaysIcon, CreditCardIcon, UserCircleIcon } from '@heroicons/vue/20/solid'
-import { inject } from 'vue';
 
 const props = defineProps({
   portfolio: { type: Portfolio, required: true },
+  snapshot: { type: PortfolioSnapshot, required: true },
 })
-
-// TODO(oxisto): Do we really want to have this in the component?
-let client = inject(PortfolioServiceClientKey)
-let snapshot = await client?.getPortfolioSnapshot({ portfolioName: props.portfolio.name })
 </script>
 
 <template>
@@ -57,7 +52,7 @@ let snapshot = await client?.getPortfolioSnapshot({ portfolioName: props.portfol
       </dl>
       <div class="mt-6 border-t border-gray-900/5 px-6 py-6">
         <router-link :to="'/portfolios/' + portfolio.name" class="text-sm font-semibold leading-6 text-gray-900">
-          Show transactions
+          Show positions
           <span aria-hidden="true">&rarr;</span></router-link>
       </div>
     </div>

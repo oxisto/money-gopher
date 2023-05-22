@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import PortfolioBreadcrumb from '@/components/PortfolioBreadcrumb.vue';
-import { Portfolio, PortfolioSnapshot } from '@/gen/mgo_pb';
+import PortfolioBreadcrumb from '@/components/portfolio/PortfolioBreadcrumb.vue';
+import PortfolioPositionsTableVue from '@/components/portfolio/PortfolioPositionsTable.vue';
+import { Portfolio, PortfolioSnapshot, PortfolioPosition } from '@/gen/mgo_pb';
 import { PortfolioServiceClientKey } from '@/symbols';
 import { watch, inject, ref } from 'vue';
 
@@ -17,4 +18,5 @@ watch(props, async (props) => {
 
 <template>
   <PortfolioBreadcrumb :portfolio="portfolio" :snapshot="snapshot" v-if="portfolio && snapshot" />
+  <PortfolioPositionsTableVue :snapshot="snapshot" v-if="snapshot" />
 </template>

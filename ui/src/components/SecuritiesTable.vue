@@ -12,7 +12,6 @@ let client: PromiseClient<typeof SecuritiesService> = createPromiseClient(
 )
 
 let securities = (await client.listSecurities({}, {})).securities;
-
 </script>
 
 <template>

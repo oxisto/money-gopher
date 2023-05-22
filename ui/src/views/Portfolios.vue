@@ -1,11 +1,24 @@
 <script setup lang="ts">
 import Button from '@/components/Button.vue';
-import PortfolioCard from '@/components/PortfolioCard.vue';
+import PortfolioCard from '@/components/portfolio/PortfolioCard.vue';
 import { PortfolioServiceClientKey } from '@/symbols'
 import { inject } from 'vue';
 
 let client = inject(PortfolioServiceClientKey)
-let portfolios = ((await client?.listPortfolios({}, {}))?.portfolios) ?? [];
+if (client == undefined) {
+  throw "could not instantiate portfolio client"
+}
+
+let portfolios = (await client.listPortfolios({}, {})).portfolios;
+
+// TODO(oxisto): This is a bit inefficient, since it waits until all are
+//  finished but it works
+let snapshots = await Promise.all(portfolios.map(async (p) => {
+  if (client == undefined) {
+    throw "could not instantiate portfolio client"
+  }
+  return await client.getPortfolioSnapshot({ portfolioName: p.name })
+}))
 </script>
 
 <template>
@@ -24,9 +37,9 @@ let portfolios = ((await client?.listPortfolios({}, {}))?.portfolios) ?? [];
     </div>
   </div>
   <ul role="list" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-    <li v-for="portfolio in portfolios" :key="portfolio.name"
+    <li v-for="portfolio, idx in portfolios" :key="portfolio.name"
       class="col-span-1 divide-y divide-gray-200 rounded-lg bg-white shadow">
-      <PortfolioCard :portfolio="portfolio"></PortfolioCard>
+      <PortfolioCard :portfolio="portfolio" :snapshot="snapshots[idx]"></PortfolioCard>
     </li>
   </ul>
 </template>
