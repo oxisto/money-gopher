@@ -11,3 +11,23 @@ coverage:
     patch:
       default:
         target: 70%
+
+comment:
+  layout: "header, diff, flags, components"
+
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+        branches:
+          - "!main"
+  individual_components:
+    - component_id: service_portfolio
+      name: portfolio-service
+      paths:
+        - service/portfolio/**
+    - component_id: service_securities
+      name: securities-service
+      paths:
+        - service/securities/**
