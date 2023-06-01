@@ -15,9 +15,13 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: "1.20"
-      - name: Build
+      - name: Set up node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Build Backend
         run: go build -v ./...
-      - name: Test
+      - name: Test Backend
         run: go test -v -coverprofile=coverage.cov -coverpkg ./... -covermode=atomic ./...
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
@@ -25,3 +29,5 @@ jobs:
           files: coverage.cov
           flags: unittests
           token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Build UI
+        run: cd ui && npm ci
