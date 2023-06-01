@@ -7,7 +7,7 @@ import { SecuritiesService } from "@/gen/mgo_connect"
 let client: PromiseClient<typeof SecuritiesService> = createPromiseClient(
   SecuritiesService,
   createConnectTransport({
-    baseUrl: 'http://localhost:8080',
+    baseUrl: '/',
   })
 )
 

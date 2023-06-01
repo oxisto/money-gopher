@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 
+import "inter-ui/inter.css";
 import './style.css'
 import App from './App.vue'
 import router from './router'
@@ -12,7 +13,7 @@ import { PortfolioService } from './gen/mgo_connect'
 let client: PromiseClient<typeof PortfolioService> = createPromiseClient(
   PortfolioService,
   createConnectTransport({
-    baseUrl: 'http://localhost:8080',
+    baseUrl: '/',
     useHttpGet: true
   })
 )
