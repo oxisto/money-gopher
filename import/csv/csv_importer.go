@@ -131,9 +131,11 @@ func readLine(cr *csv.Reader, pname string) (tx *portfoliov1.PortfolioEvent, sec
 	}
 
 	// Calculate the price
-	if tx.Type == portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY {
+	if tx.Type == portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY ||
+		tx.Type == portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_INBOUND {
 		tx.Price = (value - tx.Fees) / float32(tx.Amount)
-	} else if tx.Type == portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL {
+	} else if tx.Type == portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL ||
+		tx.Type == portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_OUTBOUND {
 		tx.Price = -(value - tx.Fees - tx.Taxes) / float32(tx.Amount)
 	}
 
@@ -162,6 +164,10 @@ func txType(typ string) portfoliov1.PortfolioEventType {
 		return portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY
 	case "Sell":
 		return portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL
+	case "Delivery (Inbound)":
+		return portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_INBOUND
+	case "Delivery (Outbound)":
+		return portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_OUTBOUND
 	default:
 		return portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_UNSPECIFIED
 	}
