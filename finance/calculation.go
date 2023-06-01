@@ -57,6 +57,8 @@ func NewCalculation(txs []*portfoliov1.PortfolioEvent) *calculation {
 
 func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
 	switch tx.Type {
+	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_INBOUND:
+		fallthrough
 	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY:
 		// Increase the amount of shares and the fees by the value stored in the
 		// transaction
@@ -73,6 +75,8 @@ func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
 			value:  tx.Price * float32(tx.Amount),
 			fees:   tx.Fees,
 		})
+	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_OUTBOUND:
+		fallthrough
 	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL:
 		var (
 			sold float32
