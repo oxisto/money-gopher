@@ -46,7 +46,7 @@ func TestImport(t *testing.T) {
 				r: bytes.NewReader([]byte(`Date;Type;Value;Transaction Currency;Gross Amount;Currency Gross Amount;Exchange Rate;Fees;Taxes;Shares;ISIN;WKN;Ticker Symbol;Security Name;Note
 2021-06-05T00:00;Buy;2.151,85;EUR;;;;10,25;0,00;20;US0378331005;865985;APC.F;Apple Inc.;
 2021-06-05T00:00;Sell;-2.151,85;EUR;;;;10,25;0,00;20;US0378331005;865985;APC.F;Apple Inc.;
-2021-06-18T00:00;Buy;912,66;EUR;;;;7,16;0,00;5;US09075V1026;A2PSR2;22UA.F;BioNTech SE;`)),
+2021-06-18T00:00;Delivery (Inbound);912,66;EUR;;;;7,16;0,00;5;US09075V1026;A2PSR2;22UA.F;BioNTech SE;`)),
 			},
 			wantTxs: func(t *testing.T, txs []*portfoliov1.PortfolioEvent) bool {
 				return assert.Equals(t, 3, len(txs))
