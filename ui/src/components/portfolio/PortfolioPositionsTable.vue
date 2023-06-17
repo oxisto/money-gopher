@@ -16,11 +16,17 @@ sorters.set('displayName', (a: PortfolioPosition, b: PortfolioPosition) => {
 sorters.set('amount', (a: PortfolioPosition, b: PortfolioPosition) => {
   return a.amount - b.amount
 })
+sorters.set('purchasePrice', (a: PortfolioPosition, b: PortfolioPosition) => {
+  return a.purchasePrice - b.purchasePrice
+})
 sorters.set('purchaseValue', (a: PortfolioPosition, b: PortfolioPosition) => {
   return a.purchaseValue - b.purchaseValue
 })
 sorters.set('marketValue', (a: PortfolioPosition, b: PortfolioPosition) => {
   return a.marketValue - b.marketValue
+})
+sorters.set('profit', (a: PortfolioPosition, b: PortfolioPosition) => {
+  return a.profitOrLoss - b.profitOrLoss
 })
 
 const sortBy = ref('displayName')

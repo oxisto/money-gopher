@@ -1,14 +1,9 @@
 <script setup lang="ts">
 import { PortfolioPosition } from '@/gen/mgo_pb';
-import { computed } from 'vue';
 import { ArrowDownIcon, ArrowRightIcon, ArrowUpIcon } from '@heroicons/vue/20/solid'
 
 const props = defineProps({
   position: { type: PortfolioPosition, required: true },
-})
-
-const perf = computed(() => {
-  return (props.position.marketPrice - props.position.purchasePrice) / props.position.purchasePrice * 100
 })
 
 function shorten(text: string): string {
@@ -53,21 +48,22 @@ function shorten(text: string): string {
       </div>
     </td>
     <td class="whitespace-nowrap px-3 py-2 text-right text-sm" :class="{
-      'text-red-500': perf < 0,
-      'text-gray-500': perf <= 1,
-      'text-green-500': perf > 1
+      'text-red-500': position.gains < 0,
+      'text-gray-500': position.gains <= 0.01,
+      'text-green-500': position.gains > 0.01
     }">
       <div>
         {{
           Intl.NumberFormat('de', {
+            style: 'percent',
             maximumFractionDigits: 2
-          }).format(perf)
-        }} %
-        <component :is="perf < 0 ? ArrowDownIcon : perf < 1 ? ArrowRightIcon : ArrowUpIcon"
+          }).format(position.gains)
+        }}
+        <component :is="position.gains < 0 ? ArrowDownIcon : position.gains < 1 ? ArrowRightIcon : ArrowUpIcon"
           class="h-4 w-4 mt-0.5 float-right" aria-hidden="true" />
       </div>
       <div class="pr-4">
-        {{ $filters.currency(position.marketValue - position.purchaseValue, "EUR") }}
+        {{ $filters.currency(position.profitOrLoss, "EUR") }}
       </div>
     </td>
   </tr>

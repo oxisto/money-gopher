@@ -736,6 +736,21 @@ export class PortfolioPosition extends Message<PortfolioPosition> {
    */
   totalFees = 0;
 
+  /**
+   * ProfitOrLoss contains the absolute amount of profit or loss in this
+   * position.
+   *
+   * @generated from field: float profit_or_loss = 20;
+   */
+  profitOrLoss = 0;
+
+  /**
+   * Gains contains the relative amount of profit or loss in this position.
+   *
+   * @generated from field: float gains = 21;
+   */
+  gains = 0;
+
   constructor(data?: PartialMessage<PortfolioPosition>) {
     super();
     proto3.util.initPartial(data, this);
@@ -751,6 +766,8 @@ export class PortfolioPosition extends Message<PortfolioPosition> {
     { no: 10, name: "market_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
     { no: 11, name: "market_price", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
     { no: 15, name: "total_fees", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 20, name: "profit_or_loss", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 21, name: "gains", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PortfolioPosition {
