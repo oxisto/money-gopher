@@ -5,14 +5,10 @@
   ],
   "packageRules": [
     {
-      "extends": "monorepo:vue",
-      "groupName": "vue monorepo",
-      "matchUpdateTypes": [
-        "digest",
-        "patch",
-        "minor",
-        "major"
-      ]
+      "matchManagers": [
+        "npm"
+      ],
+      "groupName": "UI"
     }
   ]
 }
