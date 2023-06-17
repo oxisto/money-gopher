@@ -78,6 +78,14 @@ message PortfolioSnapshot {
 
   // TotalMarketValue contains the total market value of all positions
   float total_market_value = 11;
+
+  // TotalProfitOrLoss contains the total absolute amount of profit or loss in
+  // this snapshot.
+  float total_profit_or_loss = 20;
+
+  // TotalGains contains the total relative amount of profit or loss in this
+  // snapshot.
+  float total_gains = 21;
 }
 
 message PortfolioPosition {
@@ -104,6 +112,13 @@ message PortfolioPosition {
   // TotalFees is the total amount of fees accumulating in this position through
   // various transactions.
   float total_fees = 15;
+
+  // ProfitOrLoss contains the absolute amount of profit or loss in this
+  // position.
+  float profit_or_loss = 20;
+
+  // Gains contains the relative amount of profit or loss in this position.
+  float gains = 21;
 }
 
 enum PortfolioEventType {
