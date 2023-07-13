@@ -6,7 +6,7 @@ require (
 	github.com/bufbuild/connect-go v1.9.0
 	github.com/mattn/go-sqlite3 v1.14.17
 	github.com/oxisto/assert v0.0.6
-	golang.org/x/exp v0.0.0-20230711153332-06a737ee72cb
+	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1
 	golang.org/x/net v0.12.0
 	golang.org/x/text v0.11.0
 	google.golang.org/protobuf v1.31.0
