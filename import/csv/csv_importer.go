@@ -34,6 +34,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -42,7 +43,6 @@ import (
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/service/securities"
 
-	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

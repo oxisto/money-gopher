@@ -18,12 +18,12 @@ package securities
 
 import (
 	"context"
+	"slices"
 
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/service/internal/crud"
 
 	"github.com/bufbuild/connect-go"
-	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
