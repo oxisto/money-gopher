@@ -1,6 +1,6 @@
 module github.com/oxisto/money-gopher
 
-go 1.20
+go 1.21
 
 require (
 	github.com/bufbuild/connect-go v1.10.0
