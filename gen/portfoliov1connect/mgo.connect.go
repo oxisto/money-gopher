@@ -266,66 +266,92 @@ type PortfolioServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewPortfolioServiceHandler(svc PortfolioServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	mux := http.NewServeMux()
-	mux.Handle(PortfolioServiceCreatePortfolioProcedure, connect_go.NewUnaryHandler(
+	portfolioServiceCreatePortfolioHandler := connect_go.NewUnaryHandler(
 		PortfolioServiceCreatePortfolioProcedure,
 		svc.CreatePortfolio,
 		opts...,
-	))
-	mux.Handle(PortfolioServiceListPortfoliosProcedure, connect_go.NewUnaryHandler(
+	)
+	portfolioServiceListPortfoliosHandler := connect_go.NewUnaryHandler(
 		PortfolioServiceListPortfoliosProcedure,
 		svc.ListPortfolios,
 		connect_go.WithIdempotency(connect_go.IdempotencyNoSideEffects),
 		connect_go.WithHandlerOptions(opts...),
-	))
-	mux.Handle(PortfolioServiceGetPortfolioProcedure, connect_go.NewUnaryHandler(
+	)
+	portfolioServiceGetPortfolioHandler := connect_go.NewUnaryHandler(
 		PortfolioServiceGetPortfolioProcedure,
 		svc.GetPortfolio,
 		connect_go.WithIdempotency(connect_go.IdempotencyNoSideEffects),
 		connect_go.WithHandlerOptions(opts...),
-	))
-	mux.Handle(PortfolioServiceUpdatePortfolioProcedure, connect_go.NewUnaryHandler(
+	)
+	portfolioServiceUpdatePortfolioHandler := connect_go.NewUnaryHandler(
 		PortfolioServiceUpdatePortfolioProcedure,
 		svc.UpdatePortfolio,
 		opts...,
-	))
-	mux.Handle(PortfolioServiceDeletePortfolioProcedure, connect_go.NewUnaryHandler(
+	)
+	portfolioServiceDeletePortfolioHandler := connect_go.NewUnaryHandler(
 		PortfolioServiceDeletePortfolioProcedure,
 		svc.DeletePortfolio,
 		opts...,
-	))
-	mux.Handle(PortfolioServiceGetPortfolioSnapshotProcedure, connect_go.NewUnaryHandler(
+	)
+	portfolioServiceGetPortfolioSnapshotHandler := connect_go.NewUnaryHandler(
 		PortfolioServiceGetPortfolioSnapshotProcedure,
 		svc.GetPortfolioSnapshot,
 		connect_go.WithIdempotency(connect_go.IdempotencyNoSideEffects),
 		connect_go.WithHandlerOptions(opts...),
-	))
-	mux.Handle(PortfolioServiceCreatePortfolioTransactionProcedure, connect_go.NewUnaryHandler(
+	)
+	portfolioServiceCreatePortfolioTransactionHandler := connect_go.NewUnaryHandler(
 		PortfolioServiceCreatePortfolioTransactionProcedure,
 		svc.CreatePortfolioTransaction,
 		opts...,
-	))
-	mux.Handle(PortfolioServiceListPortfolioTransactionsProcedure, connect_go.NewUnaryHandler(
+	)
+	portfolioServiceListPortfolioTransactionsHandler := connect_go.NewUnaryHandler(
 		PortfolioServiceListPortfolioTransactionsProcedure,
 		svc.ListPortfolioTransactions,
 		opts...,
-	))
-	mux.Handle(PortfolioServiceUpdatePortfolioTransactionProcedure, connect_go.NewUnaryHandler(
+	)
+	portfolioServiceUpdatePortfolioTransactionHandler := connect_go.NewUnaryHandler(
 		PortfolioServiceUpdatePortfolioTransactionProcedure,
 		svc.UpdatePortfolioTransaction,
 		opts...,
-	))
-	mux.Handle(PortfolioServiceDeletePortfolioTransactionProcedure, connect_go.NewUnaryHandler(
+	)
+	portfolioServiceDeletePortfolioTransactionHandler := connect_go.NewUnaryHandler(
 		PortfolioServiceDeletePortfolioTransactionProcedure,
 		svc.DeletePortfolioTransaction,
 		opts...,
-	))
-	mux.Handle(PortfolioServiceImportTransactionsProcedure, connect_go.NewUnaryHandler(
+	)
+	portfolioServiceImportTransactionsHandler := connect_go.NewUnaryHandler(
 		PortfolioServiceImportTransactionsProcedure,
 		svc.ImportTransactions,
 		opts...,
-	))
-	return "/mgo.portfolio.v1.PortfolioService/", mux
+	)
+	return "/mgo.portfolio.v1.PortfolioService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case PortfolioServiceCreatePortfolioProcedure:
+			portfolioServiceCreatePortfolioHandler.ServeHTTP(w, r)
+		case PortfolioServiceListPortfoliosProcedure:
+			portfolioServiceListPortfoliosHandler.ServeHTTP(w, r)
+		case PortfolioServiceGetPortfolioProcedure:
+			portfolioServiceGetPortfolioHandler.ServeHTTP(w, r)
+		case PortfolioServiceUpdatePortfolioProcedure:
+			portfolioServiceUpdatePortfolioHandler.ServeHTTP(w, r)
+		case PortfolioServiceDeletePortfolioProcedure:
+			portfolioServiceDeletePortfolioHandler.ServeHTTP(w, r)
+		case PortfolioServiceGetPortfolioSnapshotProcedure:
+			portfolioServiceGetPortfolioSnapshotHandler.ServeHTTP(w, r)
+		case PortfolioServiceCreatePortfolioTransactionProcedure:
+			portfolioServiceCreatePortfolioTransactionHandler.ServeHTTP(w, r)
+		case PortfolioServiceListPortfolioTransactionsProcedure:
+			portfolioServiceListPortfolioTransactionsHandler.ServeHTTP(w, r)
+		case PortfolioServiceUpdatePortfolioTransactionProcedure:
+			portfolioServiceUpdatePortfolioTransactionHandler.ServeHTTP(w, r)
+		case PortfolioServiceDeletePortfolioTransactionProcedure:
+			portfolioServiceDeletePortfolioTransactionHandler.ServeHTTP(w, r)
+		case PortfolioServiceImportTransactionsProcedure:
+			portfolioServiceImportTransactionsHandler.ServeHTTP(w, r)
+		default:
+			http.NotFound(w, r)
+		}
+	})
 }
 
 // UnimplementedPortfolioServiceHandler returns CodeUnimplemented from all methods.
@@ -486,40 +512,56 @@ type SecuritiesServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewSecuritiesServiceHandler(svc SecuritiesServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	mux := http.NewServeMux()
-	mux.Handle(SecuritiesServiceListSecuritiesProcedure, connect_go.NewUnaryHandler(
+	securitiesServiceListSecuritiesHandler := connect_go.NewUnaryHandler(
 		SecuritiesServiceListSecuritiesProcedure,
 		svc.ListSecurities,
 		connect_go.WithIdempotency(connect_go.IdempotencyNoSideEffects),
 		connect_go.WithHandlerOptions(opts...),
-	))
-	mux.Handle(SecuritiesServiceGetSecurityProcedure, connect_go.NewUnaryHandler(
+	)
+	securitiesServiceGetSecurityHandler := connect_go.NewUnaryHandler(
 		SecuritiesServiceGetSecurityProcedure,
 		svc.GetSecurity,
 		connect_go.WithIdempotency(connect_go.IdempotencyNoSideEffects),
 		connect_go.WithHandlerOptions(opts...),
-	))
-	mux.Handle(SecuritiesServiceCreateSecurityProcedure, connect_go.NewUnaryHandler(
+	)
+	securitiesServiceCreateSecurityHandler := connect_go.NewUnaryHandler(
 		SecuritiesServiceCreateSecurityProcedure,
 		svc.CreateSecurity,
 		opts...,
-	))
-	mux.Handle(SecuritiesServiceUpdateSecurityProcedure, connect_go.NewUnaryHandler(
+	)
+	securitiesServiceUpdateSecurityHandler := connect_go.NewUnaryHandler(
 		SecuritiesServiceUpdateSecurityProcedure,
 		svc.UpdateSecurity,
 		opts...,
-	))
-	mux.Handle(SecuritiesServiceDeleteSecurityProcedure, connect_go.NewUnaryHandler(
+	)
+	securitiesServiceDeleteSecurityHandler := connect_go.NewUnaryHandler(
 		SecuritiesServiceDeleteSecurityProcedure,
 		svc.DeleteSecurity,
 		opts...,
-	))
-	mux.Handle(SecuritiesServiceTriggerSecurityQuoteUpdateProcedure, connect_go.NewUnaryHandler(
+	)
+	securitiesServiceTriggerSecurityQuoteUpdateHandler := connect_go.NewUnaryHandler(
 		SecuritiesServiceTriggerSecurityQuoteUpdateProcedure,
 		svc.TriggerSecurityQuoteUpdate,
 		opts...,
-	))
-	return "/mgo.portfolio.v1.SecuritiesService/", mux
+	)
+	return "/mgo.portfolio.v1.SecuritiesService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case SecuritiesServiceListSecuritiesProcedure:
+			securitiesServiceListSecuritiesHandler.ServeHTTP(w, r)
+		case SecuritiesServiceGetSecurityProcedure:
+			securitiesServiceGetSecurityHandler.ServeHTTP(w, r)
+		case SecuritiesServiceCreateSecurityProcedure:
+			securitiesServiceCreateSecurityHandler.ServeHTTP(w, r)
+		case SecuritiesServiceUpdateSecurityProcedure:
+			securitiesServiceUpdateSecurityHandler.ServeHTTP(w, r)
+		case SecuritiesServiceDeleteSecurityProcedure:
+			securitiesServiceDeleteSecurityHandler.ServeHTTP(w, r)
+		case SecuritiesServiceTriggerSecurityQuoteUpdateProcedure:
+			securitiesServiceTriggerSecurityQuoteUpdateHandler.ServeHTTP(w, r)
+		default:
+			http.NotFound(w, r)
+		}
+	})
 }
 
 // UnimplementedSecuritiesServiceHandler returns CodeUnimplemented from all methods.
