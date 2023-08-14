@@ -27,6 +27,8 @@
 			"protoreflect",
 			"secmap",
 			"secres",
+			"steeze",
+			"tailwindcss",
 			"timestamppb"
 		],
 		"editor.tabSize": 2
