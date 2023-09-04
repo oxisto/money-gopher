@@ -8,6 +8,6 @@ require (
 	github.com/oxisto/assert v0.0.6
 	golang.org/x/exp v0.0.0-20230817173708-d852ddb80c63
 	golang.org/x/net v0.14.0
-	golang.org/x/text v0.12.0
+	golang.org/x/text v0.13.0
 	google.golang.org/protobuf v1.31.0
 )
