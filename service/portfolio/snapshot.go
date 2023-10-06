@@ -24,7 +24,6 @@ import (
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 
 	"github.com/bufbuild/connect-go"
-	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -62,7 +61,7 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 
 	// Retrieve the event map; a map of events indexed by their security name
 	m = p.EventMap()
-	names = maps.Keys(m)
+	names = keys(m)
 
 	// Retrieve market value of filtered securities
 	secres, err = svc.securities.ListSecurities(
@@ -118,4 +117,14 @@ func marketPrice(secmap map[string]*portfoliov1.Security, name string, netPrice 
 	} else {
 		return *ls[0].LatestQuote
 	}
+}
+
+func keys[M ~map[K]V, K comparable, V any](m M) (keys []K) {
+	keys = make([]K, 0, len(m))
+
+	for k := range m {
+		keys = append(keys, k)
+	}
+
+	return keys
 }
