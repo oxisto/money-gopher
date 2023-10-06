@@ -30,7 +30,7 @@
 			</div>
 		</td>
 		<td class="hidden whitespace-nowrap px-3 py-2 text-right text-sm text-gray-500 md:table-cell">
-			{Intl.NumberFormat('de', {
+			{Intl.NumberFormat(navigator.language, {
 				maximumFractionDigits: 2
 			}).format(position.amount)}
 		</td>
@@ -58,7 +58,7 @@
 				: 'text-green-500'} whitespace-nowrap px-3 py-2 text-right text-sm"
 		>
 			<div>
-				{Intl.NumberFormat('de', {
+				{Intl.NumberFormat(navigator.language, {
 					maximumFractionDigits: 2
 				}).format(perf)} %
 				<Icon

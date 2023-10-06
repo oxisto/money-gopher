@@ -6,6 +6,5 @@
 	export let data: PageData;
 </script>
 
-Hey from there
 <PortfolioBreadcrumb portfolio={data.portfolio} snapshot={data.snapshot} />
 <PortfolioPositionsTable snapshot={data.snapshot} />
