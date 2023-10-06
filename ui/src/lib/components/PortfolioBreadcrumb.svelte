@@ -1,10 +1,10 @@
 <script lang="ts">
+	import Date from '$lib/components/Date.svelte';
+	import Performance from '$lib/components/Performance.svelte';
 	import type { Portfolio, PortfolioSnapshot } from '$lib/gen/mgo_pb';
 	import { currency } from '$lib/intl';
-	import { Menu, MenuButton, MenuItems, MenuItem } from '@rgossiaux/svelte-headlessui';
+	import { Menu, MenuButton, MenuItem, MenuItems } from '@rgossiaux/svelte-headlessui';
 	import {
-		ArrowTrendingDown,
-		ArrowTrendingUp,
 		Calendar,
 		Check,
 		ChevronDown,
@@ -18,10 +18,6 @@
 
 	export let portfolio: Portfolio;
 	export let snapshot: PortfolioSnapshot;
-
-	$: perf =
-		((snapshot.totalMarketValue - snapshot.totalPurchaseValue) / snapshot.totalPurchaseValue) * 100;
-	$: perfAbs = snapshot.totalMarketValue - snapshot.totalPurchaseValue;
 </script>
 
 <div class="lg:flex lg:items-center lg:justify-between">
@@ -55,20 +51,8 @@
 			{portfolio.displayName}
 		</h2>
 		<div class="mt-1 flex flex-col sm:mt-0 sm:flex-row sm:flex-wrap sm:space-x-6">
-			<div
-				class="{perf < 0 ? 'text-red-400' : 'text-green-400'} 
-               mt-2 flex items-center text-sm"
-			>
-				<Icon
-					src={perf > 0 ? ArrowTrendingUp : ArrowTrendingDown}
-					class="{perf < 0 ? 'text-red-400' : 'text-green-400'} 
-                 mr-1.5 h-5 w-5 flex-shrink-0"
-					aria-hidden="true"
-				/>
-				{Intl.NumberFormat('de', { maximumFractionDigits: 2 }).format(perf)} % ({currency(
-					perfAbs,
-					'EUR'
-				)})
+			<div class="mt-2 flex items-center text-sm">
+				<Performance {snapshot} />
 			</div>
 			<div class="mt-2 flex items-center text-sm text-gray-500">
 				<Icon
@@ -92,7 +76,7 @@
 					class="mr-1.5 h-5 w-5 flex-shrink-0 text-gray-400"
 					aria-hidden="true"
 				/>
-				First transaction on {snapshot.firstTransactionTime}
+				First transaction on&nbsp;<Date date={snapshot.firstTransactionTime?.toDate()} />
 			</div>
 		</div>
 	</div>

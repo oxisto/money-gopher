@@ -26,9 +26,9 @@ import (
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	"github.com/oxisto/money-gopher/repl"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bufbuild/connect-go"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type portfolioSnapshot struct{}

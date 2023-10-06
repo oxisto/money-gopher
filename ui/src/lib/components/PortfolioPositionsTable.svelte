@@ -148,7 +148,7 @@
 					: 'text-green-500'} px-3 py-3.5 text-right text-sm font-semibold"
 			>
 				<div>
-					{Intl.NumberFormat('de', {
+					{Intl.NumberFormat(navigator.language, {
 						maximumFractionDigits: 2
 					}).format(perf)} %
 					<Icon

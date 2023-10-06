@@ -119,6 +119,7 @@ func marketPrice(secmap map[string]*portfoliov1.Security, name string, netPrice 
 	}
 }
 
+// TODO(oxisto): remove once maps.Keys is in the stdlib in Go 1.22
 func keys[M ~map[K]V, K comparable, V any](m M) (keys []K) {
 	keys = make([]K, 0, len(m))
 
