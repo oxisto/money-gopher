@@ -26,6 +26,7 @@ import (
 	"github.com/oxisto/assert"
 	moneygopher "github.com/oxisto/money-gopher"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"github.com/oxisto/money-gopher/service/securities"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -111,7 +112,7 @@ func Test_readLine(t *testing.T) {
 			wantSec: &portfoliov1.Security{
 				Name:          "US0378331005",
 				DisplayName:   "Apple Inc.",
-				QuoteProvider: moneygopher.Ref("yf"),
+				QuoteProvider: moneygopher.Ref(securities.QuoteProviderYF),
 				ListedOn: []*portfoliov1.ListedSecurity{
 					{
 						SecurityName: "US0378331005",
@@ -141,7 +142,7 @@ func Test_readLine(t *testing.T) {
 			wantSec: &portfoliov1.Security{
 				Name:          "US00827B1061",
 				DisplayName:   "Affirm Holdings Inc.",
-				QuoteProvider: moneygopher.Ref("yf"),
+				QuoteProvider: moneygopher.Ref(securities.QuoteProviderYF),
 				ListedOn: []*portfoliov1.ListedSecurity{
 					{
 						SecurityName: "US00827B1061",
@@ -173,7 +174,7 @@ func Test_readLine(t *testing.T) {
 			wantSec: &portfoliov1.Security{
 				Name:          "DE0005557508",
 				DisplayName:   "Deutsche Telekom AG",
-				QuoteProvider: moneygopher.Ref("yf"),
+				QuoteProvider: moneygopher.Ref(securities.QuoteProviderYF),
 				ListedOn: []*portfoliov1.ListedSecurity{
 					{
 						SecurityName: "DE0005557508",

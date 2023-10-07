@@ -149,7 +149,13 @@ func readLine(cr *csv.Reader, pname string) (tx *portfoliov1.PortfolioEvent, sec
 			Currency:     lsCurrency(record[3], record[5]),
 		},
 	}
-	sec.QuoteProvider = moneygopher.Ref(securities.QuoteProviderYF)
+
+	// Default to YF, but only if we have a ticker symbol, otherwise, let's try ING
+	if len(sec.ListedOn) >= 0 && len(sec.ListedOn[0].Ticker) > 0 {
+		sec.QuoteProvider = moneygopher.Ref(securities.QuoteProviderYF)
+	} else {
+		sec.QuoteProvider = moneygopher.Ref(securities.QuoteProviderING)
+	}
 
 	tx.PortfolioName = pname
 	tx.SecurityName = sec.Name
