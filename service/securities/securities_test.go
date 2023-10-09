@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bufbuild/connect-go"
+	"connectrpc.com/connect"
 	"github.com/oxisto/assert"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"

@@ -23,7 +23,7 @@ import (
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/service/internal/crud"
 
-	"github.com/bufbuild/connect-go"
+	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 

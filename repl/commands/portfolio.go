@@ -27,7 +27,7 @@ import (
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	"github.com/oxisto/money-gopher/repl"
 
-	"github.com/bufbuild/connect-go"
+	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

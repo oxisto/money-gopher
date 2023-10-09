@@ -24,7 +24,7 @@ import (
 	"github.com/oxisto/money-gopher/import/csv"
 	"github.com/oxisto/money-gopher/service/internal/crud"
 
-	"github.com/bufbuild/connect-go"
+	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 

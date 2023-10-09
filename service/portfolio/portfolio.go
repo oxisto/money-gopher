@@ -23,7 +23,7 @@ import (
 	"github.com/oxisto/money-gopher/service/internal/crud"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/bufbuild/connect-go"
+	"connectrpc.com/connect"
 )
 
 var portfolioSetter = func(obj *portfoliov1.Portfolio) *portfoliov1.Portfolio {

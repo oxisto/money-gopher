@@ -15,7 +15,7 @@ automatically built and and tested using GitHub Actions.
 ## Dependencies
 
 We want to keep the amount of dependencies minimal. `golang/x` packages are fair
-game, we need `github.com/bufbuild/connect-go` and `google.golang.org/protobuf`.
+game, we need `connectrpc.com/connect` and `google.golang.org/protobuf`.
 We also probably need some kind of assertion library for testing. For everything
 else (logging, database) we stick to the Go standard library for now, however we
 need to import an SQL driver, like `modernc.org/sqlite`.

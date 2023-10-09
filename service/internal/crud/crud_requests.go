@@ -22,7 +22,7 @@ package crud
 import (
 	"github.com/oxisto/money-gopher/persistence"
 
-	"github.com/bufbuild/connect-go"
+	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 

@@ -7,7 +7,7 @@ package portfoliov1connect
 import (
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
+	connect_go "connectrpc.com/connect"
 	gen "github.com/oxisto/money-gopher/gen"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"

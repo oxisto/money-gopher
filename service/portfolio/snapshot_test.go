@@ -32,7 +32,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/bufbuild/connect-go"
+	"connectrpc.com/connect"
 )
 
 var mockSecuritiesClientWithData = &mockSecuritiesClient{

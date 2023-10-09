@@ -23,7 +23,7 @@ import (
 	"github.com/oxisto/money-gopher/finance"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 
-	"github.com/bufbuild/connect-go"
+	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

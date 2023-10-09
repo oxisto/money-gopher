@@ -24,7 +24,7 @@ import (
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/bufbuild/connect-go"
+	"connectrpc.com/connect"
 )
 
 func (svc *service) TriggerSecurityQuoteUpdate(ctx context.Context, req *connect.Request[portfoliov1.TriggerQuoteUpdateRequest]) (res *connect.Response[portfoliov1.TriggerQuoteUpdateResponse], err error) {

@@ -22,7 +22,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/bufbuild/connect-go"
+	"connectrpc.com/connect"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	"github.com/oxisto/money-gopher/repl"
