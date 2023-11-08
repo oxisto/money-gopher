@@ -5,9 +5,9 @@
 package portfoliov1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "connectrpc.com/connect"
 	gen "github.com/oxisto/money-gopher/gen"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
@@ -19,7 +19,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion1_7_0
+const _ = connect.IsAtLeastVersion1_7_0
 
 const (
 	// PortfolioServiceName is the fully-qualified name of the PortfolioService service.
@@ -91,17 +91,17 @@ const (
 
 // PortfolioServiceClient is a client for the mgo.portfolio.v1.PortfolioService service.
 type PortfolioServiceClient interface {
-	CreatePortfolio(context.Context, *connect_go.Request[gen.CreatePortfolioRequest]) (*connect_go.Response[gen.Portfolio], error)
-	ListPortfolios(context.Context, *connect_go.Request[gen.ListPortfoliosRequest]) (*connect_go.Response[gen.ListPortfoliosResponse], error)
-	GetPortfolio(context.Context, *connect_go.Request[gen.GetPortfolioRequest]) (*connect_go.Response[gen.Portfolio], error)
-	UpdatePortfolio(context.Context, *connect_go.Request[gen.UpdatePortfolioRequest]) (*connect_go.Response[gen.Portfolio], error)
-	DeletePortfolio(context.Context, *connect_go.Request[gen.DeletePortfolioRequest]) (*connect_go.Response[emptypb.Empty], error)
-	GetPortfolioSnapshot(context.Context, *connect_go.Request[gen.GetPortfolioSnapshotRequest]) (*connect_go.Response[gen.PortfolioSnapshot], error)
-	CreatePortfolioTransaction(context.Context, *connect_go.Request[gen.CreatePortfolioTransactionRequest]) (*connect_go.Response[gen.PortfolioEvent], error)
-	ListPortfolioTransactions(context.Context, *connect_go.Request[gen.ListPortfolioTransactionsRequest]) (*connect_go.Response[gen.ListPortfolioTransactionsResponse], error)
-	UpdatePortfolioTransaction(context.Context, *connect_go.Request[gen.UpdatePortfolioTransactionRequest]) (*connect_go.Response[gen.PortfolioEvent], error)
-	DeletePortfolioTransaction(context.Context, *connect_go.Request[gen.DeletePortfolioTransactionRequest]) (*connect_go.Response[emptypb.Empty], error)
-	ImportTransactions(context.Context, *connect_go.Request[gen.ImportTransactionsRequest]) (*connect_go.Response[emptypb.Empty], error)
+	CreatePortfolio(context.Context, *connect.Request[gen.CreatePortfolioRequest]) (*connect.Response[gen.Portfolio], error)
+	ListPortfolios(context.Context, *connect.Request[gen.ListPortfoliosRequest]) (*connect.Response[gen.ListPortfoliosResponse], error)
+	GetPortfolio(context.Context, *connect.Request[gen.GetPortfolioRequest]) (*connect.Response[gen.Portfolio], error)
+	UpdatePortfolio(context.Context, *connect.Request[gen.UpdatePortfolioRequest]) (*connect.Response[gen.Portfolio], error)
+	DeletePortfolio(context.Context, *connect.Request[gen.DeletePortfolioRequest]) (*connect.Response[emptypb.Empty], error)
+	GetPortfolioSnapshot(context.Context, *connect.Request[gen.GetPortfolioSnapshotRequest]) (*connect.Response[gen.PortfolioSnapshot], error)
+	CreatePortfolioTransaction(context.Context, *connect.Request[gen.CreatePortfolioTransactionRequest]) (*connect.Response[gen.PortfolioEvent], error)
+	ListPortfolioTransactions(context.Context, *connect.Request[gen.ListPortfolioTransactionsRequest]) (*connect.Response[gen.ListPortfolioTransactionsResponse], error)
+	UpdatePortfolioTransaction(context.Context, *connect.Request[gen.UpdatePortfolioTransactionRequest]) (*connect.Response[gen.PortfolioEvent], error)
+	DeletePortfolioTransaction(context.Context, *connect.Request[gen.DeletePortfolioTransactionRequest]) (*connect.Response[emptypb.Empty], error)
+	ImportTransactions(context.Context, *connect.Request[gen.ImportTransactionsRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewPortfolioServiceClient constructs a client for the mgo.portfolio.v1.PortfolioService service.
@@ -111,63 +111,63 @@ type PortfolioServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewPortfolioServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) PortfolioServiceClient {
+func NewPortfolioServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) PortfolioServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &portfolioServiceClient{
-		createPortfolio: connect_go.NewClient[gen.CreatePortfolioRequest, gen.Portfolio](
+		createPortfolio: connect.NewClient[gen.CreatePortfolioRequest, gen.Portfolio](
 			httpClient,
 			baseURL+PortfolioServiceCreatePortfolioProcedure,
 			opts...,
 		),
-		listPortfolios: connect_go.NewClient[gen.ListPortfoliosRequest, gen.ListPortfoliosResponse](
+		listPortfolios: connect.NewClient[gen.ListPortfoliosRequest, gen.ListPortfoliosResponse](
 			httpClient,
 			baseURL+PortfolioServiceListPortfoliosProcedure,
-			connect_go.WithIdempotency(connect_go.IdempotencyNoSideEffects),
-			connect_go.WithClientOptions(opts...),
+			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+			connect.WithClientOptions(opts...),
 		),
-		getPortfolio: connect_go.NewClient[gen.GetPortfolioRequest, gen.Portfolio](
+		getPortfolio: connect.NewClient[gen.GetPortfolioRequest, gen.Portfolio](
 			httpClient,
 			baseURL+PortfolioServiceGetPortfolioProcedure,
-			connect_go.WithIdempotency(connect_go.IdempotencyNoSideEffects),
-			connect_go.WithClientOptions(opts...),
+			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+			connect.WithClientOptions(opts...),
 		),
-		updatePortfolio: connect_go.NewClient[gen.UpdatePortfolioRequest, gen.Portfolio](
+		updatePortfolio: connect.NewClient[gen.UpdatePortfolioRequest, gen.Portfolio](
 			httpClient,
 			baseURL+PortfolioServiceUpdatePortfolioProcedure,
 			opts...,
 		),
-		deletePortfolio: connect_go.NewClient[gen.DeletePortfolioRequest, emptypb.Empty](
+		deletePortfolio: connect.NewClient[gen.DeletePortfolioRequest, emptypb.Empty](
 			httpClient,
 			baseURL+PortfolioServiceDeletePortfolioProcedure,
 			opts...,
 		),
-		getPortfolioSnapshot: connect_go.NewClient[gen.GetPortfolioSnapshotRequest, gen.PortfolioSnapshot](
+		getPortfolioSnapshot: connect.NewClient[gen.GetPortfolioSnapshotRequest, gen.PortfolioSnapshot](
 			httpClient,
 			baseURL+PortfolioServiceGetPortfolioSnapshotProcedure,
-			connect_go.WithIdempotency(connect_go.IdempotencyNoSideEffects),
-			connect_go.WithClientOptions(opts...),
+			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+			connect.WithClientOptions(opts...),
 		),
-		createPortfolioTransaction: connect_go.NewClient[gen.CreatePortfolioTransactionRequest, gen.PortfolioEvent](
+		createPortfolioTransaction: connect.NewClient[gen.CreatePortfolioTransactionRequest, gen.PortfolioEvent](
 			httpClient,
 			baseURL+PortfolioServiceCreatePortfolioTransactionProcedure,
 			opts...,
 		),
-		listPortfolioTransactions: connect_go.NewClient[gen.ListPortfolioTransactionsRequest, gen.ListPortfolioTransactionsResponse](
+		listPortfolioTransactions: connect.NewClient[gen.ListPortfolioTransactionsRequest, gen.ListPortfolioTransactionsResponse](
 			httpClient,
 			baseURL+PortfolioServiceListPortfolioTransactionsProcedure,
 			opts...,
 		),
-		updatePortfolioTransaction: connect_go.NewClient[gen.UpdatePortfolioTransactionRequest, gen.PortfolioEvent](
+		updatePortfolioTransaction: connect.NewClient[gen.UpdatePortfolioTransactionRequest, gen.PortfolioEvent](
 			httpClient,
 			baseURL+PortfolioServiceUpdatePortfolioTransactionProcedure,
 			opts...,
 		),
-		deletePortfolioTransaction: connect_go.NewClient[gen.DeletePortfolioTransactionRequest, emptypb.Empty](
+		deletePortfolioTransaction: connect.NewClient[gen.DeletePortfolioTransactionRequest, emptypb.Empty](
 			httpClient,
 			baseURL+PortfolioServiceDeletePortfolioTransactionProcedure,
 			opts...,
 		),
-		importTransactions: connect_go.NewClient[gen.ImportTransactionsRequest, emptypb.Empty](
+		importTransactions: connect.NewClient[gen.ImportTransactionsRequest, emptypb.Empty](
 			httpClient,
 			baseURL+PortfolioServiceImportTransactionsProcedure,
 			opts...,
@@ -177,87 +177,87 @@ func NewPortfolioServiceClient(httpClient connect_go.HTTPClient, baseURL string,
 
 // portfolioServiceClient implements PortfolioServiceClient.
 type portfolioServiceClient struct {
-	createPortfolio            *connect_go.Client[gen.CreatePortfolioRequest, gen.Portfolio]
-	listPortfolios             *connect_go.Client[gen.ListPortfoliosRequest, gen.ListPortfoliosResponse]
-	getPortfolio               *connect_go.Client[gen.GetPortfolioRequest, gen.Portfolio]
-	updatePortfolio            *connect_go.Client[gen.UpdatePortfolioRequest, gen.Portfolio]
-	deletePortfolio            *connect_go.Client[gen.DeletePortfolioRequest, emptypb.Empty]
-	getPortfolioSnapshot       *connect_go.Client[gen.GetPortfolioSnapshotRequest, gen.PortfolioSnapshot]
-	createPortfolioTransaction *connect_go.Client[gen.CreatePortfolioTransactionRequest, gen.PortfolioEvent]
-	listPortfolioTransactions  *connect_go.Client[gen.ListPortfolioTransactionsRequest, gen.ListPortfolioTransactionsResponse]
-	updatePortfolioTransaction *connect_go.Client[gen.UpdatePortfolioTransactionRequest, gen.PortfolioEvent]
-	deletePortfolioTransaction *connect_go.Client[gen.DeletePortfolioTransactionRequest, emptypb.Empty]
-	importTransactions         *connect_go.Client[gen.ImportTransactionsRequest, emptypb.Empty]
+	createPortfolio            *connect.Client[gen.CreatePortfolioRequest, gen.Portfolio]
+	listPortfolios             *connect.Client[gen.ListPortfoliosRequest, gen.ListPortfoliosResponse]
+	getPortfolio               *connect.Client[gen.GetPortfolioRequest, gen.Portfolio]
+	updatePortfolio            *connect.Client[gen.UpdatePortfolioRequest, gen.Portfolio]
+	deletePortfolio            *connect.Client[gen.DeletePortfolioRequest, emptypb.Empty]
+	getPortfolioSnapshot       *connect.Client[gen.GetPortfolioSnapshotRequest, gen.PortfolioSnapshot]
+	createPortfolioTransaction *connect.Client[gen.CreatePortfolioTransactionRequest, gen.PortfolioEvent]
+	listPortfolioTransactions  *connect.Client[gen.ListPortfolioTransactionsRequest, gen.ListPortfolioTransactionsResponse]
+	updatePortfolioTransaction *connect.Client[gen.UpdatePortfolioTransactionRequest, gen.PortfolioEvent]
+	deletePortfolioTransaction *connect.Client[gen.DeletePortfolioTransactionRequest, emptypb.Empty]
+	importTransactions         *connect.Client[gen.ImportTransactionsRequest, emptypb.Empty]
 }
 
 // CreatePortfolio calls mgo.portfolio.v1.PortfolioService.CreatePortfolio.
-func (c *portfolioServiceClient) CreatePortfolio(ctx context.Context, req *connect_go.Request[gen.CreatePortfolioRequest]) (*connect_go.Response[gen.Portfolio], error) {
+func (c *portfolioServiceClient) CreatePortfolio(ctx context.Context, req *connect.Request[gen.CreatePortfolioRequest]) (*connect.Response[gen.Portfolio], error) {
 	return c.createPortfolio.CallUnary(ctx, req)
 }
 
 // ListPortfolios calls mgo.portfolio.v1.PortfolioService.ListPortfolios.
-func (c *portfolioServiceClient) ListPortfolios(ctx context.Context, req *connect_go.Request[gen.ListPortfoliosRequest]) (*connect_go.Response[gen.ListPortfoliosResponse], error) {
+func (c *portfolioServiceClient) ListPortfolios(ctx context.Context, req *connect.Request[gen.ListPortfoliosRequest]) (*connect.Response[gen.ListPortfoliosResponse], error) {
 	return c.listPortfolios.CallUnary(ctx, req)
 }
 
 // GetPortfolio calls mgo.portfolio.v1.PortfolioService.GetPortfolio.
-func (c *portfolioServiceClient) GetPortfolio(ctx context.Context, req *connect_go.Request[gen.GetPortfolioRequest]) (*connect_go.Response[gen.Portfolio], error) {
+func (c *portfolioServiceClient) GetPortfolio(ctx context.Context, req *connect.Request[gen.GetPortfolioRequest]) (*connect.Response[gen.Portfolio], error) {
 	return c.getPortfolio.CallUnary(ctx, req)
 }
 
 // UpdatePortfolio calls mgo.portfolio.v1.PortfolioService.UpdatePortfolio.
-func (c *portfolioServiceClient) UpdatePortfolio(ctx context.Context, req *connect_go.Request[gen.UpdatePortfolioRequest]) (*connect_go.Response[gen.Portfolio], error) {
+func (c *portfolioServiceClient) UpdatePortfolio(ctx context.Context, req *connect.Request[gen.UpdatePortfolioRequest]) (*connect.Response[gen.Portfolio], error) {
 	return c.updatePortfolio.CallUnary(ctx, req)
 }
 
 // DeletePortfolio calls mgo.portfolio.v1.PortfolioService.DeletePortfolio.
-func (c *portfolioServiceClient) DeletePortfolio(ctx context.Context, req *connect_go.Request[gen.DeletePortfolioRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *portfolioServiceClient) DeletePortfolio(ctx context.Context, req *connect.Request[gen.DeletePortfolioRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.deletePortfolio.CallUnary(ctx, req)
 }
 
 // GetPortfolioSnapshot calls mgo.portfolio.v1.PortfolioService.GetPortfolioSnapshot.
-func (c *portfolioServiceClient) GetPortfolioSnapshot(ctx context.Context, req *connect_go.Request[gen.GetPortfolioSnapshotRequest]) (*connect_go.Response[gen.PortfolioSnapshot], error) {
+func (c *portfolioServiceClient) GetPortfolioSnapshot(ctx context.Context, req *connect.Request[gen.GetPortfolioSnapshotRequest]) (*connect.Response[gen.PortfolioSnapshot], error) {
 	return c.getPortfolioSnapshot.CallUnary(ctx, req)
 }
 
 // CreatePortfolioTransaction calls mgo.portfolio.v1.PortfolioService.CreatePortfolioTransaction.
-func (c *portfolioServiceClient) CreatePortfolioTransaction(ctx context.Context, req *connect_go.Request[gen.CreatePortfolioTransactionRequest]) (*connect_go.Response[gen.PortfolioEvent], error) {
+func (c *portfolioServiceClient) CreatePortfolioTransaction(ctx context.Context, req *connect.Request[gen.CreatePortfolioTransactionRequest]) (*connect.Response[gen.PortfolioEvent], error) {
 	return c.createPortfolioTransaction.CallUnary(ctx, req)
 }
 
 // ListPortfolioTransactions calls mgo.portfolio.v1.PortfolioService.ListPortfolioTransactions.
-func (c *portfolioServiceClient) ListPortfolioTransactions(ctx context.Context, req *connect_go.Request[gen.ListPortfolioTransactionsRequest]) (*connect_go.Response[gen.ListPortfolioTransactionsResponse], error) {
+func (c *portfolioServiceClient) ListPortfolioTransactions(ctx context.Context, req *connect.Request[gen.ListPortfolioTransactionsRequest]) (*connect.Response[gen.ListPortfolioTransactionsResponse], error) {
 	return c.listPortfolioTransactions.CallUnary(ctx, req)
 }
 
 // UpdatePortfolioTransaction calls mgo.portfolio.v1.PortfolioService.UpdatePortfolioTransaction.
-func (c *portfolioServiceClient) UpdatePortfolioTransaction(ctx context.Context, req *connect_go.Request[gen.UpdatePortfolioTransactionRequest]) (*connect_go.Response[gen.PortfolioEvent], error) {
+func (c *portfolioServiceClient) UpdatePortfolioTransaction(ctx context.Context, req *connect.Request[gen.UpdatePortfolioTransactionRequest]) (*connect.Response[gen.PortfolioEvent], error) {
 	return c.updatePortfolioTransaction.CallUnary(ctx, req)
 }
 
 // DeletePortfolioTransaction calls mgo.portfolio.v1.PortfolioService.DeletePortfolioTransaction.
-func (c *portfolioServiceClient) DeletePortfolioTransaction(ctx context.Context, req *connect_go.Request[gen.DeletePortfolioTransactionRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *portfolioServiceClient) DeletePortfolioTransaction(ctx context.Context, req *connect.Request[gen.DeletePortfolioTransactionRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.deletePortfolioTransaction.CallUnary(ctx, req)
 }
 
 // ImportTransactions calls mgo.portfolio.v1.PortfolioService.ImportTransactions.
-func (c *portfolioServiceClient) ImportTransactions(ctx context.Context, req *connect_go.Request[gen.ImportTransactionsRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *portfolioServiceClient) ImportTransactions(ctx context.Context, req *connect.Request[gen.ImportTransactionsRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.importTransactions.CallUnary(ctx, req)
 }
 
 // PortfolioServiceHandler is an implementation of the mgo.portfolio.v1.PortfolioService service.
 type PortfolioServiceHandler interface {
-	CreatePortfolio(context.Context, *connect_go.Request[gen.CreatePortfolioRequest]) (*connect_go.Response[gen.Portfolio], error)
-	ListPortfolios(context.Context, *connect_go.Request[gen.ListPortfoliosRequest]) (*connect_go.Response[gen.ListPortfoliosResponse], error)
-	GetPortfolio(context.Context, *connect_go.Request[gen.GetPortfolioRequest]) (*connect_go.Response[gen.Portfolio], error)
-	UpdatePortfolio(context.Context, *connect_go.Request[gen.UpdatePortfolioRequest]) (*connect_go.Response[gen.Portfolio], error)
-	DeletePortfolio(context.Context, *connect_go.Request[gen.DeletePortfolioRequest]) (*connect_go.Response[emptypb.Empty], error)
-	GetPortfolioSnapshot(context.Context, *connect_go.Request[gen.GetPortfolioSnapshotRequest]) (*connect_go.Response[gen.PortfolioSnapshot], error)
-	CreatePortfolioTransaction(context.Context, *connect_go.Request[gen.CreatePortfolioTransactionRequest]) (*connect_go.Response[gen.PortfolioEvent], error)
-	ListPortfolioTransactions(context.Context, *connect_go.Request[gen.ListPortfolioTransactionsRequest]) (*connect_go.Response[gen.ListPortfolioTransactionsResponse], error)
-	UpdatePortfolioTransaction(context.Context, *connect_go.Request[gen.UpdatePortfolioTransactionRequest]) (*connect_go.Response[gen.PortfolioEvent], error)
-	DeletePortfolioTransaction(context.Context, *connect_go.Request[gen.DeletePortfolioTransactionRequest]) (*connect_go.Response[emptypb.Empty], error)
-	ImportTransactions(context.Context, *connect_go.Request[gen.ImportTransactionsRequest]) (*connect_go.Response[emptypb.Empty], error)
+	CreatePortfolio(context.Context, *connect.Request[gen.CreatePortfolioRequest]) (*connect.Response[gen.Portfolio], error)
+	ListPortfolios(context.Context, *connect.Request[gen.ListPortfoliosRequest]) (*connect.Response[gen.ListPortfoliosResponse], error)
+	GetPortfolio(context.Context, *connect.Request[gen.GetPortfolioRequest]) (*connect.Response[gen.Portfolio], error)
+	UpdatePortfolio(context.Context, *connect.Request[gen.UpdatePortfolioRequest]) (*connect.Response[gen.Portfolio], error)
+	DeletePortfolio(context.Context, *connect.Request[gen.DeletePortfolioRequest]) (*connect.Response[emptypb.Empty], error)
+	GetPortfolioSnapshot(context.Context, *connect.Request[gen.GetPortfolioSnapshotRequest]) (*connect.Response[gen.PortfolioSnapshot], error)
+	CreatePortfolioTransaction(context.Context, *connect.Request[gen.CreatePortfolioTransactionRequest]) (*connect.Response[gen.PortfolioEvent], error)
+	ListPortfolioTransactions(context.Context, *connect.Request[gen.ListPortfolioTransactionsRequest]) (*connect.Response[gen.ListPortfolioTransactionsResponse], error)
+	UpdatePortfolioTransaction(context.Context, *connect.Request[gen.UpdatePortfolioTransactionRequest]) (*connect.Response[gen.PortfolioEvent], error)
+	DeletePortfolioTransaction(context.Context, *connect.Request[gen.DeletePortfolioTransactionRequest]) (*connect.Response[emptypb.Empty], error)
+	ImportTransactions(context.Context, *connect.Request[gen.ImportTransactionsRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewPortfolioServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -265,61 +265,61 @@ type PortfolioServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewPortfolioServiceHandler(svc PortfolioServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	portfolioServiceCreatePortfolioHandler := connect_go.NewUnaryHandler(
+func NewPortfolioServiceHandler(svc PortfolioServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	portfolioServiceCreatePortfolioHandler := connect.NewUnaryHandler(
 		PortfolioServiceCreatePortfolioProcedure,
 		svc.CreatePortfolio,
 		opts...,
 	)
-	portfolioServiceListPortfoliosHandler := connect_go.NewUnaryHandler(
+	portfolioServiceListPortfoliosHandler := connect.NewUnaryHandler(
 		PortfolioServiceListPortfoliosProcedure,
 		svc.ListPortfolios,
-		connect_go.WithIdempotency(connect_go.IdempotencyNoSideEffects),
-		connect_go.WithHandlerOptions(opts...),
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
 	)
-	portfolioServiceGetPortfolioHandler := connect_go.NewUnaryHandler(
+	portfolioServiceGetPortfolioHandler := connect.NewUnaryHandler(
 		PortfolioServiceGetPortfolioProcedure,
 		svc.GetPortfolio,
-		connect_go.WithIdempotency(connect_go.IdempotencyNoSideEffects),
-		connect_go.WithHandlerOptions(opts...),
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
 	)
-	portfolioServiceUpdatePortfolioHandler := connect_go.NewUnaryHandler(
+	portfolioServiceUpdatePortfolioHandler := connect.NewUnaryHandler(
 		PortfolioServiceUpdatePortfolioProcedure,
 		svc.UpdatePortfolio,
 		opts...,
 	)
-	portfolioServiceDeletePortfolioHandler := connect_go.NewUnaryHandler(
+	portfolioServiceDeletePortfolioHandler := connect.NewUnaryHandler(
 		PortfolioServiceDeletePortfolioProcedure,
 		svc.DeletePortfolio,
 		opts...,
 	)
-	portfolioServiceGetPortfolioSnapshotHandler := connect_go.NewUnaryHandler(
+	portfolioServiceGetPortfolioSnapshotHandler := connect.NewUnaryHandler(
 		PortfolioServiceGetPortfolioSnapshotProcedure,
 		svc.GetPortfolioSnapshot,
-		connect_go.WithIdempotency(connect_go.IdempotencyNoSideEffects),
-		connect_go.WithHandlerOptions(opts...),
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
 	)
-	portfolioServiceCreatePortfolioTransactionHandler := connect_go.NewUnaryHandler(
+	portfolioServiceCreatePortfolioTransactionHandler := connect.NewUnaryHandler(
 		PortfolioServiceCreatePortfolioTransactionProcedure,
 		svc.CreatePortfolioTransaction,
 		opts...,
 	)
-	portfolioServiceListPortfolioTransactionsHandler := connect_go.NewUnaryHandler(
+	portfolioServiceListPortfolioTransactionsHandler := connect.NewUnaryHandler(
 		PortfolioServiceListPortfolioTransactionsProcedure,
 		svc.ListPortfolioTransactions,
 		opts...,
 	)
-	portfolioServiceUpdatePortfolioTransactionHandler := connect_go.NewUnaryHandler(
+	portfolioServiceUpdatePortfolioTransactionHandler := connect.NewUnaryHandler(
 		PortfolioServiceUpdatePortfolioTransactionProcedure,
 		svc.UpdatePortfolioTransaction,
 		opts...,
 	)
-	portfolioServiceDeletePortfolioTransactionHandler := connect_go.NewUnaryHandler(
+	portfolioServiceDeletePortfolioTransactionHandler := connect.NewUnaryHandler(
 		PortfolioServiceDeletePortfolioTransactionProcedure,
 		svc.DeletePortfolioTransaction,
 		opts...,
 	)
-	portfolioServiceImportTransactionsHandler := connect_go.NewUnaryHandler(
+	portfolioServiceImportTransactionsHandler := connect.NewUnaryHandler(
 		PortfolioServiceImportTransactionsProcedure,
 		svc.ImportTransactions,
 		opts...,
@@ -357,58 +357,58 @@ func NewPortfolioServiceHandler(svc PortfolioServiceHandler, opts ...connect_go.
 // UnimplementedPortfolioServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedPortfolioServiceHandler struct{}
 
-func (UnimplementedPortfolioServiceHandler) CreatePortfolio(context.Context, *connect_go.Request[gen.CreatePortfolioRequest]) (*connect_go.Response[gen.Portfolio], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.CreatePortfolio is not implemented"))
+func (UnimplementedPortfolioServiceHandler) CreatePortfolio(context.Context, *connect.Request[gen.CreatePortfolioRequest]) (*connect.Response[gen.Portfolio], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.CreatePortfolio is not implemented"))
 }
 
-func (UnimplementedPortfolioServiceHandler) ListPortfolios(context.Context, *connect_go.Request[gen.ListPortfoliosRequest]) (*connect_go.Response[gen.ListPortfoliosResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.ListPortfolios is not implemented"))
+func (UnimplementedPortfolioServiceHandler) ListPortfolios(context.Context, *connect.Request[gen.ListPortfoliosRequest]) (*connect.Response[gen.ListPortfoliosResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.ListPortfolios is not implemented"))
 }
 
-func (UnimplementedPortfolioServiceHandler) GetPortfolio(context.Context, *connect_go.Request[gen.GetPortfolioRequest]) (*connect_go.Response[gen.Portfolio], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.GetPortfolio is not implemented"))
+func (UnimplementedPortfolioServiceHandler) GetPortfolio(context.Context, *connect.Request[gen.GetPortfolioRequest]) (*connect.Response[gen.Portfolio], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.GetPortfolio is not implemented"))
 }
 
-func (UnimplementedPortfolioServiceHandler) UpdatePortfolio(context.Context, *connect_go.Request[gen.UpdatePortfolioRequest]) (*connect_go.Response[gen.Portfolio], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.UpdatePortfolio is not implemented"))
+func (UnimplementedPortfolioServiceHandler) UpdatePortfolio(context.Context, *connect.Request[gen.UpdatePortfolioRequest]) (*connect.Response[gen.Portfolio], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.UpdatePortfolio is not implemented"))
 }
 
-func (UnimplementedPortfolioServiceHandler) DeletePortfolio(context.Context, *connect_go.Request[gen.DeletePortfolioRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.DeletePortfolio is not implemented"))
+func (UnimplementedPortfolioServiceHandler) DeletePortfolio(context.Context, *connect.Request[gen.DeletePortfolioRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.DeletePortfolio is not implemented"))
 }
 
-func (UnimplementedPortfolioServiceHandler) GetPortfolioSnapshot(context.Context, *connect_go.Request[gen.GetPortfolioSnapshotRequest]) (*connect_go.Response[gen.PortfolioSnapshot], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.GetPortfolioSnapshot is not implemented"))
+func (UnimplementedPortfolioServiceHandler) GetPortfolioSnapshot(context.Context, *connect.Request[gen.GetPortfolioSnapshotRequest]) (*connect.Response[gen.PortfolioSnapshot], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.GetPortfolioSnapshot is not implemented"))
 }
 
-func (UnimplementedPortfolioServiceHandler) CreatePortfolioTransaction(context.Context, *connect_go.Request[gen.CreatePortfolioTransactionRequest]) (*connect_go.Response[gen.PortfolioEvent], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.CreatePortfolioTransaction is not implemented"))
+func (UnimplementedPortfolioServiceHandler) CreatePortfolioTransaction(context.Context, *connect.Request[gen.CreatePortfolioTransactionRequest]) (*connect.Response[gen.PortfolioEvent], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.CreatePortfolioTransaction is not implemented"))
 }
 
-func (UnimplementedPortfolioServiceHandler) ListPortfolioTransactions(context.Context, *connect_go.Request[gen.ListPortfolioTransactionsRequest]) (*connect_go.Response[gen.ListPortfolioTransactionsResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.ListPortfolioTransactions is not implemented"))
+func (UnimplementedPortfolioServiceHandler) ListPortfolioTransactions(context.Context, *connect.Request[gen.ListPortfolioTransactionsRequest]) (*connect.Response[gen.ListPortfolioTransactionsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.ListPortfolioTransactions is not implemented"))
 }
 
-func (UnimplementedPortfolioServiceHandler) UpdatePortfolioTransaction(context.Context, *connect_go.Request[gen.UpdatePortfolioTransactionRequest]) (*connect_go.Response[gen.PortfolioEvent], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.UpdatePortfolioTransaction is not implemented"))
+func (UnimplementedPortfolioServiceHandler) UpdatePortfolioTransaction(context.Context, *connect.Request[gen.UpdatePortfolioTransactionRequest]) (*connect.Response[gen.PortfolioEvent], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.UpdatePortfolioTransaction is not implemented"))
 }
 
-func (UnimplementedPortfolioServiceHandler) DeletePortfolioTransaction(context.Context, *connect_go.Request[gen.DeletePortfolioTransactionRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.DeletePortfolioTransaction is not implemented"))
+func (UnimplementedPortfolioServiceHandler) DeletePortfolioTransaction(context.Context, *connect.Request[gen.DeletePortfolioTransactionRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.DeletePortfolioTransaction is not implemented"))
 }
 
-func (UnimplementedPortfolioServiceHandler) ImportTransactions(context.Context, *connect_go.Request[gen.ImportTransactionsRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.ImportTransactions is not implemented"))
+func (UnimplementedPortfolioServiceHandler) ImportTransactions(context.Context, *connect.Request[gen.ImportTransactionsRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.ImportTransactions is not implemented"))
 }
 
 // SecuritiesServiceClient is a client for the mgo.portfolio.v1.SecuritiesService service.
 type SecuritiesServiceClient interface {
-	ListSecurities(context.Context, *connect_go.Request[gen.ListSecuritiesRequest]) (*connect_go.Response[gen.ListSecuritiesResponse], error)
-	GetSecurity(context.Context, *connect_go.Request[gen.GetSecurityRequest]) (*connect_go.Response[gen.Security], error)
-	CreateSecurity(context.Context, *connect_go.Request[gen.CreateSecurityRequest]) (*connect_go.Response[gen.Security], error)
-	UpdateSecurity(context.Context, *connect_go.Request[gen.UpdateSecurityRequest]) (*connect_go.Response[gen.Security], error)
-	DeleteSecurity(context.Context, *connect_go.Request[gen.DeleteSecurityRequest]) (*connect_go.Response[emptypb.Empty], error)
-	TriggerSecurityQuoteUpdate(context.Context, *connect_go.Request[gen.TriggerQuoteUpdateRequest]) (*connect_go.Response[gen.TriggerQuoteUpdateResponse], error)
+	ListSecurities(context.Context, *connect.Request[gen.ListSecuritiesRequest]) (*connect.Response[gen.ListSecuritiesResponse], error)
+	GetSecurity(context.Context, *connect.Request[gen.GetSecurityRequest]) (*connect.Response[gen.Security], error)
+	CreateSecurity(context.Context, *connect.Request[gen.CreateSecurityRequest]) (*connect.Response[gen.Security], error)
+	UpdateSecurity(context.Context, *connect.Request[gen.UpdateSecurityRequest]) (*connect.Response[gen.Security], error)
+	DeleteSecurity(context.Context, *connect.Request[gen.DeleteSecurityRequest]) (*connect.Response[emptypb.Empty], error)
+	TriggerSecurityQuoteUpdate(context.Context, *connect.Request[gen.TriggerQuoteUpdateRequest]) (*connect.Response[gen.TriggerQuoteUpdateResponse], error)
 }
 
 // NewSecuritiesServiceClient constructs a client for the mgo.portfolio.v1.SecuritiesService
@@ -418,37 +418,37 @@ type SecuritiesServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewSecuritiesServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) SecuritiesServiceClient {
+func NewSecuritiesServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) SecuritiesServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &securitiesServiceClient{
-		listSecurities: connect_go.NewClient[gen.ListSecuritiesRequest, gen.ListSecuritiesResponse](
+		listSecurities: connect.NewClient[gen.ListSecuritiesRequest, gen.ListSecuritiesResponse](
 			httpClient,
 			baseURL+SecuritiesServiceListSecuritiesProcedure,
-			connect_go.WithIdempotency(connect_go.IdempotencyNoSideEffects),
-			connect_go.WithClientOptions(opts...),
+			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+			connect.WithClientOptions(opts...),
 		),
-		getSecurity: connect_go.NewClient[gen.GetSecurityRequest, gen.Security](
+		getSecurity: connect.NewClient[gen.GetSecurityRequest, gen.Security](
 			httpClient,
 			baseURL+SecuritiesServiceGetSecurityProcedure,
-			connect_go.WithIdempotency(connect_go.IdempotencyNoSideEffects),
-			connect_go.WithClientOptions(opts...),
+			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+			connect.WithClientOptions(opts...),
 		),
-		createSecurity: connect_go.NewClient[gen.CreateSecurityRequest, gen.Security](
+		createSecurity: connect.NewClient[gen.CreateSecurityRequest, gen.Security](
 			httpClient,
 			baseURL+SecuritiesServiceCreateSecurityProcedure,
 			opts...,
 		),
-		updateSecurity: connect_go.NewClient[gen.UpdateSecurityRequest, gen.Security](
+		updateSecurity: connect.NewClient[gen.UpdateSecurityRequest, gen.Security](
 			httpClient,
 			baseURL+SecuritiesServiceUpdateSecurityProcedure,
 			opts...,
 		),
-		deleteSecurity: connect_go.NewClient[gen.DeleteSecurityRequest, emptypb.Empty](
+		deleteSecurity: connect.NewClient[gen.DeleteSecurityRequest, emptypb.Empty](
 			httpClient,
 			baseURL+SecuritiesServiceDeleteSecurityProcedure,
 			opts...,
 		),
-		triggerSecurityQuoteUpdate: connect_go.NewClient[gen.TriggerQuoteUpdateRequest, gen.TriggerQuoteUpdateResponse](
+		triggerSecurityQuoteUpdate: connect.NewClient[gen.TriggerQuoteUpdateRequest, gen.TriggerQuoteUpdateResponse](
 			httpClient,
 			baseURL+SecuritiesServiceTriggerSecurityQuoteUpdateProcedure,
 			opts...,
@@ -458,52 +458,52 @@ func NewSecuritiesServiceClient(httpClient connect_go.HTTPClient, baseURL string
 
 // securitiesServiceClient implements SecuritiesServiceClient.
 type securitiesServiceClient struct {
-	listSecurities             *connect_go.Client[gen.ListSecuritiesRequest, gen.ListSecuritiesResponse]
-	getSecurity                *connect_go.Client[gen.GetSecurityRequest, gen.Security]
-	createSecurity             *connect_go.Client[gen.CreateSecurityRequest, gen.Security]
-	updateSecurity             *connect_go.Client[gen.UpdateSecurityRequest, gen.Security]
-	deleteSecurity             *connect_go.Client[gen.DeleteSecurityRequest, emptypb.Empty]
-	triggerSecurityQuoteUpdate *connect_go.Client[gen.TriggerQuoteUpdateRequest, gen.TriggerQuoteUpdateResponse]
+	listSecurities             *connect.Client[gen.ListSecuritiesRequest, gen.ListSecuritiesResponse]
+	getSecurity                *connect.Client[gen.GetSecurityRequest, gen.Security]
+	createSecurity             *connect.Client[gen.CreateSecurityRequest, gen.Security]
+	updateSecurity             *connect.Client[gen.UpdateSecurityRequest, gen.Security]
+	deleteSecurity             *connect.Client[gen.DeleteSecurityRequest, emptypb.Empty]
+	triggerSecurityQuoteUpdate *connect.Client[gen.TriggerQuoteUpdateRequest, gen.TriggerQuoteUpdateResponse]
 }
 
 // ListSecurities calls mgo.portfolio.v1.SecuritiesService.ListSecurities.
-func (c *securitiesServiceClient) ListSecurities(ctx context.Context, req *connect_go.Request[gen.ListSecuritiesRequest]) (*connect_go.Response[gen.ListSecuritiesResponse], error) {
+func (c *securitiesServiceClient) ListSecurities(ctx context.Context, req *connect.Request[gen.ListSecuritiesRequest]) (*connect.Response[gen.ListSecuritiesResponse], error) {
 	return c.listSecurities.CallUnary(ctx, req)
 }
 
 // GetSecurity calls mgo.portfolio.v1.SecuritiesService.GetSecurity.
-func (c *securitiesServiceClient) GetSecurity(ctx context.Context, req *connect_go.Request[gen.GetSecurityRequest]) (*connect_go.Response[gen.Security], error) {
+func (c *securitiesServiceClient) GetSecurity(ctx context.Context, req *connect.Request[gen.GetSecurityRequest]) (*connect.Response[gen.Security], error) {
 	return c.getSecurity.CallUnary(ctx, req)
 }
 
 // CreateSecurity calls mgo.portfolio.v1.SecuritiesService.CreateSecurity.
-func (c *securitiesServiceClient) CreateSecurity(ctx context.Context, req *connect_go.Request[gen.CreateSecurityRequest]) (*connect_go.Response[gen.Security], error) {
+func (c *securitiesServiceClient) CreateSecurity(ctx context.Context, req *connect.Request[gen.CreateSecurityRequest]) (*connect.Response[gen.Security], error) {
 	return c.createSecurity.CallUnary(ctx, req)
 }
 
 // UpdateSecurity calls mgo.portfolio.v1.SecuritiesService.UpdateSecurity.
-func (c *securitiesServiceClient) UpdateSecurity(ctx context.Context, req *connect_go.Request[gen.UpdateSecurityRequest]) (*connect_go.Response[gen.Security], error) {
+func (c *securitiesServiceClient) UpdateSecurity(ctx context.Context, req *connect.Request[gen.UpdateSecurityRequest]) (*connect.Response[gen.Security], error) {
 	return c.updateSecurity.CallUnary(ctx, req)
 }
 
 // DeleteSecurity calls mgo.portfolio.v1.SecuritiesService.DeleteSecurity.
-func (c *securitiesServiceClient) DeleteSecurity(ctx context.Context, req *connect_go.Request[gen.DeleteSecurityRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *securitiesServiceClient) DeleteSecurity(ctx context.Context, req *connect.Request[gen.DeleteSecurityRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.deleteSecurity.CallUnary(ctx, req)
 }
 
 // TriggerSecurityQuoteUpdate calls mgo.portfolio.v1.SecuritiesService.TriggerSecurityQuoteUpdate.
-func (c *securitiesServiceClient) TriggerSecurityQuoteUpdate(ctx context.Context, req *connect_go.Request[gen.TriggerQuoteUpdateRequest]) (*connect_go.Response[gen.TriggerQuoteUpdateResponse], error) {
+func (c *securitiesServiceClient) TriggerSecurityQuoteUpdate(ctx context.Context, req *connect.Request[gen.TriggerQuoteUpdateRequest]) (*connect.Response[gen.TriggerQuoteUpdateResponse], error) {
 	return c.triggerSecurityQuoteUpdate.CallUnary(ctx, req)
 }
 
 // SecuritiesServiceHandler is an implementation of the mgo.portfolio.v1.SecuritiesService service.
 type SecuritiesServiceHandler interface {
-	ListSecurities(context.Context, *connect_go.Request[gen.ListSecuritiesRequest]) (*connect_go.Response[gen.ListSecuritiesResponse], error)
-	GetSecurity(context.Context, *connect_go.Request[gen.GetSecurityRequest]) (*connect_go.Response[gen.Security], error)
-	CreateSecurity(context.Context, *connect_go.Request[gen.CreateSecurityRequest]) (*connect_go.Response[gen.Security], error)
-	UpdateSecurity(context.Context, *connect_go.Request[gen.UpdateSecurityRequest]) (*connect_go.Response[gen.Security], error)
-	DeleteSecurity(context.Context, *connect_go.Request[gen.DeleteSecurityRequest]) (*connect_go.Response[emptypb.Empty], error)
-	TriggerSecurityQuoteUpdate(context.Context, *connect_go.Request[gen.TriggerQuoteUpdateRequest]) (*connect_go.Response[gen.TriggerQuoteUpdateResponse], error)
+	ListSecurities(context.Context, *connect.Request[gen.ListSecuritiesRequest]) (*connect.Response[gen.ListSecuritiesResponse], error)
+	GetSecurity(context.Context, *connect.Request[gen.GetSecurityRequest]) (*connect.Response[gen.Security], error)
+	CreateSecurity(context.Context, *connect.Request[gen.CreateSecurityRequest]) (*connect.Response[gen.Security], error)
+	UpdateSecurity(context.Context, *connect.Request[gen.UpdateSecurityRequest]) (*connect.Response[gen.Security], error)
+	DeleteSecurity(context.Context, *connect.Request[gen.DeleteSecurityRequest]) (*connect.Response[emptypb.Empty], error)
+	TriggerSecurityQuoteUpdate(context.Context, *connect.Request[gen.TriggerQuoteUpdateRequest]) (*connect.Response[gen.TriggerQuoteUpdateResponse], error)
 }
 
 // NewSecuritiesServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -511,35 +511,35 @@ type SecuritiesServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewSecuritiesServiceHandler(svc SecuritiesServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	securitiesServiceListSecuritiesHandler := connect_go.NewUnaryHandler(
+func NewSecuritiesServiceHandler(svc SecuritiesServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	securitiesServiceListSecuritiesHandler := connect.NewUnaryHandler(
 		SecuritiesServiceListSecuritiesProcedure,
 		svc.ListSecurities,
-		connect_go.WithIdempotency(connect_go.IdempotencyNoSideEffects),
-		connect_go.WithHandlerOptions(opts...),
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
 	)
-	securitiesServiceGetSecurityHandler := connect_go.NewUnaryHandler(
+	securitiesServiceGetSecurityHandler := connect.NewUnaryHandler(
 		SecuritiesServiceGetSecurityProcedure,
 		svc.GetSecurity,
-		connect_go.WithIdempotency(connect_go.IdempotencyNoSideEffects),
-		connect_go.WithHandlerOptions(opts...),
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
 	)
-	securitiesServiceCreateSecurityHandler := connect_go.NewUnaryHandler(
+	securitiesServiceCreateSecurityHandler := connect.NewUnaryHandler(
 		SecuritiesServiceCreateSecurityProcedure,
 		svc.CreateSecurity,
 		opts...,
 	)
-	securitiesServiceUpdateSecurityHandler := connect_go.NewUnaryHandler(
+	securitiesServiceUpdateSecurityHandler := connect.NewUnaryHandler(
 		SecuritiesServiceUpdateSecurityProcedure,
 		svc.UpdateSecurity,
 		opts...,
 	)
-	securitiesServiceDeleteSecurityHandler := connect_go.NewUnaryHandler(
+	securitiesServiceDeleteSecurityHandler := connect.NewUnaryHandler(
 		SecuritiesServiceDeleteSecurityProcedure,
 		svc.DeleteSecurity,
 		opts...,
 	)
-	securitiesServiceTriggerSecurityQuoteUpdateHandler := connect_go.NewUnaryHandler(
+	securitiesServiceTriggerSecurityQuoteUpdateHandler := connect.NewUnaryHandler(
 		SecuritiesServiceTriggerSecurityQuoteUpdateProcedure,
 		svc.TriggerSecurityQuoteUpdate,
 		opts...,
@@ -567,26 +567,26 @@ func NewSecuritiesServiceHandler(svc SecuritiesServiceHandler, opts ...connect_g
 // UnimplementedSecuritiesServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedSecuritiesServiceHandler struct{}
 
-func (UnimplementedSecuritiesServiceHandler) ListSecurities(context.Context, *connect_go.Request[gen.ListSecuritiesRequest]) (*connect_go.Response[gen.ListSecuritiesResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.SecuritiesService.ListSecurities is not implemented"))
+func (UnimplementedSecuritiesServiceHandler) ListSecurities(context.Context, *connect.Request[gen.ListSecuritiesRequest]) (*connect.Response[gen.ListSecuritiesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.SecuritiesService.ListSecurities is not implemented"))
 }
 
-func (UnimplementedSecuritiesServiceHandler) GetSecurity(context.Context, *connect_go.Request[gen.GetSecurityRequest]) (*connect_go.Response[gen.Security], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.SecuritiesService.GetSecurity is not implemented"))
+func (UnimplementedSecuritiesServiceHandler) GetSecurity(context.Context, *connect.Request[gen.GetSecurityRequest]) (*connect.Response[gen.Security], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.SecuritiesService.GetSecurity is not implemented"))
 }
 
-func (UnimplementedSecuritiesServiceHandler) CreateSecurity(context.Context, *connect_go.Request[gen.CreateSecurityRequest]) (*connect_go.Response[gen.Security], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.SecuritiesService.CreateSecurity is not implemented"))
+func (UnimplementedSecuritiesServiceHandler) CreateSecurity(context.Context, *connect.Request[gen.CreateSecurityRequest]) (*connect.Response[gen.Security], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.SecuritiesService.CreateSecurity is not implemented"))
 }
 
-func (UnimplementedSecuritiesServiceHandler) UpdateSecurity(context.Context, *connect_go.Request[gen.UpdateSecurityRequest]) (*connect_go.Response[gen.Security], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.SecuritiesService.UpdateSecurity is not implemented"))
+func (UnimplementedSecuritiesServiceHandler) UpdateSecurity(context.Context, *connect.Request[gen.UpdateSecurityRequest]) (*connect.Response[gen.Security], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.SecuritiesService.UpdateSecurity is not implemented"))
 }
 
-func (UnimplementedSecuritiesServiceHandler) DeleteSecurity(context.Context, *connect_go.Request[gen.DeleteSecurityRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.SecuritiesService.DeleteSecurity is not implemented"))
+func (UnimplementedSecuritiesServiceHandler) DeleteSecurity(context.Context, *connect.Request[gen.DeleteSecurityRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.SecuritiesService.DeleteSecurity is not implemented"))
 }
 
-func (UnimplementedSecuritiesServiceHandler) TriggerSecurityQuoteUpdate(context.Context, *connect_go.Request[gen.TriggerQuoteUpdateRequest]) (*connect_go.Response[gen.TriggerQuoteUpdateResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("mgo.portfolio.v1.SecuritiesService.TriggerSecurityQuoteUpdate is not implemented"))
+func (UnimplementedSecuritiesServiceHandler) TriggerSecurityQuoteUpdate(context.Context, *connect.Request[gen.TriggerQuoteUpdateRequest]) (*connect.Response[gen.TriggerQuoteUpdateResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.SecuritiesService.TriggerSecurityQuoteUpdate is not implemented"))
 }

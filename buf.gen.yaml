@@ -4,7 +4,7 @@ managed:
   go_package_prefix:
     default: github.com/oxisto/money-gopher/gen
 plugins:
-  - plugin: buf.build/bufbuild/connect-go
+  - plugin: buf.build/connectrpc/go
     out: gen
     opt:
       - paths=source_relative
@@ -12,7 +12,7 @@ plugins:
     out: gen
     opt:
       - paths=source_relative
-  - plugin: buf.build/bufbuild/connect-es
+  - plugin: buf.build/connectrpc/es
     out: ui/src/lib/gen
     opt: target=ts
   - plugin: buf.build/bufbuild/es

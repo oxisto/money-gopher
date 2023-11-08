@@ -6,8 +6,6 @@
 
 	export let position: PortfolioPosition;
 
-	$: perf = ((position.marketPrice - position.purchasePrice) / position.purchasePrice) * 100;
-
 	function shorten(text: string): string {
 		let max = 30;
 
@@ -51,24 +49,28 @@
 			</div>
 		</td>
 		<td
-			class="{perf < 0
-				? 'text-red-500'
-				: perf <= 1
+			class="{Math.abs(position.gains) <= 0.01
 				? 'text-gray-500'
+				: position.gains < 0
+				? 'text-red-500'
 				: 'text-green-500'} whitespace-nowrap px-3 py-2 text-right text-sm"
 		>
 			<div>
 				{Intl.NumberFormat(navigator.language, {
 					maximumFractionDigits: 2
-				}).format(perf)} %
+				}).format(position.gains * 100)} %
 				<Icon
-					src={perf < 0 ? ArrowDown : perf < 1 ? ArrowRight : ArrowUp}
+					src={Math.abs(position.gains) < 0.01
+						? ArrowRight
+						: position.gains < 0
+						? ArrowDown
+						: ArrowUp}
 					class="float-right mt-0.5 h-4 w-4"
 					aria-hidden="true"
 				/>
 			</div>
 			<div class="pr-4">
-				{currency(position.marketValue - position.purchaseValue, 'EUR')}
+				{currency(position.profitOrLoss, 'EUR')}
 			</div>
 		</td>
 	</tr>

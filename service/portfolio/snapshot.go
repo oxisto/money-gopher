@@ -92,7 +92,7 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 			continue
 		}
 
-		snap.Positions[name] = &portfoliov1.PortfolioPosition{
+		pos := &portfoliov1.PortfolioPosition{
 			Security:      secmap[name],
 			Amount:        c.Amount,
 			PurchaseValue: c.NetValue(),
@@ -101,10 +101,21 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 			MarketPrice:   marketPrice(secmap, name, c.NetPrice()),
 		}
 
+		// Calculate loss and gains
+		pos.ProfitOrLoss = pos.MarketValue - pos.PurchaseValue
+		pos.Gains = (pos.MarketValue - pos.PurchaseValue) / pos.PurchaseValue
+
 		// Add to total value(s)
-		snap.TotalPurchaseValue += snap.Positions[name].PurchaseValue
-		snap.TotalMarketValue += snap.Positions[name].MarketValue
+		snap.TotalPurchaseValue += pos.PurchaseValue
+		snap.TotalMarketValue += pos.MarketValue
+		snap.TotalProfitOrLoss += pos.ProfitOrLoss
+
+		// Store position in map
+		snap.Positions[name] = pos
 	}
+
+	// Calculate total gains
+	snap.TotalGains = (snap.TotalMarketValue - snap.TotalPurchaseValue) / snap.TotalPurchaseValue
 
 	return connect.NewResponse(snap), nil
 }

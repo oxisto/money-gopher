@@ -1,29 +1,6 @@
 <script setup lang="ts">
-	import type { Portfolio, PortfolioSnapshot } from '$lib/gen/mgo_pb';
 	import PortfolioCard from '$lib/components/PortfolioCard.svelte';
 	import type { PageData } from './$types';
-
-	/*import Button from '@/components/Button.vue';
-  import PortfolioCard from '@/components/portfolio/PortfolioCard.vue';
-  import { PortfolioServiceClientKey } from '@/symbols'
-  import { inject } from 'vue';
-  
-  let client = inject(PortfolioServiceClientKey)
-  if (client == undefined) {
-    throw "could not instantiate portfolio client"
-  }
-  
-  let portfolios = (await client.listPortfolios({}, {})).portfolios;
-  
-  // TODO(oxisto): This is a bit inefficient, since it waits until all are
-  //  finished but it works
-  let snapshots = await Promise.all(portfolios.map(async (p) => {
-    if (client == undefined) {
-      throw "could not instantiate portfolio client"
-    }
-    return await client.getPortfolioSnapshot({ portfolioName: p.name })
-  }))*/
-	let snapshots: PortfolioSnapshot[] = [];
 
 	export let data: PageData;
 </script>
