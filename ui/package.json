@@ -42,6 +42,9 @@
 	"overrides": {
 		"@rgossiaux/svelte-headlessui": {
 			"svelte": "$svelte"
+		},
+		"@sveltejs/kit": {
+			"vite": "$vite"
 		}
 	}
 }
