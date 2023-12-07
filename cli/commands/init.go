@@ -14,15 +14,17 @@
 //
 // This file is part of The Money Gopher.
 
-package main
+package commands
 
-import (
-	"os"
+import "github.com/oxisto/money-gopher/cli"
 
-	"github.com/oxisto/money-gopher/cli"
-	_ "github.com/oxisto/money-gopher/cli/commands"
-)
+func init() {
+	cli.AddCommand("list-securities", &listSecuritiesCmd{})
+	cli.AddCommand("update-quote", &triggerQuoteUpdate{})
+	cli.AddCommand("update-all-quotes", &triggerQuoteUpdateAll{})
 
-func main() {
-	cli.Run(os.Args)
+	cli.AddCommand("create-portfolio", &createPortfolio{})
+	cli.AddCommand("list-portfolios", &listPortfolio{})
+	cli.AddCommand("portfolio-snapshot", &portfolioSnapshot{})
+	cli.AddCommand("import-transactions", &importTransactions{})
 }

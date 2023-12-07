@@ -14,7 +14,7 @@
 //
 // This file is part of The Money Gopher.
 
-// package commands contains commands that can be executed by the REPL.
+// package commands contains commands that can be executed by the CLI.
 package commands
 
 import (
@@ -23,15 +23,15 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	"github.com/oxisto/money-gopher/cli"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
-	"github.com/oxisto/money-gopher/repl"
 )
 
 type listSecuritiesCmd struct{}
 
 // Exec implements [repl.Command]
-func (cmd *listSecuritiesCmd) Exec(r *repl.REPL, args ...string) {
+func (cmd *listSecuritiesCmd) Exec(s *cli.Session, args ...string) {
 	client := portfoliov1connect.NewSecuritiesServiceClient(
 		http.DefaultClient, "http://localhost:8080",
 		connect.WithHTTPGet(),
@@ -46,8 +46,8 @@ func (cmd *listSecuritiesCmd) Exec(r *repl.REPL, args ...string) {
 
 type triggerQuoteUpdate struct{}
 
-// Exec implements [repl.Command]
-func (cmd *triggerQuoteUpdate) Exec(r *repl.REPL, args ...string) {
+// Exec implements [cli.Command]
+func (cmd *triggerQuoteUpdate) Exec(s *cli.Session, args ...string) {
 	client := portfoliov1connect.NewSecuritiesServiceClient(
 		http.DefaultClient, "http://localhost:8080",
 		connect.WithHTTPGet(),
@@ -65,8 +65,8 @@ func (cmd *triggerQuoteUpdate) Exec(r *repl.REPL, args ...string) {
 
 type triggerQuoteUpdateAll struct{}
 
-// Exec implements [repl.Command]
-func (cmd *triggerQuoteUpdateAll) Exec(r *repl.REPL, args ...string) {
+// Exec implements [cli.Command]
+func (cmd *triggerQuoteUpdateAll) Exec(s *cli.Session, args ...string) {
 	client := portfoliov1connect.NewSecuritiesServiceClient(
 		http.DefaultClient, "http://localhost:8080",
 		connect.WithHTTPGet(),
@@ -92,13 +92,4 @@ func (cmd *triggerQuoteUpdateAll) Exec(r *repl.REPL, args ...string) {
 	if err != nil {
 		log.Println(err)
 	}
-}
-
-func init() {
-	repl.AddCommand("list-securities", &listSecuritiesCmd{})
-	repl.AddCommand("update-quote", &triggerQuoteUpdate{})
-	repl.AddCommand("update-all-quotes", &triggerQuoteUpdateAll{})
-
-	repl.AddCommand("portfolio-snapshot", &portfolioSnapshot{})
-	repl.AddCommand("import-transactions", &importTransactions{})
 }
