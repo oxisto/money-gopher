@@ -16,9 +16,13 @@
 
 package commands
 
-import "github.com/oxisto/money-gopher/cli"
+import (
+	"fmt"
 
-func init() {
+	kongcompletion "github.com/jotaen/kong-completion"
+)
+
+/*func init() {
 	cli.AddCommand("list-securities", &listSecuritiesCmd{})
 	cli.AddCommand("update-quote", &triggerQuoteUpdate{})
 	cli.AddCommand("update-all-quotes", &triggerQuoteUpdateAll{})
@@ -27,4 +31,25 @@ func init() {
 	cli.AddCommand("list-portfolios", &listPortfolio{})
 	cli.AddCommand("portfolio-snapshot", &portfolioSnapshot{})
 	cli.AddCommand("import-transactions", &importTransactions{})
+}*/
+
+type RmCmd struct {
+	Force     bool `help:"Force removal."`
+	Recursive bool `help:"Recursively remove files."`
+
+	Paths []string `arg:"" name:"path" help:"Paths to remove." type:"path"`
+}
+
+func (r *RmCmd) Run() error {
+	fmt.Println("rm", r.Paths)
+	return nil
+}
+
+var CLI struct {
+	Debug bool `help:"Enable debug mode."`
+
+	Rm        RmCmd        `cmd:"" help:"Remove files."`
+	Portfolio PortfolioCmd `cmd:"" help:"Portfolio commands."`
+
+	Completion kongcompletion.Completion `cmd:"" help:"Outputs shell code for initialising tab completions"`
 }

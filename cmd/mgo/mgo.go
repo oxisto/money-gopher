@@ -19,10 +19,30 @@ package main
 import (
 	"os"
 
-	"github.com/oxisto/money-gopher/cli"
-	_ "github.com/oxisto/money-gopher/cli/commands"
+	"github.com/alecthomas/kong"
+	kongcompletion "github.com/jotaen/kong-completion"
+	"github.com/oxisto/money-gopher/cli/commands"
+	"github.com/posener/complete"
 )
 
 func main() {
-	cli.Run(os.Args)
+	parser := kong.Must(&commands.CLI,
+		kong.Name("mgo"),
+		kong.Description("A shell-like example app."),
+		kong.UsageOnError(),
+	)
+
+	kongcompletion.Register(parser, predictNames)
+
+	// Proceed as normal after kongplete.Complete.
+	ctx, err := parser.Parse(os.Args[1:])
+	parser.FatalIfErrorf(err)
+
+	err = ctx.Run()
+	parser.FatalIfErrorf(err)
 }
+
+var predictNames = kongcompletion.WithPredictor(
+	"name",
+	complete.PredictSet("Ben", "Liz", "Mark", "Sarah"),
+)

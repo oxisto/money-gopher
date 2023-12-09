@@ -34,32 +34,13 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type createPortfolio struct{}
-
-func (cmd *createPortfolio) Exec(s *cli.Session, args ...string) {
-	client := portfoliov1connect.NewPortfolioServiceClient(
-		http.DefaultClient, "http://localhost:8080",
-		connect.WithHTTPGet(),
-	)
-	res, err := client.CreatePortfolio(
-		context.Background(),
-		connect.NewRequest(&portfoliov1.CreatePortfolioRequest{
-			Portfolio: &portfoliov1.Portfolio{
-				Name:        args[1],
-				DisplayName: args[2],
-			},
-		}),
-	)
-	if err != nil {
-		log.Println(err)
-	} else {
-		log.Println(res)
-	}
+type PortfolioCmd struct {
+	List ListPortfolioCmd `cmd:"" help:"Lists all portfolios."`
 }
 
-type listPortfolio struct{}
+type ListPortfolioCmd struct{}
 
-func (cmd *listPortfolio) Exec(s *cli.Session, args ...string) {
+func (l *ListPortfolioCmd) Run() error {
 	client := portfoliov1connect.NewPortfolioServiceClient(
 		http.DefaultClient, "http://localhost:8080",
 		connect.WithHTTPGet(),
@@ -103,6 +84,31 @@ func (cmd *listPortfolio) Exec(s *cli.Session, args ...string) {
 
 		//out, _ := glamour.Render(in, "dark")
 		fmt.Println(in)
+	}
+
+	return nil
+}
+
+type createPortfolio struct{}
+
+func (cmd *createPortfolio) Exec(s *cli.Session, args ...string) {
+	client := portfoliov1connect.NewPortfolioServiceClient(
+		http.DefaultClient, "http://localhost:8080",
+		connect.WithHTTPGet(),
+	)
+	res, err := client.CreatePortfolio(
+		context.Background(),
+		connect.NewRequest(&portfoliov1.CreatePortfolioRequest{
+			Portfolio: &portfoliov1.Portfolio{
+				Name:        args[1],
+				DisplayName: args[2],
+			},
+		}),
+	)
+	if err != nil {
+		log.Println(err)
+	} else {
+		log.Println(res)
 	}
 }
 
