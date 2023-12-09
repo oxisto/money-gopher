@@ -23,7 +23,6 @@ import (
 	kongcompletion "github.com/jotaen/kong-completion"
 	"github.com/oxisto/money-gopher/cli"
 	"github.com/oxisto/money-gopher/cli/commands"
-	"github.com/posener/complete"
 )
 
 func main() {
@@ -33,7 +32,7 @@ func main() {
 		kong.UsageOnError(),
 	)
 
-	kongcompletion.Register(parser, predictNames)
+	kongcompletion.Register(parser, commands.PredictPortfolios)
 
 	// Proceed as normal after kongplete.Complete.
 	ctx, err := parser.Parse(os.Args[1:])
@@ -42,8 +41,3 @@ func main() {
 	err = ctx.Run(&cli.Session{})
 	parser.FatalIfErrorf(err)
 }
-
-var predictNames = kongcompletion.WithPredictor(
-	"name",
-	complete.PredictSet("Ben", "Liz", "Mark", "Sarah"),
-)

@@ -17,8 +17,6 @@
 package commands
 
 import (
-	"fmt"
-
 	kongcompletion "github.com/jotaen/kong-completion"
 )
 
@@ -33,24 +31,11 @@ import (
 	cli.AddCommand("import-transactions", &importTransactions{})
 }*/
 
-type RmCmd struct {
-	Force     bool `help:"Force removal."`
-	Recursive bool `help:"Recursively remove files."`
-
-	Paths []string `arg:"" name:"path" help:"Paths to remove." type:"path"`
-}
-
-func (r *RmCmd) Run() error {
-	fmt.Println("rm", r.Paths)
-	return nil
-}
-
 var CLI struct {
 	Debug bool `help:"Enable debug mode."`
 
-	Rm        RmCmd        `cmd:"" help:"Remove files."`
 	Security  SecurityCmd  `cmd:"" help:"Security commands."`
 	Portfolio PortfolioCmd `cmd:"" help:"Portfolio commands."`
 
-	Completion kongcompletion.Completion `cmd:"" help:"Outputs shell code for initialising tab completions"`
+	Completion kongcompletion.Completion `cmd:"" help:"Outputs shell code for initializing tab completions" hidden:""`
 }

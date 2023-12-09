@@ -26,16 +26,21 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	kongcompletion "github.com/jotaen/kong-completion"
 	"github.com/oxisto/money-gopher/cli"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
+	"github.com/posener/complete"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"connectrpc.com/connect"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type PortfolioCmd struct {
-	List ListPortfolioCmd `cmd:"" help:"Lists all portfolios."`
+	Create             CreatePortfolioCmd    `cmd:"" help:"Creates a new portfolio."`
+	List               ListPortfolioCmd      `cmd:"" help:"Lists all portfolios."`
+	Show               ShowPortfolioCmd      `cmd:"" help:"Shows details about one portfolio."`
+	ImportTransactions ImportTransactionsCmd `cmd:"" help:"Imports transactions from CSV."`
 }
 
 type ListPortfolioCmd struct{}
@@ -89,9 +94,12 @@ func (l *ListPortfolioCmd) Run(s *cli.Session) error {
 	return nil
 }
 
-type createPortfolio struct{}
+type CreatePortfolioCmd struct {
+	Name        string `help:"The identifier of the portfolio, e.g. mybank/myportfolio" required:""`
+	DisplayName string `help:"The display name of the portfolio"`
+}
 
-func (cmd *createPortfolio) Exec(s *cli.Session, args ...string) {
+func (cmd *CreatePortfolioCmd) Run(s *cli.Session) error {
 	client := portfoliov1connect.NewPortfolioServiceClient(
 		http.DefaultClient, "http://localhost:8080",
 		connect.WithHTTPGet(),
@@ -100,16 +108,41 @@ func (cmd *createPortfolio) Exec(s *cli.Session, args ...string) {
 		context.Background(),
 		connect.NewRequest(&portfoliov1.CreatePortfolioRequest{
 			Portfolio: &portfoliov1.Portfolio{
-				Name:        args[1],
-				DisplayName: args[2],
+				Name:        cmd.Name,
+				DisplayName: cmd.DisplayName,
 			},
 		}),
 	)
 	if err != nil {
-		log.Println(err)
-	} else {
-		log.Println(res)
+		return err
 	}
+
+	log.Println(res.Msg)
+	return nil
+}
+
+type ShowPortfolioCmd struct {
+	PortfolioName string `help:"The identifier of the portfolio, e.g. mybank/myportfolio" required:"" predictor:"portfolio"`
+}
+
+func (cmd *ShowPortfolioCmd) Run(s *cli.Session) error {
+	client := portfoliov1connect.NewPortfolioServiceClient(
+		http.DefaultClient, "http://localhost:8080",
+		connect.WithHTTPGet(),
+	)
+	res, err := client.GetPortfolioSnapshot(
+		context.Background(),
+		connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
+			PortfolioName: cmd.PortfolioName,
+			Time:          timestamppb.Now(),
+		}),
+	)
+	if err != nil {
+		return err
+	}
+
+	log.Println(res.Msg)
+	return nil
 }
 
 func greenOrRed(f float32) string {
@@ -120,44 +153,23 @@ func greenOrRed(f float32) string {
 	}
 }
 
-type portfolioSnapshot struct{}
-
-// Exec implements [cli.Command]
-func (cmd *portfolioSnapshot) Exec(s *cli.Session, args ...string) {
-	client := portfoliov1connect.NewPortfolioServiceClient(
-		http.DefaultClient, "http://localhost:8080",
-		connect.WithHTTPGet(),
-	)
-	res, err := client.GetPortfolioSnapshot(
-		context.Background(),
-		connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
-			PortfolioName: "My Portfolio",
-			Time:          timestamppb.Now(),
-		}),
-	)
-	if err != nil {
-		log.Println(err)
-	} else {
-		log.Println(res.Msg)
-	}
+type ImportTransactionsCmd struct {
+	PortfolioName string `required:"" predictor:"portfolio"`
+	CsvFile       string `arg:"" help:"The path to the CSV file to import"`
 }
 
-type importTransactions struct{}
-
 // Exec implements [cli.Command]
-func (cmd *importTransactions) Exec(s *cli.Session, args ...string) {
+func (cmd *ImportTransactionsCmd) Run(s *cli.Session) error {
 	// Read from args[1]
-	f, err := os.Open(args[1])
+	f, err := os.Open(cmd.CsvFile)
 	if err != nil {
-		log.Println(err)
-		return
+		return err
 	}
 	defer f.Close()
 
 	b, err := io.ReadAll(f)
 	if err != nil {
-		log.Println(err)
-		return
+		return err
 	}
 
 	client := portfoliov1connect.NewPortfolioServiceClient(
@@ -167,13 +179,41 @@ func (cmd *importTransactions) Exec(s *cli.Session, args ...string) {
 	res, err := client.ImportTransactions(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.ImportTransactionsRequest{
-			PortfolioName: args[0],
+			PortfolioName: cmd.PortfolioName,
 			FromCsv:       string(b),
 		}),
 	)
 	if err != nil {
-		log.Println(err)
-	} else {
-		log.Println(res.Msg)
+		return err
 	}
+
+	log.Println(res.Msg)
+	return nil
 }
+
+type PortfolioPredictor struct{}
+
+func (p *PortfolioPredictor) Predict(complete.Args) (names []string) {
+	client := portfoliov1connect.NewPortfolioServiceClient(
+		http.DefaultClient, "http://localhost:8080",
+		connect.WithHTTPGet(),
+	)
+	res, err := client.ListPortfolios(
+		context.Background(),
+		connect.NewRequest(&portfoliov1.ListPortfoliosRequest{}),
+	)
+	if err != nil {
+		return nil
+	}
+
+	for _, p := range res.Msg.Portfolios {
+		names = append(names, p.Name)
+	}
+
+	return
+}
+
+var PredictPortfolios = kongcompletion.WithPredictor(
+	"portfolio",
+	&PortfolioPredictor{},
+)
