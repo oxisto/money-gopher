@@ -1,20 +1,27 @@
 "persistence":
-  - persistence/**/*
+  - changed-files:
+      - any-glob-to-any-file: "persistence/**/*"
 
 "service/securities":
-  - service/securities/**/*
+  - changed-files:
+      - any-glob-to-any-file: "service/securities/**/*"
 
 "service/portfolio":
-  - service/portfolio/**/*
+  - changed-files:
+      - any-glob-to-any-file: "service/portfolio/**/*"
 
 "internal":
-  - "**/internal/**/*"
+  - changed-files:
+      - any-glob-to-any-file: "**/internal/**/*"
 
 "finance":
-  - "finance/**/*"
+  - changed-files:
+      - any-glob-to-any-file: "finance/**/*"
 
 "repl":
-  - "repl/**/*"
+  - changed-files:
+      - any-glob-to-any-file: "repl/**/*"
 
 "ui":
-  - "ui/**/*"
+  - changed-files:
+      - any-glob-to-any-file: "ui/**/*"
