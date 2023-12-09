@@ -28,26 +28,35 @@ import (
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 )
 
-type listSecuritiesCmd struct{}
+type SecurityCmd struct {
+	List            ListSecuritiesCmd  `cmd:"" help:"Lists all securities."`
+	UpdateQuote     UpdateQuoteCmd     `cmd:"" help:"Triggers an update of one or more securities' quotes."`
+	UpdateAllQuotes UpdateAllQuotesCmd `cmd:"" help:"Triggers an update of all quotes."`
+}
+
+type ListSecuritiesCmd struct{}
 
 // Exec implements [repl.Command]
-func (cmd *listSecuritiesCmd) Exec(s *cli.Session, args ...string) {
+func (cmd *ListSecuritiesCmd) Run(s *cli.Session) error {
 	client := portfoliov1connect.NewSecuritiesServiceClient(
 		http.DefaultClient, "http://localhost:8080",
 		connect.WithHTTPGet(),
 	)
 	res, err := client.ListSecurities(context.Background(), connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}))
 	if err != nil {
-		log.Println(err)
+		return err
 	}
 
 	log.Println(res.Msg.Securities)
+	return nil
 }
 
-type triggerQuoteUpdate struct{}
+type UpdateQuoteCmd struct {
+	SecurityNames []string `arg:""`
+}
 
 // Exec implements [cli.Command]
-func (cmd *triggerQuoteUpdate) Exec(s *cli.Session, args ...string) {
+func (cmd *UpdateQuoteCmd) Run(s *cli.Session) error {
 	client := portfoliov1connect.NewSecuritiesServiceClient(
 		http.DefaultClient, "http://localhost:8080",
 		connect.WithHTTPGet(),
@@ -55,26 +64,24 @@ func (cmd *triggerQuoteUpdate) Exec(s *cli.Session, args ...string) {
 	_, err := client.TriggerSecurityQuoteUpdate(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.TriggerQuoteUpdateRequest{
-			SecurityNames: []string{args[0]},
+			SecurityNames: cmd.SecurityNames,
 		}),
 	)
-	if err != nil {
-		log.Println(err)
-	}
+
+	return err
 }
 
-type triggerQuoteUpdateAll struct{}
+type UpdateAllQuotesCmd struct{}
 
 // Exec implements [cli.Command]
-func (cmd *triggerQuoteUpdateAll) Exec(s *cli.Session, args ...string) {
+func (cmd *UpdateAllQuotesCmd) Run(s *cli.Session) error {
 	client := portfoliov1connect.NewSecuritiesServiceClient(
 		http.DefaultClient, "http://localhost:8080",
 		connect.WithHTTPGet(),
 	)
 	res, err := client.ListSecurities(context.Background(), connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}))
 	if err != nil {
-		log.Println(err)
-		return
+		return err
 	}
 
 	var names []string
@@ -89,7 +96,6 @@ func (cmd *triggerQuoteUpdateAll) Exec(s *cli.Session, args ...string) {
 			SecurityNames: names,
 		}),
 	)
-	if err != nil {
-		log.Println(err)
-	}
+
+	return err
 }

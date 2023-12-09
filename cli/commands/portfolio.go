@@ -40,7 +40,7 @@ type PortfolioCmd struct {
 
 type ListPortfolioCmd struct{}
 
-func (l *ListPortfolioCmd) Run() error {
+func (l *ListPortfolioCmd) Run(s *cli.Session) error {
 	client := portfoliov1connect.NewPortfolioServiceClient(
 		http.DefaultClient, "http://localhost:8080",
 		connect.WithHTTPGet(),

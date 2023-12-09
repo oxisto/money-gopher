@@ -49,6 +49,7 @@ var CLI struct {
 	Debug bool `help:"Enable debug mode."`
 
 	Rm        RmCmd        `cmd:"" help:"Remove files."`
+	Security  SecurityCmd  `cmd:"" help:"Security commands."`
 	Portfolio PortfolioCmd `cmd:"" help:"Portfolio commands."`
 
 	Completion kongcompletion.Completion `cmd:"" help:"Outputs shell code for initialising tab completions"`
