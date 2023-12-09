@@ -18,9 +18,9 @@
   - changed-files:
       - any-glob-to-any-file: "finance/**/*"
 
-"repl":
+"cli":
   - changed-files:
-      - any-glob-to-any-file: "repl/**/*"
+      - any-glob-to-any-file: "cli/**/*"
 
 "ui":
   - changed-files:

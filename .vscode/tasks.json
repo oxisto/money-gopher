@@ -3,9 +3,26 @@
 	"tasks": [
 		{
 			"type": "go",
-			"label": "go: build cmd/mgo",
+			"label": "go: build cmd/moneyd",
 			"command": "build",
 			"args": [
+				"${workspaceFolder}/cmd/moneyd"
+			],
+			"problemMatcher": [
+				"$go"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"detail": "cd /Users/oxisto/Repositories/money-gopher; go build ${workspaceFolder}/cmd/moneyd"
+		},
+		{
+			"type": "shell",
+			"label": "go: install cmd/mgo",
+			"command": "go",
+			"args": [
+				"install",
 				"${workspaceFolder}/cmd/mgo"
 			],
 			"problemMatcher": [
@@ -15,12 +32,12 @@
 				"kind": "build",
 				"isDefault": true
 			},
-			"detail": "cd /Users/oxisto/Repositories/money-gopher; go build ${workspaceFolder}/cmd/mgo"
+			"detail": "cd /Users/oxisto/Repositories/money-gopher; go build ${workspaceFolder}/cmd/moneyd"
 		},
 		{
 			"type": "shell",
-			"label": "go: generate cmd/mgo",
-			"command": "go generate",
+			"label": "go: generate ./...",
+			"command": "go generate ./...",
 			"problemMatcher": [
 				"$go"
 			],
@@ -28,7 +45,7 @@
 				"kind": "build",
 				"isDefault": true
 			},
-			"detail": "cd /Users/oxisto/Repositories/money-gopher; go generate ${workspaceFolder}/cmd/mgo"
+			"detail": "cd /Users/oxisto/Repositories/money-gopher; go generate ./..."
 		}
 	]
 }

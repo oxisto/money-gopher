@@ -17,74 +17,27 @@
 package main
 
 import (
-	"log"
-	"net/http"
-	"strings"
+	"os"
 
-	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
-	"github.com/oxisto/money-gopher/persistence"
-	"github.com/oxisto/money-gopher/repl"
-	_ "github.com/oxisto/money-gopher/repl/commands"
-	"github.com/oxisto/money-gopher/service/portfolio"
-	"github.com/oxisto/money-gopher/service/securities"
-
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
+	"github.com/alecthomas/kong"
+	kongcompletion "github.com/jotaen/kong-completion"
+	"github.com/oxisto/money-gopher/cli"
+	"github.com/oxisto/money-gopher/cli/commands"
 )
 
 func main() {
-	log.SetPrefix("[🤑] ")
-	log.SetFlags(log.Lmsgprefix | log.Ltime)
-	log.Print("Welcome to The Money Gopher")
+	parser := kong.Must(&commands.CLI,
+		kong.Name("mgo"),
+		kong.Description("A shell-like example app."),
+		kong.UsageOnError(),
+	)
 
-	db, err := persistence.OpenDB(persistence.Options{})
-	if err != nil {
-		log.Fatalf("Error while opening database: %v", err)
-	}
+	kongcompletion.Register(parser, commands.PredictPortfolios)
 
-	mux := http.NewServeMux()
-	// The generated constructors return a path and a plain net/http
-	// handler.
-	mux.Handle(portfoliov1connect.NewPortfolioServiceHandler(portfolio.NewService(
-		portfolio.Options{
-			DB:               db,
-			SecuritiesClient: portfoliov1connect.NewSecuritiesServiceClient(http.DefaultClient, portfolio.DefaultSecuritiesServiceURL),
-		},
-	)))
-	mux.Handle(portfoliov1connect.NewSecuritiesServiceHandler(securities.NewService(db)))
+	// Proceed as normal after kongplete.Complete.
+	ctx, err := parser.Parse(os.Args[1:])
+	parser.FatalIfErrorf(err)
 
-	go func() {
-		err = http.ListenAndServe(
-			"localhost:8080",
-			h2c.NewHandler(handleCORS(mux), &http2.Server{}),
-		)
-		log.Fatalf("listen failed: %v", err)
-	}()
-
-	r := repl.REPL{}
-	r.Run()
-}
-
-func handleCORS(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Add("Vary", "Origin")
-
-		if r.Method == "OPTIONS" && r.Header.Get("Access-Control-Request-Method") != "" {
-			w.Header().Set("Access-Control-Allow-Headers", strings.Join([]string{
-				"Connect-Protocol-Version",
-				"Content-Type",
-				"Accept",
-				"Authorization",
-			}, ","))
-			w.Header().Set("Access-Control-Allow-Methods", strings.Join([]string{
-				"GET",
-				"POST",
-				"PUT",
-				"DELETE",
-			}, ","))
-		} else {
-			h.ServeHTTP(w, r)
-		}
-	})
+	err = ctx.Run(&cli.Session{})
+	parser.FatalIfErrorf(err)
 }

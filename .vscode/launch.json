@@ -11,6 +11,18 @@
             "mode": "auto",
             "program": "${workspaceFolder}/cmd/mgo",
             "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "list-portfolios"
+            ]
+        },
+        {
+            "name": "Launch cmd/moneyd",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/moneyd",
+            "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
         }
     ]

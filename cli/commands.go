@@ -14,20 +14,9 @@
 //
 // This file is part of The Money Gopher.
 
-package repl
+package cli
 
 // Command is a command executed by the REPL.
 type Command interface {
-	Exec(r *REPL, args ...string)
-}
-
-type quitCmd struct{}
-
-// Exec implements [Command].
-func (*quitCmd) Exec(r *REPL, args ...string) {
-	r.done = true
-}
-
-func init() {
-	AddCommand("quit", &quitCmd{})
+	Exec(s *Session, args ...string)
 }

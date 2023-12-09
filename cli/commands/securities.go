@@ -14,7 +14,7 @@
 //
 // This file is part of The Money Gopher.
 
-// package commands contains commands that can be executed by the REPL.
+// package commands contains commands that can be executed by the CLI.
 package commands
 
 import (
@@ -23,31 +23,40 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	"github.com/oxisto/money-gopher/cli"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
-	"github.com/oxisto/money-gopher/repl"
 )
 
-type listSecuritiesCmd struct{}
+type SecurityCmd struct {
+	List            ListSecuritiesCmd  `cmd:"" help:"Lists all securities."`
+	UpdateQuote     UpdateQuoteCmd     `cmd:"" help:"Triggers an update of one or more securities' quotes."`
+	UpdateAllQuotes UpdateAllQuotesCmd `cmd:"" help:"Triggers an update of all quotes."`
+}
+
+type ListSecuritiesCmd struct{}
 
 // Exec implements [repl.Command]
-func (cmd *listSecuritiesCmd) Exec(r *repl.REPL, args ...string) {
+func (cmd *ListSecuritiesCmd) Run(s *cli.Session) error {
 	client := portfoliov1connect.NewSecuritiesServiceClient(
 		http.DefaultClient, "http://localhost:8080",
 		connect.WithHTTPGet(),
 	)
 	res, err := client.ListSecurities(context.Background(), connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}))
 	if err != nil {
-		log.Println(err)
+		return err
 	}
 
 	log.Println(res.Msg.Securities)
+	return nil
 }
 
-type triggerQuoteUpdate struct{}
+type UpdateQuoteCmd struct {
+	SecurityNames []string `arg:""`
+}
 
-// Exec implements [repl.Command]
-func (cmd *triggerQuoteUpdate) Exec(r *repl.REPL, args ...string) {
+// Exec implements [cli.Command]
+func (cmd *UpdateQuoteCmd) Run(s *cli.Session) error {
 	client := portfoliov1connect.NewSecuritiesServiceClient(
 		http.DefaultClient, "http://localhost:8080",
 		connect.WithHTTPGet(),
@@ -55,26 +64,24 @@ func (cmd *triggerQuoteUpdate) Exec(r *repl.REPL, args ...string) {
 	_, err := client.TriggerSecurityQuoteUpdate(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.TriggerQuoteUpdateRequest{
-			SecurityNames: []string{args[0]},
+			SecurityNames: cmd.SecurityNames,
 		}),
 	)
-	if err != nil {
-		log.Println(err)
-	}
+
+	return err
 }
 
-type triggerQuoteUpdateAll struct{}
+type UpdateAllQuotesCmd struct{}
 
-// Exec implements [repl.Command]
-func (cmd *triggerQuoteUpdateAll) Exec(r *repl.REPL, args ...string) {
+// Exec implements [cli.Command]
+func (cmd *UpdateAllQuotesCmd) Run(s *cli.Session) error {
 	client := portfoliov1connect.NewSecuritiesServiceClient(
 		http.DefaultClient, "http://localhost:8080",
 		connect.WithHTTPGet(),
 	)
 	res, err := client.ListSecurities(context.Background(), connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}))
 	if err != nil {
-		log.Println(err)
-		return
+		return err
 	}
 
 	var names []string
@@ -89,16 +96,6 @@ func (cmd *triggerQuoteUpdateAll) Exec(r *repl.REPL, args ...string) {
 			SecurityNames: names,
 		}),
 	)
-	if err != nil {
-		log.Println(err)
-	}
-}
 
-func init() {
-	repl.AddCommand("list-securities", &listSecuritiesCmd{})
-	repl.AddCommand("update-quote", &triggerQuoteUpdate{})
-	repl.AddCommand("update-all-quotes", &triggerQuoteUpdateAll{})
-
-	repl.AddCommand("portfolio-snapshot", &portfolioSnapshot{})
-	repl.AddCommand("import-transactions", &importTransactions{})
+	return err
 }
