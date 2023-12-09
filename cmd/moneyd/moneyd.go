@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/mattn/go-colorable"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	"github.com/oxisto/money-gopher/persistence"
 	"github.com/oxisto/money-gopher/service/portfolio"
@@ -34,6 +35,7 @@ func main() {
 	log.SetPrefix("[🤑] ")
 	log.SetFlags(log.Lmsgprefix | log.Ltime)
 	log.Print("Welcome to The Money Gopher")
+	log.SetOutput(colorable.NewColorableStdout())
 
 	db, err := persistence.OpenDB(persistence.Options{})
 	if err != nil {

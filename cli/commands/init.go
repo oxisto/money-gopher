@@ -20,22 +20,11 @@ import (
 	kongcompletion "github.com/jotaen/kong-completion"
 )
 
-/*func init() {
-	cli.AddCommand("list-securities", &listSecuritiesCmd{})
-	cli.AddCommand("update-quote", &triggerQuoteUpdate{})
-	cli.AddCommand("update-all-quotes", &triggerQuoteUpdateAll{})
-
-	cli.AddCommand("create-portfolio", &createPortfolio{})
-	cli.AddCommand("list-portfolios", &listPortfolio{})
-	cli.AddCommand("portfolio-snapshot", &portfolioSnapshot{})
-	cli.AddCommand("import-transactions", &importTransactions{})
-}*/
-
 var CLI struct {
 	Debug bool `help:"Enable debug mode."`
 
 	Security  SecurityCmd  `cmd:"" help:"Security commands."`
 	Portfolio PortfolioCmd `cmd:"" help:"Portfolio commands."`
 
-	Completion kongcompletion.Completion `cmd:"" help:"Outputs shell code for initializing tab completions" hidden:""`
+	Completion kongcompletion.CompletionNoFileComp `cmd:"" help:"Outputs shell code for initializing tab completions" hidden:""`
 }
