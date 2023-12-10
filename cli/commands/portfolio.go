@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/fatih/color"
 	kongcompletion "github.com/jotaen/kong-completion"
@@ -37,10 +38,13 @@ import (
 )
 
 type PortfolioCmd struct {
-	Create             CreatePortfolioCmd    `cmd:"" help:"Creates a new portfolio."`
-	List               ListPortfolioCmd      `cmd:"" help:"Lists all portfolios."`
-	Show               ShowPortfolioCmd      `cmd:"" help:"Shows details about one portfolio."`
-	ImportTransactions ImportTransactionsCmd `cmd:"" help:"Imports transactions from CSV."`
+	Create       CreatePortfolioCmd `cmd:"" help:"Creates a new portfolio."`
+	List         ListPortfolioCmd   `cmd:"" help:"Lists all portfolios."`
+	Show         ShowPortfolioCmd   `cmd:"" help:"Shows details about one portfolio."`
+	Transactions struct {
+		Create CreateTransactionCmd  `cmd:"" help:"Creates a transaction. Defaults to a \"buy\" transaction."`
+		Import ImportTransactionsCmd `cmd:"" help:"Imports transactions from CSV."`
+	} `cmd:"" help:"Subcommands supporting transactions within one portfolio"`
 }
 
 type ListPortfolioCmd struct{}
@@ -153,6 +157,74 @@ func greenOrRed(f float32) string {
 	}
 }
 
+type CreateTransactionCmd struct {
+	PortfolioName string    `required:"" predictor:"portfolio" help:"The name of the portfolio where the transaction will be created in"`
+	SecurityName  string    `arg:"" predictor:"security" help:"The name of the security this transaction belongs to (its ISIN)"`
+	Type          string    `required:"" enum:"buy,sell,delivery-inbound,delivery-outbound,dividend" default:"buy"`
+	Amount        float32   `required:"" help:"The amount of securities involved in the transaction"`
+	Price         float32   `required:"" help:"The price without fees or taxes"`
+	Fees          float32   `help:"Any fees that applied to the transaction"`
+	Taxes         float32   `help:"Any taxes that applied to the transaction"`
+	Time          time.Time `help:"The time of the transaction. Defaults to 'now'" format:"2006-01-02 15:04"`
+}
+
+func (cmd *CreateTransactionCmd) Run(s *cli.Session) error {
+	var req = connect.NewRequest(&portfoliov1.CreatePortfolioTransactionRequest{
+		Transaction: &portfoliov1.PortfolioEvent{
+			PortfolioName: cmd.PortfolioName,
+			SecurityName:  cmd.SecurityName,
+			Type:          eventTypeFrom(cmd.Type), // eventTypeFrom(cmd.Type)
+			Amount:        cmd.Amount,
+			Time:          timeOrNow(cmd.Time),
+			Price:         cmd.Price,
+			Fees:          cmd.Fees,
+			Taxes:         cmd.Taxes,
+		},
+	})
+
+	client := portfoliov1connect.NewPortfolioServiceClient(
+		http.DefaultClient, "http://localhost:8080",
+		connect.WithHTTPGet(),
+	)
+	res, err := client.CreatePortfolioTransaction(context.Background(), req)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Successfully created a %s transaction (%s) for security %s in %s.\n",
+		color.CyanString(cmd.Type),
+		color.BlackString(res.Msg.Name),
+		color.BlueString(res.Msg.SecurityName),
+		color.BlueString(res.Msg.PortfolioName),
+	)
+
+	return nil
+}
+
+func eventTypeFrom(typ string) portfoliov1.PortfolioEventType {
+	if typ == "buy" {
+		return portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY
+	} else if typ == "sell" {
+		return portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL
+	} else if typ == "delivery-inbound" {
+		return portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_INBOUND
+	} else if typ == "delivery-outbound" {
+		return portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_OUTBOUND
+	} else if typ == "dividend" {
+		return portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DIVIDEND
+	}
+
+	return portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_UNSPECIFIED
+}
+
+func timeOrNow(t time.Time) *timestamppb.Timestamp {
+	if t.IsZero() {
+		return timestamppb.Now()
+	}
+
+	return timestamppb.New(t)
+}
+
 type ImportTransactionsCmd struct {
 	PortfolioName string `required:"" predictor:"portfolio"`
 	CsvFile       string `arg:"" help:"The path to the CSV file to import"`
@@ -191,29 +263,25 @@ func (cmd *ImportTransactionsCmd) Run(s *cli.Session) error {
 	return nil
 }
 
-type PortfolioPredictor struct{}
-
-func (p *PortfolioPredictor) Predict(complete.Args) (names []string) {
-	client := portfoliov1connect.NewPortfolioServiceClient(
-		http.DefaultClient, "http://localhost:8080",
-		connect.WithHTTPGet(),
-	)
-	res, err := client.ListPortfolios(
-		context.Background(),
-		connect.NewRequest(&portfoliov1.ListPortfoliosRequest{}),
-	)
-	if err != nil {
-		return nil
-	}
-
-	for _, p := range res.Msg.Portfolios {
-		names = append(names, p.Name)
-	}
-
-	return
-}
-
 var PredictPortfolios = kongcompletion.WithPredictor(
 	"portfolio",
-	&PortfolioPredictor{},
+	complete.PredictFunc(func(complete.Args) (names []string) {
+		client := portfoliov1connect.NewPortfolioServiceClient(
+			http.DefaultClient, "http://localhost:8080",
+			connect.WithHTTPGet(),
+		)
+		res, err := client.ListPortfolios(
+			context.Background(),
+			connect.NewRequest(&portfoliov1.ListPortfoliosRequest{}),
+		)
+		if err != nil {
+			return nil
+		}
+
+		for _, p := range res.Msg.Portfolios {
+			names = append(names, p.Name)
+		}
+
+		return
+	}),
 )
