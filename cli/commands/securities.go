@@ -23,9 +23,11 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	kongcompletion "github.com/jotaen/kong-completion"
 	"github.com/oxisto/money-gopher/cli"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
+	"github.com/posener/complete"
 )
 
 type SecurityCmd struct {
@@ -99,3 +101,26 @@ func (cmd *UpdateAllQuotesCmd) Run(s *cli.Session) error {
 
 	return err
 }
+
+var PredictSecurities = kongcompletion.WithPredictor(
+	"security",
+	complete.PredictFunc(func(complete.Args) (names []string) {
+		client := portfoliov1connect.NewSecuritiesServiceClient(
+			http.DefaultClient, "http://localhost:8080",
+			connect.WithHTTPGet(),
+		)
+		res, err := client.ListSecurities(
+			context.Background(),
+			connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}),
+		)
+		if err != nil {
+			return nil
+		}
+
+		for _, p := range res.Msg.Securities {
+			names = append(names, p.Name)
+		}
+
+		return
+	}),
+)

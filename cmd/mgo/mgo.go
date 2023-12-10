@@ -32,7 +32,10 @@ func main() {
 		kong.UsageOnError(),
 	)
 
-	kongcompletion.Register(parser, commands.PredictPortfolios)
+	kongcompletion.Register(parser,
+		commands.PredictPortfolios,
+		commands.PredictSecurities,
+	)
 
 	// Proceed as normal after kongplete.Complete.
 	ctx, err := parser.Parse(os.Args[1:])
