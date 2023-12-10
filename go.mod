@@ -6,7 +6,7 @@ require (
 	connectrpc.com/connect v1.13.0
 	github.com/alecthomas/kong v0.8.1
 	github.com/fatih/color v1.16.0
-	github.com/jotaen/kong-completion v0.0.5
+	github.com/jotaen/kong-completion v0.0.6
 	github.com/mattn/go-colorable v0.1.13
 	github.com/mattn/go-sqlite3 v1.14.18
 	github.com/oxisto/assert v0.0.6
@@ -23,5 +23,3 @@ require (
 )
 
 replace github.com/posener/complete v1.2.3 => github.com/oxisto/complete v0.0.0-20231209194436-0b605e2b5bff
-
-replace github.com/jotaen/kong-completion v0.0.5 => github.com/oxisto/kong-completion v0.0.0-20231209185350-049db4ffd018

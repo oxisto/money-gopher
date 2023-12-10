@@ -26,5 +26,5 @@ var CLI struct {
 	Security  SecurityCmd  `cmd:"" help:"Security commands."`
 	Portfolio PortfolioCmd `cmd:"" help:"Portfolio commands."`
 
-	Completion kongcompletion.CompletionNoFileComp `cmd:"" help:"Outputs shell code for initializing tab completions" hidden:""`
+	Completion kongcompletion.Completion `cmd:"" help:"Outputs shell code for initializing tab completions" hidden:"" completion-shell-default:"false"`
 }
