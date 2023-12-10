@@ -6,7 +6,7 @@ require (
 	connectrpc.com/connect v1.13.0
 	github.com/alecthomas/kong v0.8.1
 	github.com/fatih/color v1.16.0
-	github.com/jotaen/kong-completion v0.0.5
+	github.com/jotaen/kong-completion v0.0.6
 	github.com/mattn/go-colorable v0.1.13
 	github.com/mattn/go-sqlite3 v1.14.18
 	github.com/oxisto/assert v0.0.6
