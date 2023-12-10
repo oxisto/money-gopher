@@ -19,8 +19,10 @@ package securities
 import (
 	"context"
 	"log"
+	"log/slog"
 	"time"
 
+	"github.com/lmittmann/tint"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -55,8 +57,15 @@ func (svc *service) TriggerSecurityQuoteUpdate(ctx context.Context, req *connect
 		}
 
 		// Trigger update from quote provider in separate go-routine
-		for _, ls := range sec.ListedOn {
-			go svc.updateQuote(qp, ls)
+		for idx, _ := range sec.ListedOn {
+			idx := idx
+			go func() {
+				ls := sec.ListedOn[idx]
+				err = svc.updateQuote(qp, ls)
+				if err != nil {
+					slog.Error("An error occurred during quote update", tint.Err(err), "ls", ls)
+				}
+			}()
 		}
 	}
 

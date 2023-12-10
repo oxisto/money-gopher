@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -35,6 +36,13 @@ type Options struct {
 
 	// DSN contains the DSN, such as the file name of our sqlite database
 	DSN string
+}
+
+// LogValue implements slog.LogValuer.
+func (o Options) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.Bool("in-memory", o.UseInMemory),
+		slog.String("dsn", o.DSN))
 }
 
 // DB is a wrapper around [sql.DB]. This allows us to access all the
@@ -94,7 +102,7 @@ func OpenDB(opts Options) (db *DB, err error) {
 	db.log.SetPrefix("[📄] ")
 	db.initTables()
 
-	db.log.Print("Successfully opened database connection")
+	slog.Info("Successfully opened database connection", "opts", opts)
 
 	return
 }
