@@ -4,6 +4,7 @@ import (
 	"hash/fnv"
 	"strconv"
 	"time"
+	"log/slog"
 )
 
 func (p *Portfolio) EventMap() (m map[string][]*PortfolioEvent) {
@@ -47,4 +48,12 @@ func (tx *PortfolioEvent) MakeUniqueName() {
 	h.Write([]byte(strconv.FormatInt(int64(tx.Amount), 10)))
 
 	tx.Name = strconv.FormatUint(h.Sum64(), 16)
+}
+
+// LogValue implements slog.LogValuer.
+func (ls *ListedSecurity) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("name", ls.SecurityName),
+		slog.String("ticker", ls.Ticker),
+	)
 }

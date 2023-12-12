@@ -17,7 +17,6 @@
 package main
 
 import (
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -25,16 +24,16 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
-	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
-	"github.com/oxisto/money-gopher/persistence"
-	"github.com/oxisto/money-gopher/service/portfolio"
-	"github.com/oxisto/money-gopher/service/securities"
-
 	"github.com/lmittmann/tint"
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+
+	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
+	"github.com/oxisto/money-gopher/persistence"
+	"github.com/oxisto/money-gopher/service/portfolio"
+	"github.com/oxisto/money-gopher/service/securities"
 )
 
 var cmd moneydCmd
@@ -51,8 +50,11 @@ func main() {
 }
 
 func (cmd *moneydCmd) Run() error {
-	var w = os.Stdout
-	var level = slog.LevelInfo
+	var (
+		w     = os.Stdout
+		level = slog.LevelInfo
+	)
+
 	if cmd.Debug {
 		level = slog.LevelDebug
 	}
@@ -88,7 +90,9 @@ func (cmd *moneydCmd) Run() error {
 		"localhost:8080",
 		h2c.NewHandler(handleCORS(mux), &http2.Server{}),
 	)
-	log.Fatalf("listen failed: %v", err)
+
+	slog.Error("listen failed", tint.Err(err))
+
 	return err
 }
 

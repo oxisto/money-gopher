@@ -33,12 +33,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/lmittmann/tint"
 	moneygopher "github.com/oxisto/money-gopher"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/service/securities"
@@ -72,7 +73,7 @@ func Import(r io.Reader, pname string) (txs []*portfoliov1.PortfolioEvent, secs 
 			break
 		} else if err != nil {
 			// Skip this transaction
-			log.Printf("Could not parse line: %v\n", err)
+			slog.Warn("Could not parse line", tint.Err(err))
 			continue
 		}
 

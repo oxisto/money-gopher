@@ -19,15 +19,16 @@ package commands
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
 	kongcompletion "github.com/jotaen/kong-completion"
+	"github.com/posener/complete"
+
 	"github.com/oxisto/money-gopher/cli"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
-	"github.com/posener/complete"
 )
 
 type SecurityCmd struct {
@@ -49,7 +50,7 @@ func (cmd *ListSecuritiesCmd) Run(s *cli.Session) error {
 		return err
 	}
 
-	log.Println(res.Msg.Securities)
+	fmt.Println(res.Msg.Securities)
 	return nil
 }
 
