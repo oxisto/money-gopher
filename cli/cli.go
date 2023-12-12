@@ -18,41 +18,6 @@
 // integrated client.
 package cli
 
-import (
-	"fmt"
-	"os"
-)
-
-var cmdMap map[string]Command = make(map[string]Command)
-
-// AddCommand adds a command using the specific symbol.
-func AddCommand(symbol string, cmd Command) {
-	cmdMap[symbol] = cmd
-}
-
 // Session holds all necessary information about the current CLI session.
 type Session struct {
-}
-
-// Run runs our CLI command, based on the args. We keep it very simple for now
-// without any extra package, so we just take the first arg and see if if
-// matches any of our commands
-func Run(args []string) {
-	var (
-		cmd Command
-		ok  bool
-		s   *Session
-	)
-
-	// Create a new session. TODO(oxisto): We do not yet have auth, but in the
-	// future we need to fetch a token here
-	s = new(Session)
-
-	// Try to look up command in our command map
-	cmd, ok = cmdMap[args[1]]
-	if ok {
-		cmd.Exec(s, os.Args[1:]...)
-	} else {
-		fmt.Print("Command not found.\n")
-	}
 }

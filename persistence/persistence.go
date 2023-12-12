@@ -21,8 +21,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
-	"os"
+	"log/slog"
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -37,13 +36,18 @@ type Options struct {
 	DSN string
 }
 
+// LogValue implements slog.LogValuer.
+func (o Options) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.Bool("in-memory", o.UseInMemory),
+		slog.String("dsn", o.DSN))
+}
+
 // DB is a wrapper around [sql.DB]. This allows us to access all the
 // functionalities of [sql.DB] as well as accessing the DB object in our
 // internal functions.
 type DB struct {
 	*sql.DB
-
-	log *log.Logger
 }
 
 type StorageObject interface {
@@ -88,13 +92,11 @@ func OpenDB(opts Options) (db *DB, err error) {
 	}
 
 	db = &DB{
-		DB:  inner,
-		log: log.New(os.Stderr, "", log.Lmsgprefix|log.Ltime),
+		DB: inner,
 	}
-	db.log.SetPrefix("[📄] ")
 	db.initTables()
 
-	db.log.Print("Successfully opened database connection")
+	slog.Info("Successfully opened database connection", "opts", opts)
 
 	return
 }
@@ -125,11 +127,10 @@ func (ops *ops[T]) Replace(o StorageObject) (err error) {
 		return fmt.Errorf("could not execute query: %w", err)
 	}
 
-	rows, err := res.RowsAffected()
+	_, err = res.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("could not fetch number of affected rows: %w", err)
 	}
-	ops.DB.log.Printf("%d row(s) affected by replace", rows)
 
 	return nil
 }
@@ -228,12 +229,10 @@ func (ops *ops[T]) Update(key any, in T, columns []string) (out T, err error) {
 		return out, fmt.Errorf("could not execute query: %w", err)
 	}
 
-	rows, err := res.RowsAffected()
+	_, err = res.RowsAffected()
 	if err != nil {
 		return out, fmt.Errorf("could not fetch number of affected rows: %w", err)
 	}
-
-	ops.DB.log.Printf("%d row(s) affected by replace", rows)
 
 	// Need to fetch it again
 	return ops.Get(key)
@@ -255,12 +254,10 @@ func (ops *ops[T]) Delete(key any) (err error) {
 		return fmt.Errorf("could not execute query: %w", err)
 	}
 
-	rows, err := res.RowsAffected()
+	_, err = res.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("could not fetch number of affected rows: %w", err)
 	}
-
-	ops.DB.log.Printf("%d row(s) affected by delete", rows)
 
 	return
 }

@@ -18,13 +18,14 @@ package securities
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"time"
 
-	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"connectrpc.com/connect"
+	"github.com/lmittmann/tint"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"connectrpc.com/connect"
+	portfoliov1 "github.com/oxisto/money-gopher/gen"
 )
 
 func (svc *service) TriggerSecurityQuoteUpdate(ctx context.Context, req *connect.Request[portfoliov1.TriggerQuoteUpdateRequest]) (res *connect.Response[portfoliov1.TriggerQuoteUpdateResponse], err error) {
@@ -45,7 +46,7 @@ func (svc *service) TriggerSecurityQuoteUpdate(ctx context.Context, req *connect
 		res = connect.NewResponse(&portfoliov1.TriggerQuoteUpdateResponse{})
 
 		if sec.QuoteProvider == nil {
-			log.Printf("No quote provider configured for %s\n", sec.Name)
+			slog.Warn("No quote provider configured for security", "security", sec.Name)
 			return
 		}
 
@@ -55,8 +56,19 @@ func (svc *service) TriggerSecurityQuoteUpdate(ctx context.Context, req *connect
 		}
 
 		// Trigger update from quote provider in separate go-routine
-		for _, ls := range sec.ListedOn {
-			go svc.updateQuote(qp, ls)
+		// TODO(oxisto): Use sync/errgroup instead
+		for idx := range sec.ListedOn {
+			idx := idx
+			go func() {
+				ls := sec.ListedOn[idx]
+
+				slog.Debug("Triggering quote update", "security", ls, "provider", *sec.QuoteProvider)
+
+				err = svc.updateQuote(qp, ls)
+				if err != nil {
+					slog.Error("An error occurred during quote update", tint.Err(err), "ls", ls)
+				}
+			}()
 		}
 	}
 

@@ -21,6 +21,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	kongcompletion "github.com/jotaen/kong-completion"
+
 	"github.com/oxisto/money-gopher/cli"
 	"github.com/oxisto/money-gopher/cli/commands"
 )

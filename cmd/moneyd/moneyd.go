@@ -17,29 +17,62 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"strings"
+	"time"
 
+	"github.com/alecthomas/kong"
+	"github.com/lmittmann/tint"
 	"github.com/mattn/go-colorable"
+	"github.com/mattn/go-isatty"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
+
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	"github.com/oxisto/money-gopher/persistence"
 	"github.com/oxisto/money-gopher/service/portfolio"
 	"github.com/oxisto/money-gopher/service/securities"
-
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 )
 
+var cmd moneydCmd
+
+type moneydCmd struct {
+	Debug bool `help:"Enable debug mode."`
+}
+
 func main() {
-	log.SetPrefix("[🤑] ")
-	log.SetFlags(log.Lmsgprefix | log.Ltime)
-	log.Print("Welcome to The Money Gopher")
-	log.SetOutput(colorable.NewColorableStdout())
+	ctx := kong.Parse(&cmd)
+
+	err := ctx.Run()
+	ctx.FatalIfErrorf(err)
+}
+
+func (cmd *moneydCmd) Run() error {
+	var (
+		w     = os.Stdout
+		level = slog.LevelInfo
+	)
+
+	if cmd.Debug {
+		level = slog.LevelDebug
+	}
+
+	logger := slog.New(
+		tint.NewHandler(colorable.NewColorable(w), &tint.Options{
+			TimeFormat: time.TimeOnly,
+			Level:      level,
+			NoColor:    !isatty.IsTerminal(w.Fd()),
+		}),
+	)
+
+	slog.SetDefault(logger)
+	slog.Info("Welcome to the Money Gopher")
 
 	db, err := persistence.OpenDB(persistence.Options{})
 	if err != nil {
-		log.Fatalf("Error while opening database: %v", err)
+		slog.Error("Error while opening database", tint.Err(err))
 	}
 
 	mux := http.NewServeMux()
@@ -57,7 +90,10 @@ func main() {
 		"localhost:8080",
 		h2c.NewHandler(handleCORS(mux), &http2.Server{}),
 	)
-	log.Fatalf("listen failed: %v", err)
+
+	slog.Error("listen failed", tint.Err(err))
+
+	return err
 }
 
 func handleCORS(h http.Handler) http.Handler {

@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -59,7 +58,7 @@ func (l *ListPortfolioCmd) Run(s *cli.Session) error {
 		connect.NewRequest(&portfoliov1.ListPortfoliosRequest{}),
 	)
 	if err != nil {
-		log.Println(err)
+		return err
 	} else {
 		in := `This is a list of all portfolios.
 `
@@ -121,7 +120,7 @@ func (cmd *CreatePortfolioCmd) Run(s *cli.Session) error {
 		return err
 	}
 
-	log.Println(res.Msg)
+	fmt.Println(res.Msg)
 	return nil
 }
 
@@ -145,7 +144,7 @@ func (cmd *ShowPortfolioCmd) Run(s *cli.Session) error {
 		return err
 	}
 
-	log.Println(res.Msg)
+	fmt.Println(res.Msg)
 	return nil
 }
 
@@ -259,7 +258,7 @@ func (cmd *ImportTransactionsCmd) Run(s *cli.Session) error {
 		return err
 	}
 
-	log.Println(res.Msg)
+	fmt.Println(res.Msg)
 	return nil
 }
 

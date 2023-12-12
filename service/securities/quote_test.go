@@ -23,13 +23,26 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/oxisto/assert"
+	"golang.org/x/text/currency"
+
+	moneygopher "github.com/oxisto/money-gopher"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/internal"
 	"github.com/oxisto/money-gopher/persistence"
-	"golang.org/x/text/currency"
 )
 
+const QuoteProviderMock = "mock"
+
+type mockQP struct {
+}
+
+func (m *mockQP) LatestQuote(ctx context.Context, ls *portfoliov1.ListedSecurity) (quote float32, t time.Time, err error) {
+	return 1, time.Now(), nil
+}
+
 func Test_service_TriggerSecurityQuoteUpdate(t *testing.T) {
+	RegisterQuoteProvider(QuoteProviderMock, &mockQP{})
+
 	type fields struct {
 		securities persistence.StorageOperations[*portfoliov1.Security]
 	}
@@ -48,9 +61,16 @@ func Test_service_TriggerSecurityQuoteUpdate(t *testing.T) {
 			name: "happy path",
 			fields: fields{
 				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {
-					ops.Replace(&portfoliov1.Security{Name: "My Security"})
+					ops.Replace(&portfoliov1.Security{
+						Name:          "My Security",
+						QuoteProvider: moneygopher.Ref("mock"),
+					})
 					rel := persistence.Relationship[*portfoliov1.ListedSecurity](ops)
-					assert.NoError(t, rel.Replace(&portfoliov1.ListedSecurity{SecurityName: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}))
+					assert.NoError(t, rel.Replace(&portfoliov1.ListedSecurity{
+						SecurityName: "My Security",
+						Ticker:       "SEC",
+						Currency:     currency.EUR.String(),
+					}))
 				}),
 			},
 			args: args{
