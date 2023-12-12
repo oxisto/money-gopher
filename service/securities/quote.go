@@ -56,6 +56,7 @@ func (svc *service) TriggerSecurityQuoteUpdate(ctx context.Context, req *connect
 		}
 
 		// Trigger update from quote provider in separate go-routine
+		// TODO(oxisto): Use sync/errgroup instead
 		for idx := range sec.ListedOn {
 			idx := idx
 			go func() {
