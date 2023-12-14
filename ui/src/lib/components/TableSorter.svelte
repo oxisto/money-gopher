@@ -1,4 +1,15 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
-	export let active: boolean;
-	export let column: string;
+	let { active, column } = $props<{
+		/**
+		 * Whether this column sorter is active or not.
+		 */
+		active: Boolean;
+		/**
+		 * The column we are sorting.
+		 */
+
+		column: string;
+	}>();
 </script>
