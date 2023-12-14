@@ -19,6 +19,7 @@ package portfolio
 import (
 	"bytes"
 	"context"
+	"log/slog"
 
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/import/csv"
@@ -35,6 +36,8 @@ var portfolioEventSetter = func(obj *portfoliov1.PortfolioEvent) *portfoliov1.Po
 func (svc *service) CreatePortfolioTransaction(ctx context.Context, req *connect.Request[portfoliov1.CreatePortfolioTransactionRequest]) (res *connect.Response[portfoliov1.PortfolioEvent], err error) {
 	// Create a unique name for the transaction
 	req.Msg.Transaction.MakeUniqueName()
+
+	slog.Info("Creating transaction", "transaction", req.Msg.Transaction)
 
 	return crud.Create(
 		req.Msg.Transaction,
