@@ -1,7 +1,7 @@
 import { PortfolioService, SecuritiesService } from '$lib/gen/mgo_connect';
-import { createPromiseClient } from '@bufbuild/connect';
-import { createConnectTransport } from '@bufbuild/connect-web';
-import type { PromiseClient } from '@bufbuild/connect';
+import { createPromiseClient } from '@connectrpc/connect';
+import { createConnectTransport } from '@connectrpc/connect-web';
+import type { PromiseClient } from '@connectrpc/connect';
 
 export function portfolioClient(fetch = window.fetch): PromiseClient<typeof PortfolioService> {
 	return createPromiseClient(

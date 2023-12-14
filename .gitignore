@@ -18,3 +18,5 @@ mgo
 coverage.cov
 money.db
 .DS_Store
+__debug*
+moneyd
