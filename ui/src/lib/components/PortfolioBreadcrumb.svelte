@@ -3,7 +3,6 @@
 	import Performance from '$lib/components/Performance.svelte';
 	import type { Portfolio, PortfolioSnapshot } from '$lib/gen/mgo_pb';
 	import { currency } from '$lib/intl';
-	import { Menu, MenuButton, MenuItem, MenuItems } from '@rgossiaux/svelte-headlessui';
 	import {
 		Calendar,
 		Check,
@@ -15,6 +14,10 @@
 		Pencil
 	} from '@steeze-ui/heroicons';
 	import { Icon } from '@steeze-ui/svelte-icon';
+	import { createMenu } from 'svelte-headlessui';
+	import { Transition } from 'svelte-transition';
+
+	const menu = createMenu({ label: 'More' });
 
 	export let portfolio: Portfolio;
 	export let snapshot: PortfolioSnapshot;
@@ -38,7 +41,7 @@
 							class="h-5 w-5 flex-shrink-0 text-gray-400"
 							aria-hidden="true"
 						/>
-						<a href="#" class="ml-4 text-sm font-medium text-gray-500 hover:text-gray-700">
+						<a href="." class="ml-4 text-sm font-medium text-gray-500 hover:text-gray-700">
 							My Bank
 						</a>
 					</div>
@@ -112,37 +115,46 @@
 		</span>
 
 		<!-- Dropdown -->
-		<Menu as="div" class="relative ml-3 sm:hidden">
-			<MenuButton
+		<div class="relative ml-3 sm:hidden">
+			<button
+				on:click={menu.open}
 				class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:ring-gray-400"
 			>
 				More
 				<Icon src={ChevronDown} class="-mr-1 ml-1.5 h-5 w-5 text-gray-400" aria-hidden="true" />
-			</MenuButton>
+			</button>
 
-			<transition
-				enter-active-class="transition ease-out duration-200"
-				enter-from-class="transform opacity-0 scale-95"
-				enter-to-class="transform opacity-100 scale-100"
-				leave-active-class="transition ease-in duration-75"
-				leave-from-class="transform opacity-100 scale-100"
-				leave-to-class="transform opacity-0 scale-95"
+			<Transition
+				show={$menu.expanded}
+				enter="transition ease-out duration-200"
+				enterFrom="transform opacity-0 scale-95"
+				enterTo="transform opacity-100 scale-100"
+				leave="transition ease-in duration-75"
+				leaveFrom="transform opacity-100 scale-100"
+				leaveTo="transform opacity-0 scale-95"
 			>
-				<MenuItems
+				<div
+					use:menu.items
 					class="absolute right-0 z-10 -mr-1 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
 				>
-					<MenuItem let:active>
-						<a href="#" class="{active ? 'bg-gray-100' : ''} block px-4 py-2 text-sm text-gray-700"
-							>Edit</a
+					<div use:menu.item>
+						<a
+							href="."
+							class="{$menu.active === 'Edit'
+								? 'bg-gray-100'
+								: ''} block px-4 py-2 text-sm text-gray-700">Edit</a
 						>
-					</MenuItem>
-					<MenuItem let:active>
-						<a href="#" class="{active ? 'bg-gray-100' : ''} block px-4 py-2 text-sm text-gray-700"
-							>View</a
+					</div>
+					<div use:menu.item>
+						<a
+							href="."
+							class="{$menu.active === 'View'
+								? 'bg-gray-100'
+								: ''} block px-4 py-2 text-sm text-gray-700">View</a
 						>
-					</MenuItem>
-				</MenuItems>
-			</transition>
-		</Menu>
+					</div>
+				</div>
+			</Transition>
+		</div>
 	</div>
 </div>
