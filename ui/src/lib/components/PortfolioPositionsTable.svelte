@@ -64,8 +64,8 @@
 					<TableSorter
 						active={sortBy == 'displayName'}
 						column="displayName"
-						on:change-direction={toggleSortDirection}
-						on:change-sort-by={(column) => changeSortBy('displayName')}
+						on:changeDirection={toggleSortDirection}
+						on:changeSortBy={(column) => changeSortBy('displayName')}
 					>
 						Name
 					</TableSorter>
@@ -77,8 +77,8 @@
 					<TableSorter
 						active={sortBy == 'amount'}
 						column="amount"
-						on:change-direction={toggleSortDirection}
-						on:change-sort-by={(column) => changeSortBy('amount')}>Amount</TableSorter
+						on:changeDirection={toggleSortDirection}
+						on:changeSortBy={(column) => changeSortBy('amount')}>Amount</TableSorter
 					>
 				</th>
 				<th
@@ -88,8 +88,8 @@
 					<TableSorter
 						active={sortBy == 'purchaseValue'}
 						column="purchaseValue"
-						on:change-direction={toggleSortDirection}
-						on:change-sort-by={(column) => changeSortBy('purchaseValue')}
+						on:changeDirection={toggleSortDirection}
+						on:changeSortBy={(column) => changeSortBy('purchaseValue')}
 						>Purchase Value
 					</TableSorter>
 				</th>
@@ -100,16 +100,16 @@
 					<TableSorter
 						active={sortBy == 'marketValue'}
 						column="marketValue"
-						on:change-direction={toggleSortDirection}
-						on:change-sort-by={(column) => changeSortBy('marketValue')}>Market Value</TableSorter
+						on:changeDirection={toggleSortDirection}
+						on:changeSortBy={(column) => changeSortBy('marketValue')}>Market Value</TableSorter
 					>
 				</th>
 				<th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">
 					<TableSorter
 						active={sortBy == 'profit'}
 						column="profit"
-						on:change-direction={toggleSortDirection}
-						on:change-sort-by={(column) => changeSortBy('profit')}>Profit/Loss</TableSorter
+						on:changeDirection={toggleSortDirection}
+						on:changeSortBy={(column) => changeSortBy('profit')}>Profit/Loss</TableSorter
 					>
 				</th>
 			</tr>
@@ -120,47 +120,50 @@
 			{/each}
 		</tbody>
 		<tfoot>
-			<th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
-				>Total</th
-			>
-			<th
-				scope="col"
-				class="hidden px-3 py-3.5 text-right text-sm font-semibold text-gray-900 md:table-cell"
-			></th>
-			<th
-				scope="col"
-				class="hidden px-3 py-3.5 text-right text-sm font-semibold text-gray-900 lg:table-cell"
-			>
-				{currency(snapshot.totalPurchaseValue, 'EUR')}
-			</th>
-			<th
-				scope="col"
-				class="hidden px-3 py-3.5 text-right text-sm font-semibold text-gray-900 sm:table-cell"
-			>
-				{currency(snapshot.totalMarketValue, 'EUR')}
-			</th>
-			<th
-				scope="col"
-				class="{perf < 0
-					? 'text-red-500'
-					: perf <= 1
-					? 'text-gray-500'
-					: 'text-green-500'} px-3 py-3.5 text-right text-sm font-semibold"
-			>
-				<div>
-					{Intl.NumberFormat(navigator.language, {
-						maximumFractionDigits: 2
-					}).format(perf)} %
-					<Icon
-						src={perf < 0 ? ArrowDown : perf < 1 ? ArrowRight : ArrowUp}
-						class="float-right mt-0.5 h-4 w-4"
-						aria-hidden="true"
-					/>
-				</div>
-				<div class="pr-4">
-					{currency(snapshot.totalMarketValue - snapshot.totalPurchaseValue, 'EUR')}
-				</div>
-			</th>
+			<tr>
+				<th
+					scope="col"
+					class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">Total</th
+				>
+				<th
+					scope="col"
+					class="hidden px-3 py-3.5 text-right text-sm font-semibold text-gray-900 md:table-cell"
+				></th>
+				<th
+					scope="col"
+					class="hidden px-3 py-3.5 text-right text-sm font-semibold text-gray-900 lg:table-cell"
+				>
+					{currency(snapshot.totalPurchaseValue, 'EUR')}
+				</th>
+				<th
+					scope="col"
+					class="hidden px-3 py-3.5 text-right text-sm font-semibold text-gray-900 sm:table-cell"
+				>
+					{currency(snapshot.totalMarketValue, 'EUR')}
+				</th>
+				<th
+					scope="col"
+					class="{perf < 0
+						? 'text-red-500'
+						: perf <= 1
+							? 'text-gray-500'
+							: 'text-green-500'} px-3 py-3.5 text-right text-sm font-semibold"
+				>
+					<div>
+						{Intl.NumberFormat(navigator.language, {
+							maximumFractionDigits: 2
+						}).format(perf)} %
+						<Icon
+							src={perf < 0 ? ArrowDown : perf < 1 ? ArrowRight : ArrowUp}
+							class="float-right mt-0.5 h-4 w-4"
+							aria-hidden="true"
+						/>
+					</div>
+					<div class="pr-4">
+						{currency(snapshot.totalMarketValue - snapshot.totalPurchaseValue, 'EUR')}
+					</div>
+				</th>
+			</tr>
 		</tfoot>
 	</table>
 </div>

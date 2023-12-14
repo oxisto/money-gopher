@@ -10,8 +10,8 @@ export const load = (async ({ fetch, params }) => {
 	const client = portfolioClient(fetch);
 	console.log(params.portfolioName);
 
-	const portfolio = client.getPortfolio({ name: params.portfolioName });
-	const snapshot = client.getPortfolioSnapshot({ portfolioName: params.portfolioName });
+	const portfolio = await client.getPortfolio({ name: params.portfolioName });
+	const snapshot = await client.getPortfolioSnapshot({ portfolioName: params.portfolioName });
 
 	return { portfolio, snapshot };
 }) as LayoutData;

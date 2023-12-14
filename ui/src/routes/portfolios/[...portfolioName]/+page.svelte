@@ -9,4 +9,6 @@
 <PortfolioBreadcrumb portfolio={data.portfolio} snapshot={data.snapshot} />
 <PortfolioPositionsTable snapshot={data.snapshot} />
 
+<a href="/portfolios/{data.portfolio.name}/transactions/">Show transactions list</a>
+
 <a href="/portfolios/{data.portfolio.name}/transactions/add">Add transaction</a>

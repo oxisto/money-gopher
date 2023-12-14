@@ -1,13 +1,13 @@
 <script lang="ts">
-	import { ConnectError } from '@connectrpc/connect';
-	import { goto } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
 	import { portfolioClient } from '$lib/api/client';
+	import Button from '$lib/components/Button.svelte';
 	import CurrencyInput from '$lib/components/CurrencyInput.svelte';
 	import SecurityComboBox from '$lib/components/SecurityComboBox.svelte';
-	import { CreatePortfolioTransactionRequest } from '$lib/gen/mgo_pb';
 	import { currency } from '$lib/intl';
+	import { ConnectError } from '@connectrpc/connect';
 	import type { PageData } from './$types';
-	import Button from '$lib/components/Button.svelte';
+	import { FieldMask } from '@bufbuild/protobuf';
 
 	export let data: PageData;
 
@@ -17,12 +17,25 @@
 
 	async function save() {
 		try {
+			let client = portfolioClient();
+			error = undefined;
+
 			if (data.add) {
-				let client = portfolioClient();
-				error = undefined;
 				await client.createPortfolioTransaction({ transaction: data.transaction });
-				goto('/portfolios/' + data.transaction.portfolioName);
+			} else {
+				await client.updatePortfolioTransaction({
+					transaction: data.transaction,
+					updateMask: new FieldMask({
+						paths: ['amount', 'price', 'fees', 'taxes', 'security_name', 'time']
+					})
+				});
 			}
+
+			// TODO(oxisto): Only invalidate one portfolio
+			await invalidate(
+				(url) => url.pathname == '/mgo.portfolio.v1.PortfolioService/GetPortfolioSnapshot'
+			);
+			goto('/portfolios/' + data.transaction.portfolioName);
 		} catch (err) {
 			error = ConnectError.from(err);
 		}

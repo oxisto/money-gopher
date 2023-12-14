@@ -1,10 +1,11 @@
+import { portfolioClient } from '$lib/api/client';
 import { PortfolioEvent, PortfolioEventType } from '$lib/gen/mgo_pb';
 import type { PageLoad } from './$types';
 
 export const load = (async ({ params, parent }) => {
 	const data = await parent();
-	const transactionName = params.txName;
-	const add = transactionName == 'add';
+	const txName = params.txName;
+	const add = txName == 'add';
 
 	let transaction: PortfolioEvent;
 	if (add) {
@@ -15,9 +16,8 @@ export const load = (async ({ params, parent }) => {
 			portfolioName: data.portfolio.name
 		});
 	} else {
-		//transaction = await data.client.getImportTemplate({ id: templateId });
-		transactionName;
-		transaction = new PortfolioEvent();
+		const client = portfolioClient(fetch);
+		transaction = await client.getPortfolioTransaction({ name: txName });
 	}
 
 	return {

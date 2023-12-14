@@ -46,6 +46,16 @@ func (svc *service) CreatePortfolioTransaction(ctx context.Context, req *connect
 	)
 }
 
+func (svc *service) GetPortfolioTransaction(ctx context.Context, req *connect.Request[portfoliov1.GetPortfolioTransactionRequest]) (res *connect.Response[portfoliov1.PortfolioEvent], err error) {
+	return crud.Get(
+		req.Msg.Name,
+		svc.events,
+		func(obj *portfoliov1.PortfolioEvent) *portfoliov1.PortfolioEvent {
+			return obj
+		},
+	)
+}
+
 func (svc *service) ListPortfolioTransactions(ctx context.Context, req *connect.Request[portfoliov1.ListPortfolioTransactionsRequest]) (res *connect.Response[portfoliov1.ListPortfolioTransactionsResponse], err error) {
 	return crud.List(
 		svc.events,
@@ -59,7 +69,7 @@ func (svc *service) ListPortfolioTransactions(ctx context.Context, req *connect.
 	)
 }
 
-func (svc *service) UpdatePortfolioTransactions(ctx context.Context, req *connect.Request[portfoliov1.UpdatePortfolioTransactionRequest]) (res *connect.Response[portfoliov1.PortfolioEvent], err error) {
+func (svc *service) UpdatePortfolioTransaction(ctx context.Context, req *connect.Request[portfoliov1.UpdatePortfolioTransactionRequest]) (res *connect.Response[portfoliov1.PortfolioEvent], err error) {
 	return crud.Update(
 		req.Msg.Transaction.Name,
 		req.Msg.Transaction,
