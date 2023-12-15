@@ -4,11 +4,11 @@
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import { createListbox } from 'svelte-headlessui';
 	import { Transition } from 'svelte-transition';
-
-	const listbox = createListbox({ label: 'Securities', selected: null });
-
+	
 	export let securities: Security[];
 	export let securityName: string | undefined;
+
+	const listbox = createListbox({ label: 'Securities', selected: securities.find((sec) => sec.name == securityName) });
 
 	$: securityName = $listbox.selected?.name ?? undefined;
 </script>

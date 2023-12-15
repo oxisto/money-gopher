@@ -1,13 +1,14 @@
 <script lang="ts">
-	import { ConnectError } from '@connectrpc/connect';
-	import { goto } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
 	import { portfolioClient } from '$lib/api/client';
+	import Button from '$lib/components/Button.svelte';
 	import CurrencyInput from '$lib/components/CurrencyInput.svelte';
 	import SecurityComboBox from '$lib/components/SecurityComboBox.svelte';
-	import { CreatePortfolioTransactionRequest } from '$lib/gen/mgo_pb';
 	import { currency } from '$lib/intl';
+	import { ConnectError } from '@connectrpc/connect';
 	import type { PageData } from './$types';
-	import Button from '$lib/components/Button.svelte';
+	import { FieldMask } from '@bufbuild/protobuf';
+	import DateInput from '$lib/components/DateTimeInput.svelte';
 
 	export let data: PageData;
 
@@ -17,11 +18,26 @@
 
 	async function save() {
 		try {
+			let client = portfolioClient();
+			error = undefined;
+
 			if (data.add) {
-				let client = portfolioClient();
-				error = undefined;
 				await client.createPortfolioTransaction({ transaction: data.transaction });
+
+				// Invalidate the portfolio snapshot
+				await invalidate(`data:portfolio-snapshot:${data.transaction.portfolioName}`);
 				goto('/portfolios/' + data.transaction.portfolioName);
+			} else {
+				await client.updatePortfolioTransaction({
+					transaction: data.transaction,
+					updateMask: new FieldMask({
+						paths: ['amount', 'price', 'fees', 'taxes', 'security_name', 'time']
+					})
+				});
+
+				// Invalidate the portfolio transaction list
+				await invalidate(`data:portfolio-transactions:${data.transaction.portfolioName}`);
+				goto('/portfolios/' + data.transaction.portfolioName + '/transactions');
 			}
 		} catch (err) {
 			error = ConnectError.from(err);
@@ -42,6 +58,15 @@
 			<div
 				class="mt-10 space-y-8 border-b border-gray-900/10 pb-12 sm:space-y-0 sm:divide-y sm:divide-gray-900/10 sm:border-t sm:pb-0"
 			>
+			<div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
+				<label for="username" class="block text-sm font-medium leading-6 text-gray-900 sm:pt-1.5">
+					Date
+				</label>
+				<div class="mt-2 sm:col-span-2 sm:mt-0">
+					<DateInput bind:date={data.transaction.time} />
+				</div>
+			</div>
+
 				<div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
 					<label for="username" class="block text-sm font-medium leading-6 text-gray-900 sm:pt-1.5">
 						Security

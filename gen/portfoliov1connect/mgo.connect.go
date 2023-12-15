@@ -19,7 +19,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect.IsAtLeastVersion1_7_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// PortfolioServiceName is the fully-qualified name of the PortfolioService service.
@@ -57,6 +57,9 @@ const (
 	// PortfolioServiceCreatePortfolioTransactionProcedure is the fully-qualified name of the
 	// PortfolioService's CreatePortfolioTransaction RPC.
 	PortfolioServiceCreatePortfolioTransactionProcedure = "/mgo.portfolio.v1.PortfolioService/CreatePortfolioTransaction"
+	// PortfolioServiceGetPortfolioTransactionProcedure is the fully-qualified name of the
+	// PortfolioService's GetPortfolioTransaction RPC.
+	PortfolioServiceGetPortfolioTransactionProcedure = "/mgo.portfolio.v1.PortfolioService/GetPortfolioTransaction"
 	// PortfolioServiceListPortfolioTransactionsProcedure is the fully-qualified name of the
 	// PortfolioService's ListPortfolioTransactions RPC.
 	PortfolioServiceListPortfolioTransactionsProcedure = "/mgo.portfolio.v1.PortfolioService/ListPortfolioTransactions"
@@ -89,6 +92,30 @@ const (
 	SecuritiesServiceTriggerSecurityQuoteUpdateProcedure = "/mgo.portfolio.v1.SecuritiesService/TriggerSecurityQuoteUpdate"
 )
 
+// These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
+var (
+	portfolioServiceServiceDescriptor                           = gen.File_mgo_proto.Services().ByName("PortfolioService")
+	portfolioServiceCreatePortfolioMethodDescriptor             = portfolioServiceServiceDescriptor.Methods().ByName("CreatePortfolio")
+	portfolioServiceListPortfoliosMethodDescriptor              = portfolioServiceServiceDescriptor.Methods().ByName("ListPortfolios")
+	portfolioServiceGetPortfolioMethodDescriptor                = portfolioServiceServiceDescriptor.Methods().ByName("GetPortfolio")
+	portfolioServiceUpdatePortfolioMethodDescriptor             = portfolioServiceServiceDescriptor.Methods().ByName("UpdatePortfolio")
+	portfolioServiceDeletePortfolioMethodDescriptor             = portfolioServiceServiceDescriptor.Methods().ByName("DeletePortfolio")
+	portfolioServiceGetPortfolioSnapshotMethodDescriptor        = portfolioServiceServiceDescriptor.Methods().ByName("GetPortfolioSnapshot")
+	portfolioServiceCreatePortfolioTransactionMethodDescriptor  = portfolioServiceServiceDescriptor.Methods().ByName("CreatePortfolioTransaction")
+	portfolioServiceGetPortfolioTransactionMethodDescriptor     = portfolioServiceServiceDescriptor.Methods().ByName("GetPortfolioTransaction")
+	portfolioServiceListPortfolioTransactionsMethodDescriptor   = portfolioServiceServiceDescriptor.Methods().ByName("ListPortfolioTransactions")
+	portfolioServiceUpdatePortfolioTransactionMethodDescriptor  = portfolioServiceServiceDescriptor.Methods().ByName("UpdatePortfolioTransaction")
+	portfolioServiceDeletePortfolioTransactionMethodDescriptor  = portfolioServiceServiceDescriptor.Methods().ByName("DeletePortfolioTransaction")
+	portfolioServiceImportTransactionsMethodDescriptor          = portfolioServiceServiceDescriptor.Methods().ByName("ImportTransactions")
+	securitiesServiceServiceDescriptor                          = gen.File_mgo_proto.Services().ByName("SecuritiesService")
+	securitiesServiceListSecuritiesMethodDescriptor             = securitiesServiceServiceDescriptor.Methods().ByName("ListSecurities")
+	securitiesServiceGetSecurityMethodDescriptor                = securitiesServiceServiceDescriptor.Methods().ByName("GetSecurity")
+	securitiesServiceCreateSecurityMethodDescriptor             = securitiesServiceServiceDescriptor.Methods().ByName("CreateSecurity")
+	securitiesServiceUpdateSecurityMethodDescriptor             = securitiesServiceServiceDescriptor.Methods().ByName("UpdateSecurity")
+	securitiesServiceDeleteSecurityMethodDescriptor             = securitiesServiceServiceDescriptor.Methods().ByName("DeleteSecurity")
+	securitiesServiceTriggerSecurityQuoteUpdateMethodDescriptor = securitiesServiceServiceDescriptor.Methods().ByName("TriggerSecurityQuoteUpdate")
+)
+
 // PortfolioServiceClient is a client for the mgo.portfolio.v1.PortfolioService service.
 type PortfolioServiceClient interface {
 	CreatePortfolio(context.Context, *connect.Request[gen.CreatePortfolioRequest]) (*connect.Response[gen.Portfolio], error)
@@ -98,6 +125,7 @@ type PortfolioServiceClient interface {
 	DeletePortfolio(context.Context, *connect.Request[gen.DeletePortfolioRequest]) (*connect.Response[emptypb.Empty], error)
 	GetPortfolioSnapshot(context.Context, *connect.Request[gen.GetPortfolioSnapshotRequest]) (*connect.Response[gen.PortfolioSnapshot], error)
 	CreatePortfolioTransaction(context.Context, *connect.Request[gen.CreatePortfolioTransactionRequest]) (*connect.Response[gen.PortfolioEvent], error)
+	GetPortfolioTransaction(context.Context, *connect.Request[gen.GetPortfolioTransactionRequest]) (*connect.Response[gen.PortfolioEvent], error)
 	ListPortfolioTransactions(context.Context, *connect.Request[gen.ListPortfolioTransactionsRequest]) (*connect.Response[gen.ListPortfolioTransactionsResponse], error)
 	UpdatePortfolioTransaction(context.Context, *connect.Request[gen.UpdatePortfolioTransactionRequest]) (*connect.Response[gen.PortfolioEvent], error)
 	DeletePortfolioTransaction(context.Context, *connect.Request[gen.DeletePortfolioTransactionRequest]) (*connect.Response[emptypb.Empty], error)
@@ -117,60 +145,79 @@ func NewPortfolioServiceClient(httpClient connect.HTTPClient, baseURL string, op
 		createPortfolio: connect.NewClient[gen.CreatePortfolioRequest, gen.Portfolio](
 			httpClient,
 			baseURL+PortfolioServiceCreatePortfolioProcedure,
-			opts...,
+			connect.WithSchema(portfolioServiceCreatePortfolioMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		listPortfolios: connect.NewClient[gen.ListPortfoliosRequest, gen.ListPortfoliosResponse](
 			httpClient,
 			baseURL+PortfolioServiceListPortfoliosProcedure,
+			connect.WithSchema(portfolioServiceListPortfoliosMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
 		getPortfolio: connect.NewClient[gen.GetPortfolioRequest, gen.Portfolio](
 			httpClient,
 			baseURL+PortfolioServiceGetPortfolioProcedure,
+			connect.WithSchema(portfolioServiceGetPortfolioMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
 		updatePortfolio: connect.NewClient[gen.UpdatePortfolioRequest, gen.Portfolio](
 			httpClient,
 			baseURL+PortfolioServiceUpdatePortfolioProcedure,
-			opts...,
+			connect.WithSchema(portfolioServiceUpdatePortfolioMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		deletePortfolio: connect.NewClient[gen.DeletePortfolioRequest, emptypb.Empty](
 			httpClient,
 			baseURL+PortfolioServiceDeletePortfolioProcedure,
-			opts...,
+			connect.WithSchema(portfolioServiceDeletePortfolioMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		getPortfolioSnapshot: connect.NewClient[gen.GetPortfolioSnapshotRequest, gen.PortfolioSnapshot](
 			httpClient,
 			baseURL+PortfolioServiceGetPortfolioSnapshotProcedure,
+			connect.WithSchema(portfolioServiceGetPortfolioSnapshotMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
 		createPortfolioTransaction: connect.NewClient[gen.CreatePortfolioTransactionRequest, gen.PortfolioEvent](
 			httpClient,
 			baseURL+PortfolioServiceCreatePortfolioTransactionProcedure,
-			opts...,
+			connect.WithSchema(portfolioServiceCreatePortfolioTransactionMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		getPortfolioTransaction: connect.NewClient[gen.GetPortfolioTransactionRequest, gen.PortfolioEvent](
+			httpClient,
+			baseURL+PortfolioServiceGetPortfolioTransactionProcedure,
+			connect.WithSchema(portfolioServiceGetPortfolioTransactionMethodDescriptor),
+			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+			connect.WithClientOptions(opts...),
 		),
 		listPortfolioTransactions: connect.NewClient[gen.ListPortfolioTransactionsRequest, gen.ListPortfolioTransactionsResponse](
 			httpClient,
 			baseURL+PortfolioServiceListPortfolioTransactionsProcedure,
-			opts...,
+			connect.WithSchema(portfolioServiceListPortfolioTransactionsMethodDescriptor),
+			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+			connect.WithClientOptions(opts...),
 		),
 		updatePortfolioTransaction: connect.NewClient[gen.UpdatePortfolioTransactionRequest, gen.PortfolioEvent](
 			httpClient,
 			baseURL+PortfolioServiceUpdatePortfolioTransactionProcedure,
-			opts...,
+			connect.WithSchema(portfolioServiceUpdatePortfolioTransactionMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		deletePortfolioTransaction: connect.NewClient[gen.DeletePortfolioTransactionRequest, emptypb.Empty](
 			httpClient,
 			baseURL+PortfolioServiceDeletePortfolioTransactionProcedure,
-			opts...,
+			connect.WithSchema(portfolioServiceDeletePortfolioTransactionMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		importTransactions: connect.NewClient[gen.ImportTransactionsRequest, emptypb.Empty](
 			httpClient,
 			baseURL+PortfolioServiceImportTransactionsProcedure,
-			opts...,
+			connect.WithSchema(portfolioServiceImportTransactionsMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
@@ -184,6 +231,7 @@ type portfolioServiceClient struct {
 	deletePortfolio            *connect.Client[gen.DeletePortfolioRequest, emptypb.Empty]
 	getPortfolioSnapshot       *connect.Client[gen.GetPortfolioSnapshotRequest, gen.PortfolioSnapshot]
 	createPortfolioTransaction *connect.Client[gen.CreatePortfolioTransactionRequest, gen.PortfolioEvent]
+	getPortfolioTransaction    *connect.Client[gen.GetPortfolioTransactionRequest, gen.PortfolioEvent]
 	listPortfolioTransactions  *connect.Client[gen.ListPortfolioTransactionsRequest, gen.ListPortfolioTransactionsResponse]
 	updatePortfolioTransaction *connect.Client[gen.UpdatePortfolioTransactionRequest, gen.PortfolioEvent]
 	deletePortfolioTransaction *connect.Client[gen.DeletePortfolioTransactionRequest, emptypb.Empty]
@@ -225,6 +273,11 @@ func (c *portfolioServiceClient) CreatePortfolioTransaction(ctx context.Context,
 	return c.createPortfolioTransaction.CallUnary(ctx, req)
 }
 
+// GetPortfolioTransaction calls mgo.portfolio.v1.PortfolioService.GetPortfolioTransaction.
+func (c *portfolioServiceClient) GetPortfolioTransaction(ctx context.Context, req *connect.Request[gen.GetPortfolioTransactionRequest]) (*connect.Response[gen.PortfolioEvent], error) {
+	return c.getPortfolioTransaction.CallUnary(ctx, req)
+}
+
 // ListPortfolioTransactions calls mgo.portfolio.v1.PortfolioService.ListPortfolioTransactions.
 func (c *portfolioServiceClient) ListPortfolioTransactions(ctx context.Context, req *connect.Request[gen.ListPortfolioTransactionsRequest]) (*connect.Response[gen.ListPortfolioTransactionsResponse], error) {
 	return c.listPortfolioTransactions.CallUnary(ctx, req)
@@ -254,6 +307,7 @@ type PortfolioServiceHandler interface {
 	DeletePortfolio(context.Context, *connect.Request[gen.DeletePortfolioRequest]) (*connect.Response[emptypb.Empty], error)
 	GetPortfolioSnapshot(context.Context, *connect.Request[gen.GetPortfolioSnapshotRequest]) (*connect.Response[gen.PortfolioSnapshot], error)
 	CreatePortfolioTransaction(context.Context, *connect.Request[gen.CreatePortfolioTransactionRequest]) (*connect.Response[gen.PortfolioEvent], error)
+	GetPortfolioTransaction(context.Context, *connect.Request[gen.GetPortfolioTransactionRequest]) (*connect.Response[gen.PortfolioEvent], error)
 	ListPortfolioTransactions(context.Context, *connect.Request[gen.ListPortfolioTransactionsRequest]) (*connect.Response[gen.ListPortfolioTransactionsResponse], error)
 	UpdatePortfolioTransaction(context.Context, *connect.Request[gen.UpdatePortfolioTransactionRequest]) (*connect.Response[gen.PortfolioEvent], error)
 	DeletePortfolioTransaction(context.Context, *connect.Request[gen.DeletePortfolioTransactionRequest]) (*connect.Response[emptypb.Empty], error)
@@ -269,60 +323,79 @@ func NewPortfolioServiceHandler(svc PortfolioServiceHandler, opts ...connect.Han
 	portfolioServiceCreatePortfolioHandler := connect.NewUnaryHandler(
 		PortfolioServiceCreatePortfolioProcedure,
 		svc.CreatePortfolio,
-		opts...,
+		connect.WithSchema(portfolioServiceCreatePortfolioMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	portfolioServiceListPortfoliosHandler := connect.NewUnaryHandler(
 		PortfolioServiceListPortfoliosProcedure,
 		svc.ListPortfolios,
+		connect.WithSchema(portfolioServiceListPortfoliosMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
 	portfolioServiceGetPortfolioHandler := connect.NewUnaryHandler(
 		PortfolioServiceGetPortfolioProcedure,
 		svc.GetPortfolio,
+		connect.WithSchema(portfolioServiceGetPortfolioMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
 	portfolioServiceUpdatePortfolioHandler := connect.NewUnaryHandler(
 		PortfolioServiceUpdatePortfolioProcedure,
 		svc.UpdatePortfolio,
-		opts...,
+		connect.WithSchema(portfolioServiceUpdatePortfolioMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	portfolioServiceDeletePortfolioHandler := connect.NewUnaryHandler(
 		PortfolioServiceDeletePortfolioProcedure,
 		svc.DeletePortfolio,
-		opts...,
+		connect.WithSchema(portfolioServiceDeletePortfolioMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	portfolioServiceGetPortfolioSnapshotHandler := connect.NewUnaryHandler(
 		PortfolioServiceGetPortfolioSnapshotProcedure,
 		svc.GetPortfolioSnapshot,
+		connect.WithSchema(portfolioServiceGetPortfolioSnapshotMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
 	portfolioServiceCreatePortfolioTransactionHandler := connect.NewUnaryHandler(
 		PortfolioServiceCreatePortfolioTransactionProcedure,
 		svc.CreatePortfolioTransaction,
-		opts...,
+		connect.WithSchema(portfolioServiceCreatePortfolioTransactionMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	portfolioServiceGetPortfolioTransactionHandler := connect.NewUnaryHandler(
+		PortfolioServiceGetPortfolioTransactionProcedure,
+		svc.GetPortfolioTransaction,
+		connect.WithSchema(portfolioServiceGetPortfolioTransactionMethodDescriptor),
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
 	)
 	portfolioServiceListPortfolioTransactionsHandler := connect.NewUnaryHandler(
 		PortfolioServiceListPortfolioTransactionsProcedure,
 		svc.ListPortfolioTransactions,
-		opts...,
+		connect.WithSchema(portfolioServiceListPortfolioTransactionsMethodDescriptor),
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
 	)
 	portfolioServiceUpdatePortfolioTransactionHandler := connect.NewUnaryHandler(
 		PortfolioServiceUpdatePortfolioTransactionProcedure,
 		svc.UpdatePortfolioTransaction,
-		opts...,
+		connect.WithSchema(portfolioServiceUpdatePortfolioTransactionMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	portfolioServiceDeletePortfolioTransactionHandler := connect.NewUnaryHandler(
 		PortfolioServiceDeletePortfolioTransactionProcedure,
 		svc.DeletePortfolioTransaction,
-		opts...,
+		connect.WithSchema(portfolioServiceDeletePortfolioTransactionMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	portfolioServiceImportTransactionsHandler := connect.NewUnaryHandler(
 		PortfolioServiceImportTransactionsProcedure,
 		svc.ImportTransactions,
-		opts...,
+		connect.WithSchema(portfolioServiceImportTransactionsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/mgo.portfolio.v1.PortfolioService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -340,6 +413,8 @@ func NewPortfolioServiceHandler(svc PortfolioServiceHandler, opts ...connect.Han
 			portfolioServiceGetPortfolioSnapshotHandler.ServeHTTP(w, r)
 		case PortfolioServiceCreatePortfolioTransactionProcedure:
 			portfolioServiceCreatePortfolioTransactionHandler.ServeHTTP(w, r)
+		case PortfolioServiceGetPortfolioTransactionProcedure:
+			portfolioServiceGetPortfolioTransactionHandler.ServeHTTP(w, r)
 		case PortfolioServiceListPortfolioTransactionsProcedure:
 			portfolioServiceListPortfolioTransactionsHandler.ServeHTTP(w, r)
 		case PortfolioServiceUpdatePortfolioTransactionProcedure:
@@ -385,6 +460,10 @@ func (UnimplementedPortfolioServiceHandler) CreatePortfolioTransaction(context.C
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.CreatePortfolioTransaction is not implemented"))
 }
 
+func (UnimplementedPortfolioServiceHandler) GetPortfolioTransaction(context.Context, *connect.Request[gen.GetPortfolioTransactionRequest]) (*connect.Response[gen.PortfolioEvent], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.GetPortfolioTransaction is not implemented"))
+}
+
 func (UnimplementedPortfolioServiceHandler) ListPortfolioTransactions(context.Context, *connect.Request[gen.ListPortfolioTransactionsRequest]) (*connect.Response[gen.ListPortfolioTransactionsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.ListPortfolioTransactions is not implemented"))
 }
@@ -424,34 +503,40 @@ func NewSecuritiesServiceClient(httpClient connect.HTTPClient, baseURL string, o
 		listSecurities: connect.NewClient[gen.ListSecuritiesRequest, gen.ListSecuritiesResponse](
 			httpClient,
 			baseURL+SecuritiesServiceListSecuritiesProcedure,
+			connect.WithSchema(securitiesServiceListSecuritiesMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
 		getSecurity: connect.NewClient[gen.GetSecurityRequest, gen.Security](
 			httpClient,
 			baseURL+SecuritiesServiceGetSecurityProcedure,
+			connect.WithSchema(securitiesServiceGetSecurityMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
 		createSecurity: connect.NewClient[gen.CreateSecurityRequest, gen.Security](
 			httpClient,
 			baseURL+SecuritiesServiceCreateSecurityProcedure,
-			opts...,
+			connect.WithSchema(securitiesServiceCreateSecurityMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		updateSecurity: connect.NewClient[gen.UpdateSecurityRequest, gen.Security](
 			httpClient,
 			baseURL+SecuritiesServiceUpdateSecurityProcedure,
-			opts...,
+			connect.WithSchema(securitiesServiceUpdateSecurityMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		deleteSecurity: connect.NewClient[gen.DeleteSecurityRequest, emptypb.Empty](
 			httpClient,
 			baseURL+SecuritiesServiceDeleteSecurityProcedure,
-			opts...,
+			connect.WithSchema(securitiesServiceDeleteSecurityMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		triggerSecurityQuoteUpdate: connect.NewClient[gen.TriggerQuoteUpdateRequest, gen.TriggerQuoteUpdateResponse](
 			httpClient,
 			baseURL+SecuritiesServiceTriggerSecurityQuoteUpdateProcedure,
-			opts...,
+			connect.WithSchema(securitiesServiceTriggerSecurityQuoteUpdateMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
@@ -515,34 +600,40 @@ func NewSecuritiesServiceHandler(svc SecuritiesServiceHandler, opts ...connect.H
 	securitiesServiceListSecuritiesHandler := connect.NewUnaryHandler(
 		SecuritiesServiceListSecuritiesProcedure,
 		svc.ListSecurities,
+		connect.WithSchema(securitiesServiceListSecuritiesMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
 	securitiesServiceGetSecurityHandler := connect.NewUnaryHandler(
 		SecuritiesServiceGetSecurityProcedure,
 		svc.GetSecurity,
+		connect.WithSchema(securitiesServiceGetSecurityMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
 	securitiesServiceCreateSecurityHandler := connect.NewUnaryHandler(
 		SecuritiesServiceCreateSecurityProcedure,
 		svc.CreateSecurity,
-		opts...,
+		connect.WithSchema(securitiesServiceCreateSecurityMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	securitiesServiceUpdateSecurityHandler := connect.NewUnaryHandler(
 		SecuritiesServiceUpdateSecurityProcedure,
 		svc.UpdateSecurity,
-		opts...,
+		connect.WithSchema(securitiesServiceUpdateSecurityMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	securitiesServiceDeleteSecurityHandler := connect.NewUnaryHandler(
 		SecuritiesServiceDeleteSecurityProcedure,
 		svc.DeleteSecurity,
-		opts...,
+		connect.WithSchema(securitiesServiceDeleteSecurityMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	securitiesServiceTriggerSecurityQuoteUpdateHandler := connect.NewUnaryHandler(
 		SecuritiesServiceTriggerSecurityQuoteUpdateProcedure,
 		svc.TriggerSecurityQuoteUpdate,
-		opts...,
+		connect.WithSchema(securitiesServiceTriggerSecurityQuoteUpdateMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/mgo.portfolio.v1.SecuritiesService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {

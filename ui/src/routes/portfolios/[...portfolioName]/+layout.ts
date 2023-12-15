@@ -2,7 +2,7 @@ import type { LayoutData } from './$types';
 import { error } from '@sveltejs/kit';
 import { portfolioClient } from '$lib/api/client';
 
-export const load = (async ({ fetch, params }) => {
+export const load = (async ({ fetch, params, depends }) => {
 	if (params.portfolioName == undefined) {
 		throw error(405, 'Required parameter missing');
 	}
@@ -10,8 +10,10 @@ export const load = (async ({ fetch, params }) => {
 	const client = portfolioClient(fetch);
 	console.log(params.portfolioName);
 
-	const portfolio = client.getPortfolio({ name: params.portfolioName });
-	const snapshot = client.getPortfolioSnapshot({ portfolioName: params.portfolioName });
+	const portfolio = await client.getPortfolio({ name: params.portfolioName });
+	const snapshot = await client.getPortfolioSnapshot({ portfolioName: params.portfolioName });
+
+	depends(`data:portfolio-snapshot:${params.portfolioName}`)
 
 	return { portfolio, snapshot };
 }) as LayoutData;

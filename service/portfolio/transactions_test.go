@@ -86,6 +86,54 @@ func Test_service_CreatePortfolioTransaction(t *testing.T) {
 	}
 }
 
+func Test_service_GetPortfolioTransaction(t *testing.T) {
+	type fields struct {
+		portfolios persistence.StorageOperations[*portfoliov1.Portfolio]
+		securities portfoliov1connect.SecuritiesServiceClient
+	}
+	type args struct {
+		ctx context.Context
+		req *connect.Request[portfoliov1.GetPortfolioTransactionRequest]
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantRes assert.Want[*connect.Response[portfoliov1.PortfolioEvent]]
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			fields: fields{
+				portfolios: myPortfolio(t),
+			},
+			args: args{
+				req: connect.NewRequest(&portfoliov1.GetPortfolioTransactionRequest{
+					Name: "buy",
+				}),
+			},
+			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioEvent]) bool {
+				return assert.Equals(t, "buy", r.Msg.Name) && assert.Equals(t, "bank/myportfolio", r.Msg.PortfolioName)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := &service{
+				portfolios: tt.fields.portfolios,
+				events:     persistence.Relationship[*portfoliov1.PortfolioEvent](tt.fields.portfolios),
+				securities: tt.fields.securities,
+			}
+			gotRes, err := svc.GetPortfolioTransaction(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("service.GetPortfolioTransaction() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			tt.wantRes(t, gotRes)
+		})
+	}
+}
+
 func Test_service_ListPortfolioTransactions(t *testing.T) {
 	type fields struct {
 		portfolios persistence.StorageOperations[*portfoliov1.Portfolio]
@@ -134,7 +182,7 @@ func Test_service_ListPortfolioTransactions(t *testing.T) {
 	}
 }
 
-func Test_service_UpdatePortfolioTransactions(t *testing.T) {
+func Test_service_UpdatePortfolioTransaction(t *testing.T) {
 	type fields struct {
 		portfolios persistence.StorageOperations[*portfoliov1.Portfolio]
 		securities portfoliov1connect.SecuritiesServiceClient
@@ -177,7 +225,7 @@ func Test_service_UpdatePortfolioTransactions(t *testing.T) {
 				events:     persistence.Relationship[*portfoliov1.PortfolioEvent](tt.fields.portfolios),
 				securities: tt.fields.securities,
 			}
-			gotRes, err := svc.UpdatePortfolioTransactions(tt.args.ctx, tt.args.req)
+			gotRes, err := svc.UpdatePortfolioTransaction(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("service.UpdatePortfolioTransactions() error = %v, wantErr %v", err, tt.wantErr)
 				return
