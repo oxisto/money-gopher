@@ -37,7 +37,10 @@ func (svc *service) CreatePortfolioTransaction(ctx context.Context, req *connect
 	// Create a unique name for the transaction
 	req.Msg.Transaction.MakeUniqueName()
 
-	slog.Info("Creating transaction", "transaction", req.Msg.Transaction)
+	slog.Info(
+		"Creating transaction",
+		"transaction", req.Msg.Transaction,
+	)
 
 	return crud.Create(
 		req.Msg.Transaction,
@@ -70,6 +73,12 @@ func (svc *service) ListPortfolioTransactions(ctx context.Context, req *connect.
 }
 
 func (svc *service) UpdatePortfolioTransaction(ctx context.Context, req *connect.Request[portfoliov1.UpdatePortfolioTransactionRequest]) (res *connect.Response[portfoliov1.PortfolioEvent], err error) {
+	slog.Info(
+		"Updating transaction",
+		"tx", req.Msg.Transaction,
+		"update-mask", req.Msg.UpdateMask.Paths,
+	)
+
 	return crud.Update(
 		req.Msg.Transaction.Name,
 		req.Msg.Transaction,

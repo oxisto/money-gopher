@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { PortfolioEventType, type PortfolioEvent } from '$lib/gen/mgo_pb';
+	import { PortfolioEventType, type PortfolioEvent, Security } from '$lib/gen/mgo_pb';
 	import { currency as formatCurrency } from '$lib/intl';
 	import { PencilSquare } from '@steeze-ui/heroicons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import Date from './Date.svelte';
 
 	export let tx: PortfolioEvent;
+	export let security: Security | undefined;
 	export let currency = 'EUR';
 
 	$: total = tx.amount * (tx.price + tx.fees + tx.taxes);
@@ -19,10 +20,12 @@
 		{PortfolioEventType[tx.type]}
 	</td>
 	<td class="truncate whitespace-nowrap py-2 pl-4 pr-3 text-sm font-medium sm:pl-0">
-		<div class="text-gray-900">
+		{#if security}
+			<div class="text-gray-900">{security.displayName}</div>
+		{/if}
+		<div class="text-gray-400">
 			{tx.securityName}
 		</div>
-		<div class="text-gray-400">NAME</div>
 	</td>
 	<td class="hidden whitespace-nowrap px-3 py-2 text-right text-sm text-gray-500 md:table-cell">
 		{Intl.NumberFormat(navigator.language, {

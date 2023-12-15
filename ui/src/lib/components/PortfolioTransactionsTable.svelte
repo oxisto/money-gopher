@@ -1,11 +1,15 @@
 <script lang="ts">
 	import PortfolioTransactionRow from '$lib/components/PortfolioTransactionRow.svelte';
 	import TableSorter from '$lib/components/TableSorter.svelte';
-	import type { PortfolioEvent } from '$lib/gen/mgo_pb';
+	import type { PortfolioEvent, Security } from '$lib/gen/mgo_pb';
 
 	export let transactions: PortfolioEvent[];
+	export let securities: Security[];
 
 	const sorters = new Map<string, (a: PortfolioEvent, b: PortfolioEvent) => number>();
+		sorters.set('time', (a: PortfolioEvent, b: PortfolioEvent) => {
+		return (a.time?.toDate() ?? 0 ) < (b.time?.toDate() ?? 0 )? -1 : 1;
+	});
 	sorters.set('securityName', (a: PortfolioEvent, b: PortfolioEvent) => {
 		return a.securityName.localeCompare(b.securityName);
 	});
@@ -22,8 +26,8 @@
 		return a.taxes - b.taxes;
 	});
 
-	let sortBy = 'securityName';
-	let asc = true;
+	let sortBy = 'time';
+	let asc = false;
 
 	$: sorted = getPositions(transactions, sortBy, asc);
 
@@ -44,6 +48,10 @@
 
 	function changeSortBy(column: string) {
 		sortBy = column;
+	}
+
+	function securityFor(tx: PortfolioEvent) {
+		return securities.find((sec) => sec.name == tx.securityName);
 	}
 </script>
 
@@ -157,7 +165,7 @@
 		</thead>
 		<tbody class="divide-y divide-gray-200">
 			{#each sorted as tx (tx.name)}
-				<PortfolioTransactionRow {tx} />
+				<PortfolioTransactionRow {tx} security={securityFor(tx)}/>
 			{/each}
 		</tbody>
 	</table>
