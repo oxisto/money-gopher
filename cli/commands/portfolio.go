@@ -192,9 +192,9 @@ func (cmd *CreateTransactionCmd) Run(s *cli.Session) error {
 
 	fmt.Printf("Successfully created a %s transaction (%s) for security %s in %s.\n",
 		color.CyanString(cmd.Type),
-		color.BlackString(res.Msg.Name),
-		color.BlueString(res.Msg.SecurityName),
-		color.BlueString(res.Msg.PortfolioName),
+		color.GreenString(res.Msg.Name),
+		color.CyanString(res.Msg.SecurityName),
+		color.CyanString(res.Msg.PortfolioName),
 	)
 
 	return nil

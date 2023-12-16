@@ -105,9 +105,7 @@ mgo portfolio transactions create US0378331005 --portfolio-name bank/myportfolio
 
 When successful, this should print something like the following.
 
-```
-Successfully created a buy transaction (1c12ac28dfbc5440) for security US09075V1026 in bank/myportfolio.
-```
+<img width="1114" alt="Output of transactions create command" src="https://github.com/oxisto/money-gopher/assets/12459061/cdb9304f-c805-4c84-9f4b-7b2a908e76f8">
 
 The unique identifier (also called 'name') of the transaction can be used in
 other calls, e.g., to modify it.
@@ -117,6 +115,7 @@ other calls, e.g., to modify it.
 For a detailed list of all available commands see `mgo --help`. The CLI also
 supports (basic) shell completion. For details how to activate it, please see
 `mgo completion`.
+
 
 # When is it finished?
 
