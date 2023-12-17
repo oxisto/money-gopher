@@ -14,34 +14,25 @@
 //
 // This file is part of The Money Gopher.
 
-package main
+package portfolio
 
 import (
-	"os"
+	"context"
 
-	"github.com/alecthomas/kong"
-	kongcompletion "github.com/jotaen/kong-completion"
+	"connectrpc.com/connect"
 
-	"github.com/oxisto/money-gopher/cli"
-	"github.com/oxisto/money-gopher/cli/commands"
+	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"github.com/oxisto/money-gopher/service/internal/crud"
 )
 
-func main() {
-	parser := kong.Must(&commands.CLI,
-		kong.Name("mgo"),
-		kong.Description("A shell-like example app."),
-		kong.UsageOnError(),
+var bankAccountSetter = func(obj *portfoliov1.BankAccount) *portfoliov1.BankAccount {
+	return obj
+}
+
+func (svc *service) CreateBankAccount(ctx context.Context, req *connect.Request[portfoliov1.CreateBankAccountRequest]) (res *connect.Response[portfoliov1.BankAccount], err error) {
+	return crud.Create(
+		req.Msg.BankAccount,
+		svc.bankAccounts,
+		bankAccountSetter,
 	)
-
-	kongcompletion.Register(parser,
-		commands.PredictPortfolios,
-		commands.PredictSecurities,
-	)
-
-	// Proceed as normal after kongplete.Complete.
-	ctx, err := parser.Parse(os.Args[1:])
-	parser.FatalIfErrorf(err)
-
-	err = ctx.Run(cli.NewSession())
-	parser.FatalIfErrorf(err)
 }

@@ -5,4 +5,4 @@
 	export let data: PageData;
 </script>
 
-<PortfolioTransactionsTable transactions={data.transactions} securities={data.securities}/>
+<PortfolioTransactionsTable transactions={data.transactions} securities={data.securities} />

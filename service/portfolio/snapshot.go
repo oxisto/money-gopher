@@ -56,6 +56,7 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 		TotalPurchaseValue: portfoliov1.Zero(),
 		TotalMarketValue:   portfoliov1.Zero(),
 		TotalProfitOrLoss:  portfoliov1.Zero(),
+		Cash:               portfoliov1.Zero(),
 	}
 
 	// Record the first transaction time
@@ -94,9 +95,18 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 
 		c := finance.NewCalculation(txs)
 
+		if name == "cash" {
+			// Add deposited/withdrawn cash directly
+			snap.Cash.PlusAssign(c.Cash)
+			continue
+		}
+
 		if c.Amount == 0 {
 			continue
 		}
+
+		// Also add cash that is part of a securities' transaction (e.g., sell/buy)
+		snap.Cash.PlusAssign(c.Cash)
 
 		pos := &portfoliov1.PortfolioPosition{
 			Security:      secmap[name],
@@ -122,6 +132,9 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 
 	// Calculate total gains
 	snap.TotalGains = float64(portfoliov1.Minus(snap.TotalMarketValue, snap.TotalPurchaseValue).Value) / float64(snap.TotalPurchaseValue.Value)
+
+	// Calculate total portfolio value
+	snap.TotalPortfolioValue = snap.TotalMarketValue.Plus(snap.Cash)
 
 	return connect.NewResponse(snap), nil
 }

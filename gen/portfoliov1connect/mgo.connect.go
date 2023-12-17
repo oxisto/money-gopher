@@ -72,6 +72,9 @@ const (
 	// PortfolioServiceImportTransactionsProcedure is the fully-qualified name of the PortfolioService's
 	// ImportTransactions RPC.
 	PortfolioServiceImportTransactionsProcedure = "/mgo.portfolio.v1.PortfolioService/ImportTransactions"
+	// PortfolioServiceCreateBankAccountProcedure is the fully-qualified name of the PortfolioService's
+	// CreateBankAccount RPC.
+	PortfolioServiceCreateBankAccountProcedure = "/mgo.portfolio.v1.PortfolioService/CreateBankAccount"
 	// SecuritiesServiceListSecuritiesProcedure is the fully-qualified name of the SecuritiesService's
 	// ListSecurities RPC.
 	SecuritiesServiceListSecuritiesProcedure = "/mgo.portfolio.v1.SecuritiesService/ListSecurities"
@@ -107,6 +110,7 @@ var (
 	portfolioServiceUpdatePortfolioTransactionMethodDescriptor  = portfolioServiceServiceDescriptor.Methods().ByName("UpdatePortfolioTransaction")
 	portfolioServiceDeletePortfolioTransactionMethodDescriptor  = portfolioServiceServiceDescriptor.Methods().ByName("DeletePortfolioTransaction")
 	portfolioServiceImportTransactionsMethodDescriptor          = portfolioServiceServiceDescriptor.Methods().ByName("ImportTransactions")
+	portfolioServiceCreateBankAccountMethodDescriptor           = portfolioServiceServiceDescriptor.Methods().ByName("CreateBankAccount")
 	securitiesServiceServiceDescriptor                          = gen.File_mgo_proto.Services().ByName("SecuritiesService")
 	securitiesServiceListSecuritiesMethodDescriptor             = securitiesServiceServiceDescriptor.Methods().ByName("ListSecurities")
 	securitiesServiceGetSecurityMethodDescriptor                = securitiesServiceServiceDescriptor.Methods().ByName("GetSecurity")
@@ -130,6 +134,7 @@ type PortfolioServiceClient interface {
 	UpdatePortfolioTransaction(context.Context, *connect.Request[gen.UpdatePortfolioTransactionRequest]) (*connect.Response[gen.PortfolioEvent], error)
 	DeletePortfolioTransaction(context.Context, *connect.Request[gen.DeletePortfolioTransactionRequest]) (*connect.Response[emptypb.Empty], error)
 	ImportTransactions(context.Context, *connect.Request[gen.ImportTransactionsRequest]) (*connect.Response[emptypb.Empty], error)
+	CreateBankAccount(context.Context, *connect.Request[gen.CreateBankAccountRequest]) (*connect.Response[gen.BankAccount], error)
 }
 
 // NewPortfolioServiceClient constructs a client for the mgo.portfolio.v1.PortfolioService service.
@@ -219,6 +224,12 @@ func NewPortfolioServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(portfolioServiceImportTransactionsMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		createBankAccount: connect.NewClient[gen.CreateBankAccountRequest, gen.BankAccount](
+			httpClient,
+			baseURL+PortfolioServiceCreateBankAccountProcedure,
+			connect.WithSchema(portfolioServiceCreateBankAccountMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -236,6 +247,7 @@ type portfolioServiceClient struct {
 	updatePortfolioTransaction *connect.Client[gen.UpdatePortfolioTransactionRequest, gen.PortfolioEvent]
 	deletePortfolioTransaction *connect.Client[gen.DeletePortfolioTransactionRequest, emptypb.Empty]
 	importTransactions         *connect.Client[gen.ImportTransactionsRequest, emptypb.Empty]
+	createBankAccount          *connect.Client[gen.CreateBankAccountRequest, gen.BankAccount]
 }
 
 // CreatePortfolio calls mgo.portfolio.v1.PortfolioService.CreatePortfolio.
@@ -298,6 +310,11 @@ func (c *portfolioServiceClient) ImportTransactions(ctx context.Context, req *co
 	return c.importTransactions.CallUnary(ctx, req)
 }
 
+// CreateBankAccount calls mgo.portfolio.v1.PortfolioService.CreateBankAccount.
+func (c *portfolioServiceClient) CreateBankAccount(ctx context.Context, req *connect.Request[gen.CreateBankAccountRequest]) (*connect.Response[gen.BankAccount], error) {
+	return c.createBankAccount.CallUnary(ctx, req)
+}
+
 // PortfolioServiceHandler is an implementation of the mgo.portfolio.v1.PortfolioService service.
 type PortfolioServiceHandler interface {
 	CreatePortfolio(context.Context, *connect.Request[gen.CreatePortfolioRequest]) (*connect.Response[gen.Portfolio], error)
@@ -312,6 +329,7 @@ type PortfolioServiceHandler interface {
 	UpdatePortfolioTransaction(context.Context, *connect.Request[gen.UpdatePortfolioTransactionRequest]) (*connect.Response[gen.PortfolioEvent], error)
 	DeletePortfolioTransaction(context.Context, *connect.Request[gen.DeletePortfolioTransactionRequest]) (*connect.Response[emptypb.Empty], error)
 	ImportTransactions(context.Context, *connect.Request[gen.ImportTransactionsRequest]) (*connect.Response[emptypb.Empty], error)
+	CreateBankAccount(context.Context, *connect.Request[gen.CreateBankAccountRequest]) (*connect.Response[gen.BankAccount], error)
 }
 
 // NewPortfolioServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -397,6 +415,12 @@ func NewPortfolioServiceHandler(svc PortfolioServiceHandler, opts ...connect.Han
 		connect.WithSchema(portfolioServiceImportTransactionsMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	portfolioServiceCreateBankAccountHandler := connect.NewUnaryHandler(
+		PortfolioServiceCreateBankAccountProcedure,
+		svc.CreateBankAccount,
+		connect.WithSchema(portfolioServiceCreateBankAccountMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/mgo.portfolio.v1.PortfolioService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case PortfolioServiceCreatePortfolioProcedure:
@@ -423,6 +447,8 @@ func NewPortfolioServiceHandler(svc PortfolioServiceHandler, opts ...connect.Han
 			portfolioServiceDeletePortfolioTransactionHandler.ServeHTTP(w, r)
 		case PortfolioServiceImportTransactionsProcedure:
 			portfolioServiceImportTransactionsHandler.ServeHTTP(w, r)
+		case PortfolioServiceCreateBankAccountProcedure:
+			portfolioServiceCreateBankAccountHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -478,6 +504,10 @@ func (UnimplementedPortfolioServiceHandler) DeletePortfolioTransaction(context.C
 
 func (UnimplementedPortfolioServiceHandler) ImportTransactions(context.Context, *connect.Request[gen.ImportTransactionsRequest]) (*connect.Response[emptypb.Empty], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.ImportTransactions is not implemented"))
+}
+
+func (UnimplementedPortfolioServiceHandler) CreateBankAccount(context.Context, *connect.Request[gen.CreateBankAccountRequest]) (*connect.Response[gen.BankAccount], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mgo.portfolio.v1.PortfolioService.CreateBankAccount is not implemented"))
 }
 
 // SecuritiesServiceClient is a client for the mgo.portfolio.v1.SecuritiesService service.

@@ -19,6 +19,7 @@ package portfolio
 import (
 	"bytes"
 	"context"
+	"errors"
 	"log/slog"
 
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
@@ -33,9 +34,36 @@ var portfolioEventSetter = func(obj *portfoliov1.PortfolioEvent) *portfoliov1.Po
 	return obj
 }
 
+var (
+	ErrMissingSecurityName = errors.New("the specified transaction type requires a security name")
+	ErrMissingPrice        = errors.New("a transaction requires a price")
+	ErrMissingAmount       = errors.New("the specified transaction type requires an amount")
+)
+
 func (svc *service) CreatePortfolioTransaction(ctx context.Context, req *connect.Request[portfoliov1.CreatePortfolioTransactionRequest]) (res *connect.Response[portfoliov1.PortfolioEvent], err error) {
+	var (
+		tx *portfoliov1.PortfolioEvent = req.Msg.Transaction
+	)
+
+	// Do some basic validation depending on the type
+	switch tx.Type {
+	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL:
+		fallthrough
+	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY:
+		if tx.SecurityName == "" {
+			return nil, connect.NewError(connect.CodeInvalidArgument, ErrMissingSecurityName)
+		} else if tx.Amount == 0 {
+			return nil, connect.NewError(connect.CodeInvalidArgument, ErrMissingAmount)
+		}
+	}
+
+	// We always need a price
+	if tx.Price.IsZero() {
+		return nil, connect.NewError(connect.CodeInvalidArgument, ErrMissingPrice)
+	}
+
 	// Create a unique name for the transaction
-	req.Msg.Transaction.MakeUniqueName()
+	tx.MakeUniqueName()
 
 	slog.Info(
 		"Creating transaction",

@@ -1,5 +1,5 @@
 import { portfolioClient } from '$lib/api/client';
-import { PortfolioEvent, PortfolioEventType } from '$lib/gen/mgo_pb';
+import { Currency, PortfolioEvent, PortfolioEventType } from '$lib/gen/mgo_pb';
 import type { PageLoad } from './$types';
 import { Timestamp } from '@bufbuild/protobuf';
 
@@ -7,6 +7,8 @@ export const load = (async ({ params, parent }) => {
 	const data = await parent();
 	const txName = params.txName;
 	const add = txName == 'add';
+
+	const symbol = 'EUR';
 
 	let transaction: PortfolioEvent;
 	if (add) {
@@ -19,7 +21,10 @@ export const load = (async ({ params, parent }) => {
 			amount: 1,
 			type: PortfolioEventType.BUY,
 			portfolioName: data.portfolio.name,
-			time: Timestamp.fromDate(time)
+			time: Timestamp.fromDate(time),
+			fees: new Currency({ symbol: symbol, value: 0 }),
+			taxes: new Currency({ symbol: symbol, value: 0 }),
+			price: new Currency({ symbol: symbol, value: 0 })
 		});
 	} else {
 		const client = portfolioClient(fetch);

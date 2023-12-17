@@ -29,9 +29,10 @@ const DefaultSecuritiesServiceURL = "http://localhost:8080"
 
 // service is the main struct fo the [PortfolioService] implementation.
 type service struct {
-	portfolios persistence.StorageOperations[*portfoliov1.Portfolio]
-	events     persistence.StorageOperations[*portfoliov1.PortfolioEvent]
-	securities portfoliov1connect.SecuritiesServiceClient
+	portfolios   persistence.StorageOperations[*portfoliov1.Portfolio]
+	events       persistence.StorageOperations[*portfoliov1.PortfolioEvent]
+	bankAccounts persistence.StorageOperations[*portfoliov1.BankAccount]
+	securities   portfoliov1connect.SecuritiesServiceClient
 
 	portfoliov1connect.UnimplementedPortfolioServiceHandler
 }
@@ -46,6 +47,7 @@ func NewService(opts Options) portfoliov1connect.PortfolioServiceHandler {
 
 	s.portfolios = persistence.Ops[*portfoliov1.Portfolio](opts.DB)
 	s.events = persistence.Relationship[*portfoliov1.PortfolioEvent](s.portfolios)
+	s.bankAccounts = persistence.Ops[*portfoliov1.BankAccount](opts.DB)
 
 	s.securities = opts.SecuritiesClient
 	if s.securities == nil {
@@ -54,8 +56,15 @@ func NewService(opts Options) portfoliov1connect.PortfolioServiceHandler {
 
 	// Add a simple starter portfolio
 	s.portfolios.Replace(&portfoliov1.Portfolio{
-		Name:        "bank/myportfolio",
-		DisplayName: "My Portfolio",
+		Name:            "bank/myportfolio",
+		DisplayName:     "My Portfolio",
+		BankAccountName: "bank/mycash",
+	})
+
+	// Add its cash account
+	s.bankAccounts.Replace(&portfoliov1.BankAccount{
+		Name:        "bank/mycash",
+		DisplayName: "My Cash Account",
 	})
 
 	return &s

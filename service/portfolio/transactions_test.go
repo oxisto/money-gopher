@@ -56,6 +56,8 @@ func Test_service_CreatePortfolioTransaction(t *testing.T) {
 						PortfolioName: "bank/myportfolio",
 						Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
 						SecurityName:  "My Security",
+						Amount:        1,
+						Price:         portfoliov1.Value(2000),
 					},
 				}),
 			},

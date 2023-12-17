@@ -209,8 +209,6 @@ func eventTypeFrom(typ string) portfoliov1.PortfolioEventType {
 		return portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_INBOUND
 	} else if typ == "delivery-outbound" {
 		return portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_OUTBOUND
-	} else if typ == "dividend" {
-		return portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DIVIDEND
 	}
 
 	return portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_UNSPECIFIED

@@ -39,6 +39,31 @@ export enum PortfolioEventType {
    * @generated from enum value: PORTFOLIO_EVENT_TYPE_DIVIDEND = 10;
    */
   DIVIDEND = 10,
+
+  /**
+   * @generated from enum value: PORTFOLIO_EVENT_TYPE_INTEREST = 11;
+   */
+  INTEREST = 11,
+
+  /**
+   * @generated from enum value: PORTFOLIO_EVENT_TYPE_DEPOSIT_CASH = 20;
+   */
+  DEPOSIT_CASH = 20,
+
+  /**
+   * @generated from enum value: PORTFOLIO_EVENT_TYPE_WITHDRAW_CASH = 21;
+   */
+  WITHDRAW_CASH = 21,
+
+  /**
+   * @generated from enum value: PORTFOLIO_EVENT_TYPE_ACCOUNT_FEES = 30;
+   */
+  ACCOUNT_FEES = 30,
+
+  /**
+   * @generated from enum value: PORTFOLIO_EVENT_TYPE_TAX_REFUND = 31;
+   */
+  TAX_REFUND = 31,
 }
 // Retrieve enum metadata with: proto3.getEnumType(PortfolioEventType)
 proto3.util.setEnumType(PortfolioEventType, "mgo.portfolio.v1.PortfolioEventType", [
@@ -48,6 +73,11 @@ proto3.util.setEnumType(PortfolioEventType, "mgo.portfolio.v1.PortfolioEventType
   { no: 3, name: "PORTFOLIO_EVENT_TYPE_DELIVERY_INBOUND" },
   { no: 4, name: "PORTFOLIO_EVENT_TYPE_DELIVERY_OUTBOUND" },
   { no: 10, name: "PORTFOLIO_EVENT_TYPE_DIVIDEND" },
+  { no: 11, name: "PORTFOLIO_EVENT_TYPE_INTEREST" },
+  { no: 20, name: "PORTFOLIO_EVENT_TYPE_DEPOSIT_CASH" },
+  { no: 21, name: "PORTFOLIO_EVENT_TYPE_WITHDRAW_CASH" },
+  { no: 30, name: "PORTFOLIO_EVENT_TYPE_ACCOUNT_FEES" },
+  { no: 31, name: "PORTFOLIO_EVENT_TYPE_TAX_REFUND" },
 ]);
 
 /**
@@ -638,6 +668,43 @@ export class ImportTransactionsRequest extends Message<ImportTransactionsRequest
 }
 
 /**
+ * @generated from message mgo.portfolio.v1.CreateBankAccountRequest
+ */
+export class CreateBankAccountRequest extends Message<CreateBankAccountRequest> {
+  /**
+   * @generated from field: mgo.portfolio.v1.BankAccount bank_account = 1;
+   */
+  bankAccount?: BankAccount;
+
+  constructor(data?: PartialMessage<CreateBankAccountRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.CreateBankAccountRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "bank_account", kind: "message", T: BankAccount },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateBankAccountRequest {
+    return new CreateBankAccountRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateBankAccountRequest {
+    return new CreateBankAccountRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateBankAccountRequest {
+    return new CreateBankAccountRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateBankAccountRequest | PlainMessage<CreateBankAccountRequest> | undefined, b: CreateBankAccountRequest | PlainMessage<CreateBankAccountRequest> | undefined): boolean {
+    return proto3.util.equals(CreateBankAccountRequest, a, b);
+  }
+}
+
+/**
  * @generated from message mgo.portfolio.v1.Portfolio
  */
 export class Portfolio extends Message<Portfolio> {
@@ -650,6 +717,14 @@ export class Portfolio extends Message<Portfolio> {
    * @generated from field: string display_name = 2;
    */
   displayName = "";
+
+  /**
+   * BankAccountName contains the name/identifier of the underlying bank
+   * account.
+   *
+   * @generated from field: string bank_account_name = 3;
+   */
+  bankAccountName = "";
 
   /**
    * Events contains all portfolio events, such as buy/sell transactions,
@@ -669,6 +744,7 @@ export class Portfolio extends Message<Portfolio> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "bank_account_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "events", kind: "message", T: PortfolioEvent, repeated: true },
   ]);
 
@@ -686,6 +762,49 @@ export class Portfolio extends Message<Portfolio> {
 
   static equals(a: Portfolio | PlainMessage<Portfolio> | undefined, b: Portfolio | PlainMessage<Portfolio> | undefined): boolean {
     return proto3.util.equals(Portfolio, a, b);
+  }
+}
+
+/**
+ * @generated from message mgo.portfolio.v1.BankAccount
+ */
+export class BankAccount extends Message<BankAccount> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string display_name = 2;
+   */
+  displayName = "";
+
+  constructor(data?: PartialMessage<BankAccount>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.BankAccount";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BankAccount {
+    return new BankAccount().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BankAccount {
+    return new BankAccount().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BankAccount {
+    return new BankAccount().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BankAccount | PlainMessage<BankAccount> | undefined, b: BankAccount | PlainMessage<BankAccount> | undefined): boolean {
+    return proto3.util.equals(BankAccount, a, b);
   }
 }
 
@@ -720,14 +839,14 @@ export class PortfolioSnapshot extends Message<PortfolioSnapshot> {
   firstTransactionTime?: Timestamp;
 
   /**
-   * TotalPurchaseValue contains the total purchase value of all positions
+   * TotalPurchaseValue contains the total purchase value of all asset positions
    *
    * @generated from field: mgo.portfolio.v1.Currency total_purchase_value = 10;
    */
   totalPurchaseValue?: Currency;
 
   /**
-   * TotalMarketValue contains the total market value of all positions
+   * TotalMarketValue contains the total market value of all asset positions
    *
    * @generated from field: mgo.portfolio.v1.Currency total_market_value = 11;
    */
@@ -735,7 +854,7 @@ export class PortfolioSnapshot extends Message<PortfolioSnapshot> {
 
   /**
    * TotalProfitOrLoss contains the total absolute amount of profit or loss in
-   * this snapshot.
+   * this snapshot, based on asset value.
    *
    * @generated from field: mgo.portfolio.v1.Currency total_profit_or_loss = 20;
    */
@@ -743,11 +862,27 @@ export class PortfolioSnapshot extends Message<PortfolioSnapshot> {
 
   /**
    * TotalGains contains the total relative amount of profit or loss in this
-   * snapshot.
+   * snapshot, based on asset value.
    *
    * @generated from field: double total_gains = 21;
    */
   totalGains = 0;
+
+  /**
+   * Cash contains the current amount of cash in the portfolio's bank
+   * account(s).
+   *
+   * @generated from field: mgo.portfolio.v1.Currency cash = 22;
+   */
+  cash?: Currency;
+
+  /**
+   * TotalPortfolioValue contains the amount of cash plus the total market value
+   * of all assets.
+   *
+   * @generated from field: mgo.portfolio.v1.Currency total_portfolio_value = 23;
+   */
+  totalPortfolioValue?: Currency;
 
   constructor(data?: PartialMessage<PortfolioSnapshot>) {
     super();
@@ -764,6 +899,8 @@ export class PortfolioSnapshot extends Message<PortfolioSnapshot> {
     { no: 11, name: "total_market_value", kind: "message", T: Currency },
     { no: 20, name: "total_profit_or_loss", kind: "message", T: Currency },
     { no: 21, name: "total_gains", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 22, name: "cash", kind: "message", T: Currency },
+    { no: 23, name: "total_portfolio_value", kind: "message", T: Currency },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PortfolioSnapshot {

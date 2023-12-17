@@ -63,7 +63,7 @@
 					class="mr-1.5 h-5 w-5 flex-shrink-0 text-gray-400"
 					aria-hidden="true"
 				/>
-				{Object.values(snapshot.positions).length} Positions
+				{Object.values(snapshot.positions).length} Position(s)
 			</div>
 			<div class="mt-2 flex items-center text-sm text-gray-500">
 				<Icon
@@ -71,7 +71,7 @@
 					class="mr-1.5 h-5 w-5 flex-shrink-0 text-gray-400"
 					aria-hidden="true"
 				/>
-				{currency(snapshot.totalMarketValue, 'EUR')}
+				{currency(snapshot.totalPortfolioValue)}
 			</div>
 			<div class="mt-2 flex items-center text-sm text-gray-500">
 				<Icon

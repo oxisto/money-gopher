@@ -48,8 +48,6 @@
 	}
 </script>
 
-{{ asc }}
-{{ sortBy }}
 <div class="-mx-4 mt-8 sm:-mx-0">
 	<table class="min-w-full divide-y divide-gray-300">
 		<thead>
@@ -120,7 +118,8 @@
 			<tr>
 				<th
 					scope="col"
-					class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">Total</th
+					class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
+					>Total Assets</th
 				>
 				<th
 					scope="col"
@@ -163,6 +162,42 @@
 					<div class="pr-4">
 						{currency(snapshot.totalProfitOrLoss)}
 					</div>
+				</th>
+			</tr>
+			<tr>
+				<th
+					scope="col"
+					class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
+				>
+					Cash Value
+				</th>
+				<th></th>
+				<th></th>
+				<th
+					scope="col"
+					class="{(snapshot.cash?.value ?? 0) < 0
+						? 'text-red-500'
+						: ''} px-3 py-3.5 text-right text-sm font-semibold text-gray-900 lg:table-cell"
+				>
+					{currency(snapshot.cash)}
+				</th>
+			</tr>
+			<tr>
+				<th
+					scope="col"
+					class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
+				>
+					Total Portfolio Value
+				</th>
+				<th></th>
+				<th></th>
+				<th
+					scope="col"
+					class="{(snapshot.cash?.value ?? 0) < 0
+						? 'text-red-500'
+						: ''} px-3 py-3.5 text-right text-sm font-semibold text-gray-900 lg:table-cell"
+				>
+					{currency(snapshot.totalPortfolioValue)}
 				</th>
 			</tr>
 		</tfoot>
