@@ -6,6 +6,13 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/field_mask.proto";
 
+// Currency is a currency value in the lowest unit of the selected currency
+// (e.g., cents for EUR/USD).
+message Currency {
+  int32 value = 1;
+  string symbol = 2;
+}
+
 message CreatePortfolioRequest { Portfolio portfolio = 1; }
 
 message ListPortfoliosRequest {}
@@ -76,14 +83,14 @@ message PortfolioSnapshot {
   optional google.protobuf.Timestamp first_transaction_time = 3;
 
   // TotalPurchaseValue contains the total purchase value of all positions
-  float total_purchase_value = 10;
+  Currency total_purchase_value = 10;
 
   // TotalMarketValue contains the total market value of all positions
-  float total_market_value = 11;
+  Currency total_market_value = 11;
 
   // TotalProfitOrLoss contains the total absolute amount of profit or loss in
   // this snapshot.
-  float total_profit_or_loss = 20;
+  Currency total_profit_or_loss = 20;
 
   // TotalGains contains the total relative amount of profit or loss in this
   // snapshot.
@@ -97,27 +104,27 @@ message PortfolioPosition {
 
   // PurchaseValue was the market value of this position when it was bought
   // (net; exclusive of any fees).
-  float purchase_value = 5;
+  Currency purchase_value = 5;
 
   // PurchasePrice was the market price of this position when it was bought
   // (net; exclusive of any fees).
-  float purchase_price = 6;
+  Currency purchase_price = 6;
 
   // MarketValue is the current market value of this position, as retrieved from
   // the securities service.
-  float market_value = 10;
+  Currency market_value = 10;
 
   // MarketPrice is the current market price of this position, as retrieved from
   // the securities service.
-  float market_price = 11;
+  Currency market_price = 11;
 
   // TotalFees is the total amount of fees accumulating in this position through
   // various transactions.
-  float total_fees = 15;
+  Currency total_fees = 15;
 
   // ProfitOrLoss contains the absolute amount of profit or loss in this
   // position.
-  float profit_or_loss = 20;
+  Currency profit_or_loss = 20;
 
   // Gains contains the relative amount of profit or loss in this position.
   float gains = 21;
@@ -140,9 +147,9 @@ message PortfolioEvent {
   string security_name = 5;
 
   float amount = 10;
-  float price = 11;
-  float fees = 12;
-  float taxes = 13;
+  Currency price = 11;
+  Currency fees = 12;
+  Currency taxes = 13;
 }
 
 service PortfolioService {
@@ -198,7 +205,7 @@ message ListedSecurity {
   string ticker = 3;
   string currency = 4;
 
-  optional float latest_quote = 5;
+  optional Currency latest_quote = 5;
   optional google.protobuf.Timestamp latest_quote_timestamp = 6;
 }
 

@@ -40,55 +40,55 @@ func TestNewCalculation(t *testing.T) {
 					{
 						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
 						Amount: 5,
-						Price:  181.10,
-						Fees:   7.16,
+						Price:  portfoliov1.Value(18110),
+						Fees:   portfoliov1.Value(716),
 					},
 					{
 						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
 						Amount: 2,
-						Price:  304.30,
-						Fees:   6.42,
-						Taxes:  16.32,
+						Price:  portfoliov1.Value(30430),
+						Fees:   portfoliov1.Value(642),
+						Taxes:  portfoliov1.Value(1632),
 					},
 					{
 						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
 						Amount: 5,
-						Price:  290,
-						Fees:   8.53,
+						Price:  portfoliov1.Value(29000),
+						Fees:   portfoliov1.Value(853),
 					},
 					{
 						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
 						Amount: 3,
-						Price:  220,
-						Fees:   8.45,
+						Price:  portfoliov1.Value(22000),
+						Fees:   portfoliov1.Value(845),
 					},
 					{
 						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
 						Amount: 5,
-						Price:  203.30,
-						Fees:   7.44,
+						Price:  portfoliov1.Value(20330),
+						Fees:   portfoliov1.Value(744),
 					},
 					{
 						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
 						Amount: 5,
-						Price:  196.45,
-						Fees:   7.36,
+						Price:  portfoliov1.Value(19645),
+						Fees:   portfoliov1.Value(736),
 					},
 					{
 						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
 						Amount: 10,
-						Price:  146.55,
-						Fees:   8.56,
+						Price:  portfoliov1.Value(14655),
+						Fees:   portfoliov1.Value(856),
 					},
 				},
 			},
 			want: func(t *testing.T, c *calculation) bool {
 				return true &&
 					assert.Equals(t, 25, c.Amount) &&
-					assert.Equals(t, 4914.25, c.NetValue()) &&
-					assert.Equals(t, 4946.14, c.GrossValue()) &&
-					assert.Equals(t, 196.57, c.NetPrice()) &&
-					assert.Equals(t, 197.84561, c.GrossPrice())
+					assert.Equals(t, 491425, int(c.NetValue().Value)) &&
+					assert.Equals(t, 494614, int(c.GrossValue().Value)) &&
+					assert.Equals(t, 19657, int(c.NetPrice().Value)) &&
+					assert.Equals(t, 19784, int(c.GrossPrice().Value))
 			},
 		},
 	}

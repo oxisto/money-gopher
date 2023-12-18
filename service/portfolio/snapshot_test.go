@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/oxisto/assert"
-	moneygopher "github.com/oxisto/money-gopher"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	"github.com/oxisto/money-gopher/internal"
@@ -45,7 +44,7 @@ var mockSecuritiesClientWithData = &mockSecuritiesClient{
 					SecurityName:         "US0378331005",
 					Ticker:               "APC.F",
 					Currency:             currency.EUR.String(),
-					LatestQuote:          moneygopher.Ref(float32(100.0)),
+					LatestQuote:          portfoliov1.Value(10000),
 					LatestQuoteTimestamp: timestamppb.Now(),
 				},
 			},
@@ -83,9 +82,9 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 				return true &&
 					assert.Equals(t, "US0378331005", r.Msg.Positions["US0378331005"].Security.Name) &&
 					assert.Equals(t, 10, r.Msg.Positions["US0378331005"].Amount) &&
-					assert.Equals(t, 1070.8, r.Msg.Positions["US0378331005"].PurchaseValue) &&
-					assert.Equals(t, 107.08, r.Msg.Positions["US0378331005"].PurchasePrice) &&
-					assert.Equals(t, 1000.0, r.Msg.TotalMarketValue)
+					assert.Equals(t, portfoliov1.Value(107080), r.Msg.Positions["US0378331005"].PurchaseValue) &&
+					assert.Equals(t, portfoliov1.Value(10708), r.Msg.Positions["US0378331005"].PurchasePrice) &&
+					assert.Equals(t, portfoliov1.Value(100000), r.Msg.TotalMarketValue)
 			},
 		},
 		{
@@ -104,10 +103,10 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 				return true &&
 					assert.Equals(t, "US0378331005", pos.Security.Name) &&
 					assert.Equals(t, 20, pos.Amount) &&
-					assert.Equals(t, 2141.6, pos.PurchaseValue) &&
-					assert.Equals(t, 107.08, pos.PurchasePrice) &&
-					assert.Equals(t, 100.0, pos.MarketPrice) &&
-					assert.Equals(t, 2000.0, pos.MarketValue)
+					assert.Equals(t, portfoliov1.Value(214160), pos.PurchaseValue) &&
+					assert.Equals(t, portfoliov1.Value(10708), pos.PurchasePrice) &&
+					assert.Equals(t, portfoliov1.Value(10000), pos.MarketPrice) &&
+					assert.Equals(t, portfoliov1.Value(200000), pos.MarketValue)
 			},
 		},
 		{

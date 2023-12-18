@@ -39,5 +39,5 @@ func RegisterQuoteProvider(name string, qp QuoteProvider) {
 // QuoteProvider is an interface that retrieves quotes for a [ListedSecurity]. They
 // can either be historical quotes or the latest quote.
 type QuoteProvider interface {
-	LatestQuote(ctx context.Context, ls *portfoliov1.ListedSecurity) (quote float32, t time.Time, err error)
+	LatestQuote(ctx context.Context, ls *portfoliov1.ListedSecurity) (quote *portfoliov1.Currency, t time.Time, err error)
 }

@@ -44,8 +44,8 @@ func myPortfolio(t *testing.T) persistence.StorageOperations[*portfoliov1.Portfo
 			PortfolioName: "bank/myportfolio",
 			SecurityName:  "US0378331005",
 			Amount:        20,
-			Price:         107.08,
-			Fees:          10.25,
+			Price:         portfoliov1.Value(10708),
+			Fees:          portfoliov1.Value(1025),
 			Time:          timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)),
 		}))
 		assert.NoError(t, rel.Replace(&portfoliov1.PortfolioEvent{
@@ -54,8 +54,8 @@ func myPortfolio(t *testing.T) persistence.StorageOperations[*portfoliov1.Portfo
 			PortfolioName: "bank/myportfolio",
 			SecurityName:  "US0378331005",
 			Amount:        10,
-			Price:         145.88,
-			Fees:          8.55,
+			Price:         portfoliov1.Value(14588),
+			Fees:          portfoliov1.Value(855),
 			Time:          timestamppb.New(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)),
 		}))
 	})
@@ -74,8 +74,8 @@ func zeroPositions(t *testing.T) persistence.StorageOperations[*portfoliov1.Port
 			PortfolioName: "bank/myportfolio",
 			SecurityName:  "sec123",
 			Amount:        10,
-			Price:         100.0,
-			Fees:          0,
+			Price:         portfoliov1.Value(10000),
+			Fees:          portfoliov1.Zero(),
 			Time:          timestamppb.New(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)),
 		}))
 		assert.NoError(t, rel.Replace(&portfoliov1.PortfolioEvent{
@@ -84,8 +84,8 @@ func zeroPositions(t *testing.T) persistence.StorageOperations[*portfoliov1.Port
 			PortfolioName: "bank/myportfolio",
 			SecurityName:  "sec123",
 			Amount:        10,
-			Price:         100.0,
-			Fees:          0,
+			Price:         portfoliov1.Value(10000),
+			Fees:          portfoliov1.Zero(),
 			Time:          timestamppb.New(time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)),
 		}))
 	})

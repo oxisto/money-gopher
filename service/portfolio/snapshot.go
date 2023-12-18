@@ -97,36 +97,36 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 			Amount:        c.Amount,
 			PurchaseValue: c.NetValue(),
 			PurchasePrice: c.NetPrice(),
-			MarketValue:   marketPrice(secmap, name, c.NetPrice()) * float32(c.Amount),
+			MarketValue:   portfoliov1.Times(marketPrice(secmap, name, c.NetPrice()), c.Amount),
 			MarketPrice:   marketPrice(secmap, name, c.NetPrice()),
 		}
 
 		// Calculate loss and gains
-		pos.ProfitOrLoss = pos.MarketValue - pos.PurchaseValue
-		pos.Gains = (pos.MarketValue - pos.PurchaseValue) / pos.PurchaseValue
+		pos.ProfitOrLoss = portfoliov1.Minus(pos.MarketValue, pos.PurchaseValue)
+		pos.Gains = float32(portfoliov1.Minus(pos.MarketValue, pos.PurchaseValue).Value) / float32(pos.PurchaseValue.Value)
 
 		// Add to total value(s)
-		snap.TotalPurchaseValue += pos.PurchaseValue
-		snap.TotalMarketValue += pos.MarketValue
-		snap.TotalProfitOrLoss += pos.ProfitOrLoss
+		snap.TotalPurchaseValue.PlusAssign(pos.PurchaseValue)
+		snap.TotalMarketValue.PlusAssign(pos.MarketValue)
+		snap.TotalProfitOrLoss.PlusAssign(pos.ProfitOrLoss)
 
 		// Store position in map
 		snap.Positions[name] = pos
 	}
 
 	// Calculate total gains
-	snap.TotalGains = (snap.TotalMarketValue - snap.TotalPurchaseValue) / snap.TotalPurchaseValue
+	snap.TotalGains = float32(portfoliov1.Minus(snap.TotalMarketValue, snap.TotalPurchaseValue).Value) / float32(snap.TotalPurchaseValue.Value)
 
 	return connect.NewResponse(snap), nil
 }
 
-func marketPrice(secmap map[string]*portfoliov1.Security, name string, netPrice float32) float32 {
+func marketPrice(secmap map[string]*portfoliov1.Security, name string, netPrice *portfoliov1.Currency) *portfoliov1.Currency {
 	ls := secmap[name].ListedOn
 
 	if ls == nil || ls[0].LatestQuote == nil {
 		return netPrice
 	} else {
-		return *ls[0].LatestQuote
+		return ls[0].LatestQuote
 	}
 }
 

@@ -51,6 +51,52 @@ proto3.util.setEnumType(PortfolioEventType, "mgo.portfolio.v1.PortfolioEventType
 ]);
 
 /**
+ * Currency is a currency value in the lowest unit of the selected currency
+ * (e.g., cents for EUR/USD).
+ *
+ * @generated from message mgo.portfolio.v1.Currency
+ */
+export class Currency extends Message<Currency> {
+  /**
+   * @generated from field: int32 value = 1;
+   */
+  value = 0;
+
+  /**
+   * @generated from field: string symbol = 2;
+   */
+  symbol = "";
+
+  constructor(data?: PartialMessage<Currency>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.Currency";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "value", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "symbol", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Currency {
+    return new Currency().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Currency {
+    return new Currency().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Currency {
+    return new Currency().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Currency | PlainMessage<Currency> | undefined, b: Currency | PlainMessage<Currency> | undefined): boolean {
+    return proto3.util.equals(Currency, a, b);
+  }
+}
+
+/**
  * @generated from message mgo.portfolio.v1.CreatePortfolioRequest
  */
 export class CreatePortfolioRequest extends Message<CreatePortfolioRequest> {
@@ -676,24 +722,24 @@ export class PortfolioSnapshot extends Message<PortfolioSnapshot> {
   /**
    * TotalPurchaseValue contains the total purchase value of all positions
    *
-   * @generated from field: float total_purchase_value = 10;
+   * @generated from field: mgo.portfolio.v1.Currency total_purchase_value = 10;
    */
-  totalPurchaseValue = 0;
+  totalPurchaseValue?: Currency;
 
   /**
    * TotalMarketValue contains the total market value of all positions
    *
-   * @generated from field: float total_market_value = 11;
+   * @generated from field: mgo.portfolio.v1.Currency total_market_value = 11;
    */
-  totalMarketValue = 0;
+  totalMarketValue?: Currency;
 
   /**
    * TotalProfitOrLoss contains the total absolute amount of profit or loss in
    * this snapshot.
    *
-   * @generated from field: float total_profit_or_loss = 20;
+   * @generated from field: mgo.portfolio.v1.Currency total_profit_or_loss = 20;
    */
-  totalProfitOrLoss = 0;
+  totalProfitOrLoss?: Currency;
 
   /**
    * TotalGains contains the total relative amount of profit or loss in this
@@ -714,9 +760,9 @@ export class PortfolioSnapshot extends Message<PortfolioSnapshot> {
     { no: 1, name: "time", kind: "message", T: Timestamp },
     { no: 2, name: "positions", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: PortfolioPosition} },
     { no: 3, name: "first_transaction_time", kind: "message", T: Timestamp, opt: true },
-    { no: 10, name: "total_purchase_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
-    { no: 11, name: "total_market_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
-    { no: 20, name: "total_profit_or_loss", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 10, name: "total_purchase_value", kind: "message", T: Currency },
+    { no: 11, name: "total_market_value", kind: "message", T: Currency },
+    { no: 20, name: "total_profit_or_loss", kind: "message", T: Currency },
     { no: 21, name: "total_gains", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
   ]);
 
@@ -755,49 +801,49 @@ export class PortfolioPosition extends Message<PortfolioPosition> {
    * PurchaseValue was the market value of this position when it was bought
    * (net; exclusive of any fees).
    *
-   * @generated from field: float purchase_value = 5;
+   * @generated from field: mgo.portfolio.v1.Currency purchase_value = 5;
    */
-  purchaseValue = 0;
+  purchaseValue?: Currency;
 
   /**
    * PurchasePrice was the market price of this position when it was bought
    * (net; exclusive of any fees).
    *
-   * @generated from field: float purchase_price = 6;
+   * @generated from field: mgo.portfolio.v1.Currency purchase_price = 6;
    */
-  purchasePrice = 0;
+  purchasePrice?: Currency;
 
   /**
    * MarketValue is the current market value of this position, as retrieved from
    * the securities service.
    *
-   * @generated from field: float market_value = 10;
+   * @generated from field: mgo.portfolio.v1.Currency market_value = 10;
    */
-  marketValue = 0;
+  marketValue?: Currency;
 
   /**
    * MarketPrice is the current market price of this position, as retrieved from
    * the securities service.
    *
-   * @generated from field: float market_price = 11;
+   * @generated from field: mgo.portfolio.v1.Currency market_price = 11;
    */
-  marketPrice = 0;
+  marketPrice?: Currency;
 
   /**
    * TotalFees is the total amount of fees accumulating in this position through
    * various transactions.
    *
-   * @generated from field: float total_fees = 15;
+   * @generated from field: mgo.portfolio.v1.Currency total_fees = 15;
    */
-  totalFees = 0;
+  totalFees?: Currency;
 
   /**
    * ProfitOrLoss contains the absolute amount of profit or loss in this
    * position.
    *
-   * @generated from field: float profit_or_loss = 20;
+   * @generated from field: mgo.portfolio.v1.Currency profit_or_loss = 20;
    */
-  profitOrLoss = 0;
+  profitOrLoss?: Currency;
 
   /**
    * Gains contains the relative amount of profit or loss in this position.
@@ -816,12 +862,12 @@ export class PortfolioPosition extends Message<PortfolioPosition> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "security", kind: "message", T: Security },
     { no: 2, name: "amount", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
-    { no: 5, name: "purchase_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
-    { no: 6, name: "purchase_price", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
-    { no: 10, name: "market_value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
-    { no: 11, name: "market_price", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
-    { no: 15, name: "total_fees", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
-    { no: 20, name: "profit_or_loss", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 5, name: "purchase_value", kind: "message", T: Currency },
+    { no: 6, name: "purchase_price", kind: "message", T: Currency },
+    { no: 10, name: "market_value", kind: "message", T: Currency },
+    { no: 11, name: "market_price", kind: "message", T: Currency },
+    { no: 15, name: "total_fees", kind: "message", T: Currency },
+    { no: 20, name: "profit_or_loss", kind: "message", T: Currency },
     { no: 21, name: "gains", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
   ]);
 
@@ -877,19 +923,19 @@ export class PortfolioEvent extends Message<PortfolioEvent> {
   amount = 0;
 
   /**
-   * @generated from field: float price = 11;
+   * @generated from field: mgo.portfolio.v1.Currency price = 11;
    */
-  price = 0;
+  price?: Currency;
 
   /**
-   * @generated from field: float fees = 12;
+   * @generated from field: mgo.portfolio.v1.Currency fees = 12;
    */
-  fees = 0;
+  fees?: Currency;
 
   /**
-   * @generated from field: float taxes = 13;
+   * @generated from field: mgo.portfolio.v1.Currency taxes = 13;
    */
-  taxes = 0;
+  taxes?: Currency;
 
   constructor(data?: PartialMessage<PortfolioEvent>) {
     super();
@@ -905,9 +951,9 @@ export class PortfolioEvent extends Message<PortfolioEvent> {
     { no: 4, name: "portfolio_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "amount", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
-    { no: 11, name: "price", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
-    { no: 12, name: "fees", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
-    { no: 13, name: "taxes", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 11, name: "price", kind: "message", T: Currency },
+    { no: 12, name: "fees", kind: "message", T: Currency },
+    { no: 13, name: "taxes", kind: "message", T: Currency },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PortfolioEvent {
@@ -1007,9 +1053,9 @@ export class ListedSecurity extends Message<ListedSecurity> {
   currency = "";
 
   /**
-   * @generated from field: optional float latest_quote = 5;
+   * @generated from field: optional mgo.portfolio.v1.Currency latest_quote = 5;
    */
-  latestQuote?: number;
+  latestQuote?: Currency;
 
   /**
    * @generated from field: optional google.protobuf.Timestamp latest_quote_timestamp = 6;
@@ -1027,7 +1073,7 @@ export class ListedSecurity extends Message<ListedSecurity> {
     { no: 1, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "ticker", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "currency", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "latest_quote", kind: "scalar", T: 2 /* ScalarType.FLOAT */, opt: true },
+    { no: 5, name: "latest_quote", kind: "message", T: Currency, opt: true },
     { no: 6, name: "latest_quote_timestamp", kind: "message", T: Timestamp, opt: true },
   ]);
 

@@ -92,7 +92,7 @@ func Import(r io.Reader, pname string) (txs []*portfoliov1.PortfolioEvent, secs 
 func readLine(cr *csv.Reader, pname string) (tx *portfoliov1.PortfolioEvent, sec *portfoliov1.Security, err error) {
 	var (
 		record []string
-		value  float32
+		value  *portfoliov1.Currency
 	)
 
 	record, err = cr.Read()
@@ -111,17 +111,17 @@ func readLine(cr *csv.Reader, pname string) (tx *portfoliov1.PortfolioEvent, sec
 		return nil, nil, ErrParsingType
 	}
 
-	value, err = parseFloat32(record[2])
+	value, err = parseFloatCurrency(record[2])
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %w", ErrParsingValue, err)
 	}
 
-	tx.Fees, err = parseFloat32(record[7])
+	tx.Fees, err = parseFloatCurrency(record[7])
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %w", ErrParsingFees, err)
 	}
 
-	tx.Taxes, err = parseFloat32(record[8])
+	tx.Taxes, err = parseFloatCurrency(record[8])
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %w", ErrParsingTaxes, err)
 	}
@@ -134,10 +134,10 @@ func readLine(cr *csv.Reader, pname string) (tx *portfoliov1.PortfolioEvent, sec
 	// Calculate the price
 	if tx.Type == portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY ||
 		tx.Type == portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_INBOUND {
-		tx.Price = (value - tx.Fees) / float32(tx.Amount)
+		tx.Price = portfoliov1.Divide(portfoliov1.Minus(value, tx.Fees), tx.Amount)
 	} else if tx.Type == portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL ||
 		tx.Type == portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_OUTBOUND {
-		tx.Price = -(value - tx.Fees - tx.Taxes) / float32(tx.Amount)
+		tx.Price = portfoliov1.Times(portfoliov1.Divide(portfoliov1.Minus(portfoliov1.Minus(value, tx.Fees), tx.Taxes), tx.Amount), -1)
 	}
 
 	sec = new(portfoliov1.Security)
@@ -209,6 +209,15 @@ func parseFloat32(s string) (f float32, err error) {
 	}
 
 	return float32(f64), nil
+}
+
+func parseFloatCurrency(s string) (c *portfoliov1.Currency, err error) {
+	f, err := parseFloat32(s)
+	if err != nil {
+		return portfoliov1.Zero(), err
+	}
+
+	return portfoliov1.Value(int32(f * 100)), nil
 }
 
 func lsCurrency(txCurrency string, tickerCurrency string) string {

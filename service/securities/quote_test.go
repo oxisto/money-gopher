@@ -36,8 +36,8 @@ const QuoteProviderMock = "mock"
 type mockQP struct {
 }
 
-func (m *mockQP) LatestQuote(ctx context.Context, ls *portfoliov1.ListedSecurity) (quote float32, t time.Time, err error) {
-	return 1, time.Now(), nil
+func (m *mockQP) LatestQuote(ctx context.Context, ls *portfoliov1.ListedSecurity) (quote *portfoliov1.Currency, t time.Time, err error) {
+	return portfoliov1.Value(100), time.Now(), nil
 }
 
 func Test_service_TriggerSecurityQuoteUpdate(t *testing.T) {
@@ -101,8 +101,8 @@ func Test_service_TriggerSecurityQuoteUpdate(t *testing.T) {
 
 type mockQuoteProvider struct{}
 
-func (mockQuoteProvider) LatestQuote(_ context.Context, _ *portfoliov1.ListedSecurity) (quote float32, t time.Time, err error) {
-	return 100, time.Date(1, 0, 0, 0, 0, 0, 0, time.UTC), nil
+func (mockQuoteProvider) LatestQuote(_ context.Context, _ *portfoliov1.ListedSecurity) (quote *portfoliov1.Currency, t time.Time, err error) {
+	return portfoliov1.Value(100), time.Date(1, 0, 0, 0, 0, 0, 0, time.UTC), nil
 }
 
 func Test_service_updateQuote(t *testing.T) {
@@ -134,7 +134,7 @@ func Test_service_updateQuote(t *testing.T) {
 				ls: &portfoliov1.ListedSecurity{SecurityName: "My Security", Ticker: "SEC", Currency: currency.EUR.String()},
 			},
 			want: func(t *testing.T, ls *portfoliov1.ListedSecurity) bool {
-				return assert.Equals(t, 100, *ls.LatestQuote)
+				return assert.Equals(t, 100, int(ls.LatestQuote.Value))
 			},
 		},
 	}
