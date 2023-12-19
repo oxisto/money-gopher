@@ -29,7 +29,7 @@ func (*ListedSecurity) InitTables(db *persistence.DB) (err error) {
 security_name TEXT,
 ticker TEXT NOT NULL,
 currency TEXT NOT NULL,
-latest_quote REAL,
+latest_quote INTEGER,
 latest_quote_timestamp DATETIME,
 PRIMARY KEY (security_name, ticker)
 );`)
@@ -121,7 +121,11 @@ func (l *ListedSecurity) ReplaceIntoArgs() []any {
 		pt = &t
 	}
 
-	return []any{l.SecurityName, l.Ticker, l.Currency, l.LatestQuote, pt}
+	if l.LatestQuote != nil {
+		l.LatestQuote = &Currency{}
+	}
+
+	return []any{l.SecurityName, l.Ticker, l.LatestQuote.Symbol, l.LatestQuote.Value, pt}
 }
 
 func (s *Security) UpdateArgs(columns []string) (args []any) {
@@ -147,9 +151,9 @@ func (l *ListedSecurity) UpdateArgs(columns []string) (args []any) {
 		case "ticker":
 			args = append(args, l.Ticker)
 		case "currency":
-			args = append(args, l.Currency)
+			args = append(args, l.LatestQuote.GetSymbol())
 		case "latest_quote":
-			args = append(args, l.LatestQuote)
+			args = append(args, l.LatestQuote.GetValue())
 		case "latest_quote_timestamp":
 			if l.LatestQuoteTimestamp != nil {
 				args = append(args, l.LatestQuoteTimestamp.AsTime())

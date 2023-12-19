@@ -15,7 +15,7 @@ func TestPortfolioEvent_MakeUniqueName(t *testing.T) {
 		Time          *timestamppb.Timestamp
 		PortfolioName string
 		SecurityName  string
-		Amount        float32
+		Amount        float64
 		Price         *Currency
 		Fees          *Currency
 		Taxes         *Currency

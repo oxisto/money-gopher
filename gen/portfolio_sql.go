@@ -93,9 +93,9 @@ time DATETIME NOT NULL,
 portfolio_name TEXT NOT NULL, 
 security_name TEXT NOT NULL,
 amount REAL,
-price REAL,
-fees REAL,
-taxes REAL
+price INTEGER,
+fees INTEGER,
+taxes INTEGER
 );`)
 	if err != nil {
 		return err
@@ -148,9 +148,9 @@ func (e *PortfolioEvent) ReplaceIntoArgs() []any {
 		e.PortfolioName,
 		e.SecurityName,
 		e.Amount,
-		e.Price,
-		e.Fees,
-		e.Taxes,
+		e.Price.GetValue(),
+		e.Fees.GetValue(),
+		e.Taxes.GetValue(),
 	}
 }
 
@@ -172,7 +172,7 @@ func (e *PortfolioEvent) UpdateArgs(columns []string) (args []any) {
 		case "price":
 			args = append(args, e.Price)
 		case "fees":
-			args = append(args, e.Fees)
+			args = append(args, e.Fees.Value)
 		case "taxes":
 			args = append(args, e.Taxes)
 		}

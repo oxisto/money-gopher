@@ -103,7 +103,7 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 
 		// Calculate loss and gains
 		pos.ProfitOrLoss = portfoliov1.Minus(pos.MarketValue, pos.PurchaseValue)
-		pos.Gains = float32(portfoliov1.Minus(pos.MarketValue, pos.PurchaseValue).Value) / float32(pos.PurchaseValue.Value)
+		pos.Gains = float64(portfoliov1.Minus(pos.MarketValue, pos.PurchaseValue).Value) / float64(pos.PurchaseValue.Value)
 
 		// Add to total value(s)
 		snap.TotalPurchaseValue.PlusAssign(pos.PurchaseValue)
@@ -115,7 +115,7 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 	}
 
 	// Calculate total gains
-	snap.TotalGains = float32(portfoliov1.Minus(snap.TotalMarketValue, snap.TotalPurchaseValue).Value) / float32(snap.TotalPurchaseValue.Value)
+	snap.TotalGains = float64(portfoliov1.Minus(snap.TotalMarketValue, snap.TotalPurchaseValue).Value) / float64(snap.TotalPurchaseValue.Value)
 
 	return connect.NewResponse(snap), nil
 }

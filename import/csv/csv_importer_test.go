@@ -107,6 +107,7 @@ func Test_readLine(t *testing.T) {
 				Time:         timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 0, time.Local)),
 				Amount:       20,
 				Fees:         portfoliov1.Value(1025),
+				Taxes:        portfoliov1.Zero(),
 				Price:        portfoliov1.Value(10708),
 			},
 			wantSec: &portfoliov1.Security{
@@ -138,6 +139,8 @@ func Test_readLine(t *testing.T) {
 				Time:         timestamppb.New(time.Date(2022, 1, 1, 9, 0, 0, 0, time.Local)),
 				Amount:       20,
 				Price:        portfoliov1.Value(6040),
+				Fees:         portfoliov1.Zero(),
+				Taxes:        portfoliov1.Zero(),
 			},
 			wantSec: &portfoliov1.Security{
 				Name:          "US00827B1061",

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"log/slog"
+	"math"
 	"strconv"
 	"time"
 )
@@ -107,16 +108,16 @@ func Minus(a *Currency, b *Currency) *Currency {
 	}
 }
 
-func Divide(a *Currency, b float32) *Currency {
+func Divide(a *Currency, b float64) *Currency {
 	return &Currency{
-		Value:  int32(float32(a.Value) / b),
+		Value:  int32(math.Round((float64(a.Value) / b))),
 		Symbol: a.Symbol,
 	}
 }
 
-func Times(a *Currency, b float32) *Currency {
+func Times(a *Currency, b float64) *Currency {
 	return &Currency{
-		Value:  int32(float32(a.Value) * b),
+		Value:  int32(math.Round((float64(a.Value) * b))),
 		Symbol: a.Symbol,
 	}
 }

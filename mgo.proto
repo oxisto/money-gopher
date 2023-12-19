@@ -94,13 +94,13 @@ message PortfolioSnapshot {
 
   // TotalGains contains the total relative amount of profit or loss in this
   // snapshot.
-  float total_gains = 21;
+  double total_gains = 21;
 }
 
 message PortfolioPosition {
   Security security = 1;
 
-  float amount = 2;
+  double amount = 2;
 
   // PurchaseValue was the market value of this position when it was bought
   // (net; exclusive of any fees).
@@ -127,7 +127,7 @@ message PortfolioPosition {
   Currency profit_or_loss = 20;
 
   // Gains contains the relative amount of profit or loss in this position.
-  float gains = 21;
+  double gains = 21;
 }
 
 enum PortfolioEventType {
@@ -146,7 +146,7 @@ message PortfolioEvent {
   string portfolio_name = 4;
   string security_name = 5;
 
-  float amount = 10;
+  double amount = 10;
   Currency price = 11;
   Currency fees = 12;
   Currency taxes = 13;

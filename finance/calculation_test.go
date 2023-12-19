@@ -88,7 +88,7 @@ func TestNewCalculation(t *testing.T) {
 					assert.Equals(t, 491425, int(c.NetValue().Value)) &&
 					assert.Equals(t, 494614, int(c.GrossValue().Value)) &&
 					assert.Equals(t, 19657, int(c.NetPrice().Value)) &&
-					assert.Equals(t, 19784, int(c.GrossPrice().Value))
+					assert.Equals(t, 19785, int(c.GrossPrice().Value))
 			},
 		},
 	}

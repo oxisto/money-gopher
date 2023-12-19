@@ -745,7 +745,7 @@ export class PortfolioSnapshot extends Message<PortfolioSnapshot> {
    * TotalGains contains the total relative amount of profit or loss in this
    * snapshot.
    *
-   * @generated from field: float total_gains = 21;
+   * @generated from field: double total_gains = 21;
    */
   totalGains = 0;
 
@@ -763,7 +763,7 @@ export class PortfolioSnapshot extends Message<PortfolioSnapshot> {
     { no: 10, name: "total_purchase_value", kind: "message", T: Currency },
     { no: 11, name: "total_market_value", kind: "message", T: Currency },
     { no: 20, name: "total_profit_or_loss", kind: "message", T: Currency },
-    { no: 21, name: "total_gains", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 21, name: "total_gains", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PortfolioSnapshot {
@@ -793,7 +793,7 @@ export class PortfolioPosition extends Message<PortfolioPosition> {
   security?: Security;
 
   /**
-   * @generated from field: float amount = 2;
+   * @generated from field: double amount = 2;
    */
   amount = 0;
 
@@ -848,7 +848,7 @@ export class PortfolioPosition extends Message<PortfolioPosition> {
   /**
    * Gains contains the relative amount of profit or loss in this position.
    *
-   * @generated from field: float gains = 21;
+   * @generated from field: double gains = 21;
    */
   gains = 0;
 
@@ -861,14 +861,14 @@ export class PortfolioPosition extends Message<PortfolioPosition> {
   static readonly typeName = "mgo.portfolio.v1.PortfolioPosition";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "security", kind: "message", T: Security },
-    { no: 2, name: "amount", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 2, name: "amount", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
     { no: 5, name: "purchase_value", kind: "message", T: Currency },
     { no: 6, name: "purchase_price", kind: "message", T: Currency },
     { no: 10, name: "market_value", kind: "message", T: Currency },
     { no: 11, name: "market_price", kind: "message", T: Currency },
     { no: 15, name: "total_fees", kind: "message", T: Currency },
     { no: 20, name: "profit_or_loss", kind: "message", T: Currency },
-    { no: 21, name: "gains", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 21, name: "gains", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PortfolioPosition {
@@ -918,7 +918,7 @@ export class PortfolioEvent extends Message<PortfolioEvent> {
   securityName = "";
 
   /**
-   * @generated from field: float amount = 10;
+   * @generated from field: double amount = 10;
    */
   amount = 0;
 
@@ -950,7 +950,7 @@ export class PortfolioEvent extends Message<PortfolioEvent> {
     { no: 3, name: "time", kind: "message", T: Timestamp },
     { no: 4, name: "portfolio_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "security_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "amount", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 10, name: "amount", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
     { no: 11, name: "price", kind: "message", T: Currency },
     { no: 12, name: "fees", kind: "message", T: Currency },
     { no: 13, name: "taxes", kind: "message", T: Currency },
