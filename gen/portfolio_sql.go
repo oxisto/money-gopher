@@ -93,9 +93,9 @@ time DATETIME NOT NULL,
 portfolio_name TEXT NOT NULL, 
 security_name TEXT NOT NULL,
 amount REAL,
-price REAL,
-fees REAL,
-taxes REAL
+price INTEGER,
+fees INTEGER,
+taxes INTEGER
 );`)
 	if err != nil {
 		return err
@@ -148,9 +148,9 @@ func (e *PortfolioEvent) ReplaceIntoArgs() []any {
 		e.PortfolioName,
 		e.SecurityName,
 		e.Amount,
-		e.Price,
-		e.Fees,
-		e.Taxes,
+		e.Price.GetValue(),
+		e.Fees.GetValue(),
+		e.Taxes.GetValue(),
 	}
 }
 
@@ -170,11 +170,11 @@ func (e *PortfolioEvent) UpdateArgs(columns []string) (args []any) {
 		case "amount":
 			args = append(args, e.Amount)
 		case "price":
-			args = append(args, e.Price)
+			args = append(args, e.Price.GetValue())
 		case "fees":
-			args = append(args, e.Fees)
+			args = append(args, e.Fees.GetValue())
 		case "taxes":
-			args = append(args, e.Taxes)
+			args = append(args, e.Taxes.GetValue())
 		}
 	}
 
@@ -187,6 +187,10 @@ func (*PortfolioEvent) Scan(sc persistence.Scanner) (obj persistence.StorageObje
 		t time.Time
 	)
 
+	e.Price = Zero()
+	e.Fees = Zero()
+	e.Taxes = Zero()
+
 	err = sc.Scan(
 		&e.Name,
 		&e.Type,
@@ -194,9 +198,9 @@ func (*PortfolioEvent) Scan(sc persistence.Scanner) (obj persistence.StorageObje
 		&e.PortfolioName,
 		&e.SecurityName,
 		&e.Amount,
-		&e.Price,
-		&e.Fees,
-		&e.Taxes,
+		&e.Price.Value,
+		&e.Fees.Value,
+		&e.Taxes.Value,
 	)
 	if err != nil {
 		return nil, err

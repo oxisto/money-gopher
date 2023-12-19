@@ -77,7 +77,7 @@ func (svc *service) TriggerSecurityQuoteUpdate(ctx context.Context, req *connect
 
 func (svc *service) updateQuote(qp QuoteProvider, ls *portfoliov1.ListedSecurity) (err error) {
 	var (
-		quote  float32
+		quote  *portfoliov1.Currency
 		t      time.Time
 		ctx    context.Context
 		cancel context.CancelFunc
@@ -91,7 +91,7 @@ func (svc *service) updateQuote(qp QuoteProvider, ls *portfoliov1.ListedSecurity
 		return err
 	}
 
-	ls.LatestQuote = &quote
+	ls.LatestQuote = quote
 	ls.LatestQuoteTimestamp = timestamppb.New(t)
 
 	_, err = svc.listedSecurities.Update(

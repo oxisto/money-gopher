@@ -27,26 +27,24 @@ import (
 // list. We basically need to copy the values from the original transaction,
 // since we need to modify it.
 type fifoTx struct {
-	// amount of shares in this transaction
-	amount float32
-	// value contains the net value of this transaction, i.e., without taxes and fees
-	value float32
-	// fees contain any fees associated to this transaction
-	fees float32
-	// ppu is the price per unit (amount)
-	ppu float32
+	amount float64               // amount of shares in this transaction
+	value  *portfoliov1.Currency // value contains the net value of this transaction, i.e., without taxes and fees
+	fees   *portfoliov1.Currency // fees contain any fees associated to this transaction
+	ppu    *portfoliov1.Currency // ppu is the price per unit (amount)
 }
 
 type calculation struct {
-	Amount float32
-	Fees   float32
-	Taxes  float32
+	Amount float64
+	Fees   *portfoliov1.Currency
+	Taxes  *portfoliov1.Currency
 
 	fifo []*fifoTx
 }
 
 func NewCalculation(txs []*portfoliov1.PortfolioEvent) *calculation {
 	var c calculation
+	c.Fees = portfoliov1.Zero()
+	c.Taxes = portfoliov1.Zero()
 
 	for _, tx := range txs {
 		c.Apply(tx)
@@ -62,7 +60,7 @@ func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
 	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY:
 		// Increase the amount of shares and the fees by the value stored in the
 		// transaction
-		c.Fees += tx.Fees
+		c.Fees.PlusAssign(tx.Fees)
 		c.Amount += tx.Amount
 
 		// Add the transaction to the FIFO list. We need to have a list because
@@ -72,20 +70,20 @@ func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
 		c.fifo = append(c.fifo, &fifoTx{
 			amount: tx.Amount,
 			ppu:    tx.Price,
-			value:  tx.Price * float32(tx.Amount),
+			value:  portfoliov1.Times(tx.Price, tx.Amount),
 			fees:   tx.Fees,
 		})
 	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_OUTBOUND:
 		fallthrough
 	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL:
 		var (
-			sold float32
+			sold float64
 		)
 
 		// Increase the fees and taxes by the value stored in the
 		// transaction
-		c.Fees += tx.Fees
-		c.Taxes += tx.Taxes
+		c.Fees.PlusAssign(tx.Fees)
+		c.Taxes.PlusAssign(tx.Taxes)
 
 		// Store the amount of shares sold in this variable, since we later need
 		// to decrease it while looping through the FIFO list
@@ -115,17 +113,17 @@ func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
 
 			// Reduce the number of shares in this entry by the sold amount (but
 			// max it to the item's amount).
-			n := float32(math.Min(float64(sold), float64(item.amount)))
+			n := math.Min(float64(sold), float64(item.amount))
 			item.amount -= n
 
 			// Adjust the value with the new amount
-			item.value = item.ppu * float32(item.amount)
+			item.value = portfoliov1.Times(item.ppu, item.amount)
 
 			// If no shares are left in this FIFO transaction, also remove the
 			// fees, because they are now associated to the sale and not part of
 			// the price calculation anymore.
 			if item.amount <= 0 {
-				item.fees = 0
+				item.fees = portfoliov1.Zero()
 			}
 
 			sold -= n
@@ -133,26 +131,30 @@ func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
 	}
 }
 
-func (c *calculation) NetValue() (f float32) {
+func (c *calculation) NetValue() (f *portfoliov1.Currency) {
+	f = portfoliov1.Zero()
+
 	for _, item := range c.fifo {
-		f += item.value
+		f.PlusAssign(item.value)
 	}
 
 	return
 }
 
-func (c *calculation) GrossValue() (f float32) {
+func (c *calculation) GrossValue() (f *portfoliov1.Currency) {
+	f = portfoliov1.Zero()
+
 	for _, item := range c.fifo {
-		f += (item.value + item.fees)
+		f.PlusAssign(portfoliov1.Plus(item.value, item.fees))
 	}
 
 	return
 }
 
-func (c *calculation) NetPrice() (f float32) {
-	return c.NetValue() / float32(c.Amount)
+func (c *calculation) NetPrice() (f *portfoliov1.Currency) {
+	return portfoliov1.Divide(c.NetValue(), c.Amount)
 }
 
-func (c *calculation) GrossPrice() (f float32) {
-	return c.GrossValue() / float32(c.Amount)
+func (c *calculation) GrossPrice() (f *portfoliov1.Currency) {
+	return portfoliov1.Divide(c.GrossValue(), c.Amount)
 }

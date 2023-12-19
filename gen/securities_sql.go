@@ -29,7 +29,7 @@ func (*ListedSecurity) InitTables(db *persistence.DB) (err error) {
 security_name TEXT,
 ticker TEXT NOT NULL,
 currency TEXT NOT NULL,
-latest_quote REAL,
+latest_quote INTEGER,
 latest_quote_timestamp DATETIME,
 PRIMARY KEY (security_name, ticker)
 );`)
@@ -112,8 +112,9 @@ func (s *Security) ReplaceIntoArgs() []any {
 
 func (l *ListedSecurity) ReplaceIntoArgs() []any {
 	var (
-		pt *time.Time
-		t  time.Time
+		pt    *time.Time
+		t     time.Time
+		value sql.NullInt32
 	)
 
 	if l.LatestQuoteTimestamp != nil {
@@ -121,7 +122,12 @@ func (l *ListedSecurity) ReplaceIntoArgs() []any {
 		pt = &t
 	}
 
-	return []any{l.SecurityName, l.Ticker, l.Currency, l.LatestQuote, pt}
+	if l.LatestQuote != nil {
+		value.Int32 = l.LatestQuote.Value
+		value.Valid = true
+	}
+
+	return []any{l.SecurityName, l.Ticker, l.Currency, value, pt}
 }
 
 func (s *Security) UpdateArgs(columns []string) (args []any) {
@@ -147,9 +153,9 @@ func (l *ListedSecurity) UpdateArgs(columns []string) (args []any) {
 		case "ticker":
 			args = append(args, l.Ticker)
 		case "currency":
-			args = append(args, l.Currency)
+			args = append(args, l.LatestQuote.GetSymbol())
 		case "latest_quote":
-			args = append(args, l.LatestQuote)
+			args = append(args, l.LatestQuote.GetValue())
 		case "latest_quote_timestamp":
 			if l.LatestQuoteTimestamp != nil {
 				args = append(args, l.LatestQuoteTimestamp.AsTime())
@@ -177,17 +183,23 @@ func (*Security) Scan(sc persistence.Scanner) (obj persistence.StorageObject, er
 
 func (*ListedSecurity) Scan(sc persistence.Scanner) (obj persistence.StorageObject, err error) {
 	var (
-		l ListedSecurity
-		t sql.NullTime
+		l     ListedSecurity
+		t     sql.NullTime
+		value sql.NullInt32
 	)
 
-	err = sc.Scan(&l.SecurityName, &l.Ticker, &l.Currency, &l.LatestQuote, &t)
+	err = sc.Scan(&l.SecurityName, &l.Ticker, &l.Currency, &value, &t)
 	if err != nil {
 		return nil, err
 	}
 
 	if t.Valid {
 		l.LatestQuoteTimestamp = timestamppb.New(t.Time)
+	}
+
+	if value.Valid {
+		l.LatestQuote = Value(value.Int32)
+		l.LatestQuote.Symbol = l.Currency
 	}
 
 	return &l, nil

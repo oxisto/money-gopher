@@ -92,7 +92,7 @@ func Import(r io.Reader, pname string) (txs []*portfoliov1.PortfolioEvent, secs 
 func readLine(cr *csv.Reader, pname string) (tx *portfoliov1.PortfolioEvent, sec *portfoliov1.Security, err error) {
 	var (
 		record []string
-		value  float32
+		value  *portfoliov1.Currency
 	)
 
 	record, err = cr.Read()
@@ -111,22 +111,22 @@ func readLine(cr *csv.Reader, pname string) (tx *portfoliov1.PortfolioEvent, sec
 		return nil, nil, ErrParsingType
 	}
 
-	value, err = parseFloat32(record[2])
+	value, err = parseFloatCurrency(record[2])
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %w", ErrParsingValue, err)
 	}
 
-	tx.Fees, err = parseFloat32(record[7])
+	tx.Fees, err = parseFloatCurrency(record[7])
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %w", ErrParsingFees, err)
 	}
 
-	tx.Taxes, err = parseFloat32(record[8])
+	tx.Taxes, err = parseFloatCurrency(record[8])
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %w", ErrParsingTaxes, err)
 	}
 
-	tx.Amount, err = parseFloat32(record[9])
+	tx.Amount, err = parseFloat64(record[9])
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %w", ErrParsingAmount, err)
 	}
@@ -134,10 +134,10 @@ func readLine(cr *csv.Reader, pname string) (tx *portfoliov1.PortfolioEvent, sec
 	// Calculate the price
 	if tx.Type == portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY ||
 		tx.Type == portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_INBOUND {
-		tx.Price = (value - tx.Fees) / float32(tx.Amount)
+		tx.Price = portfoliov1.Divide(portfoliov1.Minus(value, tx.Fees), tx.Amount)
 	} else if tx.Type == portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL ||
 		tx.Type == portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_OUTBOUND {
-		tx.Price = -(value - tx.Fees - tx.Taxes) / float32(tx.Amount)
+		tx.Price = portfoliov1.Times(portfoliov1.Divide(portfoliov1.Minus(portfoliov1.Minus(value, tx.Fees), tx.Taxes), tx.Amount), -1)
 	}
 
 	sec = new(portfoliov1.Security)
@@ -197,18 +197,31 @@ func txTime(s string) (ts *timestamppb.Timestamp, err error) {
 	return timestamppb.New(t), nil
 }
 
-func parseFloat32(s string) (f float32, err error) {
+func parseFloat64(s string) (f float64, err error) {
 	// We assume that the float is in German locale (this might not be true for
 	// all users), so we need to convert it
 	s = strings.ReplaceAll(s, ".", "")
 	s = strings.ReplaceAll(s, ",", ".")
 
-	f64, err := strconv.ParseFloat(s, 32)
+	f, err = strconv.ParseFloat(s, 32)
 	if err != nil {
 		return 0, err
 	}
 
-	return float32(f64), nil
+	return
+}
+
+func parseFloatCurrency(s string) (c *portfoliov1.Currency, err error) {
+	// Get rid of all , and .
+	s = strings.ReplaceAll(s, ".", "")
+	s = strings.ReplaceAll(s, ",", "")
+
+	i, err := strconv.ParseInt(s, 10, 32)
+	if err != nil {
+		return portfoliov1.Zero(), err
+	}
+
+	return portfoliov1.Value(int32(i)), nil
 }
 
 func lsCurrency(txCurrency string, tickerCurrency string) string {

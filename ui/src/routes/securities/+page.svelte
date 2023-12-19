@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { currency } from '$lib/intl';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
@@ -51,8 +52,10 @@
 								<td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
 									{#each security.listedOn as ls (ls.ticker)}
 										<div>
-											{ls.ticker} | {ls.latestQuote}
-											{ls.currency}
+											{ls.ticker} | 
+											{#if ls.latestQuote}
+												{currency(ls.latestQuote)}
+											{/if}
 										</div>
 									{/each}
 								</td>

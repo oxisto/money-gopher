@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { PortfolioEventType, type PortfolioEvent, Security } from '$lib/gen/mgo_pb';
+	import { PortfolioEventType, type PortfolioEvent, Security, Currency } from '$lib/gen/mgo_pb';
 	import { currency as formatCurrency } from '$lib/intl';
 	import { PencilSquare } from '@steeze-ui/heroicons';
 	import { Icon } from '@steeze-ui/svelte-icon';
@@ -9,7 +9,10 @@
 	export let security: Security | undefined;
 	export let currency = 'EUR';
 
-	$: total = tx.amount * (tx.price + tx.fees + tx.taxes);
+	$: total = new Currency({
+		symbol: currency,
+		value: tx.amount * ((tx.price?.value ?? 0) + (tx.fees?.value ?? 0) + (tx.taxes?.value ?? 0))
+	});
 </script>
 
 <tr>
@@ -34,22 +37,22 @@
 	</td>
 	<td class="hidden whitespace-nowrap px-3 py-2 text-right text-sm lg:table-cell">
 		<div class="text-gray-500">
-			{formatCurrency(tx.price, currency)}
+			{formatCurrency(tx.price)}
 		</div>
 	</td>
 	<td class="hidden whitespace-nowrap px-3 py-2 text-right text-sm sm:table-cell">
 		<div class="text-gray-500">
-			{formatCurrency(tx.fees, currency)}
+			{formatCurrency(tx.fees)}
 		</div>
 	</td>
 	<td class="hidden whitespace-nowrap px-3 py-2 text-right text-sm sm:table-cell">
 		<div class="text-gray-500">
-			{formatCurrency(tx.taxes, currency)}
+			{formatCurrency(tx.taxes)}
 		</div>
 	</td>
 	<td class="hidden whitespace-nowrap px-3 py-2 text-right text-sm sm:table-cell">
 		<div class="text-gray-500">
-			{formatCurrency(total, currency)}
+			{formatCurrency(total)}
 		</div>
 	</td>
 	<td>

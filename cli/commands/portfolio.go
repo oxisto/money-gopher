@@ -81,10 +81,10 @@ func (l *ListPortfolioCmd) Run(s *cli.Session) error {
 				strings.Repeat("-", 15),
 				strings.Repeat("-", 15),
 				15, "Market Value",
-				15, fmt.Sprintf("%.02f €", snapshot.Msg.TotalMarketValue),
+				15, snapshot.Msg.TotalMarketValue.Pretty(),
 				15, "Performance",
 				15, fmt.Sprintf("%s € (%s %%)",
-					greenOrRed(snapshot.Msg.TotalProfitOrLoss),
+					greenOrRed(float64(snapshot.Msg.TotalProfitOrLoss.Value)),
 					greenOrRed(snapshot.Msg.TotalGains*100),
 				),
 			)
@@ -148,7 +148,7 @@ func (cmd *ShowPortfolioCmd) Run(s *cli.Session) error {
 	return nil
 }
 
-func greenOrRed(f float32) string {
+func greenOrRed(f float64) string {
 	if f < 0 {
 		return color.RedString("%.02f", f)
 	} else {
@@ -160,7 +160,7 @@ type CreateTransactionCmd struct {
 	PortfolioName string    `required:"" predictor:"portfolio" help:"The name of the portfolio where the transaction will be created in"`
 	SecurityName  string    `arg:"" predictor:"security" help:"The name of the security this transaction belongs to (its ISIN)"`
 	Type          string    `required:"" enum:"buy,sell,delivery-inbound,delivery-outbound,dividend" default:"buy"`
-	Amount        float32   `required:"" help:"The amount of securities involved in the transaction"`
+	Amount        float64   `required:"" help:"The amount of securities involved in the transaction"`
 	Price         float32   `required:"" help:"The price without fees or taxes"`
 	Fees          float32   `help:"Any fees that applied to the transaction"`
 	Taxes         float32   `help:"Any taxes that applied to the transaction"`
@@ -175,9 +175,9 @@ func (cmd *CreateTransactionCmd) Run(s *cli.Session) error {
 			Type:          eventTypeFrom(cmd.Type), // eventTypeFrom(cmd.Type)
 			Amount:        cmd.Amount,
 			Time:          timeOrNow(cmd.Time),
-			Price:         cmd.Price,
-			Fees:          cmd.Fees,
-			Taxes:         cmd.Taxes,
+			Price:         portfoliov1.Value(int32(cmd.Price * 100)),
+			Fees:          portfoliov1.Value(int32(cmd.Fees * 100)),
+			Taxes:         portfoliov1.Value(int32(cmd.Taxes * 100)),
 		},
 	})
 

@@ -9,12 +9,18 @@
 	import type { PageData } from './$types';
 	import { FieldMask } from '@bufbuild/protobuf';
 	import DateInput from '$lib/components/DateTimeInput.svelte';
+	import { Currency } from '$lib/gen/mgo_pb';
 
 	export let data: PageData;
 
-	$: total =
-		data.transaction.amount *
-		(data.transaction.price + data.transaction.fees + data.transaction.taxes);
+	$: total = new Currency({
+		symbol: 'EUR',
+		value:
+			data.transaction.amount *
+			((data.transaction.price?.value ?? 0) +
+				(data.transaction.fees?.value ?? 0) +
+				(data.transaction.taxes?.value ?? 0))
+	});
 
 	async function save() {
 		try {
@@ -58,14 +64,14 @@
 			<div
 				class="mt-10 space-y-8 border-b border-gray-900/10 pb-12 sm:space-y-0 sm:divide-y sm:divide-gray-900/10 sm:border-t sm:pb-0"
 			>
-			<div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
-				<label for="username" class="block text-sm font-medium leading-6 text-gray-900 sm:pt-1.5">
-					Date
-				</label>
-				<div class="mt-2 sm:col-span-2 sm:mt-0">
-					<DateInput bind:date={data.transaction.time} />
+				<div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
+					<label for="username" class="block text-sm font-medium leading-6 text-gray-900 sm:pt-1.5">
+						Date
+					</label>
+					<div class="mt-2 sm:col-span-2 sm:mt-0">
+						<DateInput bind:date={data.transaction.time} />
+					</div>
 				</div>
-			</div>
 
 				<div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
 					<label for="username" class="block text-sm font-medium leading-6 text-gray-900 sm:pt-1.5">
@@ -105,7 +111,7 @@
 					<div class="block text-sm font-medium leading-6 text-gray-900 sm:pt-1.5">Total</div>
 					<div class="mt-2 sm:col-span-2 sm:mt-0">
 						<div class="block w-full text-gray-900 sm:max-w-xs sm:text-sm sm:leading-6">
-							{currency(total, 'EUR')}
+							{currency(total)}
 						</div>
 					</div>
 				</div>

@@ -45,7 +45,7 @@ type header struct {
 	WKN              string    `json:"wkn"`
 }
 
-func (ing *ing) LatestQuote(ctx context.Context, ls *portfoliov1.ListedSecurity) (quote float32, t time.Time, err error) {
+func (ing *ing) LatestQuote(ctx context.Context, ls *portfoliov1.ListedSecurity) (quote *portfoliov1.Currency, t time.Time, err error) {
 	var (
 		res *http.Response
 		h   header
@@ -53,17 +53,17 @@ func (ing *ing) LatestQuote(ctx context.Context, ls *portfoliov1.ListedSecurity)
 
 	res, err = ing.Get(fmt.Sprintf("https://component-api.wertpapiere.ing.de/api/v1/components/instrumentheader/%s", ls.SecurityName))
 	if err != nil {
-		return 0, t, fmt.Errorf("could not fetch quote: %w", err)
+		return nil, t, fmt.Errorf("could not fetch quote: %w", err)
 	}
 
 	err = json.NewDecoder(res.Body).Decode(&h)
 	if err != nil {
-		return 0, t, fmt.Errorf("could not decode JSON: %w", err)
+		return nil, t, fmt.Errorf("could not decode JSON: %w", err)
 	}
 
 	if h.HasBidAsk {
-		return h.Bid, h.BidDate, nil
+		return portfoliov1.Value(int32(h.Bid * 100)), h.BidDate, nil
 	} else {
-		return h.Price, h.PriceChangedDate, nil
+		return portfoliov1.Value(int32(h.Price * 100)), h.PriceChangedDate, nil
 	}
 }

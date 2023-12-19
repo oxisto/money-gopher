@@ -15,10 +15,10 @@ func TestPortfolioEvent_MakeUniqueName(t *testing.T) {
 		Time          *timestamppb.Timestamp
 		PortfolioName string
 		SecurityName  string
-		Amount        float32
-		Price         float32
-		Fees          float32
-		Taxes         float32
+		Amount        float64
+		Price         *Currency
+		Fees          *Currency
+		Taxes         *Currency
 	}
 	tests := []struct {
 		name   string

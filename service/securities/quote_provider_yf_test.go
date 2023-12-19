@@ -55,7 +55,7 @@ func Test_yf_LatestQuote(t *testing.T) {
 		name      string
 		fields    fields
 		args      args
-		wantQuote float32
+		wantQuote *portfoliov1.Currency
 		wantTime  time.Time
 		wantErr   assert.Want[error]
 	}{
@@ -134,7 +134,7 @@ func Test_yf_LatestQuote(t *testing.T) {
 					Currency:     "USD",
 				},
 			},
-			wantQuote: float32(100.0),
+			wantQuote: portfoliov1.Value(10000),
 			wantTime:  time.Date(2023, 05, 04, 20, 0, 0, 0, time.UTC),
 			wantErr:   func(t *testing.T, err error) bool { return true },
 		},

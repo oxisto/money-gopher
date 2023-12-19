@@ -1,8 +1,10 @@
 package portfoliov1
 
 import (
+	"fmt"
 	"hash/fnv"
 	"log/slog"
+	"math"
 	"strconv"
 	"time"
 )
@@ -56,9 +58,9 @@ func (tx *PortfolioEvent) LogValue() slog.Value {
 		slog.String("name", tx.Name),
 		slog.String("security.name", tx.SecurityName),
 		slog.Float64("amount", float64(tx.Amount)),
-		slog.Float64("price", float64(tx.Price)),
-		slog.Float64("fees", float64(tx.Fees)),
-		slog.Float64("taxes", float64(tx.Taxes)),
+		slog.String("price", tx.Price.Pretty()),
+		slog.String("fees", tx.Fees.Pretty()),
+		slog.String("taxes", tx.Taxes.Pretty()),
 	)
 }
 
@@ -68,4 +70,58 @@ func (ls *ListedSecurity) LogValue() slog.Value {
 		slog.String("name", ls.SecurityName),
 		slog.String("ticker", ls.Ticker),
 	)
+}
+
+func Zero() *Currency {
+	// TODO(oxisto): Somehow make it possible to change default currency
+	return &Currency{Symbol: "EUR"}
+}
+
+func Value(v int32) *Currency {
+	// TODO(oxisto): Somehow make it possible to change default currency
+	return &Currency{Symbol: "EUR", Value: v}
+}
+
+func (c *Currency) PlusAssign(o *Currency) {
+	if o != nil {
+		c.Value += o.Value
+	}
+}
+
+func (c *Currency) MinusAssign(o *Currency) {
+	if o != nil {
+		c.Value -= o.Value
+	}
+}
+
+func Plus(a *Currency, b *Currency) *Currency {
+	return &Currency{
+		Value:  a.Value + b.Value,
+		Symbol: a.Symbol,
+	}
+}
+
+func Minus(a *Currency, b *Currency) *Currency {
+	return &Currency{
+		Value:  a.Value - b.Value,
+		Symbol: a.Symbol,
+	}
+}
+
+func Divide(a *Currency, b float64) *Currency {
+	return &Currency{
+		Value:  int32(math.Round((float64(a.Value) / b))),
+		Symbol: a.Symbol,
+	}
+}
+
+func Times(a *Currency, b float64) *Currency {
+	return &Currency{
+		Value:  int32(math.Round((float64(a.Value) * b))),
+		Symbol: a.Symbol,
+	}
+}
+
+func (c *Currency) Pretty() string {
+	return fmt.Sprintf("%.0f %s", float32(c.Value)/100, c.Symbol)
 }
