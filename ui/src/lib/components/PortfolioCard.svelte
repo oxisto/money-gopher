@@ -19,7 +19,9 @@
 					<a href="/portfolios/{portfolio.name}">{portfolio.displayName}</a>
 				</dt>
 				<dd class="mt-1 text-base font-semibold leading-6 text-gray-900">
-					{currency(snapshot?.totalMarketValue, 'EUR')}
+					{#if snapshot && snapshot.totalMarketValue}
+						{currency(snapshot.totalMarketValue)}
+					{/if}
 				</dd>
 			</div>
 			<div class="flex-none self-end px-6 pt-4">

@@ -170,11 +170,11 @@ func (e *PortfolioEvent) UpdateArgs(columns []string) (args []any) {
 		case "amount":
 			args = append(args, e.Amount)
 		case "price":
-			args = append(args, e.Price)
+			args = append(args, e.Price.GetValue())
 		case "fees":
-			args = append(args, e.Fees.Value)
+			args = append(args, e.Fees.GetValue())
 		case "taxes":
-			args = append(args, e.Taxes)
+			args = append(args, e.Taxes.GetValue())
 		}
 	}
 

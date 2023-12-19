@@ -52,8 +52,8 @@
 			class="{Math.abs(position.gains) <= 0.01
 				? 'text-gray-500'
 				: position.gains < 0
-				? 'text-red-500'
-				: 'text-green-500'} whitespace-nowrap px-3 py-2 text-right text-sm"
+					? 'text-red-500'
+					: 'text-green-500'} whitespace-nowrap px-3 py-2 text-right text-sm"
 		>
 			<div>
 				{Intl.NumberFormat(navigator.language, {
@@ -63,14 +63,14 @@
 					src={Math.abs(position.gains) < 0.01
 						? ArrowRight
 						: position.gains < 0
-						? ArrowDown
-						: ArrowUp}
+							? ArrowDown
+							: ArrowUp}
 					class="float-right mt-0.5 h-4 w-4"
 					aria-hidden="true"
 				/>
 			</div>
 			<div class="pr-4">
-				{currency(position.profitOrLoss, 'EUR')}
+				{currency(position.profitOrLoss)}
 			</div>
 		</td>
 	</tr>

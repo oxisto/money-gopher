@@ -16,10 +16,10 @@
 		return a.amount - b.amount;
 	});
 	sorters.set('purchaseValue', (a: PortfolioPosition, b: PortfolioPosition) => {
-		return a.purchaseValue - b.purchaseValue;
+		return (a.purchaseValue?.value ?? 0) - (b.purchaseValue?.value ?? 0);
 	});
 	sorters.set('marketValue', (a: PortfolioPosition, b: PortfolioPosition) => {
-		return a.marketValue - b.marketValue;
+		return (a.marketValue?.value ?? 0) - (b.marketValue?.value ?? 0);
 	});
 
 	let sortBy = 'displayName';
@@ -38,9 +38,6 @@
 			return asc ? sort : -sort;
 		});
 	}
-
-	$: perf =
-		((snapshot.totalMarketValue - snapshot.totalPurchaseValue) / snapshot.totalPurchaseValue) * 100;
 
 	function toggleSortDirection() {
 		asc = !asc;
@@ -133,34 +130,38 @@
 					scope="col"
 					class="hidden px-3 py-3.5 text-right text-sm font-semibold text-gray-900 lg:table-cell"
 				>
-					{currency(snapshot.totalPurchaseValue, 'EUR')}
+					{currency(snapshot.totalPurchaseValue)}
 				</th>
 				<th
 					scope="col"
 					class="hidden px-3 py-3.5 text-right text-sm font-semibold text-gray-900 sm:table-cell"
 				>
-					{currency(snapshot.totalMarketValue, 'EUR')}
+					{currency(snapshot.totalMarketValue)}
 				</th>
 				<th
 					scope="col"
-					class="{perf < 0
+					class="{snapshot.totalGains < 0
 						? 'text-red-500'
-						: perf <= 1
+						: snapshot.totalGains <= 0.01
 							? 'text-gray-500'
 							: 'text-green-500'} px-3 py-3.5 text-right text-sm font-semibold"
 				>
 					<div>
 						{Intl.NumberFormat(navigator.language, {
 							maximumFractionDigits: 2
-						}).format(perf)} %
+						}).format(snapshot.totalGains * 100)} %
 						<Icon
-							src={perf < 0 ? ArrowDown : perf < 1 ? ArrowRight : ArrowUp}
+							src={snapshot.totalGains < 0
+								? ArrowDown
+								: snapshot.totalGains < 0.01
+									? ArrowRight
+									: ArrowUp}
 							class="float-right mt-0.5 h-4 w-4"
 							aria-hidden="true"
 						/>
 					</div>
 					<div class="pr-4">
-						{currency(snapshot.totalMarketValue - snapshot.totalPurchaseValue, 'EUR')}
+						{currency(snapshot.totalProfitOrLoss)}
 					</div>
 				</th>
 			</tr>

@@ -17,13 +17,13 @@
 		return a.amount - b.amount;
 	});
 	sorters.set('price', (a: PortfolioEvent, b: PortfolioEvent) => {
-		return a.price - b.price;
+		return (a.price?.value ?? 0) - (b.price?.value ?? 0);
 	});
 	sorters.set('fees', (a: PortfolioEvent, b: PortfolioEvent) => {
-		return a.fees - b.fees;
+		return (a.fees?.value ?? 0) - (b.fees?.value ?? 0);
 	});
 	sorters.set('taxes', (a: PortfolioEvent, b: PortfolioEvent) => {
-		return a.taxes - b.taxes;
+		return (a.taxes?.value ?? 0) - (b.taxes?.value ?? 0);
 	});
 
 	let sortBy = 'time';
