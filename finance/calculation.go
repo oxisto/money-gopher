@@ -132,7 +132,7 @@ func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
 }
 
 func (c *calculation) NetValue() (f *portfoliov1.Currency) {
-	f = &portfoliov1.Currency{}
+	f = portfoliov1.Zero()
 
 	for _, item := range c.fifo {
 		f.PlusAssign(item.value)
@@ -142,7 +142,7 @@ func (c *calculation) NetValue() (f *portfoliov1.Currency) {
 }
 
 func (c *calculation) GrossValue() (f *portfoliov1.Currency) {
-	f = &portfoliov1.Currency{}
+	f = portfoliov1.Zero()
 
 	for _, item := range c.fifo {
 		f.PlusAssign(portfoliov1.Plus(item.value, item.fees))

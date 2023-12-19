@@ -53,12 +53,12 @@ func (ing *ing) LatestQuote(ctx context.Context, ls *portfoliov1.ListedSecurity)
 
 	res, err = ing.Get(fmt.Sprintf("https://component-api.wertpapiere.ing.de/api/v1/components/instrumentheader/%s", ls.SecurityName))
 	if err != nil {
-		return portfoliov1.Zero(), t, fmt.Errorf("could not fetch quote: %w", err)
+		return nil, t, fmt.Errorf("could not fetch quote: %w", err)
 	}
 
 	err = json.NewDecoder(res.Body).Decode(&h)
 	if err != nil {
-		return portfoliov1.Zero(), t, fmt.Errorf("could not decode JSON: %w", err)
+		return nil, t, fmt.Errorf("could not decode JSON: %w", err)
 	}
 
 	if h.HasBidAsk {

@@ -187,6 +187,10 @@ func (*PortfolioEvent) Scan(sc persistence.Scanner) (obj persistence.StorageObje
 		t time.Time
 	)
 
+	e.Price = Zero()
+	e.Fees = Zero()
+	e.Taxes = Zero()
+
 	err = sc.Scan(
 		&e.Name,
 		&e.Type,
@@ -194,9 +198,9 @@ func (*PortfolioEvent) Scan(sc persistence.Scanner) (obj persistence.StorageObje
 		&e.PortfolioName,
 		&e.SecurityName,
 		&e.Amount,
-		&e.Price,
-		&e.Fees,
-		&e.Taxes,
+		&e.Price.Value,
+		&e.Fees.Value,
+		&e.Taxes.Value,
 	)
 	if err != nil {
 		return nil, err

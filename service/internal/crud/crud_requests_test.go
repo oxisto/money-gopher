@@ -53,7 +53,7 @@ func TestCreate(t *testing.T) {
 func TestList(t *testing.T) {
 	type args struct {
 		op     persistence.StorageOperations[*portfoliov1.Portfolio]
-		setter func(res *connect.Response[portfoliov1.ListPortfoliosResponse], list []*portfoliov1.Portfolio)
+		setter func(res *connect.Response[portfoliov1.ListPortfoliosResponse], list []*portfoliov1.Portfolio) error
 		args   []any
 	}
 	tests := []struct {
@@ -66,8 +66,9 @@ func TestList(t *testing.T) {
 			name: "error",
 			args: args{
 				op: internal.ErrOps[*portfoliov1.Portfolio](errors.New("some-error")),
-				setter: func(res *connect.Response[portfoliov1.ListPortfoliosResponse], list []*portfoliov1.Portfolio) {
+				setter: func(res *connect.Response[portfoliov1.ListPortfoliosResponse], list []*portfoliov1.Portfolio) error {
 					res.Msg.Portfolios = list
+					return nil
 				},
 				args: []any{"some-key"},
 			},

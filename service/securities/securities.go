@@ -56,12 +56,17 @@ func (svc *service) GetSecurity(ctx context.Context, req *connect.Request[portfo
 func (svc *service) ListSecurities(ctx context.Context, req *connect.Request[portfoliov1.ListSecuritiesRequest]) (res *connect.Response[portfoliov1.ListSecuritiesResponse], err error) {
 	return crud.List(
 		svc.securities,
-		func(res *connect.Response[portfoliov1.ListSecuritiesResponse], list []*portfoliov1.Security) {
+		func(res *connect.Response[portfoliov1.ListSecuritiesResponse], list []*portfoliov1.Security) error {
 			res.Msg.Securities = list
 
 			for _, sec := range res.Msg.Securities {
 				sec.ListedOn, err = svc.listedSecurities.List(sec.Name)
+				if err != nil {
+					return err
+				}
 			}
+
+			return nil
 		},
 	)
 }

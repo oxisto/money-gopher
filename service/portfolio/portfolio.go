@@ -44,12 +44,17 @@ func (svc *service) ListPortfolios(ctx context.Context, req *connect.Request[por
 		func(
 			res *connect.Response[portfoliov1.ListPortfoliosResponse],
 			list []*portfoliov1.Portfolio,
-		) {
+		) error {
 			res.Msg.Portfolios = list
 
 			for _, p := range res.Msg.Portfolios {
-				p.Events, _ = svc.events.List(p.Name)
+				p.Events, err = svc.events.List(p.Name)
+				if err != nil {
+					return err
+				}
 			}
+
+			return nil
 		},
 	)
 }

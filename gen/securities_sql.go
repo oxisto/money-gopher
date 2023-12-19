@@ -112,8 +112,9 @@ func (s *Security) ReplaceIntoArgs() []any {
 
 func (l *ListedSecurity) ReplaceIntoArgs() []any {
 	var (
-		pt *time.Time
-		t  time.Time
+		pt    *time.Time
+		t     time.Time
+		value sql.NullInt32
 	)
 
 	if l.LatestQuoteTimestamp != nil {
@@ -122,10 +123,11 @@ func (l *ListedSecurity) ReplaceIntoArgs() []any {
 	}
 
 	if l.LatestQuote != nil {
-		l.LatestQuote = &Currency{}
+		value.Int32 = l.LatestQuote.Value
+		value.Valid = true
 	}
 
-	return []any{l.SecurityName, l.Ticker, l.LatestQuote.Symbol, l.LatestQuote.Value, pt}
+	return []any{l.SecurityName, l.Ticker, l.Currency, value, pt}
 }
 
 func (s *Security) UpdateArgs(columns []string) (args []any) {
@@ -181,17 +183,23 @@ func (*Security) Scan(sc persistence.Scanner) (obj persistence.StorageObject, er
 
 func (*ListedSecurity) Scan(sc persistence.Scanner) (obj persistence.StorageObject, err error) {
 	var (
-		l ListedSecurity
-		t sql.NullTime
+		l     ListedSecurity
+		t     sql.NullTime
+		value sql.NullInt32
 	)
 
-	err = sc.Scan(&l.SecurityName, &l.Ticker, &l.Currency, &l.LatestQuote, &t)
+	err = sc.Scan(&l.SecurityName, &l.Ticker, &l.Currency, &value, &t)
 	if err != nil {
 		return nil, err
 	}
 
 	if t.Valid {
 		l.LatestQuoteTimestamp = timestamppb.New(t.Time)
+	}
+
+	if value.Valid {
+		l.LatestQuote = Value(value.Int32)
+		l.LatestQuote.Symbol = l.Currency
 	}
 
 	return &l, nil

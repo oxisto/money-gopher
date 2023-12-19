@@ -54,16 +54,16 @@ func (yf *yf) LatestQuote(ctx context.Context, ls *portfoliov1.ListedSecurity) (
 
 	res, err = yf.Get(fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s?interval=1d&range=1mo", ls.Ticker))
 	if err != nil {
-		return portfoliov1.Zero(), t, fmt.Errorf("could not fetch quote: %w", err)
+		return nil, t, fmt.Errorf("could not fetch quote: %w", err)
 	}
 
 	err = json.NewDecoder(res.Body).Decode(&ch)
 	if err != nil {
-		return portfoliov1.Zero(), t, fmt.Errorf("could not decode JSON: %w", err)
+		return nil, t, fmt.Errorf("could not decode JSON: %w", err)
 	}
 
 	if len(ch.Chart.Results) == 0 {
-		return portfoliov1.Zero(), t, ErrEmptyResult
+		return nil, t, ErrEmptyResult
 	}
 
 	return portfoliov1.Value(int32(ch.Chart.Results[0].Meta.RegularMarketPrice * 100)),

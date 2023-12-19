@@ -50,8 +50,11 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 
 	// Set up the snapshot
 	snap = &portfoliov1.PortfolioSnapshot{
-		Time:      req.Msg.Time,
-		Positions: make(map[string]*portfoliov1.PortfolioPosition),
+		Time:               req.Msg.Time,
+		Positions:          make(map[string]*portfoliov1.PortfolioPosition),
+		TotalPurchaseValue: portfoliov1.Zero(),
+		TotalMarketValue:   portfoliov1.Zero(),
+		TotalProfitOrLoss:  portfoliov1.Zero(),
 	}
 
 	// Record the first transaction time

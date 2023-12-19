@@ -65,8 +65,9 @@ func (svc *service) ListPortfolioTransactions(ctx context.Context, req *connect.
 		func(
 			res *connect.Response[portfoliov1.ListPortfolioTransactionsResponse],
 			list []*portfoliov1.PortfolioEvent,
-		) {
+		) error {
 			res.Msg.Transactions = list
+			return nil
 		},
 		req.Msg.PortfolioName,
 	)
