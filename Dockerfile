@@ -2,12 +2,15 @@ FROM golang as builder
 
 WORKDIR /build
 
+RUN apt update && apt install -y nodejs npm
+
 ADD go.mod .
 ADD go.sum .
 
+RUN go install github.com/bufbuild/buf/cmd/buf@latest
+
 ADD . .
 
-RUN go install github.com/bufbuild/buf/cmd/buf@latest
 RUN go generate ./...
 RUN go build ./cmd/moneyd
 
