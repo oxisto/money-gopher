@@ -18,4 +18,5 @@ FROM debian:stable-slim
 
 COPY --from=builder /build/moneyd /
 
+EXPOSE 8080
 ENTRYPOINT [ "./moneyd"]

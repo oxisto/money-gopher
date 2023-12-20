@@ -89,7 +89,7 @@ func (cmd *moneydCmd) Run() error {
 	mux.Handle("/", ui.SvelteKitHandler("/"))
 
 	err = http.ListenAndServe(
-		"localhost:8080",
+		":8080",
 		h2c.NewHandler(handleCORS(mux), &http2.Server{}),
 	)
 
