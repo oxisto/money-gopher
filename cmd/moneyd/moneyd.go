@@ -34,6 +34,7 @@ import (
 	"github.com/oxisto/money-gopher/persistence"
 	"github.com/oxisto/money-gopher/service/portfolio"
 	"github.com/oxisto/money-gopher/service/securities"
+	"github.com/oxisto/money-gopher/ui"
 )
 
 var cmd moneydCmd
@@ -85,6 +86,7 @@ func (cmd *moneydCmd) Run() error {
 		},
 	)))
 	mux.Handle(portfoliov1connect.NewSecuritiesServiceHandler(securities.NewService(db)))
+	mux.Handle("/", ui.SvelteKitHandler("/"))
 
 	err = http.ListenAndServe(
 		"localhost:8080",
