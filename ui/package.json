@@ -40,10 +40,5 @@
 		"typescript": "^5.0.0",
 		"vite": "^5.0.0"
 	},
-	"type": "module",
-	"overrides": {
-		"@sveltejs/kit": {
-			"vite": "$vite"
-		}
-	}
+	"type": "module"
 }
