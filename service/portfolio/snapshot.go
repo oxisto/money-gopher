@@ -18,6 +18,7 @@ package portfolio
 
 import (
 	"context"
+	"fmt"
 
 	moneygopher "github.com/oxisto/money-gopher"
 	"github.com/oxisto/money-gopher/finance"
@@ -69,14 +70,16 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 	// Retrieve market value of filtered securities
 	secres, err = svc.securities.ListSecurities(
 		context.Background(),
-		connect.NewRequest(&portfoliov1.ListSecuritiesRequest{
+		forwardAuth(connect.NewRequest(&portfoliov1.ListSecuritiesRequest{
 			Filter: &portfoliov1.ListSecuritiesRequest_Filter{
 				SecurityNames: names,
 			},
-		}),
+		}), req),
 	)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeInternal,
+			fmt.Errorf("internal error while calling ListSecurities on securities service: %w", err),
+		)
 	}
 
 	// Make a map out of the securities list so we can access it easier
@@ -142,4 +145,12 @@ func keys[M ~map[K]V, K comparable, V any](m M) (keys []K) {
 	}
 
 	return keys
+}
+
+// forwardAuth uses the authorization header of [authenticatedReq] to
+// authenticate [req]. This is a little workaround, until we have proper
+// service-to-service authentication.
+func forwardAuth[T any, S any](req *connect.Request[T], authenticatedReq *connect.Request[S]) *connect.Request[T] {
+	req.Header().Set("Authorization", authenticatedReq.Header().Get("Authorization"))
+	return req
 }

@@ -1,5 +1,12 @@
 <script>
 	import { page } from '$app/stores';
+	import { redirectLogin } from '$lib/oauth';
+
+	page.subscribe((p) => {
+		if (p.status == 401) {
+			redirectLogin('/');
+		}
+	});
 </script>
 
 {#if $page.status == 404}
