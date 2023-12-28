@@ -1,4 +1,4 @@
-import 'inter-ui/inter.css';
+import 'inter-ui/inter-variable.css';
 import '../app.css';
 import { securitiesClient } from '$lib/api/client';
 import type { LayoutLoad } from './$types';
