@@ -46,7 +46,7 @@ func Test_service_CreatePortfolioTransaction(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "happy path",
+			name: "happy path buy",
 			fields: fields{
 				portfolios: myPortfolio(t),
 			},
@@ -69,7 +69,56 @@ func Test_service_CreatePortfolioTransaction(t *testing.T) {
 				return assert.Equals(t, 3, len(list))
 			},
 		},
+		{
+			name: "happy path sell",
+			fields: fields{
+				portfolios: myPortfolio(t),
+			},
+			args: args{
+				req: connect.NewRequest(&portfoliov1.CreatePortfolioTransactionRequest{
+					Transaction: &portfoliov1.PortfolioEvent{
+						PortfolioName: "bank/myportfolio",
+						Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
+						SecurityName:  "My Security",
+						Amount:        1,
+						Price:         portfoliov1.Value(2000),
+					},
+				}),
+			},
+			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioEvent]) bool {
+				return assert.Equals(t, "My Security", r.Msg.GetSecurityName())
+			},
+			wantSvc: func(t *testing.T, s *service) bool {
+				list, _ := s.events.List("bank/myportfolio")
+				return assert.Equals(t, 3, len(list))
+			},
+		},
+		{
+			name: "missing security name",
+			fields: fields{
+				portfolios: myPortfolio(t),
+			},
+			args: args{
+				req: connect.NewRequest(&portfoliov1.CreatePortfolioTransactionRequest{
+					Transaction: &portfoliov1.PortfolioEvent{
+						PortfolioName: "bank/myportfolio",
+						Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
+						Amount:        1,
+						Price:         portfoliov1.Value(2000),
+					},
+				}),
+			},
+			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioEvent]) bool {
+				if r != nil {
+					t.Fatal("not nil")
+				}
+
+				return true
+			},
+			wantErr: true,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &service{
@@ -82,8 +131,11 @@ func Test_service_CreatePortfolioTransaction(t *testing.T) {
 				t.Errorf("service.CreatePortfolioTransaction() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+
 			tt.wantRes(t, gotRes)
-			tt.wantSvc(t, svc)
+			if tt.wantSvc != nil {
+				tt.wantSvc(t, svc)
+			}
 		})
 	}
 }
