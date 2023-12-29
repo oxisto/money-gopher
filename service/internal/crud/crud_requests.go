@@ -24,10 +24,10 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/oxisto/money-gopher/persistence"
+
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/emptypb"
-
-	"github.com/oxisto/money-gopher/persistence"
 )
 
 func Create[T any, S persistence.StorageObject](obj S, op persistence.StorageOperations[S], convert func(obj S) *T) (res *connect.Response[T], err error) {

@@ -22,16 +22,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oxisto/assert"
-	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	"github.com/oxisto/money-gopher/internal"
 	"github.com/oxisto/money-gopher/persistence"
+
+	"connectrpc.com/connect"
+	"github.com/oxisto/assert"
+	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"golang.org/x/text/currency"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"connectrpc.com/connect"
 )
 
 var mockSecuritiesClientWithData = &mockSecuritiesClient{

@@ -21,11 +21,11 @@ import (
 	"log/slog"
 	"time"
 
+	portfoliov1 "github.com/oxisto/money-gopher/gen"
+
 	"connectrpc.com/connect"
 	"github.com/lmittmann/tint"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	portfoliov1 "github.com/oxisto/money-gopher/gen"
 )
 
 func (svc *service) TriggerSecurityQuoteUpdate(ctx context.Context, req *connect.Request[portfoliov1.TriggerQuoteUpdateRequest]) (res *connect.Response[portfoliov1.TriggerQuoteUpdateResponse], err error) {

@@ -25,15 +25,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fatih/color"
-	kongcompletion "github.com/jotaen/kong-completion"
 	"github.com/oxisto/money-gopher/cli"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
-	"github.com/posener/complete"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"connectrpc.com/connect"
+	"github.com/fatih/color"
+	kongcompletion "github.com/jotaen/kong-completion"
+	"github.com/posener/complete"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type PortfolioCmd struct {

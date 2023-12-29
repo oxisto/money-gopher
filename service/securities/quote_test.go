@@ -21,14 +21,14 @@ import (
 	"testing"
 	"time"
 
-	"connectrpc.com/connect"
-	"github.com/oxisto/assert"
-	"golang.org/x/text/currency"
-
 	moneygopher "github.com/oxisto/money-gopher"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/internal"
 	"github.com/oxisto/money-gopher/persistence"
+
+	"connectrpc.com/connect"
+	"github.com/oxisto/assert"
+	"golang.org/x/text/currency"
 )
 
 const QuoteProviderMock = "mock"

@@ -19,11 +19,11 @@ package portfolio
 import (
 	"context"
 
-	"connectrpc.com/connect"
-	"google.golang.org/protobuf/types/known/emptypb"
-
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
+
+	"connectrpc.com/connect"
 	"github.com/oxisto/money-gopher/service/internal/crud"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 var bankAccountSetter = func(obj *portfoliov1.BankAccount) *portfoliov1.BankAccount {
