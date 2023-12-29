@@ -20,3 +20,4 @@ money.db
 .DS_Store
 __debug*
 moneyd
+private.key
