@@ -60,6 +60,13 @@ message ImportTransactionsRequest {
 
 message CreateBankAccountRequest { BankAccount bank_account = 1; }
 
+message UpdateBankAccountRequest {
+  BankAccount account = 1;
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeleteBankAccountRequest { string name = 1; }
+
 message Portfolio {
   string name = 1;
 
@@ -216,6 +223,9 @@ service PortfolioService {
       returns (google.protobuf.Empty);
 
   rpc CreateBankAccount(CreateBankAccountRequest) returns (BankAccount);
+  rpc UpdateBankAccount(UpdateBankAccountRequest) returns (BankAccount);
+  rpc DeleteBankAccount(DeleteBankAccountRequest)
+      returns (google.protobuf.Empty);
 }
 
 message Security {

@@ -26,6 +26,7 @@ import (
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	"github.com/oxisto/money-gopher/internal"
 	"github.com/oxisto/money-gopher/persistence"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
 func Test_service_CreateBankAccount(t *testing.T) {
@@ -86,6 +87,109 @@ func Test_service_CreateBankAccount(t *testing.T) {
 				return
 			}
 			tt.wantRes(t, gotRes)
+			tt.wantSvc(t, svc)
+		})
+	}
+}
+
+func Test_service_UpdateBankAccount(t *testing.T) {
+	type fields struct {
+		portfolios   persistence.StorageOperations[*portfoliov1.Portfolio]
+		bankAccounts persistence.StorageOperations[*portfoliov1.BankAccount]
+	}
+	type args struct {
+		ctx context.Context
+		req *connect.Request[portfoliov1.UpdateBankAccountRequest]
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantRes assert.Want[*connect.Response[portfoliov1.BankAccount]]
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			fields: fields{
+				portfolios:   myPortfolio(t),
+				bankAccounts: myCash(t),
+			},
+			args: args{
+				req: connect.NewRequest(&portfoliov1.UpdateBankAccountRequest{
+					Account: &portfoliov1.BankAccount{
+						Name:        "bank/mycash",
+						DisplayName: "My Cash",
+					},
+					UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"display_name"}},
+				}),
+			},
+			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.BankAccount]) bool {
+				return assert.Equals(t, "My Cash", r.Msg.DisplayName)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := &service{
+				portfolios:   tt.fields.portfolios,
+				bankAccounts: tt.fields.bankAccounts,
+			}
+			gotRes, err := svc.UpdateBankAccount(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("service.UpdateBankAccount() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			tt.wantRes(t, gotRes)
+		})
+	}
+}
+
+func Test_service_DeleteBankAccount(t *testing.T) {
+	type fields struct {
+		portfolios   persistence.StorageOperations[*portfoliov1.Portfolio]
+		bankAccounts persistence.StorageOperations[*portfoliov1.BankAccount]
+	}
+	type args struct {
+		ctx context.Context
+		req *connect.Request[portfoliov1.DeleteBankAccountRequest]
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantSvc assert.Want[*service]
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			fields: fields{
+				portfolios:   myPortfolio(t),
+				bankAccounts: myCash(t),
+			},
+			args: args{
+				req: connect.NewRequest(&portfoliov1.DeleteBankAccountRequest{
+					Name: "bank/mycash",
+				}),
+			},
+			wantSvc: func(t *testing.T, s *service) bool {
+				list, _ := s.bankAccounts.List()
+				return assert.Equals(t, 0, len(list))
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := &service{
+				portfolios:   tt.fields.portfolios,
+				bankAccounts: tt.fields.bankAccounts,
+			}
+			_, err := svc.DeleteBankAccount(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("service.DeleteBankAccount() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
 			tt.wantSvc(t, svc)
 		})
 	}

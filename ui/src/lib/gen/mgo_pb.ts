@@ -705,6 +705,86 @@ export class CreateBankAccountRequest extends Message<CreateBankAccountRequest> 
 }
 
 /**
+ * @generated from message mgo.portfolio.v1.UpdateBankAccountRequest
+ */
+export class UpdateBankAccountRequest extends Message<UpdateBankAccountRequest> {
+  /**
+   * @generated from field: mgo.portfolio.v1.BankAccount account = 1;
+   */
+  account?: BankAccount;
+
+  /**
+   * @generated from field: google.protobuf.FieldMask update_mask = 2;
+   */
+  updateMask?: FieldMask;
+
+  constructor(data?: PartialMessage<UpdateBankAccountRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.UpdateBankAccountRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "account", kind: "message", T: BankAccount },
+    { no: 2, name: "update_mask", kind: "message", T: FieldMask },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateBankAccountRequest {
+    return new UpdateBankAccountRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateBankAccountRequest {
+    return new UpdateBankAccountRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateBankAccountRequest {
+    return new UpdateBankAccountRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateBankAccountRequest | PlainMessage<UpdateBankAccountRequest> | undefined, b: UpdateBankAccountRequest | PlainMessage<UpdateBankAccountRequest> | undefined): boolean {
+    return proto3.util.equals(UpdateBankAccountRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message mgo.portfolio.v1.DeleteBankAccountRequest
+ */
+export class DeleteBankAccountRequest extends Message<DeleteBankAccountRequest> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<DeleteBankAccountRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.DeleteBankAccountRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteBankAccountRequest {
+    return new DeleteBankAccountRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteBankAccountRequest {
+    return new DeleteBankAccountRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteBankAccountRequest {
+    return new DeleteBankAccountRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteBankAccountRequest | PlainMessage<DeleteBankAccountRequest> | undefined, b: DeleteBankAccountRequest | PlainMessage<DeleteBankAccountRequest> | undefined): boolean {
+    return proto3.util.equals(DeleteBankAccountRequest, a, b);
+  }
+}
+
+/**
  * @generated from message mgo.portfolio.v1.Portfolio
  */
 export class Portfolio extends Message<Portfolio> {

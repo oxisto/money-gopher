@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"connectrpc.com/connect"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/service/internal/crud"
@@ -35,4 +36,20 @@ func (svc *service) CreateBankAccount(ctx context.Context, req *connect.Request[
 		svc.bankAccounts,
 		bankAccountSetter,
 	)
+}
+
+func (svc *service) UpdateBankAccount(ctx context.Context, req *connect.Request[portfoliov1.UpdateBankAccountRequest]) (res *connect.Response[portfoliov1.BankAccount], err error) {
+	return crud.Update(
+		req.Msg.Account.Name,
+		req.Msg.Account,
+		req.Msg.UpdateMask.Paths,
+		svc.bankAccounts,
+		func(obj *portfoliov1.BankAccount) *portfoliov1.BankAccount {
+			return obj
+		},
+	)
+}
+
+func (svc *service) DeleteBankAccount(ctx context.Context, req *connect.Request[portfoliov1.DeleteBankAccountRequest]) (res *connect.Response[emptypb.Empty], err error) {
+	return crud.Delete(req.Msg.Name, svc.bankAccounts)
 }
