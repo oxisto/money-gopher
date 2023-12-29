@@ -19,11 +19,11 @@ package main
 import (
 	"os"
 
-	"github.com/alecthomas/kong"
-	kongcompletion "github.com/jotaen/kong-completion"
-
 	"github.com/oxisto/money-gopher/cli"
 	"github.com/oxisto/money-gopher/cli/commands"
+
+	"github.com/alecthomas/kong"
+	kongcompletion "github.com/jotaen/kong-completion"
 )
 
 func main() {

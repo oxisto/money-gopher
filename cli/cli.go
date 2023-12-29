@@ -14,8 +14,7 @@
 //
 // This file is part of The Money Gopher.
 
-// repl provides a simple Read-Eval-Print-Loop (REPL) to issue commands to an
-// integrated client.
+// cli provides the commands for a simple CLI.
 package cli
 
 import (

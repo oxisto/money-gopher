@@ -25,8 +25,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oxisto/assert"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
+
+	"github.com/oxisto/assert"
 )
 
 type mockRoundTripper struct {

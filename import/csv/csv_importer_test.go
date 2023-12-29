@@ -23,9 +23,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oxisto/assert"
 	moneygopher "github.com/oxisto/money-gopher"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
+
+	"github.com/oxisto/assert"
 	"github.com/oxisto/money-gopher/service/securities"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )

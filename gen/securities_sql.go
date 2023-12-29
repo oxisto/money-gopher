@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 // This file is part of The Money Gopher.
+
 package portfoliov1
 
 import (
@@ -21,6 +22,7 @@ import (
 	"time"
 
 	"github.com/oxisto/money-gopher/persistence"
+
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

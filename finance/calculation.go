@@ -14,7 +14,7 @@
 //
 // This file is part of The Money Gopher.
 
-// package portfolio contains all kinds of different finance calculations.
+// package finance contains all kinds of different finance calculations.
 package finance
 
 import (

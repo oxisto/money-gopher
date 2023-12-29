@@ -19,9 +19,10 @@ package portfolio
 import (
 	"testing"
 
-	"github.com/oxisto/assert"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	"github.com/oxisto/money-gopher/internal"
+
+	"github.com/oxisto/assert"
 )
 
 func TestNewService(t *testing.T) {

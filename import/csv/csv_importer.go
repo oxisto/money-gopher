@@ -39,11 +39,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lmittmann/tint"
 	moneygopher "github.com/oxisto/money-gopher"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
-	"github.com/oxisto/money-gopher/service/securities"
 
+	"github.com/lmittmann/tint"
+	"github.com/oxisto/money-gopher/service/securities"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
