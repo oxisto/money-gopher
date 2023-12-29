@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreatePortfolioRequest, CreatePortfolioTransactionRequest, CreateSecurityRequest, DeletePortfolioRequest, DeletePortfolioTransactionRequest, DeleteSecurityRequest, GetPortfolioRequest, GetPortfolioSnapshotRequest, GetPortfolioTransactionRequest, GetSecurityRequest, ImportTransactionsRequest, ListPortfoliosRequest, ListPortfoliosResponse, ListPortfolioTransactionsRequest, ListPortfolioTransactionsResponse, ListSecuritiesRequest, ListSecuritiesResponse, Portfolio, PortfolioEvent, PortfolioSnapshot, Security, TriggerQuoteUpdateRequest, TriggerQuoteUpdateResponse, UpdatePortfolioRequest, UpdatePortfolioTransactionRequest, UpdateSecurityRequest } from "./mgo_pb.js";
+import { BankAccount, CreateBankAccountRequest, CreatePortfolioRequest, CreatePortfolioTransactionRequest, CreateSecurityRequest, DeleteBankAccountRequest, DeletePortfolioRequest, DeletePortfolioTransactionRequest, DeleteSecurityRequest, GetPortfolioRequest, GetPortfolioSnapshotRequest, GetPortfolioTransactionRequest, GetSecurityRequest, ImportTransactionsRequest, ListPortfoliosRequest, ListPortfoliosResponse, ListPortfolioTransactionsRequest, ListPortfolioTransactionsResponse, ListSecuritiesRequest, ListSecuritiesResponse, Portfolio, PortfolioEvent, PortfolioSnapshot, Security, TriggerQuoteUpdateRequest, TriggerQuoteUpdateResponse, UpdateBankAccountRequest, UpdatePortfolioRequest, UpdatePortfolioTransactionRequest, UpdateSecurityRequest } from "./mgo_pb.js";
 import { Empty, MethodIdempotency, MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -122,6 +122,33 @@ export const PortfolioService = {
     importTransactions: {
       name: "ImportTransactions",
       I: ImportTransactionsRequest,
+      O: Empty,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc mgo.portfolio.v1.PortfolioService.CreateBankAccount
+     */
+    createBankAccount: {
+      name: "CreateBankAccount",
+      I: CreateBankAccountRequest,
+      O: BankAccount,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc mgo.portfolio.v1.PortfolioService.UpdateBankAccount
+     */
+    updateBankAccount: {
+      name: "UpdateBankAccount",
+      I: UpdateBankAccountRequest,
+      O: BankAccount,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc mgo.portfolio.v1.PortfolioService.DeleteBankAccount
+     */
+    deleteBankAccount: {
+      name: "DeleteBankAccount",
+      I: DeleteBankAccountRequest,
       O: Empty,
       kind: MethodKind.Unary,
     },

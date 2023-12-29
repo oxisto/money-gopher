@@ -20,13 +20,27 @@
 package crud
 
 import (
-	"github.com/oxisto/money-gopher/persistence"
+	"fmt"
+	"log/slog"
+	"strings"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/emptypb"
+
+	"github.com/oxisto/money-gopher/persistence"
 )
 
 func Create[T any, S persistence.StorageObject](obj S, op persistence.StorageOperations[S], convert func(obj S) *T) (res *connect.Response[T], err error) {
+	var typ = fmt.Sprintf("%T", obj)
+
+	_, typ, _ = strings.Cut(typ, ".")
+	typ = strings.ToLower(typ)
+
+	slog.Info(
+		fmt.Sprintf("Creating %s", typ),
+		typ, obj,
+	)
+
 	// TODO(oxisto): We probably want to have a pure create instead of replace here
 	err = op.Replace(obj)
 	if err != nil {

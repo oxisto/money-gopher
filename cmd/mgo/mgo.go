@@ -42,6 +42,6 @@ func main() {
 	ctx, err := parser.Parse(os.Args[1:])
 	parser.FatalIfErrorf(err)
 
-	err = ctx.Run(&cli.Session{})
+	err = ctx.Run(cli.NewSession())
 	parser.FatalIfErrorf(err)
 }

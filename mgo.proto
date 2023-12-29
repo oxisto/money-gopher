@@ -58,14 +58,33 @@ message ImportTransactionsRequest {
   string from_csv = 2;
 }
 
+message CreateBankAccountRequest { BankAccount bank_account = 1; }
+
+message UpdateBankAccountRequest {
+  BankAccount account = 1;
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeleteBankAccountRequest { string name = 1; }
+
 message Portfolio {
   string name = 1;
 
   string display_name = 2;
 
+  // BankAccountName contains the name/identifier of the underlying bank
+  // account.
+  string bank_account_name = 3;
+
   // Events contains all portfolio events, such as buy/sell transactions,
   // dividends or other. They need to be ordered by time (ascending).
   repeated PortfolioEvent events = 5;
+}
+
+message BankAccount {
+  string name = 1;
+
+  string display_name = 2;
 }
 
 // PortfolioSnapshot represents a snapshot in time of the portfolio. It can for
@@ -82,19 +101,27 @@ message PortfolioSnapshot {
   // snapshot.
   optional google.protobuf.Timestamp first_transaction_time = 3;
 
-  // TotalPurchaseValue contains the total purchase value of all positions
+  // TotalPurchaseValue contains the total purchase value of all asset positions
   Currency total_purchase_value = 10;
 
-  // TotalMarketValue contains the total market value of all positions
+  // TotalMarketValue contains the total market value of all asset positions
   Currency total_market_value = 11;
 
   // TotalProfitOrLoss contains the total absolute amount of profit or loss in
-  // this snapshot.
+  // this snapshot, based on asset value.
   Currency total_profit_or_loss = 20;
 
   // TotalGains contains the total relative amount of profit or loss in this
-  // snapshot.
+  // snapshot, based on asset value.
   double total_gains = 21;
+
+  // Cash contains the current amount of cash in the portfolio's bank
+  // account(s).
+  Currency cash = 22;
+
+  // TotalPortfolioValue contains the amount of cash plus the total market value
+  // of all assets.
+  Currency total_portfolio_value = 23;
 }
 
 message PortfolioPosition {
@@ -132,11 +159,20 @@ message PortfolioPosition {
 
 enum PortfolioEventType {
   PORTFOLIO_EVENT_TYPE_UNSPECIFIED = 0;
+
   PORTFOLIO_EVENT_TYPE_BUY = 1;
   PORTFOLIO_EVENT_TYPE_SELL = 2;
   PORTFOLIO_EVENT_TYPE_DELIVERY_INBOUND = 3;
   PORTFOLIO_EVENT_TYPE_DELIVERY_OUTBOUND = 4;
+
   PORTFOLIO_EVENT_TYPE_DIVIDEND = 10;
+  PORTFOLIO_EVENT_TYPE_INTEREST = 11;
+
+  PORTFOLIO_EVENT_TYPE_DEPOSIT_CASH = 20;
+  PORTFOLIO_EVENT_TYPE_WITHDRAW_CASH = 21;
+
+  PORTFOLIO_EVENT_TYPE_ACCOUNT_FEES = 30;
+  PORTFOLIO_EVENT_TYPE_TAX_REFUND = 31;
 }
 
 message PortfolioEvent {
@@ -184,6 +220,11 @@ service PortfolioService {
       returns (google.protobuf.Empty);
 
   rpc ImportTransactions(ImportTransactionsRequest)
+      returns (google.protobuf.Empty);
+
+  rpc CreateBankAccount(CreateBankAccountRequest) returns (BankAccount);
+  rpc UpdateBankAccount(UpdateBankAccountRequest) returns (BankAccount);
+  rpc DeleteBankAccount(DeleteBankAccountRequest)
       returns (google.protobuf.Empty);
 }
 

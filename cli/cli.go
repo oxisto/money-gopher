@@ -18,6 +18,25 @@
 // integrated client.
 package cli
 
+import (
+	"net/http"
+
+	"connectrpc.com/connect"
+	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
+)
+
 // Session holds all necessary information about the current CLI session.
 type Session struct {
+	PortfolioClient portfoliov1connect.PortfolioServiceClient
+}
+
+func NewSession() *Session {
+	var s Session
+
+	s.PortfolioClient = portfoliov1connect.NewPortfolioServiceClient(
+		http.DefaultClient, "http://localhost:8080",
+		connect.WithHTTPGet(),
+	)
+
+	return &s
 }

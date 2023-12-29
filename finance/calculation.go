@@ -38,6 +38,8 @@ type calculation struct {
 	Fees   *portfoliov1.Currency
 	Taxes  *portfoliov1.Currency
 
+	Cash *portfoliov1.Currency
+
 	fifo []*fifoTx
 }
 
@@ -45,6 +47,7 @@ func NewCalculation(txs []*portfoliov1.PortfolioEvent) *calculation {
 	var c calculation
 	c.Fees = portfoliov1.Zero()
 	c.Taxes = portfoliov1.Zero()
+	c.Cash = portfoliov1.Zero()
 
 	for _, tx := range txs {
 		c.Apply(tx)
@@ -58,10 +61,19 @@ func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
 	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_INBOUND:
 		fallthrough
 	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY:
+		var (
+			total *portfoliov1.Currency
+		)
+
 		// Increase the amount of shares and the fees by the value stored in the
 		// transaction
 		c.Fees.PlusAssign(tx.Fees)
 		c.Amount += tx.Amount
+
+		total = portfoliov1.Times(tx.Price, tx.Amount).Plus(tx.Fees).Plus(tx.Taxes)
+
+		// Decrease our cash
+		c.Cash.MinusAssign(total)
 
 		// Add the transaction to the FIFO list. We need to have a list because
 		// sold shares are sold according to the FIFO principle. We therefore
@@ -77,13 +89,19 @@ func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
 		fallthrough
 	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL:
 		var (
-			sold float64
+			sold  float64
+			total *portfoliov1.Currency
 		)
 
 		// Increase the fees and taxes by the value stored in the
 		// transaction
 		c.Fees.PlusAssign(tx.Fees)
 		c.Taxes.PlusAssign(tx.Taxes)
+
+		total = portfoliov1.Times(tx.Price, tx.Amount).Plus(tx.Fees).Plus(tx.Taxes)
+
+		// Increase our cash
+		c.Cash.PlusAssign(total)
 
 		// Store the amount of shares sold in this variable, since we later need
 		// to decrease it while looping through the FIFO list
@@ -128,6 +146,12 @@ func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
 
 			sold -= n
 		}
+	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DEPOSIT_CASH:
+		// Add to the cash
+		c.Cash.PlusAssign(tx.Price)
+	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_WITHDRAW_CASH:
+		// Remove from the cash
+		c.Cash.MinusAssign(tx.Price)
 	}
 }
 

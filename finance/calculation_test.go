@@ -38,6 +38,10 @@ func TestNewCalculation(t *testing.T) {
 			args: args{
 				txs: []*portfoliov1.PortfolioEvent{
 					{
+						Type:  portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DEPOSIT_CASH,
+						Price: portfoliov1.Value(500000),
+					},
+					{
 						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
 						Amount: 5,
 						Price:  portfoliov1.Value(18110),
@@ -88,7 +92,8 @@ func TestNewCalculation(t *testing.T) {
 					assert.Equals(t, 491425, int(c.NetValue().Value)) &&
 					assert.Equals(t, 494614, int(c.GrossValue().Value)) &&
 					assert.Equals(t, 19657, int(c.NetPrice().Value)) &&
-					assert.Equals(t, 19785, int(c.GrossPrice().Value))
+					assert.Equals(t, 19785, int(c.GrossPrice().Value)) &&
+					assert.Equals(t, 44099, int(c.Cash.Value))
 			},
 		},
 	}

@@ -61,6 +61,15 @@ func myPortfolio(t *testing.T) persistence.StorageOperations[*portfoliov1.Portfo
 	})
 }
 
+func myCash(t *testing.T) persistence.StorageOperations[*portfoliov1.BankAccount] {
+	return internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.BankAccount]) {
+		assert.NoError(t, ops.Replace(&portfoliov1.BankAccount{
+			Name:        "bank/mycash",
+			DisplayName: "My Cash",
+		}))
+	})
+}
+
 func zeroPositions(t *testing.T) persistence.StorageOperations[*portfoliov1.Portfolio] {
 	return internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Portfolio]) {
 		assert.NoError(t, ops.Replace(&portfoliov1.Portfolio{
