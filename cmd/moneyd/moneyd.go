@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -40,6 +41,7 @@ import (
 	"github.com/mattn/go-isatty"
 	oauth2 "github.com/oxisto/oauth2go"
 	"github.com/oxisto/oauth2go/login"
+	"github.com/oxisto/oauth2go/storage"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
@@ -48,6 +50,9 @@ var cmd moneydCmd
 
 type moneydCmd struct {
 	Debug bool `help:"Enable debug mode."`
+
+	PrivateKeyFile     string `default:"private.key"`
+	PrivateKeyPassword string `default:"moneymoneymoney"`
 }
 
 func main() {
@@ -93,6 +98,9 @@ func (cmd *moneydCmd) Run() error {
 			login.WithUser("money", "money"),
 		),
 		oauth2.WithAllowedOrigins("*"),
+		oauth2.WithSigningKeysFunc(func() map[int]*ecdsa.PrivateKey {
+			return storage.LoadSigningKeys(cmd.PrivateKeyFile, cmd.PrivateKeyPassword, true)
+		}),
 	)
 	go authSrv.ListenAndServe()
 

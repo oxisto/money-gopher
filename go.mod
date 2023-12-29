@@ -14,7 +14,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mattn/go-sqlite3 v1.14.19
 	github.com/oxisto/assert v0.0.6
-	github.com/oxisto/oauth2go v0.12.0
+	github.com/oxisto/oauth2go v0.13.0
 	github.com/posener/complete v1.2.3
 	golang.org/x/net v0.19.0
 	golang.org/x/text v0.14.0
@@ -24,7 +24,7 @@ require (
 require (
 	github.com/MicahParks/jwkset v0.5.4 // indirect
 	github.com/riywo/loginshell v0.0.0-20200815045211-7d26008be1ab // indirect
-	golang.org/x/crypto v0.16.0 // indirect
+	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/oauth2 v0.15.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
 )
