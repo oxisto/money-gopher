@@ -1,6 +1,6 @@
 module github.com/oxisto/money-gopher
 
-go 1.21.5
+go 1.21.6
 
 require (
 	connectrpc.com/connect v1.14.0
