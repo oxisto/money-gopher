@@ -93,6 +93,7 @@ func (cmd *moneydCmd) Run() error {
 	authSrv = oauth2.NewServer(
 		":8000",
 		oauth2.WithClient("dashboard", "", "http://localhost:5173/callback"),
+		oauth2.WithClient("cli", "", "http://localhost:10000/callback"),
 		oauth2.WithPublicURL("http://localhost:8000"),
 		login.WithLoginPage(
 			login.WithUser("money", "money"),

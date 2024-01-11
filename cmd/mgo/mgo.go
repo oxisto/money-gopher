@@ -33,15 +33,17 @@ func main() {
 		kong.UsageOnError(),
 	)
 
+	s, _ := cli.ContinueSession()
+
 	kongcompletion.Register(parser,
-		commands.PredictPortfolios,
-		commands.PredictSecurities,
+		commands.PredictPortfolios(s),
+		commands.PredictSecurities(s),
 	)
 
 	// Proceed as normal after kongplete.Complete.
 	ctx, err := parser.Parse(os.Args[1:])
 	parser.FatalIfErrorf(err)
 
-	err = ctx.Run(cli.NewSession())
+	err = ctx.Run(s)
 	parser.FatalIfErrorf(err)
 }
