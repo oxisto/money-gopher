@@ -8,9 +8,6 @@
 		}
 	],
 	"settings": {
-		"gopls": {
-			"ui.semanticTokens": true
-		},
 		"cSpell.words": [
 			"Banse",
 			"bufbuild",
