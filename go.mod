@@ -4,7 +4,7 @@ go 1.21.6
 
 require (
 	connectrpc.com/connect v1.14.0
-	github.com/MicahParks/keyfunc/v3 v3.1.2
+	github.com/MicahParks/keyfunc/v3 v3.2.3
 	github.com/alecthomas/kong v0.8.1
 	github.com/fatih/color v1.16.0
 	github.com/golang-jwt/jwt/v5 v5.2.0
@@ -22,11 +22,12 @@ require (
 )
 
 require (
-	github.com/MicahParks/jwkset v0.5.5 // indirect
+	github.com/MicahParks/jwkset v0.5.6 // indirect
 	github.com/riywo/loginshell v0.0.0-20200815045211-7d26008be1ab // indirect
 	golang.org/x/crypto v0.18.0 // indirect
 	golang.org/x/oauth2 v0.15.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/time v0.5.0 // indirect
 )
 
 // needed until https://github.com/golang/oauth2/issues/615 is resolved
