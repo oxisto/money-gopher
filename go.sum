@@ -50,6 +50,8 @@ github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWE
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
 github.com/mattn/go-sqlite3 v1.14.19 h1:fhGleo2h1p8tVChob4I9HpmVFIAkKGpiukdrgQbWfGI=
 github.com/mattn/go-sqlite3 v1.14.19/go.mod h1:2eHXhiwb8IkHr+BDWZGa96P6+rkvnG63S2DGjv9HUNg=
+github.com/mattn/go-sqlite3 v1.14.20 h1:BAZ50Ns0OFBNxdAqFhbZqdPcht1Xlb16pDCqkq1spr0=
+github.com/mattn/go-sqlite3 v1.14.20/go.mod h1:Uh1q+B4BYcTPb+yiD3kU8Ct7aC0hY9fxUwlHK0RXw+Y=
 github.com/oxisto/assert v0.0.6 h1:Z/wRt0qndURRof+eOGr7GbcJ6BHZT2nyZd9diuZHS8o=
 github.com/oxisto/assert v0.0.6/go.mod h1:07ANKfyBm6j+pZk1qArFueno6fCoEGKvPbPeJSQkH3s=
 github.com/oxisto/complete v0.0.0-20231209194436-0b605e2b5bff h1:WiQOAXar+naQAYzv3P01lE1dagFrc61ZC/fbg9z5wuc=
