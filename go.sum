@@ -8,6 +8,8 @@ github.com/MicahParks/jwkset v0.5.6 h1:j7DxnWgzNigqpPsplDug1MR2zCzUmi8wdyHhhq/wI
 github.com/MicahParks/jwkset v0.5.6/go.mod h1:6QApSQehWQGJUc1mPbUQ65YByW8IE2eXZeqFImpg4JA=
 github.com/MicahParks/jwkset v0.5.7 h1:eHUGJrSO8EetbNnSb7xhlYQ9mX0vQ7Ga9wN1HhGL3i4=
 github.com/MicahParks/jwkset v0.5.7/go.mod h1:q8ptTGn/Z9c4MwbcfeCDssADeVQb3Pk7PnVxrvi+2QY=
+github.com/MicahParks/jwkset v0.5.12 h1:wEwKZXB77yHFIHBtYoawNKIUwqC1X24S8tIhWutJHMA=
+github.com/MicahParks/jwkset v0.5.12/go.mod h1:q8ptTGn/Z9c4MwbcfeCDssADeVQb3Pk7PnVxrvi+2QY=
 github.com/MicahParks/keyfunc/v3 v3.1.1 h1:ghC5jcuU4/TTQQ9Ns7TEVuhnscQOH+WL4//Jmsy5/DA=
 github.com/MicahParks/keyfunc/v3 v3.1.1/go.mod h1:Qmrhb9tkHX1i/kCiLAPDOCWIEfN9yq7u/tkP16lmLL8=
 github.com/MicahParks/keyfunc/v3 v3.1.2 h1:7KylHi9zvuQMob3QmsBNF5ekpZi3jYcqlJBDtmDZWi4=
@@ -16,6 +18,8 @@ github.com/MicahParks/keyfunc/v3 v3.2.3 h1:4hDGR5WV/qD7MtRJA/Al1QwukqOri8PStRgpY
 github.com/MicahParks/keyfunc/v3 v3.2.3/go.mod h1:L86EyY1bzogk8djkNS2g68ByiBLHHF6s1PNNc7ne8+Y=
 github.com/MicahParks/keyfunc/v3 v3.2.4 h1:SuFGdd3HvlwEceJvlEEfjJjvOiq69hS0wqM5iMbTlaA=
 github.com/MicahParks/keyfunc/v3 v3.2.4/go.mod h1:xXfj5uRVZsOMGpjKH/AYn7V8OJb0UMQlJLP1GRBuizg=
+github.com/MicahParks/keyfunc/v3 v3.2.5 h1:eg4s2zd2nfadnAzAsv9xvJCdCfLNy4s/aSiAxRn+aAk=
+github.com/MicahParks/keyfunc/v3 v3.2.5/go.mod h1:8hmM7h/hNerfF8uC8cFVnT+afxBgh6nKRTR/0vAm5So=
 github.com/alecthomas/assert/v2 v2.1.0 h1:tbredtNcQnoSd3QBhQWI7QZ3XHOVkw1Moklp2ojoH/0=
 github.com/alecthomas/assert/v2 v2.1.0/go.mod h1:b/+1DI2Q6NckYi+3mXyH3wFb8qG37K/DuK80n7WefXA=
 github.com/alecthomas/kong v0.8.1 h1:acZdn3m4lLRobeh3Zi2S2EpnXTd1mOL6U7xVml+vfkY=
