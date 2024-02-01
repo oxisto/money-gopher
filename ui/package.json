@@ -27,7 +27,7 @@
 		"eslint-config-prettier": "^9.0.0",
 		"eslint-plugin-svelte": "^2.30.0",
 		"inter-ui": "^4.0.0",
-		"oidc-client-ts": "^2.4.0",
+		"oidc-client-ts": "^3.0.0",
 		"postcss": "^8.4.27",
 		"prettier": "^3.0.1",
 		"prettier-plugin-svelte": "^3.0.3",
