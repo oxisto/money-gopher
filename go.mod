@@ -7,7 +7,7 @@ require (
 	github.com/MicahParks/keyfunc/v3 v3.2.5
 	github.com/alecthomas/kong v0.8.1
 	github.com/fatih/color v1.16.0
-	github.com/golang-jwt/jwt/v5 v5.2.0
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/jotaen/kong-completion v0.0.6
 	github.com/lmittmann/tint v1.0.4
 	github.com/mattn/go-colorable v0.1.13
