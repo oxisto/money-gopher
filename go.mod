@@ -3,7 +3,7 @@ module github.com/oxisto/money-gopher
 go 1.22.1
 
 require (
-	connectrpc.com/connect v1.15.0
+	connectrpc.com/connect v1.16.0
 	github.com/MicahParks/keyfunc/v3 v3.2.9
 	github.com/alecthomas/kong v0.9.0
 	github.com/fatih/color v1.16.0
