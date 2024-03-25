@@ -4,7 +4,7 @@ go 1.22.1
 
 require (
 	connectrpc.com/connect v1.16.0
-	github.com/MicahParks/keyfunc/v3 v3.3.1
+	github.com/MicahParks/keyfunc/v3 v3.3.2
 	github.com/alecthomas/kong v0.9.0
 	github.com/fatih/color v1.16.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
