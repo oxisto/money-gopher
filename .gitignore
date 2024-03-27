@@ -21,3 +21,4 @@ money.db
 __debug*
 moneyd
 private.key
+session.json
