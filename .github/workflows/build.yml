@@ -28,7 +28,10 @@ jobs:
           go generate ./...
           go build -v ./...
       - name: Test Backend
-        run: go test -v -coverprofile=coverage.cov -coverpkg ./... -covermode=atomic ./...
+        run: |
+          go install github.com/mfridman/tparse@latest
+          go test -v -coverprofile=coverage.cov -coverpkg ./... -covermode=atomic ./...  -json | tee output.json | tparse -follow || true
+          tparse -format markdown -file output.json > $GITHUB_STEP_SUMMARY
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
         with:
