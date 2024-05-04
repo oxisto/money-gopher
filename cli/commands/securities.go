@@ -89,23 +89,27 @@ func (cmd *UpdateAllQuotesCmd) Run(s *cli.Session) error {
 	return err
 }
 
-func PredictSecurities(s *cli.Session) kongcompletion.Option {
+func WithPredictSecurities(s *cli.Session) kongcompletion.Option {
 	return kongcompletion.WithPredictor(
 		"security",
-		complete.PredictFunc(func(complete.Args) (names []string) {
-			res, err := s.SecuritiesClient.ListSecurities(
-				context.Background(),
-				connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}),
-			)
-			if err != nil {
-				return nil
-			}
-
-			for _, p := range res.Msg.Securities {
-				names = append(names, p.Name)
-			}
-
-			return
-		}),
+		PredictSecurities(s),
 	)
+}
+
+func PredictSecurities(s *cli.Session) complete.PredictFunc {
+	return complete.PredictFunc(func(complete.Args) (names []string) {
+		res, err := s.SecuritiesClient.ListSecurities(
+			context.Background(),
+			connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}),
+		)
+		if err != nil {
+			return nil
+		}
+
+		for _, p := range res.Msg.Securities {
+			names = append(names, p.Name)
+		}
+
+		return
+	})
 }

@@ -57,7 +57,7 @@ func main() {
 
 	kongcompletion.Register(parser,
 		commands.PredictPortfolios(s),
-		commands.PredictSecurities(s),
+		commands.WithPredictSecurities(s),
 	)
 
 	err = ctx.Run(s)
