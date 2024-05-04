@@ -51,6 +51,8 @@ var cmd moneydCmd
 type moneydCmd struct {
 	Debug bool `help:"Enable debug mode."`
 
+	EmbeddedOAuth2ServerDashboardCallback string `default:"http://localhost:8080/callback" help:"Specifies the callback URL for the dashboard, if the embedded oauth2 server is used."`
+
 	PrivateKeyFile     string `default:"private.key"`
 	PrivateKeyPassword string `default:"moneymoneymoney"`
 }
@@ -82,7 +84,7 @@ func (cmd *moneydCmd) Run() error {
 	)
 
 	slog.SetDefault(logger)
-	slog.Info("Welcome to the Money Gopher")
+	slog.Info("Welcome to the Money Gopher", "money", "🤑")
 
 	db, err := persistence.OpenDB(persistence.Options{})
 	if err != nil {
@@ -92,7 +94,8 @@ func (cmd *moneydCmd) Run() error {
 
 	authSrv = oauth2.NewServer(
 		":8000",
-		oauth2.WithClient("dashboard", "", "http://localhost:5173/callback"),
+		oauth2.WithClient("dashboard", "", cmd.EmbeddedOAuth2ServerDashboardCallback),
+		oauth2.WithClient("cli", "", "http://localhost:10000/callback"),
 		oauth2.WithPublicURL("http://localhost:8000"),
 		login.WithLoginPage(
 			login.WithUser("money", "money"),

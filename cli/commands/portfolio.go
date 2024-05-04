@@ -20,14 +20,12 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/oxisto/money-gopher/cli"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
-	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 
 	"connectrpc.com/connect"
 	"github.com/fatih/color"
@@ -49,11 +47,7 @@ type PortfolioCmd struct {
 type ListPortfolioCmd struct{}
 
 func (l *ListPortfolioCmd) Run(s *cli.Session) error {
-	client := portfoliov1connect.NewPortfolioServiceClient(
-		http.DefaultClient, "http://localhost:8080",
-		connect.WithHTTPGet(),
-	)
-	res, err := client.ListPortfolios(
+	res, err := s.PortfolioClient.ListPortfolios(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.ListPortfoliosRequest{}),
 	)
@@ -64,7 +58,7 @@ func (l *ListPortfolioCmd) Run(s *cli.Session) error {
 `
 
 		for _, portfolio := range res.Msg.Portfolios {
-			snapshot, _ := client.GetPortfolioSnapshot(
+			snapshot, _ := s.PortfolioClient.GetPortfolioSnapshot(
 				context.Background(),
 				connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
 					PortfolioName: portfolio.Name,
@@ -84,7 +78,7 @@ func (l *ListPortfolioCmd) Run(s *cli.Session) error {
 				15, snapshot.Msg.TotalMarketValue.Pretty(),
 				15, "Performance",
 				15, fmt.Sprintf("%s € (%s %%)",
-					greenOrRed(float64(snapshot.Msg.TotalProfitOrLoss.Value)),
+					greenOrRed(float64(snapshot.Msg.TotalProfitOrLoss.Value/100)),
 					greenOrRed(snapshot.Msg.TotalGains*100),
 				),
 			)
@@ -103,11 +97,7 @@ type CreatePortfolioCmd struct {
 }
 
 func (cmd *CreatePortfolioCmd) Run(s *cli.Session) error {
-	client := portfoliov1connect.NewPortfolioServiceClient(
-		http.DefaultClient, "http://localhost:8080",
-		connect.WithHTTPGet(),
-	)
-	res, err := client.CreatePortfolio(
+	res, err := s.PortfolioClient.CreatePortfolio(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.CreatePortfolioRequest{
 			Portfolio: &portfoliov1.Portfolio{
@@ -129,11 +119,7 @@ type ShowPortfolioCmd struct {
 }
 
 func (cmd *ShowPortfolioCmd) Run(s *cli.Session) error {
-	client := portfoliov1connect.NewPortfolioServiceClient(
-		http.DefaultClient, "http://localhost:8080",
-		connect.WithHTTPGet(),
-	)
-	res, err := client.GetPortfolioSnapshot(
+	res, err := s.PortfolioClient.GetPortfolioSnapshot(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
 			PortfolioName: cmd.PortfolioName,
@@ -181,11 +167,7 @@ func (cmd *CreateTransactionCmd) Run(s *cli.Session) error {
 		},
 	})
 
-	client := portfoliov1connect.NewPortfolioServiceClient(
-		http.DefaultClient, "http://localhost:8080",
-		connect.WithHTTPGet(),
-	)
-	res, err := client.CreatePortfolioTransaction(context.Background(), req)
+	res, err := s.PortfolioClient.CreatePortfolioTransaction(context.Background(), req)
 	if err != nil {
 		return err
 	}
@@ -241,11 +223,7 @@ func (cmd *ImportTransactionsCmd) Run(s *cli.Session) error {
 		return err
 	}
 
-	client := portfoliov1connect.NewPortfolioServiceClient(
-		http.DefaultClient, "http://localhost:8080",
-		connect.WithHTTPGet(),
-	)
-	res, err := client.ImportTransactions(
+	res, err := s.PortfolioClient.ImportTransactions(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.ImportTransactionsRequest{
 			PortfolioName: cmd.PortfolioName,
@@ -260,14 +238,16 @@ func (cmd *ImportTransactionsCmd) Run(s *cli.Session) error {
 	return nil
 }
 
-var PredictPortfolios = kongcompletion.WithPredictor(
-	"portfolio",
-	complete.PredictFunc(func(complete.Args) (names []string) {
-		client := portfoliov1connect.NewPortfolioServiceClient(
-			http.DefaultClient, "http://localhost:8080",
-			connect.WithHTTPGet(),
-		)
-		res, err := client.ListPortfolios(
+func WithPredictPortfolios(s *cli.Session) kongcompletion.Option {
+	return kongcompletion.WithPredictor(
+		"portfolio",
+		PredictPortfolios(s),
+	)
+}
+
+func PredictPortfolios(s *cli.Session) complete.PredictFunc {
+	return func(complete.Args) (names []string) {
+		res, err := s.PortfolioClient.ListPortfolios(
 			context.Background(),
 			connect.NewRequest(&portfoliov1.ListPortfoliosRequest{}),
 		)
@@ -280,5 +260,5 @@ var PredictPortfolios = kongcompletion.WithPredictor(
 		}
 
 		return
-	}),
-)
+	}
+}

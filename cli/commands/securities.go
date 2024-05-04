@@ -20,11 +20,9 @@ package commands
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/oxisto/money-gopher/cli"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
-	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 
 	"connectrpc.com/connect"
 	kongcompletion "github.com/jotaen/kong-completion"
@@ -41,11 +39,7 @@ type ListSecuritiesCmd struct{}
 
 // Exec implements [repl.Command]
 func (cmd *ListSecuritiesCmd) Run(s *cli.Session) error {
-	client := portfoliov1connect.NewSecuritiesServiceClient(
-		http.DefaultClient, "http://localhost:8080",
-		connect.WithHTTPGet(),
-	)
-	res, err := client.ListSecurities(context.Background(), connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}))
+	res, err := s.SecuritiesClient.ListSecurities(context.Background(), connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}))
 	if err != nil {
 		return err
 	}
@@ -60,11 +54,7 @@ type UpdateQuoteCmd struct {
 
 // Exec implements [cli.Command]
 func (cmd *UpdateQuoteCmd) Run(s *cli.Session) error {
-	client := portfoliov1connect.NewSecuritiesServiceClient(
-		http.DefaultClient, "http://localhost:8080",
-		connect.WithHTTPGet(),
-	)
-	_, err := client.TriggerSecurityQuoteUpdate(
+	_, err := s.SecuritiesClient.TriggerSecurityQuoteUpdate(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.TriggerQuoteUpdateRequest{
 			SecurityNames: cmd.SecurityNames,
@@ -78,11 +68,7 @@ type UpdateAllQuotesCmd struct{}
 
 // Exec implements [cli.Command]
 func (cmd *UpdateAllQuotesCmd) Run(s *cli.Session) error {
-	client := portfoliov1connect.NewSecuritiesServiceClient(
-		http.DefaultClient, "http://localhost:8080",
-		connect.WithHTTPGet(),
-	)
-	res, err := client.ListSecurities(context.Background(), connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}))
+	res, err := s.SecuritiesClient.ListSecurities(context.Background(), connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}))
 	if err != nil {
 		return err
 	}
@@ -93,7 +79,7 @@ func (cmd *UpdateAllQuotesCmd) Run(s *cli.Session) error {
 		names = append(names, sec.Name)
 	}
 
-	_, err = client.TriggerSecurityQuoteUpdate(
+	_, err = s.SecuritiesClient.TriggerSecurityQuoteUpdate(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.TriggerQuoteUpdateRequest{
 			SecurityNames: names,
@@ -103,14 +89,16 @@ func (cmd *UpdateAllQuotesCmd) Run(s *cli.Session) error {
 	return err
 }
 
-var PredictSecurities = kongcompletion.WithPredictor(
-	"security",
-	complete.PredictFunc(func(complete.Args) (names []string) {
-		client := portfoliov1connect.NewSecuritiesServiceClient(
-			http.DefaultClient, "http://localhost:8080",
-			connect.WithHTTPGet(),
-		)
-		res, err := client.ListSecurities(
+func WithPredictSecurities(s *cli.Session) kongcompletion.Option {
+	return kongcompletion.WithPredictor(
+		"security",
+		PredictSecurities(s),
+	)
+}
+
+func PredictSecurities(s *cli.Session) complete.PredictFunc {
+	return func(complete.Args) (names []string) {
+		res, err := s.SecuritiesClient.ListSecurities(
 			context.Background(),
 			connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}),
 		)
@@ -123,5 +111,5 @@ var PredictSecurities = kongcompletion.WithPredictor(
 		}
 
 		return
-	}),
-)
+	}
+}

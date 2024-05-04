@@ -23,6 +23,8 @@ import (
 var CLI struct {
 	Debug bool `help:"Enable debug mode."`
 
+	Login LoginCmd `cmd:"" help:"Login command."`
+
 	Security    SecurityCmd    `cmd:"" help:"Security commands."`
 	Portfolio   PortfolioCmd   `cmd:"" help:"Portfolio commands."`
 	BankAccount BankAccountCmd `cmd:"" help:"Bank account commands."`

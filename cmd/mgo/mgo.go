@@ -17,6 +17,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/oxisto/money-gopher/cli"
@@ -27,21 +28,38 @@ import (
 )
 
 func main() {
-	parser := kong.Must(&commands.CLI,
+	var (
+		s      *cli.Session
+		ctx    *kong.Context
+		parser *kong.Kong
+		err    error
+	)
+
+	parser = kong.Must(&commands.CLI,
 		kong.Name("mgo"),
 		kong.Description("A shell-like example app."),
 		kong.UsageOnError(),
 	)
 
-	kongcompletion.Register(parser,
-		commands.PredictPortfolios,
-		commands.PredictSecurities,
-	)
-
 	// Proceed as normal after kongplete.Complete.
-	ctx, err := parser.Parse(os.Args[1:])
+	ctx, err = parser.Parse(os.Args[1:])
 	parser.FatalIfErrorf(err)
 
-	err = ctx.Run(cli.NewSession())
+	// The only command we allow without a session is "Login"
+	if ctx.Args[0] != "login" {
+		// TODO(oxisto): Can we move this to a pre-hook?
+		s, err = cli.ContinueSession()
+		if err != nil {
+			fmt.Println("Could not continue with existing session or session is missing. Please use `mgo login`.")
+			return
+		}
+	}
+
+	kongcompletion.Register(parser,
+		commands.WithPredictPortfolios(s),
+		commands.WithPredictSecurities(s),
+	)
+
+	err = ctx.Run(s)
 	parser.FatalIfErrorf(err)
 }

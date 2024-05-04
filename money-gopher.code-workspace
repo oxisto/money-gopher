@@ -8,9 +8,6 @@
 		}
 	],
 	"settings": {
-		"gopls": {
-			"ui.semanticTokens": true
-		},
 		"cSpell.words": [
 			"Banse",
 			"bufbuild",
@@ -31,6 +28,7 @@
 			"mycash",
 			"myportfolio",
 			"oxisto",
+			"portfoliotest",
 			"portfoliov",
 			"protobuf",
 			"protoreflect",
@@ -42,5 +40,10 @@
 			"timestamppb"
 		],
 		"editor.tabSize": 4
+	},
+	"extensions": {
+		"recommendations": [
+			"github.vscode-github-actions"
+		]
 	}
 }

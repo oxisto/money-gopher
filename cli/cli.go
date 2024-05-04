@@ -18,24 +18,141 @@
 package cli
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log/slog"
 	"net/http"
+	"os"
+
+	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 
 	"connectrpc.com/connect"
-	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
+	"github.com/lmittmann/tint"
+	oauth2 "github.com/oxisto/oauth2go"
 )
 
 // Session holds all necessary information about the current CLI session.
 type Session struct {
-	PortfolioClient portfoliov1connect.PortfolioServiceClient
+	PortfolioClient  portfoliov1connect.PortfolioServiceClient  `json:"-"`
+	SecuritiesClient portfoliov1connect.SecuritiesServiceClient `json:"-"`
+
+	opts *SessionOptions
 }
 
-func NewSession() *Session {
-	var s Session
+// SessionOptions holds all options to configure a [Session].
+type SessionOptions struct {
+	OAuth2Config *oauth2.Config
+	HttpClient   *http.Client
+	Token        *oauth2.Token
+	BaseURL      string
+}
 
-	s.PortfolioClient = portfoliov1connect.NewPortfolioServiceClient(
-		http.DefaultClient, "http://localhost:8080",
-		connect.WithHTTPGet(),
+// MergeWith can be used to merge two [SessionOptions] structs.
+func (opts *SessionOptions) MergeWith(other *SessionOptions) *SessionOptions {
+	if other.BaseURL != "" {
+		opts.BaseURL = other.BaseURL
+	}
+
+	if other.HttpClient != nil {
+		opts.HttpClient = other.HttpClient
+	}
+
+	if other.OAuth2Config != nil {
+		opts.OAuth2Config = other.OAuth2Config
+	}
+
+	if other.Token != nil {
+		opts.Token = other.Token
+	}
+
+	return opts
+}
+
+// DefaultBaseURL is the default base URL for all services.
+const DefaultBaseURL = "http://localhost:8080"
+
+func NewSession(opts *SessionOptions) (s *Session) {
+	def := &SessionOptions{
+		HttpClient: opts.HttpClient,
+		BaseURL:    DefaultBaseURL,
+	}
+
+	s = &Session{
+		opts: def.MergeWith(opts),
+	}
+
+	s.initClients()
+
+	return s
+}
+
+func ContinueSession() (s *Session, err error) {
+	var (
+		file *os.File
 	)
 
-	return &s
+	file, err = os.OpenFile("session.json", os.O_RDONLY, 0600)
+	if err != nil {
+		return
+	}
+
+	s = new(Session)
+	err = json.NewDecoder(file).Decode(&s)
+	if err != nil {
+		return nil, fmt.Errorf("could not parse session file: %w", err)
+	}
+
+	s.initClients()
+
+	return
+}
+
+func (s *Session) Save() (err error) {
+	var (
+		file *os.File
+	)
+
+	file, err = os.OpenFile("session.json", os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
+		return
+	}
+
+	err = json.NewEncoder(file).Encode(s)
+	if err != nil {
+		return fmt.Errorf("could not save session file: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Session) initClients() {
+	interceptor := func(next connect.UnaryFunc) connect.UnaryFunc {
+		return connect.UnaryFunc(func(
+			ctx context.Context,
+			req connect.AnyRequest,
+		) (connect.AnyResponse, error) {
+			if req.Spec().IsClient {
+				var t, err = s.opts.OAuth2Config.TokenSource(context.Background(), s.opts.Token).Token()
+				if err != nil {
+					slog.Error("Could not retrieve token", tint.Err(err))
+				} else {
+					req.Header().Set("Authorization", "Bearer "+t.AccessToken)
+				}
+			}
+			return next(ctx, req)
+		})
+	}
+
+	s.PortfolioClient = portfoliov1connect.NewPortfolioServiceClient(
+		s.opts.HttpClient, s.opts.BaseURL,
+		connect.WithHTTPGet(),
+		connect.WithInterceptors(connect.UnaryInterceptorFunc(interceptor)),
+	)
+
+	s.SecuritiesClient = portfoliov1connect.NewSecuritiesServiceClient(
+		s.opts.HttpClient, s.opts.BaseURL,
+		connect.WithHTTPGet(),
+		connect.WithInterceptors(connect.UnaryInterceptorFunc(interceptor)),
+	)
 }
