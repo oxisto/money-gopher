@@ -18,13 +18,15 @@ package commands
 
 import (
 	"testing"
+	"time"
 
 	"github.com/oxisto/money-gopher/cli"
-	"github.com/oxisto/money-gopher/service/portfolio/portfoliotest"
+	"github.com/oxisto/money-gopher/internal"
+	"github.com/oxisto/money-gopher/internal/testing/servertest"
 )
 
 func TestCreatePortfolioCmd_Run(t *testing.T) {
-	srv := portfoliotest.NewServer(t)
+	srv := servertest.NewServer(internal.NewTestDB(t))
 	defer srv.Close()
 
 	type fields struct {
@@ -65,6 +67,108 @@ func TestCreatePortfolioCmd_Run(t *testing.T) {
 			}
 			if err := cmd.Run(tt.args.s); (err != nil) != tt.wantErr {
 				t.Errorf("CreatePortfolioCmd.Run() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestShowPortfolioCmd_Run(t *testing.T) {
+	srv := servertest.NewServer(internal.NewTestDB(t))
+	defer srv.Close()
+
+	type fields struct {
+		PortfolioName string
+	}
+	type args struct {
+		s *cli.Session
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			fields: fields{
+				PortfolioName: "myportfolio",
+			},
+			args: args{
+				s: func() *cli.Session {
+					return cli.NewSession(&cli.SessionOptions{
+						BaseURL:    srv.URL,
+						HttpClient: srv.Client(),
+					})
+				}(),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := &ShowPortfolioCmd{
+				PortfolioName: tt.fields.PortfolioName,
+			}
+			if err := cmd.Run(tt.args.s); (err != nil) != tt.wantErr {
+				t.Errorf("ShowPortfolioCmd.Run() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestCreateTransactionCmd_Run(t *testing.T) {
+	srv := servertest.NewServer(internal.NewTestDB(t))
+	defer srv.Close()
+
+	type fields struct {
+		PortfolioName string
+		SecurityName  string
+		Type          string
+		Amount        float64
+		Price         float32
+		Fees          float32
+		Taxes         float32
+		Time          time.Time
+	}
+	type args struct {
+		s *cli.Session
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			fields: fields{
+				PortfolioName: "myportfolio",
+				Price:         10.0,
+			},
+			args: args{
+				s: func() *cli.Session {
+					return cli.NewSession(&cli.SessionOptions{
+						BaseURL:    srv.URL,
+						HttpClient: srv.Client(),
+					})
+				}(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := &CreateTransactionCmd{
+				PortfolioName: tt.fields.PortfolioName,
+				SecurityName:  tt.fields.SecurityName,
+				Type:          tt.fields.Type,
+				Amount:        tt.fields.Amount,
+				Price:         tt.fields.Price,
+				Fees:          tt.fields.Fees,
+				Taxes:         tt.fields.Taxes,
+				Time:          tt.fields.Time,
+			}
+			if err := cmd.Run(tt.args.s); (err != nil) != tt.wantErr {
+				t.Errorf("CreateTransactionCmd.Run() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
