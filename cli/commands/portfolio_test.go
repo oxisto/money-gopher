@@ -155,6 +155,7 @@ func TestCreateTransactionCmd_Run(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := &CreateTransactionCmd{
@@ -169,6 +170,42 @@ func TestCreateTransactionCmd_Run(t *testing.T) {
 			}
 			if err := cmd.Run(tt.args.s); (err != nil) != tt.wantErr {
 				t.Errorf("CreateTransactionCmd.Run() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestListPortfolioCmd_Run(t *testing.T) {
+	srv := servertest.NewServer(internal.NewTestDB(t))
+	defer srv.Close()
+
+	type args struct {
+		s *cli.Session
+	}
+	tests := []struct {
+		name    string
+		l       *ListPortfolioCmd
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			args: args{
+				s: func() *cli.Session {
+					return cli.NewSession(&cli.SessionOptions{
+						BaseURL:    srv.URL,
+						HttpClient: srv.Client(),
+					})
+				}(),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &ListPortfolioCmd{}
+			if err := l.Run(tt.args.s); (err != nil) != tt.wantErr {
+				t.Errorf("ListPortfolioCmd.Run() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
