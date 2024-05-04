@@ -82,7 +82,10 @@ func (l *LoginCmd) Run(s *cli.Session) error {
 		return err
 	}
 
-	session = cli.NewSession(config, token)
+	session = cli.NewSession(&cli.SessionOptions{
+		OAuth2Config: config,
+		Token:        token,
+	})
 
 	if err = session.Save(); err != nil {
 		return fmt.Errorf("could not save session: %w", err)

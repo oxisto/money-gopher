@@ -25,9 +25,10 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
+
 	"connectrpc.com/connect"
 	"github.com/lmittmann/tint"
-	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	oauth2 "github.com/oxisto/oauth2go"
 )
 
@@ -36,14 +37,49 @@ type Session struct {
 	PortfolioClient  portfoliov1connect.PortfolioServiceClient  `json:"-"`
 	SecuritiesClient portfoliov1connect.SecuritiesServiceClient `json:"-"`
 
-	Config *oauth2.Config
-	Token  *oauth2.Token
+	opts *SessionOptions
 }
 
-func NewSession(config *oauth2.Config, token *oauth2.Token) (s *Session) {
+// SessionOptions holds all options to configure a [Session].
+type SessionOptions struct {
+	OAuth2Config *oauth2.Config
+	HttpClient   *http.Client
+	Token        *oauth2.Token
+	BaseURL      string
+}
+
+// MergeWith can be used to merge two [SessionOptions] structs.
+func (opts *SessionOptions) MergeWith(other *SessionOptions) *SessionOptions {
+	if other.BaseURL != "" {
+		opts.BaseURL = other.BaseURL
+	}
+
+	if other.HttpClient != nil {
+		opts.HttpClient = other.HttpClient
+	}
+
+	if other.OAuth2Config != nil {
+		opts.OAuth2Config = other.OAuth2Config
+	}
+
+	if other.Token != nil {
+		opts.Token = other.Token
+	}
+
+	return opts
+}
+
+// DefaultBaseURL is the default base URL for all services.
+const DefaultBaseURL = "http://localhost:8080"
+
+func NewSession(opts *SessionOptions) (s *Session) {
+	def := &SessionOptions{
+		HttpClient: opts.HttpClient,
+		BaseURL:    DefaultBaseURL,
+	}
+
 	s = &Session{
-		Config: config,
-		Token:  token,
+		opts: def.MergeWith(opts),
 	}
 
 	s.initClients()
@@ -97,7 +133,7 @@ func (s *Session) initClients() {
 			req connect.AnyRequest,
 		) (connect.AnyResponse, error) {
 			if req.Spec().IsClient {
-				var t, err = s.Config.TokenSource(context.Background(), s.Token).Token()
+				var t, err = s.opts.OAuth2Config.TokenSource(context.Background(), s.opts.Token).Token()
 				if err != nil {
 					slog.Error("Could not retrieve token", tint.Err(err))
 				} else {
@@ -109,13 +145,13 @@ func (s *Session) initClients() {
 	}
 
 	s.PortfolioClient = portfoliov1connect.NewPortfolioServiceClient(
-		http.DefaultClient, "http://localhost:8080",
+		s.opts.HttpClient, s.opts.BaseURL,
 		connect.WithHTTPGet(),
 		connect.WithInterceptors(connect.UnaryInterceptorFunc(interceptor)),
 	)
 
 	s.SecuritiesClient = portfoliov1connect.NewSecuritiesServiceClient(
-		http.DefaultClient, "http://localhost:8080",
+		s.opts.HttpClient, s.opts.BaseURL,
 		connect.WithHTTPGet(),
 		connect.WithInterceptors(connect.UnaryInterceptorFunc(interceptor)),
 	)
