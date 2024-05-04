@@ -238,23 +238,27 @@ func (cmd *ImportTransactionsCmd) Run(s *cli.Session) error {
 	return nil
 }
 
-func PredictPortfolios(s *cli.Session) kongcompletion.Option {
+func WithPredictPortfolios(s *cli.Session) kongcompletion.Option {
 	return kongcompletion.WithPredictor(
 		"portfolio",
-		complete.PredictFunc(func(complete.Args) (names []string) {
-			res, err := s.PortfolioClient.ListPortfolios(
-				context.Background(),
-				connect.NewRequest(&portfoliov1.ListPortfoliosRequest{}),
-			)
-			if err != nil {
-				return nil
-			}
-
-			for _, p := range res.Msg.Portfolios {
-				names = append(names, p.Name)
-			}
-
-			return
-		}),
+		PredictPortfolios(s),
 	)
+}
+
+func PredictPortfolios(s *cli.Session) complete.PredictFunc {
+	return func(complete.Args) (names []string) {
+		res, err := s.PortfolioClient.ListPortfolios(
+			context.Background(),
+			connect.NewRequest(&portfoliov1.ListPortfoliosRequest{}),
+		)
+		if err != nil {
+			return nil
+		}
+
+		for _, p := range res.Msg.Portfolios {
+			names = append(names, p.Name)
+		}
+
+		return
+	}
 }

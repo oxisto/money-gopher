@@ -56,7 +56,7 @@ func main() {
 	}
 
 	kongcompletion.Register(parser,
-		commands.PredictPortfolios(s),
+		commands.WithPredictPortfolios(s),
 		commands.WithPredictSecurities(s),
 	)
 

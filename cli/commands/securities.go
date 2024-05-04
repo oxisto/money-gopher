@@ -97,7 +97,7 @@ func WithPredictSecurities(s *cli.Session) kongcompletion.Option {
 }
 
 func PredictSecurities(s *cli.Session) complete.PredictFunc {
-	return complete.PredictFunc(func(complete.Args) (names []string) {
+	return func(complete.Args) (names []string) {
 		res, err := s.SecuritiesClient.ListSecurities(
 			context.Background(),
 			connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}),
@@ -111,5 +111,5 @@ func PredictSecurities(s *cli.Session) complete.PredictFunc {
 		}
 
 		return
-	})
+	}
 }

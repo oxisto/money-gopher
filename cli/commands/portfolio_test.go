@@ -20,9 +20,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oxisto/assert"
 	"github.com/oxisto/money-gopher/cli"
 	"github.com/oxisto/money-gopher/internal"
 	"github.com/oxisto/money-gopher/internal/testing/servertest"
+	"github.com/posener/complete"
 )
 
 func TestCreatePortfolioCmd_Run(t *testing.T) {
@@ -207,6 +209,47 @@ func TestListPortfolioCmd_Run(t *testing.T) {
 			if err := l.Run(tt.args.s); (err != nil) != tt.wantErr {
 				t.Errorf("ListPortfolioCmd.Run() error = %v, wantErr %v", err, tt.wantErr)
 			}
+		})
+	}
+}
+
+func TestPredictPortfolios(t *testing.T) {
+	srv := servertest.NewServer(internal.NewTestDB(t))
+	defer srv.Close()
+
+	type args struct {
+		s *cli.Session
+		a complete.Args
+	}
+	tests := []struct {
+		name string
+		args args
+		want assert.Want[[]string]
+	}{
+		{
+			name: "happy path",
+			args: args{
+				s: func() *cli.Session {
+					return cli.NewSession(&cli.SessionOptions{
+						BaseURL:    srv.URL,
+						HttpClient: srv.Client(),
+					})
+				}(),
+				a: complete.Args{
+					All:  []string{},
+					Last: "my",
+				},
+			},
+			want: func(t *testing.T, s []string) bool {
+				return len(s) > 0
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fn := PredictPortfolios(tt.args.s)
+			got := fn.Predict(tt.args.a)
+			tt.want(t, got)
 		})
 	}
 }
