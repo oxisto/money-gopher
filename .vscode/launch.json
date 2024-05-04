@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch cmd/mgo",
+            "name": "Launch cmd/mgo (login)",
             "type": "go",
             "request": "launch",
             "mode": "auto",
@@ -13,7 +13,20 @@
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
             "args": [
-                "list-portfolios"
+                "login",
+            ]
+        },
+        {
+            "name": "Launch cmd/mgo (portfolio list)",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/mgo",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "portfolio",
+                "list"
             ]
         },
         {
