@@ -39,5 +39,10 @@
 			"timestamppb"
 		],
 		"editor.tabSize": 4
+	},
+	"extensions": {
+		"recommendations": [
+			"github.vscode-github-actions"
+		]
 	}
 }
