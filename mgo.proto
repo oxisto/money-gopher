@@ -3,8 +3,8 @@ syntax = "proto3";
 package mgo.portfolio.v1;
 
 import "google/protobuf/empty.proto";
-import "google/protobuf/timestamp.proto";
 import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
 
 // Currency is a currency value in the lowest unit of the selected currency
 // (e.g., cents for EUR/USD).
@@ -13,19 +13,27 @@ message Currency {
   string symbol = 2;
 }
 
-message CreatePortfolioRequest { Portfolio portfolio = 1; }
+message CreatePortfolioRequest {
+  Portfolio portfolio = 1;
+}
 
 message ListPortfoliosRequest {}
-message ListPortfoliosResponse { repeated Portfolio portfolios = 1; }
+message ListPortfoliosResponse {
+  repeated Portfolio portfolios = 1;
+}
 
-message GetPortfolioRequest { string name = 1; }
+message GetPortfolioRequest {
+  string name = 1;
+}
 
 message UpdatePortfolioRequest {
   Portfolio portfolio = 1;
   google.protobuf.FieldMask update_mask = 2;
 }
 
-message DeletePortfolioRequest { string name = 1; }
+message DeletePortfolioRequest {
+  string name = 1;
+}
 
 message GetPortfolioSnapshotRequest {
   // PortfolioName is the name / identifier of the portfolio we want to
@@ -36,11 +44,17 @@ message GetPortfolioSnapshotRequest {
   google.protobuf.Timestamp time = 2;
 }
 
-message CreatePortfolioTransactionRequest { PortfolioEvent transaction = 1; }
+message CreatePortfolioTransactionRequest {
+  PortfolioEvent transaction = 1;
+}
 
-message GetPortfolioTransactionRequest { string name = 1; }
+message GetPortfolioTransactionRequest {
+  string name = 1;
+}
 
-message ListPortfolioTransactionsRequest { string portfolio_name = 1; }
+message ListPortfolioTransactionsRequest {
+  string portfolio_name = 1;
+}
 
 message ListPortfolioTransactionsResponse {
   repeated PortfolioEvent transactions = 1;
@@ -51,21 +65,27 @@ message UpdatePortfolioTransactionRequest {
   google.protobuf.FieldMask update_mask = 2;
 }
 
-message DeletePortfolioTransactionRequest { int32 transaction_id = 1; }
+message DeletePortfolioTransactionRequest {
+  int32 transaction_id = 1;
+}
 
 message ImportTransactionsRequest {
   string portfolio_name = 1;
   string from_csv = 2;
 }
 
-message CreateBankAccountRequest { BankAccount bank_account = 1; }
+message CreateBankAccountRequest {
+  BankAccount bank_account = 1;
+}
 
 message UpdateBankAccountRequest {
   BankAccount account = 1;
   google.protobuf.FieldMask update_mask = 2;
 }
 
-message DeleteBankAccountRequest { string name = 1; }
+message DeleteBankAccountRequest {
+  string name = 1;
+}
 
 message Portfolio {
   string name = 1;
@@ -199,33 +219,25 @@ service PortfolioService {
   rpc UpdatePortfolio(UpdatePortfolioRequest) returns (Portfolio);
   rpc DeletePortfolio(DeletePortfolioRequest) returns (google.protobuf.Empty);
 
-  rpc GetPortfolioSnapshot(GetPortfolioSnapshotRequest)
-      returns (PortfolioSnapshot) {
+  rpc GetPortfolioSnapshot(GetPortfolioSnapshotRequest) returns (PortfolioSnapshot) {
     option idempotency_level = NO_SIDE_EFFECTS;
-  };
+  }
 
-  rpc CreatePortfolioTransaction(CreatePortfolioTransactionRequest)
-      returns (PortfolioEvent);
-  rpc GetPortfolioTransaction(GetPortfolioTransactionRequest)
-      returns (PortfolioEvent) {
+  rpc CreatePortfolioTransaction(CreatePortfolioTransactionRequest) returns (PortfolioEvent);
+  rpc GetPortfolioTransaction(GetPortfolioTransactionRequest) returns (PortfolioEvent) {
     option idempotency_level = NO_SIDE_EFFECTS;
-  };
-  rpc ListPortfolioTransactions(ListPortfolioTransactionsRequest)
-      returns (ListPortfolioTransactionsResponse) {
+  }
+  rpc ListPortfolioTransactions(ListPortfolioTransactionsRequest) returns (ListPortfolioTransactionsResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-  };
-  rpc UpdatePortfolioTransaction(UpdatePortfolioTransactionRequest)
-      returns (PortfolioEvent);
-  rpc DeletePortfolioTransaction(DeletePortfolioTransactionRequest)
-      returns (google.protobuf.Empty);
+  }
+  rpc UpdatePortfolioTransaction(UpdatePortfolioTransactionRequest) returns (PortfolioEvent);
+  rpc DeletePortfolioTransaction(DeletePortfolioTransactionRequest) returns (google.protobuf.Empty);
 
-  rpc ImportTransactions(ImportTransactionsRequest)
-      returns (google.protobuf.Empty);
+  rpc ImportTransactions(ImportTransactionsRequest) returns (google.protobuf.Empty);
 
   rpc CreateBankAccount(CreateBankAccountRequest) returns (BankAccount);
   rpc UpdateBankAccount(UpdateBankAccountRequest) returns (BankAccount);
-  rpc DeleteBankAccount(DeleteBankAccountRequest)
-      returns (google.protobuf.Empty);
+  rpc DeleteBankAccount(DeleteBankAccountRequest) returns (google.protobuf.Empty);
 }
 
 message Security {
@@ -248,42 +260,61 @@ message ListedSecurity {
 
   optional Currency latest_quote = 5;
   optional google.protobuf.Timestamp latest_quote_timestamp = 6;
+
+  map<string, Currency> historic_quotes = 10;
+}
+
+message Quote {
+  string ticker = 1;
+  google.protobuf.Timestamp date = 2;
+  Currency at_close = 3;
 }
 
 message ListSecuritiesRequest {
-  message Filter { repeated string security_names = 1; }
+  message Filter {
+    repeated string security_names = 1;
+  }
 
   optional Filter filter = 5;
 }
 
-message ListSecuritiesResponse { repeated Security securities = 1; }
+message ListSecuritiesResponse {
+  repeated Security securities = 1;
+}
 
-message GetSecurityRequest { string name = 1; }
+message GetSecurityRequest {
+  string name = 1;
+}
 
-message CreateSecurityRequest { Security security = 1; }
+message CreateSecurityRequest {
+  Security security = 1;
+}
 
 message UpdateSecurityRequest {
   Security security = 1;
   google.protobuf.FieldMask update_mask = 2;
 }
 
-message DeleteSecurityRequest { string name = 1; }
+message DeleteSecurityRequest {
+  string name = 1;
+}
 
-message TriggerQuoteUpdateRequest { repeated string security_names = 1; }
+message TriggerQuoteUpdateRequest {
+  repeated string security_names = 1;
+}
 
 message TriggerQuoteUpdateResponse {}
 
 service SecuritiesService {
   rpc ListSecurities(ListSecuritiesRequest) returns (ListSecuritiesResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-  };
+  }
   rpc GetSecurity(GetSecurityRequest) returns (Security) {
     option idempotency_level = NO_SIDE_EFFECTS;
-  };
+  }
   rpc CreateSecurity(CreateSecurityRequest) returns (Security);
   rpc UpdateSecurity(UpdateSecurityRequest) returns (Security);
   rpc DeleteSecurity(DeleteSecurityRequest) returns (google.protobuf.Empty);
 
-  rpc TriggerSecurityQuoteUpdate(TriggerQuoteUpdateRequest)
-      returns (TriggerQuoteUpdateResponse);
+  rpc TriggerSecurityQuoteUpdate(TriggerQuoteUpdateRequest) returns (TriggerQuoteUpdateResponse);
 }

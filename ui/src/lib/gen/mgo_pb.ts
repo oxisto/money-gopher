@@ -1279,6 +1279,11 @@ export class ListedSecurity extends Message<ListedSecurity> {
    */
   latestQuoteTimestamp?: Timestamp;
 
+  /**
+   * @generated from field: map<string, mgo.portfolio.v1.Currency> historic_quotes = 10;
+   */
+  historicQuotes: { [key: string]: Currency } = {};
+
   constructor(data?: PartialMessage<ListedSecurity>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1292,6 +1297,7 @@ export class ListedSecurity extends Message<ListedSecurity> {
     { no: 4, name: "currency", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "latest_quote", kind: "message", T: Currency, opt: true },
     { no: 6, name: "latest_quote_timestamp", kind: "message", T: Timestamp, opt: true },
+    { no: 10, name: "historic_quotes", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Currency} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListedSecurity {
@@ -1308,6 +1314,55 @@ export class ListedSecurity extends Message<ListedSecurity> {
 
   static equals(a: ListedSecurity | PlainMessage<ListedSecurity> | undefined, b: ListedSecurity | PlainMessage<ListedSecurity> | undefined): boolean {
     return proto3.util.equals(ListedSecurity, a, b);
+  }
+}
+
+/**
+ * @generated from message mgo.portfolio.v1.Quote
+ */
+export class Quote extends Message<Quote> {
+  /**
+   * @generated from field: string ticker = 1;
+   */
+  ticker = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date = 2;
+   */
+  date?: Timestamp;
+
+  /**
+   * @generated from field: mgo.portfolio.v1.Currency at_close = 3;
+   */
+  atClose?: Currency;
+
+  constructor(data?: PartialMessage<Quote>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "mgo.portfolio.v1.Quote";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "ticker", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "date", kind: "message", T: Timestamp },
+    { no: 3, name: "at_close", kind: "message", T: Currency },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Quote {
+    return new Quote().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Quote {
+    return new Quote().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Quote {
+    return new Quote().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Quote | PlainMessage<Quote> | undefined, b: Quote | PlainMessage<Quote> | undefined): boolean {
+    return proto3.util.equals(Quote, a, b);
   }
 }
 
