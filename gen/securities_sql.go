@@ -57,12 +57,31 @@ PRIMARY KEY (security_name, ticker)
 	return
 }
 
+func (*Quote) InitTables(db *persistence.DB) (err error) {
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS historic_quotes (
+ticker TEXT NOT NULL,
+date DATE,
+at_close_currency TEXT NOT NULL,
+at_close INTEGER,
+PRIMARY KEY (ticker, date)
+);`)
+	if err != nil {
+		return err
+	}
+
+	return
+}
+
 func (*Security) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) {
 	return db.Prepare(`REPLACE INTO securities (name, display_name, quote_provider) VALUES (?,?,?);`)
 }
 
 func (*ListedSecurity) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) {
 	return db.Prepare(`REPLACE INTO listed_securities (security_name, ticker, currency, latest_quote, latest_quote_timestamp) VALUES (?,?,?,?,?);`)
+}
+
+func (*Quote) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) {
+	return db.Prepare(`REPLACE INTO historic_quotes (ticker, data, at_close_currency, at_close) VALUES (?,?,?,?);`)
 }
 
 func (*Security) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err error) {
@@ -73,6 +92,10 @@ func (*ListedSecurity) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err erro
 	return db.Prepare(`SELECT security_name, ticker, currency, latest_quote, latest_quote_timestamp FROM listed_securities WHERE security_name = ?`)
 }
 
+func (*Quote) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err error) {
+	return db.Prepare(`SELECT ticker, data, at_close_currency, at_close FROM historic_quotes WHERE ticker = ?`)
+}
+
 func (*Security) PrepareGet(db *persistence.DB) (stmt *sql.Stmt, err error) {
 	return db.Prepare(`SELECT name, display_name, quote_provider FROM securities WHERE name = ?`)
 }
@@ -81,24 +104,23 @@ func (*ListedSecurity) PrepareGet(db *persistence.DB) (stmt *sql.Stmt, err error
 	return db.Prepare(`SELECT * FROM listed_securities WHERE security_name = ? AND ticker = ?`)
 }
 
+func (*Quote) PrepareGet(db *persistence.DB) (stmt *sql.Stmt, err error) {
+	return db.Prepare(`SELECT * FROM historic_quotes WHERE ticker = ? AND date = ?`)
+}
+
 func (*Security) PrepareUpdate(db *persistence.DB, columns []string) (stmt *sql.Stmt, err error) {
-	// We need to make sure to quote columns here because they are potentially evil user input
-	var (
-		query string
-		set   []string
-	)
-
-	set = make([]string, len(columns))
-	for i, col := range columns {
-		set[i] = persistence.Quote(col) + " = ?"
-	}
-
-	query += "UPDATE securities SET " + strings.Join(set, ", ") + " WHERE name = ?;"
-
-	return db.Prepare(query)
+	return prepareUpdate(db, "securities", columns, "name = ?")
 }
 
 func (*ListedSecurity) PrepareUpdate(db *persistence.DB, columns []string) (stmt *sql.Stmt, err error) {
+	return prepareUpdate(db, "listed_securities", columns, "security_name = ? AND ticker = ?")
+}
+
+func (*Quote) PrepareUpdate(db *persistence.DB, columns []string) (stmt *sql.Stmt, err error) {
+	return prepareUpdate(db, "historic_quotes", columns, "ticker = ? AND date = ?")
+}
+
+func prepareUpdate(db *persistence.DB, table string, columns []string, where string) (stmt *sql.Stmt, err error) {
 	// We need to make sure to quote columns here because they are potentially evil user input
 	var (
 		query string
@@ -110,7 +132,7 @@ func (*ListedSecurity) PrepareUpdate(db *persistence.DB, columns []string) (stmt
 		set[i] = persistence.Quote(col) + " = ?"
 	}
 
-	query += "UPDATE listed_securities SET " + strings.Join(set, ", ") + " WHERE security_name = ? AND ticker = ?;"
+	query += "UPDATE " + table + " SET " + strings.Join(set, ", ") + " WHERE " + where
 
 	return db.Prepare(query)
 }
@@ -123,6 +145,10 @@ func (*ListedSecurity) PrepareDelete(db *persistence.DB) (stmt *sql.Stmt, err er
 	return db.Prepare(`DELETE FROM listed_securities WHERE security_name = ? AND ticker = ?`)
 }
 
+func (*Quote) PrepareDelete(db *persistence.DB) (stmt *sql.Stmt, err error) {
+	return db.Prepare(`DELETE FROM history_quotes WHERE ticker = ? AND date = ?`)
+}
+
 func (s *Security) ReplaceIntoArgs() []any {
 	return []any{s.Name, s.DisplayName, s.QuoteProvider}
 }
@@ -130,13 +156,11 @@ func (s *Security) ReplaceIntoArgs() []any {
 func (l *ListedSecurity) ReplaceIntoArgs() []any {
 	var (
 		pt    *time.Time
-		t     time.Time
 		value sql.NullInt32
 	)
 
 	if l.LatestQuoteTimestamp != nil {
-		t = l.LatestQuoteTimestamp.AsTime()
-		pt = &t
+		pt = ref(l.LatestQuoteTimestamp.AsTime())
 	}
 
 	if l.LatestQuote != nil {
@@ -145,6 +169,29 @@ func (l *ListedSecurity) ReplaceIntoArgs() []any {
 	}
 
 	return []any{l.SecurityName, l.Ticker, l.Currency, value, pt}
+}
+
+func (l *Quote) ReplaceIntoArgs() []any {
+	var (
+		pt       *time.Time
+		value    sql.NullInt32
+		currency sql.NullString
+	)
+
+	// ticker, data, at_close_currency, at_close
+
+	if l.Date != nil {
+		pt = ref(l.Date.AsTime())
+	}
+
+	if l.AtClose != nil {
+		value.Int32 = l.AtClose.Value
+		value.Valid = true
+		currency.String = l.AtClose.Symbol
+		currency.Valid = true
+	}
+
+	return []any{l.Ticker, pt, currency, value}
 }
 
 func (s *Security) UpdateArgs(columns []string) (args []any) {
@@ -179,6 +226,27 @@ func (l *ListedSecurity) UpdateArgs(columns []string) (args []any) {
 			} else {
 				args = append(args, nil)
 			}
+		}
+	}
+
+	return args
+}
+
+func (l *Quote) UpdateArgs(columns []string) (args []any) {
+	for _, col := range columns {
+		switch col {
+		case "ticker":
+			args = append(args, l.Ticker)
+		case "date":
+			if l.Date != nil {
+				args = append(args, l.Date.AsTime())
+			} else {
+				args = append(args, nil)
+			}
+		case "at_close_currency":
+			args = append(args, l.AtClose.GetSymbol())
+		case "at_close":
+			args = append(args, l.AtClose.GetValue())
 		}
 	}
 
@@ -220,4 +288,33 @@ func (*ListedSecurity) Scan(sc persistence.Scanner) (obj persistence.StorageObje
 	}
 
 	return &l, nil
+}
+
+func (*Quote) Scan(sc persistence.Scanner) (obj persistence.StorageObject, err error) {
+	var (
+		l        Quote
+		t        sql.NullTime
+		value    sql.NullInt32
+		currency sql.NullString
+	)
+
+	err = sc.Scan(&l.Ticker, &t, &currency, &value)
+	if err != nil {
+		return nil, err
+	}
+
+	if t.Valid {
+		l.Date = timestamppb.New(t.Time)
+	}
+
+	if value.Valid {
+		l.AtClose = Value(value.Int32)
+		l.AtClose.Symbol = currency.String
+	}
+
+	return &l, nil
+}
+
+func ref[T any](v T) *T {
+	return &v
 }
