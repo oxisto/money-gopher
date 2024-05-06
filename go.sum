@@ -44,6 +44,8 @@ github.com/oxisto/complete v0.0.0-20231209194436-0b605e2b5bff h1:WiQOAXar+naQAYz
 github.com/oxisto/complete v0.0.0-20231209194436-0b605e2b5bff/go.mod h1:wEf3y/0bTolv0kZjmKzgbU7L+PvFfm6KoWGeP/f2oCQ=
 github.com/oxisto/oauth2go v0.13.0 h1:CkoXzLBOikY2KnA3UGvGcDE3fECpsaCXiLGLizNloVQ=
 github.com/oxisto/oauth2go v0.13.0/go.mod h1:TtjTGmntY5a7dtIBfQ0kY6jF2LgITAxFFCTE1swO0IY=
+github.com/oxisto/oauth2go v0.14.0 h1:VjMJCBC3TxnXPEANWWsZudKlGYh06YgBl49fb5JhavM=
+github.com/oxisto/oauth2go v0.14.0/go.mod h1:8mUk9Gsrh4xgzrVLsliSGi/X3+ZQkXztfK+dpdAkRZM=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/riywo/loginshell v0.0.0-20200815045211-7d26008be1ab h1:ZjX6I48eZSFetPb41dHudEyVr5v953N15TsNZXlkcWY=
@@ -58,6 +60,8 @@ golang.org/x/net v0.24.0 h1:1PcaxkF854Fu3+lvBIx5SYn9wRlBzzcnHZSiaFFAb0w=
 golang.org/x/net v0.24.0/go.mod h1:2Q7sJY5mzlzWjKtYUEXSlBWCdyaioyXzRB2RtU8KVE8=
 golang.org/x/oauth2 v0.15.0 h1:s8pnnxNVzjWyrvYdFUQq5llS1PX2zhPXmccZv99h7uQ=
 golang.org/x/oauth2 v0.15.0/go.mod h1:q48ptWNTY5XWf+JNten23lcvHpLJ0ZSxF5ttTHKVCAM=
+golang.org/x/oauth2 v0.20.0 h1:4mQdhULixXKP1rwYBW0vAijoXnkTG0BLCDRzfe1idMo=
+golang.org/x/oauth2 v0.20.0/go.mod h1:XYTD2NtWslqkgxebSiOHnXEap4TF09sJSc7H1sXbhtI=
 golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.6.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
