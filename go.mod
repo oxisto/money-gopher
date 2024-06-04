@@ -4,7 +4,7 @@ go 1.22.1
 
 require (
 	connectrpc.com/connect v1.16.2
-	github.com/MicahParks/keyfunc/v3 v3.3.2
+	github.com/MicahParks/keyfunc/v3 v3.3.3
 	github.com/alecthomas/kong v0.9.0
 	github.com/fatih/color v1.17.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
@@ -22,7 +22,7 @@ require (
 )
 
 require (
-	github.com/MicahParks/jwkset v0.5.17 // indirect
+	github.com/MicahParks/jwkset v0.5.18 // indirect
 	github.com/riywo/loginshell v0.0.0-20200815045211-7d26008be1ab // indirect
 	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
