@@ -12,7 +12,6 @@
 		{ name: 'Your profile', href: '#' },
 		{ name: 'Sign out', href: '#' }
 	];
-	let active = false;
 </script>
 
 <div>
@@ -136,6 +135,7 @@
 								shadow-lg ring-1 ring-gray-900/5 focus:outline-none"
 							>
 								{#each userNavigation as item (item.name)}
+									{@const active = $menu.active === item.name}
 									<div use:menu.item>
 										<a
 											href={item.href}
