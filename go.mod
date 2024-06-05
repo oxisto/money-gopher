@@ -18,7 +18,7 @@ require (
 	github.com/posener/complete v1.2.3
 	golang.org/x/net v0.26.0
 	golang.org/x/text v0.16.0
-	google.golang.org/protobuf v1.34.0
+	google.golang.org/protobuf v1.34.1
 )
 
 require (
