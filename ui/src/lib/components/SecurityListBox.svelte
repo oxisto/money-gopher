@@ -1,16 +1,18 @@
 <script lang="ts">
-	import type { Security } from '$lib/gen/mgo_pb';
+	import { Security } from '$lib/gen/mgo_pb';
 	import { Check, ChevronUpDown } from '@steeze-ui/heroicons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import { createListbox } from 'svelte-headlessui';
 	import { Transition } from 'svelte-transition';
-	
-	export let securities: Security[];
-	export let securityName: string | undefined;
+
+	let {securities, securityName = $bindable() }: { securities: Security[], securityName?: string} = $props()
 
 	const listbox = createListbox({ label: 'Securities', selected: securities.find((sec) => sec.name == securityName) });
 
-	$: securityName = $listbox.selected?.name ?? undefined;
+	//$: securityName = $listbox.selected?.name ?? undefined;
+	$effect(() => {
+		securityName = $listbox.selected?.name ?? undefined;
+	})
 </script>
 
 <div class="relative mt-2">

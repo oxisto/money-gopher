@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { currency } from '$lib/intl';
-	import type { PageData } from './$types';
-
-	export let data: PageData;
+	
+	const { data } = $props();
 </script>
 
 <div class="px-4 sm:px-6 lg:px-8">

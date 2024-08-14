@@ -1,8 +1,7 @@
 <script setup lang="ts">
 	import PortfolioCard from '$lib/components/PortfolioCard.svelte';
-	import type { PageData } from './$types';
 
-	export let data: PageData;
+	const { data } = $props();
 </script>
 
 <div class="my-4 border-b border-gray-200 bg-white px-4 py-5 sm:px-6">

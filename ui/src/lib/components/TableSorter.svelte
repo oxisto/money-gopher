@@ -1,6 +1,8 @@
 <script lang="ts">
-	export let active: boolean;
-	export let column: string;
+	const { active, column } = $props<{
+		active: Boolean;
+		column: string;
+	}>();
 </script>
 
 <slot />
