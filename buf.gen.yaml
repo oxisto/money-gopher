@@ -12,9 +12,9 @@ plugins:
     out: gen
     opt:
       - paths=source_relative
-  - plugin: buf.build/connectrpc/es
+  - plugin: buf.build/connectrpc/es:v1.4.0
     out: ui/src/lib/gen
     opt: target=ts
-  - plugin: buf.build/bufbuild/es
+  - plugin: buf.build/bufbuild/es:v1.7.2
     out: ui/src/lib/gen
     opt: target=ts
