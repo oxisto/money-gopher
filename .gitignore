@@ -22,3 +22,5 @@ __debug*
 moneyd
 private.key
 session.json
+backup.db
+
