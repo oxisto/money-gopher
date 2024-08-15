@@ -41,5 +41,16 @@
 		"typescript": "^5.0.0",
 		"vite": "^5.0.0"
 	},
-	"type": "module"
+	"type": "module",
+	"overrides": {
+		"@steeze-ui/svelte-icon": {
+			"svelte": "$svelte"
+		},
+		"svelte-headlessui": {
+			"svelte": "$svelte"
+		},
+		"svelte-transition": {
+			"svelte": "$svelte"
+		}
+	}
 }
