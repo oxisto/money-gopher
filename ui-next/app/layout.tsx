@@ -1,9 +1,13 @@
 import { classNames } from "@/app/lib/util";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
+import Nav from "@/app/ui/nav";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = localFont({
+  src: "../node_modules/inter-ui/variable/interVariable.woff2",
+  variable: "--sans",
+});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -17,7 +21,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full bg-gray-100">
-      <body className={classNames(inter.className, "h-full")}>{children}</body>
+      <body className={classNames(inter.className, "h-full")}>
+        <Nav />
+
+        <main className="py-10 lg:pl-72">
+          <div className="px-4 sm:px-6 lg:px-8">{children}</div>
+        </main>
+      </body>
     </html>
   );
 }
