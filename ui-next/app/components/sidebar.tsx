@@ -1,4 +1,3 @@
-import { classNames } from "@/app/lib/util";
 import {
   BanknotesIcon,
   CalendarIcon,
@@ -6,7 +5,9 @@ import {
   FolderIcon,
   HomeIcon,
 } from "@heroicons/react/24/outline";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { classNames } from "@/lib/util";
 
 interface SidebarItemData {
   name: string;
@@ -65,7 +66,7 @@ export default function Sidebar({ isDesktop = false }) {
           <li>
             <ul role="list" className="-mx-2 space-y-1">
               {navigation.map((item) => (
-                <SidebarItem item={item} />
+                <SidebarItem key={item.name} item={item} />
               ))}
             </ul>
           </li>
@@ -117,7 +118,7 @@ export function SidebarItem({ item, isSubItem }: SidebarItemProps) {
   if (!isSubItem) {
     return (
       <li key={item.name}>
-        <a
+        <Link
           href={item.href}
           className={classNames(
             current
@@ -132,18 +133,18 @@ export function SidebarItem({ item, isSubItem }: SidebarItemProps) {
               {item.name}
             </>
           )}
-        </a>
+        </Link>
         <ul className="mt-1">
           {item.children?.map((subItem) => (
-            <SidebarItem item={subItem} isSubItem={true} />
+            <SidebarItem key={subItem.name} item={subItem} isSubItem={true} />
           ))}
         </ul>
       </li>
     );
   } else {
     return (
-      <li>
-        <a
+      <li key={item.name}>
+        <Link
           href={item.href}
           className={classNames(
             current
@@ -153,7 +154,7 @@ export function SidebarItem({ item, isSubItem }: SidebarItemProps) {
           )}
         >
           {item.name}
-        </a>
+        </Link>
       </li>
     );
   }

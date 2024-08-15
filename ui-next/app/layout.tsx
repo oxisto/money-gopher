@@ -1,8 +1,8 @@
-import { classNames } from "@/app/lib/util";
+import Nav from "@/components/nav";
+import { classNames } from "@/lib/util";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import Nav from "@/app/ui/nav";
 
 const inter = localFont({
   src: "../node_modules/inter-ui/variable/interVariable.woff2",
