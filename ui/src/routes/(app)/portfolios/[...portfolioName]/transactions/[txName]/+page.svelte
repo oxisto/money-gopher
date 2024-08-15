@@ -10,22 +10,21 @@
 	import { currency } from '$lib/intl';
 	import { FieldMask } from '@bufbuild/protobuf';
 	import { ConnectError } from '@connectrpc/connect';
-	import type { PageData } from './$types';
 
-	export let data: PageData;
+	const { data } = $props();
 
-	$: total = new Currency({
+	let total = $derived(new Currency({
 		symbol: 'EUR',
 		value:
 			data.transaction.amount *
 			((data.transaction.price?.value ?? 0) +
 				(data.transaction.fees?.value ?? 0) +
 				(data.transaction.taxes?.value ?? 0))
-	});
+	}));
 
-	$: isSecurityTransaction =
+	let isSecurityTransaction = $derived(
 		data.transaction.type == PortfolioEventType.BUY ||
-		data.transaction.type == PortfolioEventType.SELL;
+		data.transaction.type == PortfolioEventType.SELL);
 
 	async function save() {
 		try {

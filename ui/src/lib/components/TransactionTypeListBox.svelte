@@ -5,7 +5,7 @@
 	import { createListbox } from 'svelte-headlessui';
 	import { Transition } from 'svelte-transition';
 
-	export let type: PortfolioEventType | undefined;
+	let { type = $bindable() }: {type: PortfolioEventType} = $props();
 
 	type PortfolioEventTypeStrings = keyof typeof PortfolioEventType;
 
@@ -21,7 +21,13 @@
 		selected: types.find((t) => (type !== undefined ? t == PortfolioEventType[type] : undefined))
 	});
 
-	$: type = PortfolioEventType[$listbox.selected as PortfolioEventTypeStrings] ?? undefined;
+	$effect(() => {
+		$inspect($listbox.selected);
+		let newType = PortfolioEventType[$listbox.selected as PortfolioEventTypeStrings]
+		if(type != newType) {
+			type = newType
+		}
+	})
 </script>
 
 <div class="relative mt-2">

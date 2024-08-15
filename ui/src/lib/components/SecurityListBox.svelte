@@ -5,14 +5,19 @@
 	import { createListbox } from 'svelte-headlessui';
 	import { Transition } from 'svelte-transition';
 
-	let {securities, securityName = $bindable() }: { securities: Security[], securityName?: string} = $props()
+	let {
+		securities,
+		securityName = $bindable()
+	}: { securities: Security[]; securityName?: string } = $props();
 
-	const listbox = createListbox({ label: 'Securities', selected: securities.find((sec) => sec.name == securityName) });
+	const listbox = createListbox({
+		label: 'Securities',
+		selected: securities.find((sec) => sec.name == securityName)
+	});
 
-	//$: securityName = $listbox.selected?.name ?? undefined;
 	$effect(() => {
 		securityName = $listbox.selected?.name ?? undefined;
-	})
+	});
 </script>
 
 <div class="relative mt-2">
