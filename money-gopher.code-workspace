@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "ui"
+		},
+		{
+			"path": "ui-next"
 		}
 	],
 	"settings": {
