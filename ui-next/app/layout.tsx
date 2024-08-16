@@ -2,6 +2,7 @@ import Nav from "@/app/components/nav";
 import { classNames } from "@/lib/util";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import Sidebar from "./components/sidebar";
 import "./globals.css";
 
 const inter = localFont({
@@ -22,7 +23,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full bg-gray-100">
       <body className={classNames(inter.className, "h-full")}>
-        <Nav />
+        <Nav
+          mobileSidebar={<Sidebar isDesktop={false} />}
+          desktopSidebar={<Sidebar isDesktop={true} />}
+        />
 
         <main className="py-10 lg:pl-72">
           <div className="px-4 sm:px-6 lg:px-8">{children}</div>

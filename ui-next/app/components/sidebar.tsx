@@ -1,44 +1,18 @@
+import "server-only"
+import { SidebarItem, SidebarItemData } from "@/components/sidebaritem";
+import { auth } from "@/lib/auth";
 import { classNames } from "@/lib/util";
-import {
-  BanknotesIcon,
-  CalendarIcon,
-  ChartPieIcon,
-  FolderIcon,
-  HomeIcon,
-} from "@heroicons/react/24/outline";
-import { useSession } from "next-auth/react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-
-interface SidebarItemData {
-  name: string;
-  href: string;
-  icon?: React.ForwardRefExoticComponent<
-    React.PropsWithoutRef<React.SVGProps<SVGSVGElement>> & {
-      title?: string;
-      titleId?: string;
-    } & React.RefAttributes<SVGSVGElement>
-  >;
-  children?: SidebarItemData[];
-  disabled?: boolean;
-}
+import { portfolioClient } from "../lib/client";
 
 const navigation: SidebarItemData[] = [
-  { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
-  { name: "Securities", href: "/securities", icon: BanknotesIcon },
+  { name: "Dashboard", href: "/dashboard" /*, icon: HomeIcon*/ },
+  { name: "Securities", href: "/securities" /*, icon: BanknotesIcon */ },
   {
     name: "Portfolios",
-    href: "/portfolios",
-    icon: FolderIcon,
-    children: [
-      {
-        name: "My Portfolio",
-        href: "/portfolios/my",
-      },
-    ],
+    href: "/portfolios" /* icon: FolderIcon, */,
   },
-  { name: "Dividends", href: "/dividends", icon: CalendarIcon },
-  { name: "Performance", href: "/performance", icon: ChartPieIcon },
+  { name: "Dividends", href: "/dividends" /*, icon: CalendarIcon */ },
+  { name: "Performance", href: "/performance" /*, icon: ChartPieIcon */ },
 ];
 
 const teams = [
@@ -47,9 +21,16 @@ const teams = [
   { id: 3, name: "Child", href: "#", initial: "W", current: false },
 ];
 
-export default function Sidebar({ isDesktop = false }) {
-  const session = useSession()
-  console.log(session.data?.accessToken);
+const client = portfolioClient(fetch);
+
+export default async function Sidebar({ isDesktop = false }) {
+  const portfolios = await client
+    .listPortfolios({})
+    .then((res) => res.portfolios);
+  navigation[2].children = portfolios.map((p) => {
+    return { name: p.displayName, href: `/portfolio/${p.name}` };
+  });
+
   return (
     <div
       className={classNames(
@@ -105,69 +86,9 @@ export default function Sidebar({ isDesktop = false }) {
   );
 }
 
-interface SidebarItemProps {
-  item: SidebarItemData;
-
-  isSubItem?: boolean;
-}
-
-/**
- * Renders an individual sidebar item.
- */
-export function SidebarItem({ item, isSubItem }: SidebarItemProps) {
-  const pathname = usePathname();
-  let current = pathname.startsWith(item.href);
-
-  if (!isSubItem) {
-    return (
-      <li key={item.name}>
-        <Link
-          href={item.href}
-          className={classNames(
-            current
-              ? "bg-gray-800 text-white"
-              : "text-gray-400 hover:bg-gray-800 hover:text-white",
-            "group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6"
-          )}
-        >
-          {item.icon && (
-            <>
-              <item.icon aria-hidden="true" className="h-6 w-6 shrink-0" />
-              {item.name}
-            </>
-          )}
-        </Link>
-        <ul className="mt-1">
-          {item.children?.map((subItem) => (
-            <SidebarItem key={subItem.name} item={subItem} isSubItem={true} />
-          ))}
-        </ul>
-      </li>
-    );
-  } else {
-    return (
-      <li key={item.name}>
-        <Link
-          href={item.href}
-          className={classNames(
-            current
-              ? "bg-gray-700 text-white"
-              : "text-gray-300 hover:bg-gray-700 hover:text-white",
-            "block rounded-md py-2 pl-9 pr-2 text-sm leading-6"
-          )}
-        >
-          {item.name}
-        </Link>
-      </li>
-    );
-  }
-}
-
-export function SidebarProfile() {
-  const session = useSession();
- 
-  if (!session) return null
-  console.log(session);
+export async function SidebarProfile() {
+  const session = await auth();
+  if (!session) return null;
 
   return (
     <li className="-mx-6 mt-auto">
@@ -181,7 +102,7 @@ export function SidebarProfile() {
           className="h-8 w-8 rounded-full bg-gray-800"
         />
         <span className="sr-only">Your profile</span>
-        <span aria-hidden="true">{session.data?.user?.name}</span>
+        <span aria-hidden="true">{session.user?.name}</span>
       </a>
     </li>
   );
