@@ -9,12 +9,14 @@ import {
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 import Sidebar from "./sidebar";
+import { SessionProvider } from "next-auth/react";
 
 export default function Nav() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <>
+    <SessionProvider>
       <Dialog
         open={sidebarOpen}
         onClose={setSidebarOpen}
@@ -76,6 +78,7 @@ export default function Nav() {
           />
         </a>
       </div>
+      </SessionProvider>
     </>
   );
 }

@@ -1,3 +1,4 @@
+import { classNames } from "@/lib/util";
 import {
   BanknotesIcon,
   CalendarIcon,
@@ -5,9 +6,9 @@ import {
   FolderIcon,
   HomeIcon,
 } from "@heroicons/react/24/outline";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { classNames } from "@/lib/util";
 
 interface SidebarItemData {
   name: string;
@@ -47,6 +48,8 @@ const teams = [
 ];
 
 export default function Sidebar({ isDesktop = false }) {
+  const session = useSession()
+  console.log(session.data?.accessToken);
   return (
     <div
       className={classNames(
@@ -95,7 +98,7 @@ export default function Sidebar({ isDesktop = false }) {
               ))}
             </ul>
           </li>
-          {isDesktop && <SidebarProfile name={"Tom Cook"} />}
+          {isDesktop && <SidebarProfile />}
         </ul>
       </nav>
     </div>
@@ -160,14 +163,12 @@ export function SidebarItem({ item, isSubItem }: SidebarItemProps) {
   }
 }
 
-export interface SidebarProfileProps {
-  /**
-   * The name of the profile.
-   */
-  name: string;
-}
+export function SidebarProfile() {
+  const session = useSession();
+ 
+  if (!session) return null
+  console.log(session);
 
-export function SidebarProfile({ name }: SidebarProfileProps) {
   return (
     <li className="-mx-6 mt-auto">
       <a
@@ -180,7 +181,7 @@ export function SidebarProfile({ name }: SidebarProfileProps) {
           className="h-8 w-8 rounded-full bg-gray-800"
         />
         <span className="sr-only">Your profile</span>
-        <span aria-hidden="true">{name}</span>
+        <span aria-hidden="true">{session.data?.user?.name}</span>
       </a>
     </li>
   );

@@ -51,7 +51,7 @@ var cmd moneydCmd
 type moneydCmd struct {
 	Debug bool `help:"Enable debug mode."`
 
-	EmbeddedOAuth2ServerDashboardCallback string `default:"http://localhost:8080/callback" help:"Specifies the callback URL for the dashboard, if the embedded oauth2 server is used."`
+	EmbeddedOAuth2ServerDashboardCallback string `default:"http://localhost:3000/api/auth/callback/money-gopher" help:"Specifies the callback URL for the dashboard, if the embedded oauth2 server is used."`
 
 	PrivateKeyFile     string `default:"private.key"`
 	PrivateKeyPassword string `default:"moneymoneymoney"`

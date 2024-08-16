@@ -18,3 +18,9 @@ plugins:
   - plugin: buf.build/bufbuild/es:v1.7.2
     out: ui/src/lib/gen
     opt: target=ts
+  - plugin: buf.build/connectrpc/es:v1.4.0
+    out: ui-next/app/lib/gen
+    opt: target=ts
+  - plugin: buf.build/bufbuild/es:v1.7.2
+    out: ui-next/app/lib/gen
+    opt: target=ts

@@ -1,4 +1,4 @@
-import Nav from "@/components/nav";
+import Nav from "@/app/components/nav";
 import { classNames } from "@/lib/util";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
