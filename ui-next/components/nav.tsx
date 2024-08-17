@@ -8,11 +8,11 @@ import {
 } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { SessionProvider } from "next-auth/react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 
 export interface SidebarProps {
-    mobileSidebar: React.ReactNode;
-    desktopSidebar: React.ReactNode;
+  mobileSidebar: React.ReactNode;
+  desktopSidebar: React.ReactNode;
 }
 
 /**
@@ -23,10 +23,7 @@ export interface SidebarProps {
  * server, we need to pass the sidebar component (one for desktop and one for
  * mobile) as a prop.
  */
-export default function Nav({
-  mobileSidebar,
-  desktopSidebar,
-}: SidebarProps) {
+export default function Nav({ mobileSidebar, desktopSidebar }: SidebarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -62,14 +59,14 @@ export default function Nav({
                   </button>
                 </div>
               </TransitionChild>
-              {mobileSidebar}
+              <Suspense>{mobileSidebar}</Suspense>
             </DialogPanel>
           </div>
         </Dialog>
 
         {/* Static sidebar for desktop */}
         <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-          {desktopSidebar}
+          <Suspense>{desktopSidebar}</Suspense>
         </div>
 
         <div className="sticky top-0 z-40 flex items-center gap-x-6 bg-gray-900 px-4 py-4 shadow-sm sm:px-6 lg:hidden">

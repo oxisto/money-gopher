@@ -4,6 +4,7 @@ import { classNames } from "@/lib/util";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { Suspense } from "react";
 
 const inter = localFont({
   src: "../node_modules/inter-ui/variable/interVariable.woff2",
@@ -29,7 +30,9 @@ export default function RootLayout({
         />
 
         <main className="py-10 lg:pl-72">
-          <div className="px-4 sm:px-6 lg:px-8">{children}</div>
+          <div className="px-4 sm:px-6 lg:px-8">
+            <Suspense>{children}</Suspense>
+          </div>
         </main>
       </body>
     </html>

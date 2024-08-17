@@ -1,4 +1,5 @@
 import { SidebarItem, SidebarItemData } from "@/components/sidebaritem";
+import { unstable_noStore as noStore } from 'next/cache';
 import { auth } from "@/lib/auth";
 import { classNames } from "@/lib/util";
 import "server-only";
@@ -22,6 +23,7 @@ const teams = [
 ];
 
 export default async function Sidebar({ isDesktop = false }) {
+  noStore();
   const portfolios = await portfolioClient
     .listPortfolios({})
     .then((res) => res.portfolios);
