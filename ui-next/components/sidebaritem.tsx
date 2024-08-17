@@ -24,7 +24,8 @@ export interface SidebarItemProps {
 }
 
 /**
- * Renders an individual sidebar menu item.
+ * Renders an individual sidebar menu item. This must be done on the client,
+ * since we need access to the navigation data.
  */
 export function SidebarItem({ item, isSubItem }: SidebarItemProps) {
   const pathname = usePathname();

@@ -10,13 +10,23 @@ import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { SessionProvider } from "next-auth/react";
 import { useState } from "react";
 
+export interface SidebarProps {
+    mobileSidebar: React.ReactNode;
+    desktopSidebar: React.ReactNode;
+}
+
+/**
+ * The main navigation component. This must be run on the client since it needs
+ * interactivity (closing/opening of the sidebar).
+ *
+ * But because we want to contents of the nav itself (the sidebar) to run on the
+ * server, we need to pass the sidebar component (one for desktop and one for
+ * mobile) as a prop.
+ */
 export default function Nav({
   mobileSidebar,
   desktopSidebar,
-}: {
-  mobileSidebar: React.ReactNode;
-  desktopSidebar: React.ReactNode;
-}) {
+}: SidebarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (

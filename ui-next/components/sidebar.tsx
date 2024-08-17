@@ -1,8 +1,8 @@
-import "server-only"
 import { SidebarItem, SidebarItemData } from "@/components/sidebaritem";
 import { auth } from "@/lib/auth";
 import { classNames } from "@/lib/util";
-import { portfolioClient } from "../lib/client";
+import "server-only";
+import { portfolioClient } from "@/lib/clients";
 
 const navigation: SidebarItemData[] = [
   { name: "Dashboard", href: "/dashboard" /*, icon: HomeIcon*/ },
@@ -21,14 +21,12 @@ const teams = [
   { id: 3, name: "Child", href: "#", initial: "W", current: false },
 ];
 
-const client = portfolioClient(fetch);
-
 export default async function Sidebar({ isDesktop = false }) {
-  const portfolios = await client
+  const portfolios = await portfolioClient
     .listPortfolios({})
     .then((res) => res.portfolios);
   navigation[2].children = portfolios.map((p) => {
-    return { name: p.displayName, href: `/portfolio/${p.name}` };
+    return { name: p.displayName, href: `/portfolios/${p.name}` };
   });
 
   return (

@@ -1,9 +1,7 @@
-import { securitiesClient } from "@/lib/client";
+import { securitiesClient } from "@/lib/clients";
 
 export default async function Securities() {
-  let client = securitiesClient(fetch)
-
-  const securities = await client.listSecurities({}).then((res) => res.securities);
+  const securities = await securitiesClient.listSecurities({}).then((res) => res.securities);
   
   return <>Securities
   

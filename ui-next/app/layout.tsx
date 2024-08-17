@@ -1,8 +1,8 @@
-import Nav from "@/app/components/nav";
+import Nav from "@/components/nav";
+import Sidebar from "@/components/sidebar";
 import { classNames } from "@/lib/util";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import Sidebar from "./components/sidebar";
 import "./globals.css";
 
 const inter = localFont({

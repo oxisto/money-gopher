@@ -1,9 +1,7 @@
-import { portfolioClient } from "@/lib/client";
+import { portfolioClient } from "@/lib/clients";
 
 export default async function Portfolios() {
-  let client = portfolioClient(fetch)
-
-  const portfolios = await client.listPortfolios({}).then((res) => res.portfolios);
+  const portfolios = await portfolioClient.listPortfolios({}).then((res) => res.portfolios);
   
   return <>Portfolios
   
