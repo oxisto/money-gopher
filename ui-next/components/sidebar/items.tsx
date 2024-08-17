@@ -1,26 +1,60 @@
 "use client";
 
+import { classNames } from "@/lib/util";
+import { BanknotesIcon, CalendarIcon, ChartPieIcon, FolderIcon, HomeIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { classNames } from "@/lib/util";
+import { ForwardRefExoticComponent, SVGProps, RefAttributes } from "react";
+
+type IconType = ForwardRefExoticComponent<Omit<SVGProps<SVGSVGElement>, "ref"> & {
+  title?: string;
+  titleId?: string;
+} & RefAttributes<SVGSVGElement>>
+
+let icons = new Map<string, IconType>([
+  ["home", HomeIcon],
+  ["banknotes", BanknotesIcon],
+  ["folder", FolderIcon],
+  ["chartpie", ChartPieIcon],
+  ["calendar", CalendarIcon],
+]);
 
 export interface SidebarItemData {
   name: string;
   href: string;
-  icon?: React.ForwardRefExoticComponent<
-    React.PropsWithoutRef<React.SVGProps<SVGSVGElement>> & {
-      title?: string;
-      titleId?: string;
-    } & React.RefAttributes<SVGSVGElement>
-  >;
+  icon?: string;
   children?: SidebarItemData[];
   disabled?: boolean;
 }
 
-export interface SidebarItemProps {
+interface SidebarItemProps {
   item: SidebarItemData;
 
   isSubItem?: boolean;
+}
+
+export function DashboardItem() {
+  return <SidebarItem item={
+    {name: "Dashboard", href: "/dashboard", icon: "home"  }
+  } />
+}
+
+export function SecuritiesItem() {
+  return <SidebarItem item={
+    {name: "Securities", href: "/securities", icon: "banknotes"  }
+  } />
+}
+
+export function DividendsItem() {
+  return <SidebarItem item={
+    {name: "Dividends", href: "/dividends", icon: "calendar"  }
+  } />
+}
+
+export function PerformanceItem() {
+  return <SidebarItem item={
+    {name: "Performance", href: "/performance", icon: "chartpie"  }
+  } />
 }
 
 /**
@@ -30,6 +64,7 @@ export interface SidebarItemProps {
 export function SidebarItem({ item, isSubItem }: SidebarItemProps) {
   const pathname = usePathname();
   let current = pathname.startsWith(item.href);
+  const Icon = icons.get(item.icon ?? "")
 
   if (!isSubItem) {
     return (
@@ -43,9 +78,9 @@ export function SidebarItem({ item, isSubItem }: SidebarItemProps) {
             "group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6"
           )}
         >
-          {item.icon && (
+          {Icon && (
             <>
-              <item.icon aria-hidden="true" className="h-6 w-6 shrink-0" />
+              <Icon aria-hidden="true" className="h-6 w-6 shrink-0" />
             </>
           )}
           {item.name}
@@ -69,9 +104,9 @@ export function SidebarItem({ item, isSubItem }: SidebarItemProps) {
             "block rounded-md py-2 pl-9 pr-2 text-sm leading-6"
           )}
         >
-          {item.icon && (
+          {Icon && (
             <>
-              <item.icon aria-hidden="true" className="h-6 w-6 shrink-0" />
+              <Icon aria-hidden="true" className="h-6 w-6 shrink-0" />
             </>
           )}
           {item.name}

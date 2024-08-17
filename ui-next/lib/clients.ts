@@ -15,7 +15,6 @@ export const portfolioClient = createPromiseClient(
   createConnectTransport({
     baseUrl: "http://localhost:8080",
     useHttpGet: true,
-    fetch: fetch,
     interceptors: [authorizer],
   })
 );
@@ -25,7 +24,6 @@ export const securitiesClient = createPromiseClient(
   createConnectTransport({
     baseUrl: "http://localhost:8080",
     useHttpGet: true,
-    fetch: fetch,
     interceptors: [authorizer],
   })
 );

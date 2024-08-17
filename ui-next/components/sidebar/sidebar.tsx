@@ -1,20 +1,9 @@
-import { SidebarItem, SidebarItemData } from "@/components/sidebaritem";
-import { unstable_noStore as noStore } from 'next/cache';
+import { DashboardItem, DividendsItem, PerformanceItem, SecuritiesItem } from "@/components/sidebar/items";
+import { PortfolioItem } from "@/components/sidebar/portfolio";
 import { auth } from "@/lib/auth";
 import { classNames } from "@/lib/util";
-import "server-only";
-import { portfolioClient } from "@/lib/clients";
 
-const navigation: SidebarItemData[] = [
-  { name: "Dashboard", href: "/dashboard" /*, icon: HomeIcon*/ },
-  { name: "Securities", href: "/securities" /*, icon: BanknotesIcon */ },
-  {
-    name: "Portfolios",
-    href: "/portfolios" /* icon: FolderIcon, */,
-  },
-  { name: "Dividends", href: "/dividends" /*, icon: CalendarIcon */ },
-  { name: "Performance", href: "/performance" /*, icon: ChartPieIcon */ },
-];
+const navigation = [DashboardItem, SecuritiesItem, PortfolioItem, DividendsItem, PerformanceItem]
 
 const teams = [
   { id: 1, name: "Personal", href: "#", initial: "H", current: false },
@@ -22,15 +11,7 @@ const teams = [
   { id: 3, name: "Child", href: "#", initial: "W", current: false },
 ];
 
-export default async function Sidebar({ isDesktop = false }) {
-  noStore();
-  const portfolios = await portfolioClient
-    .listPortfolios({})
-    .then((res) => res.portfolios);
-  navigation[2].children = portfolios.map((p) => {
-    return { name: p.displayName, href: `/portfolios/${p.name}` };
-  });
-
+export default function Sidebar({ isDesktop = false }) {
   return (
     <div
       className={classNames(
@@ -49,8 +30,8 @@ export default async function Sidebar({ isDesktop = false }) {
         <ul role="list" className="flex flex-1 flex-col gap-y-7">
           <li>
             <ul role="list" className="-mx-2 space-y-1">
-              {navigation.map((item) => (
-                <SidebarItem key={item.name} item={item} />
+              {navigation.map((Item, idx) => (
+                <Item key={idx}/>
               ))}
             </ul>
           </li>

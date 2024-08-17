@@ -37,7 +37,6 @@ export const { handlers, auth } = NextAuth({
       return !!auth;
     },
     jwt: async ({ token, user, account }) => {
-      console.log(`account: ${account}`)
       if (account && account.access_token) {
         // set access_token to the token payload
         token.accessToken = account.access_token;

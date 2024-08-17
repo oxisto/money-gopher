@@ -1,5 +1,5 @@
 import Nav from "@/components/nav";
-import Sidebar from "@/components/sidebar";
+import Sidebar from "@/components/sidebar/sidebar";
 import { classNames } from "@/lib/util";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
