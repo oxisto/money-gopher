@@ -92,7 +92,7 @@ func (l *ListPortfolioCmd) Run(s *cli.Session) error {
 }
 
 type CreatePortfolioCmd struct {
-	Name        string `help:"The identifier of the portfolio, e.g. mybank/myportfolio" required:""`
+	Name        string `help:"The identifier of the portfolio, e.g. mybank-myportfolio" required:""`
 	DisplayName string `help:"The display name of the portfolio"`
 }
 
@@ -115,7 +115,7 @@ func (cmd *CreatePortfolioCmd) Run(s *cli.Session) error {
 }
 
 type ShowPortfolioCmd struct {
-	PortfolioName string `help:"The identifier of the portfolio, e.g. mybank/myportfolio" required:"" predictor:"portfolio"`
+	PortfolioName string `help:"The identifier of the portfolio, e.g. mybank-myportfolio" required:"" predictor:"portfolio"`
 }
 
 func (cmd *ShowPortfolioCmd) Run(s *cli.Session) error {

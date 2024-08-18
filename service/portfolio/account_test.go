@@ -57,14 +57,14 @@ func Test_service_CreateBankAccount(t *testing.T) {
 			args: args{
 				req: connect.NewRequest(&portfoliov1.CreateBankAccountRequest{
 					BankAccount: &portfoliov1.BankAccount{
-						Name:        "bank/mycash",
+						Name:        "mybank-mycash",
 						DisplayName: "My Cash Account",
 					},
 				}),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.BankAccount]) bool {
 				return true &&
-					assert.Equals(t, "bank/mycash", r.Msg.Name) &&
+					assert.Equals(t, "mybank-mycash", r.Msg.Name) &&
 					assert.Equals(t, "My Cash Account", r.Msg.DisplayName)
 			},
 			wantSvc: func(t *testing.T, s *service) bool {
@@ -118,7 +118,7 @@ func Test_service_UpdateBankAccount(t *testing.T) {
 			args: args{
 				req: connect.NewRequest(&portfoliov1.UpdateBankAccountRequest{
 					Account: &portfoliov1.BankAccount{
-						Name:        "bank/mycash",
+						Name:        "mybank-mycash",
 						DisplayName: "My Cash",
 					},
 					UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"display_name"}},
@@ -170,7 +170,7 @@ func Test_service_DeleteBankAccount(t *testing.T) {
 			},
 			args: args{
 				req: connect.NewRequest(&portfoliov1.DeleteBankAccountRequest{
-					Name: "bank/mycash",
+					Name: "mybank-mycash",
 				}),
 			},
 			wantSvc: func(t *testing.T, s *service) bool {

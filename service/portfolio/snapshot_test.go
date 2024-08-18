@@ -76,7 +76,7 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 				securities: mockSecuritiesClientWithData,
 			},
 			args: args{req: connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
-				PortfolioName: "bank/myportfolio",
+				PortfolioName: "mybank-myportfolio",
 			})},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioSnapshot]) bool {
 				return true &&
@@ -94,7 +94,7 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 				securities: mockSecuritiesClientWithData,
 			},
 			args: args{req: connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
-				PortfolioName: "bank/myportfolio",
+				PortfolioName: "mybank-myportfolio",
 				Time:          timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC)),
 			})},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioSnapshot]) bool {
@@ -116,7 +116,7 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 				securities: mockSecuritiesClientWithData,
 			},
 			args: args{req: connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
-				PortfolioName: "bank/myportfolio",
+				PortfolioName: "mybank-myportfolio",
 				Time:          timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC)),
 			})},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioSnapshot]) bool {
@@ -132,7 +132,7 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 				securities: &mockSecuritiesClient{listSecuritiesError: io.EOF},
 			},
 			args: args{req: connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
-				PortfolioName: "bank/myportfolio",
+				PortfolioName: "mybank-myportfolio",
 				Time:          timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC)),
 			})},
 			wantErr: true,
@@ -147,7 +147,7 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 				securities: &mockSecuritiesClient{listSecuritiesError: io.EOF},
 			},
 			args: args{req: connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
-				PortfolioName: "bank/myportfolio",
+				PortfolioName: "mybank-myportfolio",
 				Time:          timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC)),
 			})},
 			wantErr: true,

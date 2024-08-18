@@ -31,7 +31,7 @@ type BankAccountCmd struct {
 }
 
 type CreateBankAccountCmd struct {
-	Name        string `help:"The identifier of the portfolio, e.g. mybank/myportfolio" required:""`
+	Name        string `help:"The identifier of the portfolio, e.g. mybank-myportfolio" required:""`
 	DisplayName string `help:"The display name of the portfolio"`
 }
 

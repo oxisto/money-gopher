@@ -45,7 +45,7 @@ func TestPortfolioEvent_MakeUniqueName(t *testing.T) {
 			name: "happy path",
 			fields: fields{
 				SecurityName:  "stock",
-				PortfolioName: "bank/myportfolio",
+				PortfolioName: "mybank-myportfolio",
 				Amount:        10,
 				Type:          PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
 				Time:          timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.Local)),
