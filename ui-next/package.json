@@ -14,10 +14,9 @@
     "react-dom": "^19.0.0-rc-1eaccd82-20240816"
   },
   "devDependencies": {
-    "@connectrpc/connect": "^1.4.0",
-    "@connectrpc/connect-web": "^1.4.0",
     "@headlessui/react": "^2.1.2",
     "@heroicons/react": "^2.1.5",
+    "@tailwindcss/forms": "^0.5.7",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
@@ -25,6 +24,8 @@
     "eslint-config-next": "14.2.5",
     "inter-ui": "^4.0.2",
     "next-auth": "^5.0.0-beta.20",
+    "openapi-fetch": "^0.11.1",
+    "openapi-typescript": "^7.3.0",
     "postcss": "^8",
     "server-only": "^0.0.1",
     "tailwindcss": "^3.4.1",

@@ -19,6 +19,7 @@ export default function NewPortfolio() {
       redirect(`/portfolios/${portfolio.name}`)
     }
   }
+  
   return (
     <form action={createPortfolio}>
       <input type="text" name="name" placeholder="Enter name" />

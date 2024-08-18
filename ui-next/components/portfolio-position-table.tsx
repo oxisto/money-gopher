@@ -1,6 +1,6 @@
 import PortfolioPositionRow from "@/components/portfolio-position-row";
 import TableSorter from "@/components/table-sorter";
-import { PortfolioPosition, PortfolioSnapshot } from "@/lib/gen/mgo_pb";
+import { PortfolioPosition, PortfolioSnapshot } from "@/lib/api";
 import { currency } from "@/lib/util";
 import {
     ArrowDownIcon,

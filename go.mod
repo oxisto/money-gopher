@@ -4,6 +4,7 @@ go 1.22.1
 
 require (
 	connectrpc.com/connect v1.16.2
+	connectrpc.com/vanguard v0.2.0
 	github.com/MicahParks/keyfunc/v3 v3.3.3
 	github.com/alecthomas/kong v0.9.0
 	github.com/fatih/color v1.17.0
@@ -28,12 +29,9 @@ require (
 	golang.org/x/oauth2 v0.20.0 // indirect
 	golang.org/x/sys v0.23.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-)
-
-// needed until https://github.com/golang/oauth2/issues/615 is resolved
-require (
-	github.com/golang/protobuf v1.5.3 // indirect
-	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/genproto v0.0.0-20230807174057-1744710a1577 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20230803162519-f966b187b2e5
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230807174057-1744710a1577 // indirect
 )
 
 replace github.com/posener/complete v1.2.3 => github.com/oxisto/complete v0.0.0-20231209194436-0b605e2b5bff

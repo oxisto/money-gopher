@@ -1,7 +1,7 @@
-import Debug from "@/components/debug";
-import { unstable_noStore as noStore } from "next/cache";
-import { portfolioClient } from "@/lib/clients";
+import Button from "@/components/button";
+import NewPortfolioTransactionButton from "@/components/new-portfolio-transaction-button";
 import PortfolioPositionsTable from "@/components/portfolio-position-table";
+import client from "@/lib/api";
 import Link from "next/link";
 
 export interface PortfolioProps {
@@ -11,23 +11,29 @@ export interface PortfolioProps {
 }
 
 export default async function Portfolio({ params }: PortfolioProps) {
-  noStore();
-  const portfolio = await portfolioClient.getPortfolio({ name: params.name });
-  const snapshot = await portfolioClient.getPortfolioSnapshot({
-    portfolioName: params.name,
+  const { data: portfolio } = await client.GET("/v1/portfolios/{name}", {
+    params: { path: { name: params.name } },
   });
-
-  return (
-    <>
-      <PortfolioPositionsTable snapshot={snapshot} />
-
-      <Link href={`/portfolios/${portfolio.name}/transactions/`}>
-        Show transactions list
-      </Link>
-
-      <Link href={`/portfolios/${portfolio.name}/transactions/add`}>
-        Add transaction
-      </Link>
-    </>
+  const { data: snapshot } = await client.GET(
+    "/v1/portfolios/{portfolioName}/snapshot",
+    {
+      params: { path: { portfolioName: params.name } },
+    }
   );
+
+  if (portfolio && snapshot) {
+    return (
+      <>
+        <PortfolioPositionsTable snapshot={snapshot} />
+
+        <div className="space-x-2">
+          <Link href={`/portfolios/${portfolio.name}/transactions/`}>
+            <Button>Show transactions list</Button>
+          </Link>
+
+          <NewPortfolioTransactionButton portfolio={portfolio} />
+        </div>
+      </>
+    );
+  }
 }

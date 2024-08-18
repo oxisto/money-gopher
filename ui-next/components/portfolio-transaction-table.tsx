@@ -1,6 +1,6 @@
-import PortfolioTransactionRow from "@/components/portfolio-transaction-row";
 import TableSorter from "@/components//table-sorter";
-import { PortfolioEvent, PortfolioSnapshot } from "@/lib/gen/mgo_pb";
+import PortfolioTransactionRow from "@/components/portfolio-transaction-row";
+import client, { PortfolioEvent } from "@/lib/api";
 
 interface PortfolioTransactionTableProps {
   events: PortfolioEvent[];
@@ -14,7 +14,7 @@ const sorters = new Map<
   (a: PortfolioEvent, b: PortfolioEvent) => number
 >();
 sorters.set("time", (a: PortfolioEvent, b: PortfolioEvent) => {
-  return (a.time?.toDate() ?? 0) < (b.time?.toDate() ?? 0) ? -1 : 1;
+  return (a.time ?? 0) < (b.time ?? 0) ? -1 : 1;
 });
 sorters.set("securityName", (a: PortfolioEvent, b: PortfolioEvent) => {
   return a.securityName.localeCompare(b.securityName);
@@ -51,9 +51,11 @@ function changeSortBy(column: string) {
   sortBy = column;
 }
 
-export default function PortfolioTransactionTable({
+export default async function PortfolioTransactionTable({
   events,
 }: PortfolioTransactionTableProps) {
+  const { data } = await client.GET("/v1/securities")
+  const securities = data?.securities ?? []
   const sorted = getPositions(events, sortBy, asc);
 
   return (
@@ -169,8 +171,15 @@ export default function PortfolioTransactionTable({
         </thead>
         <tbody className="divide-y divide-gray-200">
           {sorted.map((event, idx) => (
-            <PortfolioTransactionRow event={event} key={idx} currency="EUR" />)
-          )}
+            <PortfolioTransactionRow
+              event={event}
+              key={idx}
+              security={securities.find(
+                (sec) => sec.name == event.securityName
+              )}
+              currency="EUR"
+            />
+          ))}
         </tbody>
       </table>
     </div>

@@ -1,4 +1,4 @@
-import { PortfolioPosition } from "@/lib/gen/mgo_pb";
+import { components } from "@/lib/api/v1";
 import { classNames, currency, shorten } from "@/lib/util";
 import {
   ArrowDownIcon,
@@ -7,7 +7,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 interface PortfolioPositionRowProps {
-  position: PortfolioPosition;
+  position: components["schemas"]["PortfolioPosition"];
 }
 
 export default function PortfolioPositionRow({

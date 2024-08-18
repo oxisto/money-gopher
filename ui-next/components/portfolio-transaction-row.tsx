@@ -1,10 +1,5 @@
-import {
-  Currency,
-  PortfolioEvent,
-  PortfolioEventType,
-  Security,
-} from "@/lib/gen/mgo_pb";
 import FormattedDate from "@/components/formatted-date";
+import { Currency, PortfolioEvent, Security } from "@/lib/api";
 import { currency as formatCurrency } from "@/lib/util";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 
@@ -19,22 +14,22 @@ export default function PortfolioTransactionRow({
   security,
   currency = "EUR",
 }: PortfolioTransactionRowProps) {
-  const total = new Currency({
+  const total = {
     symbol: currency,
     value:
       event.amount *
       ((event.price?.value ?? 0) +
         (event.fees?.value ?? 0) +
         (event.taxes?.value ?? 0)),
-  });
+  } satisfies Currency;
 
   return (
     <tr>
       <td className="truncate whitespace-nowrap py-2 pl-4 pr-3 text-sm font-medium sm:pl-0">
-        <FormattedDate date={event.time?.toDate()} />
+        <FormattedDate date={event.time} />
       </td>
       <td className="truncate whitespace-nowrap py-2 pl-4 pr-3 text-sm font-medium sm:pl-0">
-        {PortfolioEventType[event.type]}
+        TODO
       </td>
       <td className="truncate whitespace-nowrap py-2 pl-4 pr-3 text-sm font-medium sm:pl-0">
         {security && (
@@ -60,7 +55,9 @@ export default function PortfolioTransactionRow({
         <div className="text-gray-500">{formatCurrency(total)}</div>
       </td>
       <td>
-        <a href="/portfolios/{tx.portfolioName}/transactions/{tx.name}">
+        <a
+          href={`/portfolios/${event.portfolioName}/transactions/${event.name}`}
+        >
           <PencilSquareIcon className="h-5 w-5 text-gray-400" />
         </a>
       </td>
