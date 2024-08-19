@@ -24,6 +24,39 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+        post:
+            tags:
+                - PortfolioService
+            operationId: PortfolioService_CreatePortfolio
+            parameters:
+                - name: portfolio.name
+                  in: query
+                  schema:
+                    type: string
+                - name: portfolio.displayName
+                  in: query
+                  schema:
+                    type: string
+                - name: portfolio.bankAccountName
+                  in: query
+                  description: |-
+                    BankAccountName contains the name/identifier of the underlying bank
+                     account.
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Portfolio'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/portfolios/{name}:
         get:
             tags:
@@ -116,63 +149,12 @@ paths:
                   required: true
                   schema:
                     type: string
-                - name: transaction.name
-                  in: query
-                  schema:
-                    type: string
-                - name: transaction.type
-                  in: query
-                  schema:
-                    enum:
-                        - PORTFOLIO_EVENT_TYPE_UNSPECIFIED
-                        - PORTFOLIO_EVENT_TYPE_BUY
-                        - PORTFOLIO_EVENT_TYPE_SELL
-                        - PORTFOLIO_EVENT_TYPE_DELIVERY_INBOUND
-                        - PORTFOLIO_EVENT_TYPE_DELIVERY_OUTBOUND
-                        - PORTFOLIO_EVENT_TYPE_DIVIDEND
-                        - PORTFOLIO_EVENT_TYPE_INTEREST
-                        - PORTFOLIO_EVENT_TYPE_DEPOSIT_CASH
-                        - PORTFOLIO_EVENT_TYPE_WITHDRAW_CASH
-                        - PORTFOLIO_EVENT_TYPE_ACCOUNT_FEES
-                        - PORTFOLIO_EVENT_TYPE_TAX_REFUND
-                    type: string
-                    format: enum
-                - name: transaction.time
-                  in: query
-                  schema:
-                    type: string
-                    format: date-time
-                - name: transaction.portfolioName
-                  in: query
-                  schema:
-                    type: string
-                - name: transaction.securityName
-                  in: query
-                  schema:
-                    type: string
-                - name: transaction.amount
-                  in: query
-                  schema:
-                    type: number
-                    format: double
-                - name: transaction.price.value
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: transaction.price.symbol
-                  in: query
-                  schema:
-                    type: string
-                - name: transaction.fees.value
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: transaction.fees.symbol
-                  in: query
-                  schema:
-                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/PortfolioEvent'
+                required: true
             responses:
                 "200":
                     description: OK
@@ -246,6 +228,41 @@ paths:
                   required: true
                   schema:
                     type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PortfolioEvent'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/transactions/{transaction.name}:
+        put:
+            tags:
+                - PortfolioService
+            operationId: PortfolioService_UpdatePortfolioTransaction
+            parameters:
+                - name: transaction.name
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: updateMask
+                  in: query
+                  schema:
+                    type: string
+                    format: field-mask
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/PortfolioEvent'
+                required: true
             responses:
                 "200":
                     description: OK

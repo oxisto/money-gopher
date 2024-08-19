@@ -44,7 +44,8 @@
 			"timestamppb"
 		],
 		"editor.tabSize": 4,
-		"typescript.tsdk": "ui-next/node_modules/typescript/lib"
+		"typescript.tsdk": "ui-next/node_modules/typescript/lib",
+		"editor.formatOnSave": true
 	},
 	"extensions": {
 		"recommendations": [

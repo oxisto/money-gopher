@@ -1,5 +1,6 @@
+import { modifyTransaction } from "@/actions/modify-transaction";
 import EditPortfolioTransactionForm from "@/components/edit-portfolio-transaction";
-import client, { PortfolioEvent } from "@/lib/api";
+import client from "@/lib/api";
 
 interface PortfolioTransactionProps {
   params: {
@@ -12,19 +13,15 @@ interface EditPortfolioTransactionProps extends PortfolioTransactionProps {}
 export default async function EditPortfolioTransaction({
   params,
 }: EditPortfolioTransactionProps) {
-  async function editTransaction(formData: FormData) {
-    "use server";
-    console.log(formData);
-  }
-
+  const { data } = await client.GET("/v1/securities");
   const create = params.transactionName == "new";
 
-  if (create) {
+  if (create && data) {
     <EditPortfolioTransactionForm
-      action={editTransaction}
+      action={modifyTransaction}
       create={true}
       event={{
-        name: "",
+        name: "new",
         time: new Date().toISOString(),
         portfolioName: params.name,
         securityName: "",
@@ -34,17 +31,19 @@ export default async function EditPortfolioTransaction({
         fees: { value: 0, symbol: "EUR" },
         taxes: { value: 0, symbol: "EUR" },
       }}
+      securities={data?.securities}
     />;
   } else {
     const { data: event } = await client.GET("/v1/transactions/{name}", {
       params: { path: { name: params.transactionName } },
     });
 
-    if (event) {
+    if (event && data) {
       return (
         <EditPortfolioTransactionForm
-          action={editTransaction}
+          action={modifyTransaction}
           create={create}
+          securities={data?.securities}
           event={event}
         />
       );

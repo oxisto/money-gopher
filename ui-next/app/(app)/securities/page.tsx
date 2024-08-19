@@ -1,16 +1,12 @@
-import { unstable_noStore as noStore } from 'next/cache';
-import { securitiesClient } from "@/lib/clients";
+import client from "@/lib/api";
 
 export default async function Securities() {
-    noStore();
-    const securities = await securitiesClient
-      .listSecurities({})
-      .then((res) => res.securities);
+  const { data } = await client.GET("/v1/securities");
 
-    return (
-      <>
-        Securities
-        {JSON.stringify(securities)}
-      </>
-    );
+  return (
+    <>
+      Securities
+      {JSON.stringify(data?.securities)}
+    </>
+  );
 }

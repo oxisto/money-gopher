@@ -1,17 +1,42 @@
 import { Currency } from "@/lib/api";
+import { useFormatter } from "next-intl";
+import { ChangeEvent, InputHTMLAttributes, useState } from "react";
 
-interface CurrencyInputProps {
+interface CurrencyInputProps
+  extends Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange"> {
   name: string;
-  value: Currency;
+  value?: Currency;
   symbol: string;
   children: React.ReactNode;
+  onChange?: (value: Currency) => void;
 }
 
 export default function CurrencyInput({
   name,
-  value,
+  value = { value: 0, symbol: "EUR" },
   children,
+  onChange,
+  ...rest
 }: CurrencyInputProps) {
+  const format = useFormatter();
+  let [internal, setInternal] = useState(
+    value.value > 0 ? value.value / 100 : 0
+  );
+
+  function onCurrencyChange(e: ChangeEvent<HTMLInputElement>) {
+    // update our internal value...
+    setInternal(e.target.valueAsNumber);
+
+    // ... and propagate changes back to parent
+    const currency: Currency = {
+      value: e.target.valueAsNumber * 100,
+      symbol: value.symbol,
+    };
+
+    // dispatch it back
+    onChange?.call(null, currency);
+  }
+
   return (
     <div className="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
       <label
@@ -26,13 +51,25 @@ export default function CurrencyInput({
         </div>
         <input
           type="number"
-          name={name}
+          name={`${name}.value`}
           id={name}
-          defaultValue={value.value}
+          value={internal}
           className="block w-full rounded-md border-0 py-1.5 pl-7 pr-12 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400
   focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-          placeholder="0.00"
+          placeholder={format.number(0.0, {
+            maximumFractionDigits: 2,
+            minimumFractionDigits: 2,
+          })}
           aria-describedby="price-currency"
+          onChange={onCurrencyChange}
+          min="0"
+          step="any"
+          {...rest}
+        />
+        <input
+          type="hidden"
+          name={`${name}.symbol`}
+          defaultValue={value.symbol}
         />
         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
           <span className="text-gray-500 sm:text-sm" id="price-currency">

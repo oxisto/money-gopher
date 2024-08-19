@@ -2,6 +2,7 @@ import FormattedDate from "@/components/formatted-date";
 import { Currency, PortfolioEvent, Security } from "@/lib/api";
 import { currency as formatCurrency } from "@/lib/util";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
+import Link from "next/link";
 
 interface PortfolioTransactionRowProps {
   event: PortfolioEvent;
@@ -55,11 +56,11 @@ export default function PortfolioTransactionRow({
         <div className="text-gray-500">{formatCurrency(total)}</div>
       </td>
       <td>
-        <a
+        <Link
           href={`/portfolios/${event.portfolioName}/transactions/${event.name}`}
         >
           <PencilSquareIcon className="h-5 w-5 text-gray-400" />
-        </a>
+        </Link>
       </td>
     </tr>
   );

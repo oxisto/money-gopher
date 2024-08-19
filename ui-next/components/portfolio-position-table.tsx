@@ -1,11 +1,11 @@
 import PortfolioPositionRow from "@/components/portfolio-position-row";
 import TableSorter from "@/components/table-sorter";
 import { PortfolioPosition, PortfolioSnapshot } from "@/lib/api";
-import { currency } from "@/lib/util";
+import { classNames, currency } from "@/lib/util";
 import {
-    ArrowDownIcon,
-    ArrowRightIcon,
-    ArrowUpIcon,
+  ArrowDownIcon,
+  ArrowRightIcon,
+  ArrowUpIcon,
 } from "@heroicons/react/24/outline";
 
 const sorters = new Map<
@@ -36,7 +36,7 @@ function getPositions(
   sortBy: string,
   asc: boolean
 ): PortfolioPosition[] {
-  let positions = Object.values(snapshot.positions);
+  let positions = Object.values(snapshot.positions ?? {});
   return positions.sort((a: PortfolioPosition, b: PortfolioPosition) => {
     const sort = sorters.get(sortBy)?.call(null, a, b) ?? 0;
     return asc ? sort : -sort;
@@ -170,11 +170,14 @@ export default function PortfolioPositionsTable({
             </th>
             <th
               scope="col"
-              className="{snapshot.totalGains < 0
-						? 'text-red-500'
-						: snapshot.totalGains <= 0.01
-							? 'text-gray-500'
-							: 'text-green-500'} px-3 py-3.5 text-right text-sm font-semibold"
+              className={classNames(
+                snapshot.totalGains < 0
+                  ? "text-red-500"
+                  : snapshot.totalGains <= 0.01
+                  ? "text-gray-500"
+                  : "text-green-500",
+                "px-3 py-3.5 text-right text-sm font-semibold"
+              )}
             >
               <div>
                 {Intl.NumberFormat(navigator.language, {
@@ -200,9 +203,10 @@ export default function PortfolioPositionsTable({
             <th></th>
             <th
               scope="col"
-              className="{(snapshot.cash?.value ?? 0) < 0
-						? 'text-red-500'
-						: ''} px-3 py-3.5 text-right text-sm font-semibold text-gray-900 lg:table-cell"
+              className={classNames(
+                snapshot.cash?.value < 0 ? "text-red-500" : "",
+                "px-3 py-3.5 text-right text-sm font-semibold text-gray-900 lg:table-cell"
+              )}
             >
               {currency(snapshot.cash)}
             </th>
@@ -218,9 +222,10 @@ export default function PortfolioPositionsTable({
             <th></th>
             <th
               scope="col"
-              className="{(snapshot.cash?.value ?? 0) < 0
-						? 'text-red-500'
-						: ''} px-3 py-3.5 text-right text-sm font-semibold text-gray-900 lg:table-cell"
+              className={classNames(
+                snapshot.cash?.value < 0 ? "text-red-500" : "",
+                "px-3 py-3.5 text-right text-sm font-semibold text-gray-900 lg:table-cell"
+              )}
             >
               {currency(snapshot.totalPortfolioValue)}
             </th>

@@ -1,10 +1,10 @@
-import { PortfolioSnapshot } from "@/lib/gen/mgo_pb";
 import { classNames, currency } from "@/lib/util";
 import {
   ArrowTrendingDownIcon,
   ArrowTrendingUpIcon,
 } from "@heroicons/react/24/outline";
 import FormattedPercentage from "./formatted-percentage";
+import { PortfolioSnapshot } from "@/lib/api";
 
 interface PortfolioPerformanceProps {
   snapshot: PortfolioSnapshot;

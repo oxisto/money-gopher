@@ -32,7 +32,7 @@ message GetPortfolioRequest {
 
 message UpdatePortfolioRequest {
   Portfolio portfolio = 1 [(google.api.field_behavior) = REQUIRED];
-  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
+  google.protobuf.FieldMask updateMask = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message DeletePortfolioRequest {
@@ -66,7 +66,7 @@ message ListPortfolioTransactionsResponse {
 
 message UpdatePortfolioTransactionRequest {
   PortfolioEvent transaction = 1 [(google.api.field_behavior) = REQUIRED];
-  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
+  google.protobuf.FieldMask updateMask = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message DeletePortfolioTransactionRequest {
@@ -84,7 +84,7 @@ message CreateBankAccountRequest {
 
 message UpdateBankAccountRequest {
   BankAccount account = 1 [(google.api.field_behavior) = REQUIRED];
-  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
+  google.protobuf.FieldMask updateMask = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message DeleteBankAccountRequest {
@@ -213,7 +213,9 @@ message PortfolioEvent {
 }
 
 service PortfolioService {
-  rpc CreatePortfolio(CreatePortfolioRequest) returns (Portfolio);
+  rpc CreatePortfolio(CreatePortfolioRequest) returns (Portfolio) {
+    option (google.api.http) = {post: "/v1/portfolios"};
+  }
   rpc ListPortfolios(ListPortfoliosRequest) returns (ListPortfoliosResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
     option (google.api.http) = {get: "/v1/portfolios"};
@@ -231,7 +233,10 @@ service PortfolioService {
   }
 
   rpc CreatePortfolioTransaction(CreatePortfolioTransactionRequest) returns (PortfolioEvent) {
-    option (google.api.http) = {post: "/v1/portfolios/{transaction.portfolio_name}/transactions"};
+    option (google.api.http) = {
+      post: "/v1/portfolios/{transaction.portfolio_name}/transactions"
+      body: "transaction"
+    };
   }
   rpc GetPortfolioTransaction(GetPortfolioTransactionRequest) returns (PortfolioEvent) {
     option idempotency_level = NO_SIDE_EFFECTS;
@@ -241,7 +246,12 @@ service PortfolioService {
     option idempotency_level = NO_SIDE_EFFECTS;
     option (google.api.http) = {get: "/v1/portfolios/{portfolio_name}/transactions"};
   }
-  rpc UpdatePortfolioTransaction(UpdatePortfolioTransactionRequest) returns (PortfolioEvent);
+  rpc UpdatePortfolioTransaction(UpdatePortfolioTransactionRequest) returns (PortfolioEvent) {
+    option (google.api.http) = {
+      put: "/v1/transactions/{transaction.name}"
+      body: "transaction"
+    };
+  }
   rpc DeletePortfolioTransaction(DeletePortfolioTransactionRequest) returns (google.protobuf.Empty);
 
   rpc ImportTransactions(ImportTransactionsRequest) returns (google.protobuf.Empty);
@@ -295,7 +305,7 @@ message CreateSecurityRequest {
 
 message UpdateSecurityRequest {
   Security security = 1 [(google.api.field_behavior) = REQUIRED];
-  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
+  google.protobuf.FieldMask updateMask = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message DeleteSecurityRequest {

@@ -46,6 +46,7 @@ export const { handlers, auth } = NextAuth({
     },
     session: async ({ session, token, user }) => {
       // If we want to make the accessToken available in components, then we have to explicitly forward it here.
+      // We also set up the user's locale
       return { ...session, accessToken: token.accessToken };
     },
   },
@@ -53,6 +54,6 @@ export const { handlers, auth } = NextAuth({
 
 declare module "next-auth" {
   interface Session {
-    accessToken?: string
+    accessToken?: string;
   }
 }

@@ -132,6 +132,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/transactions/{transaction.name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["PortfolioService_UpdatePortfolioTransaction"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -420,25 +436,18 @@ export interface operations {
     };
     PortfolioService_CreatePortfolioTransaction: {
         parameters: {
-            query?: {
-                "transaction.name"?: string;
-                "transaction.type"?: "PORTFOLIO_EVENT_TYPE_UNSPECIFIED" | "PORTFOLIO_EVENT_TYPE_BUY" | "PORTFOLIO_EVENT_TYPE_SELL" | "PORTFOLIO_EVENT_TYPE_DELIVERY_INBOUND" | "PORTFOLIO_EVENT_TYPE_DELIVERY_OUTBOUND" | "PORTFOLIO_EVENT_TYPE_DIVIDEND" | "PORTFOLIO_EVENT_TYPE_INTEREST" | "PORTFOLIO_EVENT_TYPE_DEPOSIT_CASH" | "PORTFOLIO_EVENT_TYPE_WITHDRAW_CASH" | "PORTFOLIO_EVENT_TYPE_ACCOUNT_FEES" | "PORTFOLIO_EVENT_TYPE_TAX_REFUND";
-                "transaction.time"?: string;
-                "transaction.portfolioName"?: string;
-                "transaction.securityName"?: string;
-                "transaction.amount"?: number;
-                "transaction.price.value"?: number;
-                "transaction.price.symbol"?: string;
-                "transaction.fees.value"?: number;
-                "transaction.fees.symbol"?: string;
-            };
+            query?: never;
             header?: never;
             path: {
                 "transaction.portfolio_name": string;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortfolioEvent"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -532,6 +541,43 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortfolioEvent"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    PortfolioService_UpdatePortfolioTransaction: {
+        parameters: {
+            query?: {
+                updateMask?: string;
+            };
+            header?: never;
+            path: {
+                "transaction.name": string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortfolioEvent"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

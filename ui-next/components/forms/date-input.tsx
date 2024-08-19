@@ -1,9 +1,17 @@
-import { Timestamp } from "@bufbuild/protobuf";
-
 interface DateInputProps {
-    timestamp?: Timestamp;
+  value: Date | string;
+  name: string;
 }
 
-export default function DateInput({timestamp}: DateInputProps) {
-    return <></>
+export default function DateInput({ name, value }: DateInputProps) {
+  if (typeof value === "string") {
+    value = new Date(Date.parse(value));
+  }
+
+  return (
+    <>
+      <input type="hidden" name={name} defaultValue={value.toISOString()} />
+      {value.toISOString()}
+    </>
+  );
 }

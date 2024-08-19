@@ -108,8 +108,8 @@ func (cmd *moneydCmd) Run() error {
 	go authSrv.ListenAndServe()
 
 	interceptors := connect.WithInterceptors(
-		NewAuthInterceptor(),
 		NewSimpleLoggingInterceptor(),
+		NewAuthInterceptor(),
 	)
 
 	portfolioService := vanguard.NewService(
@@ -126,7 +126,11 @@ func (cmd *moneydCmd) Run() error {
 	transcoder, err := vanguard.NewTranscoder([]*vanguard.Service{
 		portfolioService,
 		securitiesService,
-	})
+	}, vanguard.WithCodec(func(tr vanguard.TypeResolver) vanguard.Codec {
+		codec := vanguard.NewJSONCodec(tr)
+		codec.MarshalOptions.EmitDefaultValues = true
+		return codec
+	}))
 	if err != nil {
 		slog.Error("transcoder failed", tint.Err(err))
 		return err
