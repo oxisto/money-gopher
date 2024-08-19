@@ -45,6 +45,7 @@ export default function EditPortfolioTransactionForm({
 
   return (
     <form action={action}>
+      {JSON.stringify(data, null, 2)}
       <input type="hidden" name="name" value={data.name} />
       <input type="hidden" name="portfolioName" value={data.portfolioName} />
       <div className="space-y-12 sm:space-y-16">
@@ -86,7 +87,11 @@ export default function EditPortfolioTransactionForm({
                 Date
               </label>
               <div className="mt-2 sm:col-span-2 sm:mt-0">
-                <DateInput name="time" value={data.time} />
+                <DateInput
+                  name="time"
+                  value={data.time}
+                  onChange={(value) => setData({ ...data, time: value })}
+                />
               </div>
             </div>
 

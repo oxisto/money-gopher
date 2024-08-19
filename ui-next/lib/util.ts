@@ -39,3 +39,5 @@ export function shorten(text: string): string {
     return text;
   }
 }
+
+export let dateTimeLocalFormat = "YYYY-MM-DD HH:mm";

@@ -28,22 +28,12 @@ paths:
             tags:
                 - PortfolioService
             operationId: PortfolioService_CreatePortfolio
-            parameters:
-                - name: portfolio.name
-                  in: query
-                  schema:
-                    type: string
-                - name: portfolio.displayName
-                  in: query
-                  schema:
-                    type: string
-                - name: portfolio.bankAccountName
-                  in: query
-                  description: |-
-                    BankAccountName contains the name/identifier of the underlying bank
-                     account.
-                  schema:
-                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Portfolio'
+                required: true
             responses:
                 "200":
                     description: OK

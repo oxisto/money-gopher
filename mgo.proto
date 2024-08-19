@@ -214,7 +214,10 @@ message PortfolioEvent {
 
 service PortfolioService {
   rpc CreatePortfolio(CreatePortfolioRequest) returns (Portfolio) {
-    option (google.api.http) = {post: "/v1/portfolios"};
+    option (google.api.http) = {
+      post: "/v1/portfolios"
+      body: "portfolio"
+    };
   }
   rpc ListPortfolios(ListPortfoliosRequest) returns (ListPortfoliosResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;

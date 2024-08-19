@@ -13,7 +13,7 @@ export interface paths {
         };
         get: operations["PortfolioService_ListPortfolios"];
         put?: never;
-        post?: never;
+        post: operations["PortfolioService_CreatePortfolio"];
         delete?: never;
         options?: never;
         head?: never;
@@ -323,6 +323,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListPortfoliosResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    PortfolioService_CreatePortfolio: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Portfolio"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Portfolio"];
                 };
             };
             /** @description Default error response */

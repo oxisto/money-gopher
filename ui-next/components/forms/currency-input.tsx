@@ -28,13 +28,10 @@ export default function CurrencyInput({
     setInternal(e.target.valueAsNumber);
 
     // ... and propagate changes back to parent
-    const currency: Currency = {
+    onChange?.call(null, {
       value: e.target.valueAsNumber * 100,
       symbol: value.symbol,
-    };
-
-    // dispatch it back
-    onChange?.call(null, currency);
+    });
   }
 
   return (

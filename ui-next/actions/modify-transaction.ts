@@ -1,4 +1,6 @@
 import client, { PortfolioEvent } from "@/lib/api";
+import { dateTimeLocalFormat } from "@/lib/util";
+import dayjs from "dayjs";
 import { redirect } from "next/navigation";
 
 export async function modifyTransaction(formData: FormData) {
@@ -72,7 +74,10 @@ function formDataToPortfolioEvent(formData: FormData): PortfolioEvent {
         | "PORTFOLIO_EVENT_TYPE_WITHDRAW_CASH"
         | "PORTFOLIO_EVENT_TYPE_ACCOUNT_FEES"
         | "PORTFOLIO_EVENT_TYPE_TAX_REFUND") ?? "",
-    time: formData.get("time")?.toString() ?? "",
+    time: dayjs(
+      formData.get("time")?.toString() ?? "",
+      dateTimeLocalFormat
+    ).toISOString(),
     amount: Number(formData.get("amount")),
     price: {
       value: Number(formData.get("price.value")) * 100,
