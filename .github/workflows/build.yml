@@ -39,4 +39,4 @@ jobs:
           flags: unittests
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: Build UI
-        run: cd ui && npm ci
+        run: cd ui && npm ci --force
