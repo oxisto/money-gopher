@@ -1,8 +1,7 @@
-export default function Example() {
+import { auth } from "@/lib/auth";
 
-  return (
-    <>
-      Hello World
-    </>
-  )
+export default async function Example() {
+  const session = await auth();
+
+  return <>Hello {session?.user?.name}</>;
 }
