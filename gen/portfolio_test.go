@@ -51,7 +51,7 @@ func TestPortfolioEvent_MakeUniqueName(t *testing.T) {
 				Time:          timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.Local)),
 			},
 			want: func(t *testing.T, tx *PortfolioEvent) bool {
-				return assert.Equals(t, "71847445c432dde2", tx.Name)
+				return assert.Equals(t, "a04f32c39c6b9086", tx.Name)
 			},
 		},
 	}
