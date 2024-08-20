@@ -30,9 +30,9 @@ import (
 	"github.com/oxisto/money-gopher/persistence"
 	"github.com/oxisto/money-gopher/service/portfolio"
 	"github.com/oxisto/money-gopher/service/securities"
-	"github.com/oxisto/money-gopher/ui"
 
 	"connectrpc.com/connect"
+	"connectrpc.com/vanguard"
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/alecthomas/kong"
 	"github.com/golang-jwt/jwt/v5"
@@ -51,7 +51,7 @@ var cmd moneydCmd
 type moneydCmd struct {
 	Debug bool `help:"Enable debug mode."`
 
-	EmbeddedOAuth2ServerDashboardCallback string `default:"http://localhost:8080/callback" help:"Specifies the callback URL for the dashboard, if the embedded oauth2 server is used."`
+	EmbeddedOAuth2ServerDashboardCallback string `default:"http://localhost:3000/api/auth/callback/money-gopher" help:"Specifies the callback URL for the dashboard, if the embedded oauth2 server is used."`
 
 	PrivateKeyFile     string `default:"private.key"`
 	PrivateKeyPassword string `default:"moneymoneymoney"`
@@ -107,19 +107,37 @@ func (cmd *moneydCmd) Run() error {
 	)
 	go authSrv.ListenAndServe()
 
-	interceptors := connect.WithInterceptors(NewAuthInterceptor())
+	interceptors := connect.WithInterceptors(
+		NewSimpleLoggingInterceptor(),
+		NewAuthInterceptor(),
+	)
+
+	portfolioService := vanguard.NewService(
+		portfoliov1connect.NewPortfolioServiceHandler(portfolio.NewService(
+			portfolio.Options{
+				DB:               db,
+				SecuritiesClient: portfoliov1connect.NewSecuritiesServiceClient(http.DefaultClient, portfolio.DefaultSecuritiesServiceURL),
+			},
+		), interceptors))
+	securitiesService := vanguard.NewService(
+		portfoliov1connect.NewSecuritiesServiceHandler(securities.NewService(db), interceptors),
+	)
+
+	transcoder, err := vanguard.NewTranscoder([]*vanguard.Service{
+		portfolioService,
+		securitiesService,
+	}, vanguard.WithCodec(func(tr vanguard.TypeResolver) vanguard.Codec {
+		codec := vanguard.NewJSONCodec(tr)
+		codec.MarshalOptions.EmitDefaultValues = true
+		return codec
+	}))
+	if err != nil {
+		slog.Error("transcoder failed", tint.Err(err))
+		return err
+	}
 
 	mux := http.NewServeMux()
-	// The generated constructors return a path and a plain net/http
-	// handler.
-	mux.Handle(portfoliov1connect.NewPortfolioServiceHandler(portfolio.NewService(
-		portfolio.Options{
-			DB:               db,
-			SecuritiesClient: portfoliov1connect.NewSecuritiesServiceClient(http.DefaultClient, portfolio.DefaultSecuritiesServiceURL),
-		},
-	), interceptors))
-	mux.Handle(portfoliov1connect.NewSecuritiesServiceHandler(securities.NewService(db), interceptors))
-	mux.Handle("/", ui.SvelteKitHandler("/"))
+	mux.Handle("/", transcoder)
 
 	err = http.ListenAndServe(
 		":8080",
@@ -153,6 +171,24 @@ func handleCORS(h http.Handler) http.Handler {
 			h.ServeHTTP(w, r)
 		}
 	})
+}
+
+func NewSimpleLoggingInterceptor() connect.UnaryInterceptorFunc {
+	interceptor := func(next connect.UnaryFunc) connect.UnaryFunc {
+		return connect.UnaryFunc(func(
+			ctx context.Context,
+			req connect.AnyRequest,
+		) (connect.AnyResponse, error) {
+			slog.Debug("Handling RPC Request",
+				slog.Group("req",
+					"procedure", req.Spec().Procedure,
+					"httpmethod", req.HTTPMethod(),
+				))
+			return next(ctx, req)
+		})
+	}
+
+	return connect.UnaryInterceptorFunc(interceptor)
 }
 
 func NewAuthInterceptor() connect.UnaryInterceptorFunc {

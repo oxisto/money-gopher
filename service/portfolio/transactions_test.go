@@ -54,7 +54,7 @@ func Test_service_CreatePortfolioTransaction(t *testing.T) {
 			args: args{
 				req: connect.NewRequest(&portfoliov1.CreatePortfolioTransactionRequest{
 					Transaction: &portfoliov1.PortfolioEvent{
-						PortfolioName: "bank/myportfolio",
+						PortfolioName: "mybank-myportfolio",
 						Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
 						SecurityName:  "My Security",
 						Amount:        1,
@@ -66,7 +66,7 @@ func Test_service_CreatePortfolioTransaction(t *testing.T) {
 				return assert.Equals(t, "My Security", r.Msg.GetSecurityName())
 			},
 			wantSvc: func(t *testing.T, s *service) bool {
-				list, _ := s.events.List("bank/myportfolio")
+				list, _ := s.events.List("mybank-myportfolio")
 				return assert.Equals(t, 3, len(list))
 			},
 		},
@@ -78,7 +78,7 @@ func Test_service_CreatePortfolioTransaction(t *testing.T) {
 			args: args{
 				req: connect.NewRequest(&portfoliov1.CreatePortfolioTransactionRequest{
 					Transaction: &portfoliov1.PortfolioEvent{
-						PortfolioName: "bank/myportfolio",
+						PortfolioName: "mybank-myportfolio",
 						Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
 						SecurityName:  "My Security",
 						Amount:        1,
@@ -90,7 +90,7 @@ func Test_service_CreatePortfolioTransaction(t *testing.T) {
 				return assert.Equals(t, "My Security", r.Msg.GetSecurityName())
 			},
 			wantSvc: func(t *testing.T, s *service) bool {
-				list, _ := s.events.List("bank/myportfolio")
+				list, _ := s.events.List("mybank-myportfolio")
 				return assert.Equals(t, 3, len(list))
 			},
 		},
@@ -102,7 +102,7 @@ func Test_service_CreatePortfolioTransaction(t *testing.T) {
 			args: args{
 				req: connect.NewRequest(&portfoliov1.CreatePortfolioTransactionRequest{
 					Transaction: &portfoliov1.PortfolioEvent{
-						PortfolioName: "bank/myportfolio",
+						PortfolioName: "mybank-myportfolio",
 						Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
 						Amount:        1,
 						Price:         portfoliov1.Value(2000),
@@ -168,7 +168,7 @@ func Test_service_GetPortfolioTransaction(t *testing.T) {
 				}),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioEvent]) bool {
-				return assert.Equals(t, "buy", r.Msg.Name) && assert.Equals(t, "bank/myportfolio", r.Msg.PortfolioName)
+				return assert.Equals(t, "buy", r.Msg.Name) && assert.Equals(t, "mybank-myportfolio", r.Msg.PortfolioName)
 			},
 		},
 	}
@@ -212,7 +212,7 @@ func Test_service_ListPortfolioTransactions(t *testing.T) {
 			},
 			args: args{
 				req: connect.NewRequest(&portfoliov1.ListPortfolioTransactionsRequest{
-					PortfolioName: "bank/myportfolio",
+					PortfolioName: "mybank-myportfolio",
 				}),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.ListPortfolioTransactionsResponse]) bool {
@@ -317,7 +317,7 @@ func Test_service_DeletePortfolioTransactions(t *testing.T) {
 				}),
 			},
 			wantSvc: func(t *testing.T, s *service) bool {
-				list, _ := s.portfolios.List("bank/myportfolio")
+				list, _ := s.portfolios.List("mybank-myportfolio")
 				return assert.Equals(t, 0, len(list))
 			},
 		},
@@ -363,7 +363,7 @@ func Test_service_ImportTransactions(t *testing.T) {
 			},
 			args: args{
 				req: connect.NewRequest(&portfoliov1.ImportTransactionsRequest{
-					PortfolioName: "bank/myportfolio",
+					PortfolioName: "mybank-myportfolio",
 					FromCsv: `Date;Type;Value;Transaction Currency;Gross Amount;Currency Gross Amount;Exchange Rate;Fees;Taxes;Shares;ISIN;WKN;Ticker Symbol;Security Name;Note
 2021-06-05T00:00;Buy;2.151,85;EUR;;;;10,25;0,00;20;US0378331005;865985;APC.F;Apple Inc.;
 2021-06-05T00:00;Sell;-2.151,85;EUR;;;;10,25;0,00;20;US0378331005;865985;APC.F;Apple Inc.;
@@ -371,7 +371,7 @@ func Test_service_ImportTransactions(t *testing.T) {
 				}),
 			},
 			wantSvc: func(t *testing.T, s *service) bool {
-				txs, err := s.events.List("bank/myportfolio")
+				txs, err := s.events.List("mybank-myportfolio")
 				return true &&
 					assert.NoError(t, err) &&
 					assert.Equals(t, 3, len(txs))

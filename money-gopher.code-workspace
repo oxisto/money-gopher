@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "ui"
+		},
+		{
+			"path": "ui-next"
 		}
 	],
 	"settings": {
@@ -35,11 +38,14 @@
 			"rgossiaux",
 			"secmap",
 			"secres",
+			"sidebaritems",
 			"steeze",
 			"tailwindcss",
 			"timestamppb"
 		],
-		"editor.tabSize": 4
+		"editor.tabSize": 4,
+		"typescript.tsdk": "ui-next/node_modules/typescript/lib",
+		"editor.formatOnSave": true
 	},
 	"extensions": {
 		"recommendations": [

@@ -15,5 +15,7 @@
 // This file is part of The Money Gopher.
 
 //go:generate buf generate
+//go:generate buf format -w
+//go:generate buf generate --template buf.openapi.gen.yaml --path mgo.proto -o .
 
 package moneygopher

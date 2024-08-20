@@ -60,7 +60,7 @@ This project has currently three main components:
 * A simple CLI [`mgo`](./cmd/mgo) which can be used to interact with
   the API.
 * An even simpler [web-based user interface](./ui/), based on
-  [SvelteKit](https://kit.svelte.dev).
+  [Next.js](https://nextjs.org).
 
 
 ## Starting `moneyd`
@@ -71,7 +71,7 @@ out some information, but logging definitely needs to improved.
 
 On startup, an SQLite database named `money.db` will be created (or loaded) in
 the same directory as the started binary. If the database is empty, a new
-portfolio named `mybank/myportfolio` and one example security will be created.
+portfolio named `mybank-myportfolio` and one example security will be created.
 
 As a simple check, one can simply interact with the RPC-API with a normal HTTP
 client, for example to list all portfolios.
@@ -85,7 +85,7 @@ curl \
 This should print something like the following.
 
 ```json
-{"portfolios":[{"name":"bank/myportfolio","displayName":"My Portfolio"}]}
+{"portfolios":[{"name":"mybank-myportfolio","displayName":"My Portfolio"}]}
 ```
 
 ## Using `mgo`
@@ -100,7 +100,7 @@ To add transactions (buy, sell, etc.) to an existing portfolio, the command `mgo
 portfolio transaction create` can be used. The following shows an example for
 the security with the ISIN US0378331005.
 ```zsh
-mgo portfolio transactions create US0378331005 --portfolio-name bank/myportfolio --amount 5 --price 120 --time="2022-01-01 10:00"
+mgo portfolio transactions create US0378331005 --portfolio-name mybank-myportfolio --amount 5 --price 120 --time="2022-01-01 10:00"
 ```
 
 When successful, this should print something like the following.
@@ -116,6 +116,19 @@ For a detailed list of all available commands see `mgo --help`. The CLI also
 supports (basic) shell completion. For details how to activate it, please see
 `mgo completion`.
 
+
+## Using the UI
+
+Navigate to the `ui` folder and then either start a development server using
+`npm run dev` or build a production server like the following:
+```bash
+npm run build
+npm run start
+```
+
+In either case, the UI is available on http://localhost:3000 and currently
+configured to expect the API server at http://localhost:8080. In the future,
+this will be made configurable for real server deployments.
 
 # When is it finished?
 

@@ -1,0 +1,569 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: ""
+    version: 0.0.1
+paths:
+    /v1/portfolios:
+        get:
+            tags:
+                - PortfolioService
+            operationId: PortfolioService_ListPortfolios
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListPortfoliosResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        post:
+            tags:
+                - PortfolioService
+            operationId: PortfolioService_CreatePortfolio
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Portfolio'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Portfolio'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/portfolios/{name}:
+        get:
+            tags:
+                - PortfolioService
+            operationId: PortfolioService_GetPortfolio
+            parameters:
+                - name: name
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Portfolio'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/portfolios/{portfolioName}/snapshot:
+        get:
+            tags:
+                - PortfolioService
+            operationId: PortfolioService_GetPortfolioSnapshot
+            parameters:
+                - name: portfolioName
+                  in: path
+                  description: |-
+                    PortfolioName is the name / identifier of the portfolio we want to
+                     "snapshot".
+                  required: true
+                  schema:
+                    type: string
+                - name: time
+                  in: query
+                  description: Time is the point in time of the requested snapshot.
+                  schema:
+                    type: string
+                    format: date-time
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PortfolioSnapshot'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/portfolios/{portfolioName}/transactions:
+        get:
+            tags:
+                - PortfolioService
+            operationId: PortfolioService_ListPortfolioTransactions
+            parameters:
+                - name: portfolioName
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListPortfolioTransactionsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/portfolios/{transaction.portfolio_name}/transactions:
+        post:
+            tags:
+                - PortfolioService
+            operationId: PortfolioService_CreatePortfolioTransaction
+            parameters:
+                - name: transaction.portfolio_name
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/PortfolioEvent'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PortfolioEvent'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/securities:
+        get:
+            tags:
+                - SecuritiesService
+            operationId: SecuritiesService_ListSecurities
+            parameters:
+                - name: filter.securityNames
+                  in: query
+                  schema:
+                    type: array
+                    items:
+                        type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListSecuritiesResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/securities/{name}:
+        get:
+            tags:
+                - SecuritiesService
+            operationId: SecuritiesService_GetSecurity
+            parameters:
+                - name: name
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Security'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/transactions/{name}:
+        get:
+            tags:
+                - PortfolioService
+            operationId: PortfolioService_GetPortfolioTransaction
+            parameters:
+                - name: name
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PortfolioEvent'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/transactions/{transaction.name}:
+        put:
+            tags:
+                - PortfolioService
+            operationId: PortfolioService_UpdatePortfolioTransaction
+            parameters:
+                - name: transaction.name
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: updateMask
+                  in: query
+                  schema:
+                    type: string
+                    format: field-mask
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/PortfolioEvent'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PortfolioEvent'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+components:
+    schemas:
+        Currency:
+            required:
+                - value
+                - symbol
+            type: object
+            properties:
+                value:
+                    type: integer
+                    format: int32
+                symbol:
+                    type: string
+            description: |-
+                Currency is a currency value in the lowest unit of the selected currency
+                 (e.g., cents for EUR/USD).
+        GoogleProtobufAny:
+            type: object
+            properties:
+                '@type':
+                    type: string
+                    description: The type of the serialized message.
+            additionalProperties: true
+            description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+        ListPortfolioTransactionsResponse:
+            required:
+                - transactions
+            type: object
+            properties:
+                transactions:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PortfolioEvent'
+        ListPortfoliosResponse:
+            required:
+                - portfolios
+            type: object
+            properties:
+                portfolios:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Portfolio'
+        ListSecuritiesResponse:
+            required:
+                - securities
+            type: object
+            properties:
+                securities:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Security'
+        ListedSecurity:
+            required:
+                - securityName
+                - ticker
+                - currency
+            type: object
+            properties:
+                securityName:
+                    type: string
+                ticker:
+                    type: string
+                currency:
+                    type: string
+                latestQuote:
+                    $ref: '#/components/schemas/Currency'
+                latestQuoteTimestamp:
+                    type: string
+                    format: date-time
+        Portfolio:
+            required:
+                - name
+                - displayName
+                - bankAccountName
+            type: object
+            properties:
+                name:
+                    type: string
+                displayName:
+                    type: string
+                bankAccountName:
+                    type: string
+                    description: |-
+                        BankAccountName contains the name/identifier of the underlying bank
+                         account.
+                events:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PortfolioEvent'
+                    description: |-
+                        Events contains all portfolio events, such as buy/sell transactions,
+                         dividends or other. They need to be ordered by time (ascending).
+        PortfolioEvent:
+            required:
+                - name
+                - type
+                - time
+                - portfolioName
+                - securityName
+                - amount
+                - price
+                - fees
+                - taxes
+            type: object
+            properties:
+                name:
+                    type: string
+                type:
+                    enum:
+                        - PORTFOLIO_EVENT_TYPE_UNSPECIFIED
+                        - PORTFOLIO_EVENT_TYPE_BUY
+                        - PORTFOLIO_EVENT_TYPE_SELL
+                        - PORTFOLIO_EVENT_TYPE_DELIVERY_INBOUND
+                        - PORTFOLIO_EVENT_TYPE_DELIVERY_OUTBOUND
+                        - PORTFOLIO_EVENT_TYPE_DIVIDEND
+                        - PORTFOLIO_EVENT_TYPE_INTEREST
+                        - PORTFOLIO_EVENT_TYPE_DEPOSIT_CASH
+                        - PORTFOLIO_EVENT_TYPE_WITHDRAW_CASH
+                        - PORTFOLIO_EVENT_TYPE_ACCOUNT_FEES
+                        - PORTFOLIO_EVENT_TYPE_TAX_REFUND
+                    type: string
+                    format: enum
+                time:
+                    type: string
+                    format: date-time
+                portfolioName:
+                    type: string
+                securityName:
+                    type: string
+                amount:
+                    type: number
+                    format: double
+                price:
+                    $ref: '#/components/schemas/Currency'
+                fees:
+                    $ref: '#/components/schemas/Currency'
+                taxes:
+                    $ref: '#/components/schemas/Currency'
+        PortfolioPosition:
+            required:
+                - security
+                - amount
+                - purchaseValue
+                - purchasePrice
+                - marketValue
+                - marketPrice
+                - totalFees
+                - profitOrLoss
+                - gains
+            type: object
+            properties:
+                security:
+                    $ref: '#/components/schemas/Security'
+                amount:
+                    type: number
+                    format: double
+                purchaseValue:
+                    allOf:
+                        - $ref: '#/components/schemas/Currency'
+                    description: |-
+                        PurchaseValue was the market value of this position when it was bought
+                         (net; exclusive of any fees).
+                purchasePrice:
+                    allOf:
+                        - $ref: '#/components/schemas/Currency'
+                    description: |-
+                        PurchasePrice was the market price of this position when it was bought
+                         (net; exclusive of any fees).
+                marketValue:
+                    allOf:
+                        - $ref: '#/components/schemas/Currency'
+                    description: |-
+                        MarketValue is the current market value of this position, as retrieved from
+                         the securities service.
+                marketPrice:
+                    allOf:
+                        - $ref: '#/components/schemas/Currency'
+                    description: |-
+                        MarketPrice is the current market price of this position, as retrieved from
+                         the securities service.
+                totalFees:
+                    allOf:
+                        - $ref: '#/components/schemas/Currency'
+                    description: |-
+                        TotalFees is the total amount of fees accumulating in this position through
+                         various transactions.
+                profitOrLoss:
+                    allOf:
+                        - $ref: '#/components/schemas/Currency'
+                    description: |-
+                        ProfitOrLoss contains the absolute amount of profit or loss in this
+                         position.
+                gains:
+                    type: number
+                    description: Gains contains the relative amount of profit or loss in this position.
+                    format: double
+        PortfolioSnapshot:
+            required:
+                - time
+                - positions
+                - firstTransactionTime
+                - totalPurchaseValue
+                - totalMarketValue
+                - totalProfitOrLoss
+                - totalGains
+                - cash
+                - totalPortfolioValue
+            type: object
+            properties:
+                time:
+                    type: string
+                    description: Time is the time when this snapshot was taken.
+                    format: date-time
+                positions:
+                    type: object
+                    additionalProperties:
+                        $ref: '#/components/schemas/PortfolioPosition'
+                    description: Positions holds the current positions within the snapshot and their value.
+                firstTransactionTime:
+                    type: string
+                    description: |-
+                        FirstTransactionTime is the time of the first transaction with the
+                         snapshot.
+                    format: date-time
+                totalPurchaseValue:
+                    allOf:
+                        - $ref: '#/components/schemas/Currency'
+                    description: TotalPurchaseValue contains the total purchase value of all asset positions
+                totalMarketValue:
+                    allOf:
+                        - $ref: '#/components/schemas/Currency'
+                    description: TotalMarketValue contains the total market value of all asset positions
+                totalProfitOrLoss:
+                    allOf:
+                        - $ref: '#/components/schemas/Currency'
+                    description: |-
+                        TotalProfitOrLoss contains the total absolute amount of profit or loss in
+                         this snapshot, based on asset value.
+                totalGains:
+                    type: number
+                    description: |-
+                        TotalGains contains the total relative amount of profit or loss in this
+                         snapshot, based on asset value.
+                    format: double
+                cash:
+                    allOf:
+                        - $ref: '#/components/schemas/Currency'
+                    description: |-
+                        Cash contains the current amount of cash in the portfolio's bank
+                         account(s).
+                totalPortfolioValue:
+                    allOf:
+                        - $ref: '#/components/schemas/Currency'
+                    description: |-
+                        TotalPortfolioValue contains the amount of cash plus the total market value
+                         of all assets.
+            description: |-
+                PortfolioSnapshot represents a snapshot in time of the portfolio. It can for
+                 example be the current state of the portfolio but also represent the state of
+                 the portfolio at a certain time in the past.
+        Security:
+            required:
+                - name
+                - displayName
+                - listedOn
+                - quoteProvider
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: |-
+                        Name contains the unique resource name. For a stock or bond, this should be
+                         an ISIN.
+                displayName:
+                    type: string
+                    description: DisplayName contains the human readable name.
+                listedOn:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ListedSecurity'
+                quoteProvider:
+                    type: string
+        Status:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+                    format: int32
+                message:
+                    type: string
+                    description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+                details:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GoogleProtobufAny'
+                    description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
+            description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
+tags:
+    - name: PortfolioService
+    - name: SecuritiesService
