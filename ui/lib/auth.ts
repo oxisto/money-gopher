@@ -34,7 +34,6 @@ export const { handlers, auth } = NextAuth({
   ],
   callbacks: {
     authorized: async ({ auth }) => {
-      console.log(auth?.expires);
       return !!auth;
     },
     jwt: async ({ token, user, account }) => {
