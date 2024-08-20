@@ -73,13 +73,18 @@ export const { handlers, auth } = NextAuth({
 
 declare module "next-auth" {
   interface Session {
-    backendAPIToken: string;
+    /**
+     * The user's locale.
+     */
     locale: string;
   }
 }
 
 declare module "@auth/core/jwt" {
   interface JWT {
+    /**
+     * This contains the API token for our backend services.
+     */
     backendAPIToken?: string;
   }
 }
