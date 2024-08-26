@@ -4,7 +4,7 @@ go 1.22.1
 
 require (
 	connectrpc.com/connect v1.16.2
-	connectrpc.com/vanguard v0.2.0
+	connectrpc.com/vanguard v0.3.0
 	github.com/MicahParks/keyfunc/v3 v3.3.3
 	github.com/alecthomas/kong v0.9.0
 	github.com/fatih/color v1.17.0
