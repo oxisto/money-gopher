@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: 20
       - name: Set up buf
-        uses: bufbuild/buf-setup-action@v1.39.0
+        uses: bufbuild/buf-setup-action@v1.42.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Build Backend
