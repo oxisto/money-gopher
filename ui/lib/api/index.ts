@@ -2,7 +2,7 @@ import { decode } from "next-auth/jwt";
 import { cookies } from "next/headers";
 import createClient, { Middleware } from "openapi-fetch";
 import type { paths } from "./v1";
-export * from "./types";
+export * from "./v1";
 
 const authMiddleware: Middleware = {
   async onRequest({ request }) {
@@ -13,7 +13,7 @@ const authMiddleware: Middleware = {
         : "authjs.session-token";
     // Retrieve our frontend auth cookie that contains the encrypted frontend
     // token
-    const cookie = cookies().get(cookieName);
+    const cookie = (await cookies()).get(cookieName);
 
     // Decode/decrypt the token to access the backend API token
     const token = await decode({

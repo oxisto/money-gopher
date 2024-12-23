@@ -1,4 +1,4 @@
-import { components } from "@/lib/api/v1";
+import { components, SchemaPortfolioPosition } from "@/lib/api/v1";
 import { classNames, shorten } from "@/lib/util";
 import {
   ArrowDownIcon,
@@ -9,7 +9,7 @@ import FormattedCurrency from "./formatted-currency";
 import FormattedPercentage from "./formatted-percentage";
 
 interface PortfolioPositionRowProps {
-  position: components["schemas"]["PortfolioPosition"];
+  position: SchemaPortfolioPosition;
 }
 
 export default function PortfolioPositionRow({

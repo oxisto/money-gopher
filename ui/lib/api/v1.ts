@@ -305,6 +305,18 @@ export interface components {
     headers: never;
     pathItems: never;
 }
+export type SchemaCurrency = components['schemas']['Currency'];
+export type SchemaGoogleProtobufAny = components['schemas']['GoogleProtobufAny'];
+export type SchemaListPortfolioTransactionsResponse = components['schemas']['ListPortfolioTransactionsResponse'];
+export type SchemaListPortfoliosResponse = components['schemas']['ListPortfoliosResponse'];
+export type SchemaListSecuritiesResponse = components['schemas']['ListSecuritiesResponse'];
+export type SchemaListedSecurity = components['schemas']['ListedSecurity'];
+export type SchemaPortfolio = components['schemas']['Portfolio'];
+export type SchemaPortfolioEvent = components['schemas']['PortfolioEvent'];
+export type SchemaPortfolioPosition = components['schemas']['PortfolioPosition'];
+export type SchemaPortfolioSnapshot = components['schemas']['PortfolioSnapshot'];
+export type SchemaSecurity = components['schemas']['Security'];
+export type SchemaStatus = components['schemas']['Status'];
 export type $defs = Record<string, never>;
 export interface operations {
     PortfolioService_ListPortfolios: {

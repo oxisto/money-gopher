@@ -1,4 +1,4 @@
-import { Currency } from "@/lib/api";
+import { SchemaCurrency } from "@/lib/api";
 
 /**
  * This function returns a currency value to a decimal. Internally,
@@ -10,7 +10,7 @@ import { Currency } from "@/lib/api";
  * @param currency the currency to convert
  * @returns a decimal representation
  */
-export function toDecimal(currency?: Currency): number {
+export function toDecimal(currency?: SchemaCurrency): number {
   if (
     currency == undefined ||
     currency.value == undefined ||
