@@ -4,9 +4,9 @@ const withNextIntl = createNextIntlPlugin();
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
+  /*experimental: {
     ppr: true,
-  },
+  },*/
   rewrites: () => {
     return [
       {
