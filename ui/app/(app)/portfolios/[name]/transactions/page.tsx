@@ -5,9 +5,8 @@ import client from "@/lib/api";
 
 interface PortfolioTransactionProps extends PortfolioProps {}
 
-export default async function PortfolioTransactions({
-  params,
-}: PortfolioTransactionProps) {
+export default async function PortfolioTransactions(props: PortfolioTransactionProps) {
+  const params = await props.params;
   const { data: portfolio } = await client.GET("/v1/portfolios/{name}", {
     params: { path: { name: params.name } },
   });

@@ -10,9 +10,8 @@ interface PortfolioTransactionProps {
 }
 interface EditPortfolioTransactionProps extends PortfolioTransactionProps {}
 
-export default async function EditPortfolioTransaction({
-  params,
-}: EditPortfolioTransactionProps) {
+export default async function EditPortfolioTransaction(props: EditPortfolioTransactionProps) {
+  const params = await props.params;
   const { data, error } = await client.GET("/v1/securities");
   const create = params.transactionName == "new";
   if (create && data) {

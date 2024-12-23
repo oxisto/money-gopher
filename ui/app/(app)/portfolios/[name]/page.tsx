@@ -5,12 +5,13 @@ import client from "@/lib/api";
 import Link from "next/link";
 
 export interface PortfolioProps {
-  params: {
+  params: Promise<{
     name: string;
-  };
+  }>;
 }
 
-export default async function Portfolio({ params }: PortfolioProps) {
+export default async function Portfolio(props: PortfolioProps) {
+  const params = await props.params;
   const { data: portfolio } = await client.GET("/v1/portfolios/{name}", {
     params: { path: { name: params.name } },
   });
