@@ -17,21 +17,21 @@ require (
 	github.com/oxisto/assert v0.0.6
 	github.com/oxisto/oauth2go v0.14.0
 	github.com/posener/complete v1.2.3
-	golang.org/x/net v0.28.0
-	golang.org/x/text v0.17.0
-	google.golang.org/protobuf v1.35.2
+	golang.org/x/net v0.33.0
+	golang.org/x/text v0.21.0
+	google.golang.org/protobuf v1.36.0
 )
 
 require (
 	github.com/MicahParks/jwkset v0.5.18 // indirect
 	github.com/riywo/loginshell v0.0.0-20200815045211-7d26008be1ab // indirect
-	golang.org/x/crypto v0.26.0 // indirect
+	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
-	golang.org/x/sys v0.24.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/genproto v0.0.0-20230807174057-1744710a1577 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20241118233622-e639e219e697
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20241113202542-65e8d215514f // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20241223144023-3abc09e42ca8
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20241219192143-6b3ec007d9bb // indirect
 )
 
 replace github.com/posener/complete v1.2.3 => github.com/oxisto/complete v0.0.0-20231209194436-0b605e2b5bff
