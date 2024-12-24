@@ -32,11 +32,17 @@ func (q *Queries) CreateSecurity(ctx context.Context, arg CreateSecurityParams) 
 const deleteListedSecurity = `-- name: DeleteListedSecurity :one
 DELETE FROM listed_securities
 WHERE
-    security_id = ? RETURNING security_id, ticker, currency, latest_quote, latest_quote_timestamp
+    security_id = ?
+    AND ticker = ? RETURNING security_id, ticker, currency, latest_quote, latest_quote_timestamp
 `
 
-func (q *Queries) DeleteListedSecurity(ctx context.Context, securityID string) (*ListedSecurity, error) {
-	row := q.db.QueryRowContext(ctx, deleteListedSecurity, securityID)
+type DeleteListedSecurityParams struct {
+	SecurityID string
+	Ticker     string
+}
+
+func (q *Queries) DeleteListedSecurity(ctx context.Context, arg DeleteListedSecurityParams) (*ListedSecurity, error) {
+	row := q.db.QueryRowContext(ctx, deleteListedSecurity, arg.SecurityID, arg.Ticker)
 	var i ListedSecurity
 	err := row.Scan(
 		&i.SecurityID,

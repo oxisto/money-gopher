@@ -31,7 +31,8 @@ WHERE
 -- name: DeleteListedSecurity :one
 DELETE FROM listed_securities
 WHERE
-    security_id = ? RETURNING *;
+    security_id = ?
+    AND ticker = ? RETURNING *;
 
 -- name: UpsertListedSecurity :one
 INSERT INTO

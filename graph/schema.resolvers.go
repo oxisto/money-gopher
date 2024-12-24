@@ -6,6 +6,7 @@ package graph
 
 import (
 	"context"
+	"slices"
 
 	"github.com/oxisto/money-gopher/db"
 	"github.com/oxisto/money-gopher/graph/model"
@@ -59,6 +60,7 @@ func (r *mutationResolver) UpdateSecurity(ctx context.Context, id string, input 
 			return nil, err
 		}
 
+		// Upsert the new listed securities
 		for _, listed := range input.ListedAs {
 			_, err = qtx.UpsertListedSecurity(ctx, db.UpsertListedSecurityParams{
 				SecurityID: sec.ID,
@@ -70,17 +72,17 @@ func (r *mutationResolver) UpdateSecurity(ctx context.Context, id string, input 
 			}
 
 			// Remove the listed security from the old list
-			for i, old := range oldListed {
-				if old.Ticker == listed.Ticker {
-					oldListed = append(oldListed[:i], oldListed[i+1:]...)
-					break
-				}
-			}
+			oldListed = slices.DeleteFunc(oldListed, func(ls *db.ListedSecurity) bool {
+				return ls.Ticker == listed.Ticker
+			})
 		}
 
 		// Remove the old listed securities
 		for _, old := range oldListed {
-			_, err = qtx.DeleteListedSecurity(ctx, old.SecurityID)
+			_, err = qtx.DeleteListedSecurity(ctx, db.DeleteListedSecurityParams{
+				SecurityID: sec.ID,
+				Ticker:     old.Ticker,
+			})
 			if err != nil {
 				return nil, err
 			}
