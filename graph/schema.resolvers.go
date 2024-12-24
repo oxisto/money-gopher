@@ -12,11 +12,6 @@ import (
 	"github.com/oxisto/money-gopher/graph/model"
 )
 
-// ID is the resolver for the id field.
-func (r *listedSecurityResolver) ID(ctx context.Context, obj *db.ListedSecurity) (string, error) {
-	panic(fmt.Errorf("not implemented: ID - id"))
-}
-
 // Symbol is the resolver for the symbol field.
 func (r *listedSecurityResolver) Symbol(ctx context.Context, obj *db.ListedSecurity) (string, error) {
 	panic(fmt.Errorf("not implemented: Symbol - symbol"))
@@ -34,7 +29,10 @@ func (r *listedSecurityResolver) Security(ctx context.Context, obj *db.ListedSec
 
 // CreateSecurity is the resolver for the createSecurity field.
 func (r *mutationResolver) CreateSecurity(ctx context.Context, input model.NewSecurity) (*db.Security, error) {
-	panic(fmt.Errorf("not implemented: CreateSecurity - createSecurity"))
+	return r.Queries.CreateSecurity(ctx, db.CreateSecurityParams{
+		ID:          input.ID,
+		DisplayName: input.DisplayName,
+	})
 }
 
 // Security is the resolver for the security field.
@@ -45,11 +43,6 @@ func (r *queryResolver) Security(ctx context.Context, id string) (*db.Security, 
 // Securities is the resolver for the securities field.
 func (r *queryResolver) Securities(ctx context.Context) ([]*db.Security, error) {
 	return r.Queries.ListSecurities(ctx)
-}
-
-// Isin is the resolver for the isin field.
-func (r *securityResolver) Isin(ctx context.Context, obj *db.Security) (string, error) {
-	panic(fmt.Errorf("not implemented: Isin - isin"))
 }
 
 // QuoteProvider is the resolver for the quoteProvider field.
@@ -78,3 +71,18 @@ type listedSecurityResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type securityResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *listedSecurityResolver) ID(ctx context.Context, obj *db.ListedSecurity) (string, error) {
+	panic(fmt.Errorf("not implemented: ID - id"))
+}
+func (r *securityResolver) Isin(ctx context.Context, obj *db.Security) (string, error) {
+	panic(fmt.Errorf("not implemented: Isin - isin"))
+}
+*/

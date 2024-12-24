@@ -85,7 +85,7 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 
 	// Make a map out of the securities list so we can access it easier
 	secmap = moneygopher.Map(secres.Msg.Securities, func(s *portfoliov1.Security) string {
-		return s.Name
+		return s.Id
 	})
 
 	// We need to look at the portfolio events up to the time of the snapshot

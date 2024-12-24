@@ -76,7 +76,7 @@ func (cmd *UpdateAllQuotesCmd) Run(s *cli.Session) error {
 	var names []string
 
 	for _, sec := range res.Msg.Securities {
-		names = append(names, sec.Name)
+		names = append(names, sec.Id)
 	}
 
 	_, err = s.SecuritiesClient.TriggerSecurityQuoteUpdate(
@@ -107,7 +107,7 @@ func PredictSecurities(s *cli.Session) complete.PredictFunc {
 		}
 
 		for _, p := range res.Msg.Securities {
-			names = append(names, p.Name)
+			names = append(names, p.Id)
 		}
 
 		return

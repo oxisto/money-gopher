@@ -52,7 +52,6 @@ type DirectiveRoot struct {
 type ComplexityRoot struct {
 	ListedSecurity struct {
 		Currency func(childComplexity int) int
-		ID       func(childComplexity int) int
 		Name     func(childComplexity int) int
 		Security func(childComplexity int) int
 		Symbol   func(childComplexity int) int
@@ -70,14 +69,12 @@ type ComplexityRoot struct {
 	Security struct {
 		DisplayName   func(childComplexity int) int
 		ID            func(childComplexity int) int
-		Isin          func(childComplexity int) int
 		ListedAs      func(childComplexity int) int
 		QuoteProvider func(childComplexity int) int
 	}
 }
 
 type ListedSecurityResolver interface {
-	ID(ctx context.Context, obj *db.ListedSecurity) (string, error)
 	Symbol(ctx context.Context, obj *db.ListedSecurity) (string, error)
 
 	Name(ctx context.Context, obj *db.ListedSecurity) (string, error)
@@ -91,8 +88,6 @@ type QueryResolver interface {
 	Securities(ctx context.Context) ([]*db.Security, error)
 }
 type SecurityResolver interface {
-	Isin(ctx context.Context, obj *db.Security) (string, error)
-
 	QuoteProvider(ctx context.Context, obj *db.Security) (*string, error)
 	ListedAs(ctx context.Context, obj *db.Security) ([]*db.ListedSecurity, error)
 }
@@ -122,13 +117,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ListedSecurity.Currency(childComplexity), true
-
-	case "ListedSecurity.id":
-		if e.complexity.ListedSecurity.ID == nil {
-			break
-		}
-
-		return e.complexity.ListedSecurity.ID(childComplexity), true
 
 	case "ListedSecurity.name":
 		if e.complexity.ListedSecurity.Name == nil {
@@ -195,13 +183,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Security.ID(childComplexity), true
-
-	case "Security.isin":
-		if e.complexity.Security.Isin == nil {
-			break
-		}
-
-		return e.complexity.Security.Isin(childComplexity), true
 
 	case "Security.listedAs":
 		if e.complexity.Security.ListedAs == nil {
@@ -404,7 +385,7 @@ func (ec *executionContext) field_Query_security_argsID(
 ) (string, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 	if tmp, ok := rawArgs["id"]; ok {
-		return ec.unmarshalNID2string(ctx, tmp)
+		return ec.unmarshalNString2string(ctx, tmp)
 	}
 
 	var zeroVal string
@@ -464,50 +445,6 @@ func (ec *executionContext) field___Type_fields_argsIncludeDeprecated(
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
-
-func (ec *executionContext) _ListedSecurity_id(ctx context.Context, field graphql.CollectedField, obj *db.ListedSecurity) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ListedSecurity_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.ListedSecurity().ID(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_ListedSecurity_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ListedSecurity",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
 
 func (ec *executionContext) _ListedSecurity_symbol(ctx context.Context, field graphql.CollectedField, obj *db.ListedSecurity) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_ListedSecurity_symbol(ctx, field)
@@ -682,8 +619,6 @@ func (ec *executionContext) fieldContext_ListedSecurity_security(_ context.Conte
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Security_id(ctx, field)
-			case "isin":
-				return ec.fieldContext_Security_isin(ctx, field)
 			case "displayName":
 				return ec.fieldContext_Security_displayName(ctx, field)
 			case "quoteProvider":
@@ -738,8 +673,6 @@ func (ec *executionContext) fieldContext_Mutation_createSecurity(ctx context.Con
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Security_id(ctx, field)
-			case "isin":
-				return ec.fieldContext_Security_isin(ctx, field)
 			case "displayName":
 				return ec.fieldContext_Security_displayName(ctx, field)
 			case "quoteProvider":
@@ -802,8 +735,6 @@ func (ec *executionContext) fieldContext_Query_security(ctx context.Context, fie
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Security_id(ctx, field)
-			case "isin":
-				return ec.fieldContext_Security_isin(ctx, field)
 			case "displayName":
 				return ec.fieldContext_Security_displayName(ctx, field)
 			case "quoteProvider":
@@ -869,8 +800,6 @@ func (ec *executionContext) fieldContext_Query_securities(_ context.Context, fie
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Security_id(ctx, field)
-			case "isin":
-				return ec.fieldContext_Security_isin(ctx, field)
 			case "displayName":
 				return ec.fieldContext_Security_displayName(ctx, field)
 			case "quoteProvider":
@@ -1041,7 +970,7 @@ func (ec *executionContext) _Security_id(ctx context.Context, field graphql.Coll
 	}
 	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Security_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1050,50 +979,6 @@ func (ec *executionContext) fieldContext_Security_id(_ context.Context, field gr
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Security_isin(ctx context.Context, field graphql.CollectedField, obj *db.Security) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Security_isin(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Security().Isin(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Security_isin(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Security",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -1222,8 +1107,6 @@ func (ec *executionContext) fieldContext_Security_listedAs(_ context.Context, fi
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_ListedSecurity_id(ctx, field)
 			case "symbol":
 				return ec.fieldContext_ListedSecurity_symbol(ctx, field)
 			case "currency":
@@ -3019,20 +2902,20 @@ func (ec *executionContext) unmarshalInputNewSecurity(ctx context.Context, obj a
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"isin", "displayName"}
+	fieldsInOrder := [...]string{"id", "displayName"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "isin":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("isin"))
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Isin = data
+			it.ID = data
 		case "displayName":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayName"))
 			data, err := ec.unmarshalNString2string(ctx, v)
@@ -3065,42 +2948,6 @@ func (ec *executionContext) _ListedSecurity(ctx context.Context, sel ast.Selecti
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("ListedSecurity")
-		case "id":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ListedSecurity_id(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "symbol":
 			field := field
 
@@ -3393,42 +3240,6 @@ func (ec *executionContext) _Security(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "isin":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Security_isin(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "displayName":
 			out.Values[i] = ec._Security_displayName(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -3856,21 +3667,6 @@ func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v any) (
 
 func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.SelectionSet, v bool) graphql.Marshaler {
 	res := graphql.MarshalBoolean(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-	}
-	return res
-}
-
-func (ec *executionContext) unmarshalNID2string(ctx context.Context, v any) (string, error) {
-	res, err := graphql.UnmarshalID(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	res := graphql.MarshalID(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")

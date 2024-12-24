@@ -3,15 +3,13 @@
 # https://gqlgen.com/getting-started/
 
 type Security {
-  id: ID!
-  isin: String!
+  id: String!
   displayName: String!
   quoteProvider: String
   listedAs: [ListedSecurity!]
 }
 
 type ListedSecurity {
-  id: ID!
   symbol: String!
   currency: String!
   name: String!
@@ -19,7 +17,7 @@ type ListedSecurity {
 }
 
 input NewSecurity {
-  isin: String!
+  id: String!
   displayName: String!
 }
 
@@ -28,6 +26,6 @@ type Mutation {
 }
 
 type Query {
-  security(id: ID!): Security
+  security(id: String!): Security
   securities: [Security!]!
 }

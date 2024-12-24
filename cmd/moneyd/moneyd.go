@@ -20,16 +20,25 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"errors"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/lru"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
+	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/oxisto/money-gopher/db"
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
+	"github.com/oxisto/money-gopher/graph"
 	"github.com/oxisto/money-gopher/persistence"
 	"github.com/oxisto/money-gopher/service/portfolio"
 	"github.com/oxisto/money-gopher/service/securities"
+	"github.com/vektah/gqlparser/v2/ast"
 
 	"connectrpc.com/connect"
 	"connectrpc.com/vanguard"
@@ -64,10 +73,6 @@ func main() {
 	ctx.FatalIfErrorf(err)
 }
 
-type query struct{}
-
-func (query) Hello() string { return "Hello, world!" }
-
 func (cmd *moneydCmd) Run() error {
 	var (
 		w       = os.Stdout
@@ -90,7 +95,7 @@ func (cmd *moneydCmd) Run() error {
 	slog.SetDefault(logger)
 	slog.Info("Welcome to the Money Gopher", "money", "🤑")
 
-	db, err := persistence.OpenDB(persistence.Options{})
+	pdb, err := persistence.OpenDB(persistence.Options{})
 	if err != nil {
 		slog.Error("Error while opening database", tint.Err(err))
 		return err
@@ -119,12 +124,12 @@ func (cmd *moneydCmd) Run() error {
 	portfolioService := vanguard.NewService(
 		portfoliov1connect.NewPortfolioServiceHandler(portfolio.NewService(
 			portfolio.Options{
-				DB:               db,
+				DB:               pdb,
 				SecuritiesClient: portfoliov1connect.NewSecuritiesServiceClient(http.DefaultClient, portfolio.DefaultSecuritiesServiceURL),
 			},
 		), interceptors))
 	securitiesService := vanguard.NewService(
-		portfoliov1connect.NewSecuritiesServiceHandler(securities.NewService(db), interceptors),
+		portfoliov1connect.NewSecuritiesServiceHandler(securities.NewService(pdb), interceptors),
 	)
 
 	transcoder, err := vanguard.NewTranscoder([]*vanguard.Service{
@@ -140,15 +145,39 @@ func (cmd *moneydCmd) Run() error {
 		return err
 	}
 
-	mux := http.NewServeMux()
-	mux.Handle("/", transcoder)
+	go func() {
+		mux := http.NewServeMux()
+		mux.Handle("/", transcoder)
 
-	err = http.ListenAndServe(
-		":8080",
-		h2c.NewHandler(handleCORS(mux), &http2.Server{}),
-	)
+		err = http.ListenAndServe(
+			":8080",
+			h2c.NewHandler(handleCORS(mux), &http2.Server{}),
+		)
 
-	slog.Error("listen failed", tint.Err(err))
+		slog.Error("listen failed", tint.Err(err))
+	}()
+
+	port := "9090"
+	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
+		Queries: db.New(pdb.DB),
+	}}))
+
+	srv.AddTransport(transport.Options{})
+	srv.AddTransport(transport.GET{})
+	srv.AddTransport(transport.POST{})
+
+	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
+
+	srv.Use(extension.Introspection{})
+	srv.Use(extension.AutomaticPersistedQuery{
+		Cache: lru.New[string](100),
+	})
+
+	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
+	http.Handle("/query", srv)
+
+	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 
 	return err
 }

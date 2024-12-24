@@ -6,7 +6,7 @@ type Mutation struct {
 }
 
 type NewSecurity struct {
-	Isin        string `json:"isin"`
+	ID          string `json:"id"`
 	DisplayName string `json:"displayName"`
 }
 

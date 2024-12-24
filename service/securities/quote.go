@@ -46,7 +46,7 @@ func (svc *service) TriggerSecurityQuoteUpdate(ctx context.Context, req *connect
 		res = connect.NewResponse(&portfoliov1.TriggerQuoteUpdateResponse{})
 
 		if sec.QuoteProvider == nil {
-			slog.Warn("No quote provider configured for security", "security", sec.Name)
+			slog.Warn("No quote provider configured for security", "security", sec.Id)
 			return
 		}
 

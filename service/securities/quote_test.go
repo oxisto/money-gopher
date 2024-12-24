@@ -62,7 +62,7 @@ func Test_service_TriggerSecurityQuoteUpdate(t *testing.T) {
 			fields: fields{
 				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {
 					ops.Replace(&portfoliov1.Security{
-						Name:          "My Security",
+						Id:            "My Security",
 						QuoteProvider: moneygopher.Ref("mock"),
 					})
 					rel := persistence.Relationship[*portfoliov1.ListedSecurity](ops)
@@ -124,7 +124,7 @@ func Test_service_updateQuote(t *testing.T) {
 			name: "happy path",
 			fields: fields{
 				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {
-					ops.Replace(&portfoliov1.Security{Name: "My Security"})
+					ops.Replace(&portfoliov1.Security{Id: "My Security"})
 					rel := persistence.Relationship[*portfoliov1.ListedSecurity](ops)
 					assert.NoError(t, rel.Replace(&portfoliov1.ListedSecurity{SecurityName: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}))
 				}),

@@ -9,6 +9,24 @@ import (
 	"context"
 )
 
+const createSecurity = `-- name: CreateSecurity :one
+INSERT INTO securities (id, display_name)
+VALUES (?, ?)
+RETURNING id, display_name, quote_provider
+`
+
+type CreateSecurityParams struct {
+	ID          string
+	DisplayName string
+}
+
+func (q *Queries) CreateSecurity(ctx context.Context, arg CreateSecurityParams) (*Security, error) {
+	row := q.db.QueryRowContext(ctx, createSecurity, arg.ID, arg.DisplayName)
+	var i Security
+	err := row.Scan(&i.ID, &i.DisplayName, &i.QuoteProvider)
+	return &i, err
+}
+
 const getSecurity = `-- name: GetSecurity :one
 SELECT id, display_name, quote_provider FROM securities
 WHERE id = ?

@@ -37,7 +37,7 @@ import (
 var mockSecuritiesClientWithData = &mockSecuritiesClient{
 	securities: []*portfoliov1.Security{
 		{
-			Name:        "US0378331005",
+			Id:          "US0378331005",
 			DisplayName: "Apple, Inc.",
 			ListedOn: []*portfoliov1.ListedSecurity{
 				{
@@ -80,7 +80,7 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 			})},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioSnapshot]) bool {
 				return true &&
-					assert.Equals(t, "US0378331005", r.Msg.Positions["US0378331005"].Security.Name) &&
+					assert.Equals(t, "US0378331005", r.Msg.Positions["US0378331005"].Security.Id) &&
 					assert.Equals(t, 10, r.Msg.Positions["US0378331005"].Amount) &&
 					assert.Equals(t, portfoliov1.Value(107080), r.Msg.Positions["US0378331005"].PurchaseValue) &&
 					assert.Equals(t, portfoliov1.Value(10708), r.Msg.Positions["US0378331005"].PurchasePrice) &&
@@ -101,7 +101,7 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 				pos := r.Msg.Positions["US0378331005"]
 
 				return true &&
-					assert.Equals(t, "US0378331005", pos.Security.Name) &&
+					assert.Equals(t, "US0378331005", pos.Security.Id) &&
 					assert.Equals(t, 20, pos.Amount) &&
 					assert.Equals(t, portfoliov1.Value(214160), pos.PurchaseValue) &&
 					assert.Equals(t, portfoliov1.Value(10708), pos.PurchasePrice) &&

@@ -267,7 +267,7 @@ service PortfolioService {
 message Security {
   // Name contains the unique resource name. For a stock or bond, this should be
   // an ISIN.
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
 
   // DisplayName contains the human readable name.
   string display_name = 2 [(google.api.field_behavior) = REQUIRED];

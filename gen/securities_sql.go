@@ -30,7 +30,7 @@ var _ persistence.StorageObject = &Security{}
 
 func (*Security) InitTables(db *persistence.DB) (err error) {
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS securities (
-name TEXT PRIMARY KEY,
+id TEXT PRIMARY KEY,
 display_name TEXT NOT NULL,
 quote_provider TEXT
 );`)
@@ -124,7 +124,7 @@ func (*ListedSecurity) PrepareDelete(db *persistence.DB) (stmt *sql.Stmt, err er
 }
 
 func (s *Security) ReplaceIntoArgs() []any {
-	return []any{s.Name, s.DisplayName, s.QuoteProvider}
+	return []any{s.Id, s.DisplayName, s.QuoteProvider}
 }
 
 func (l *ListedSecurity) ReplaceIntoArgs() []any {
@@ -150,8 +150,8 @@ func (l *ListedSecurity) ReplaceIntoArgs() []any {
 func (s *Security) UpdateArgs(columns []string) (args []any) {
 	for _, col := range columns {
 		switch col {
-		case "name":
-			args = append(args, s.Name)
+		case "id":
+			args = append(args, s.Id)
 		case "display_name":
 			args = append(args, s.DisplayName)
 		case "quote_provider":
@@ -190,7 +190,7 @@ func (*Security) Scan(sc persistence.Scanner) (obj persistence.StorageObject, er
 		s Security
 	)
 
-	err = sc.Scan(&s.Name, &s.DisplayName, &s.QuoteProvider)
+	err = sc.Scan(&s.Id, &s.DisplayName, &s.QuoteProvider)
 	if err != nil {
 		return nil, err
 	}

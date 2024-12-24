@@ -112,7 +112,7 @@ func Test_readLine(t *testing.T) {
 				Price:        portfoliov1.Value(10708),
 			},
 			wantSec: &portfoliov1.Security{
-				Name:          "US0378331005",
+				Id:            "US0378331005",
 				DisplayName:   "Apple Inc.",
 				QuoteProvider: moneygopher.Ref(securities.QuoteProviderYF),
 				ListedOn: []*portfoliov1.ListedSecurity{
@@ -144,7 +144,7 @@ func Test_readLine(t *testing.T) {
 				Taxes:        portfoliov1.Zero(),
 			},
 			wantSec: &portfoliov1.Security{
-				Name:          "US00827B1061",
+				Id:            "US00827B1061",
 				DisplayName:   "Affirm Holdings Inc.",
 				QuoteProvider: moneygopher.Ref(securities.QuoteProviderYF),
 				ListedOn: []*portfoliov1.ListedSecurity{
@@ -176,7 +176,7 @@ func Test_readLine(t *testing.T) {
 				Price:        portfoliov1.Value(1552),
 			},
 			wantSec: &portfoliov1.Security{
-				Name:          "DE0005557508",
+				Id:            "DE0005557508",
 				DisplayName:   "Deutsche Telekom AG",
 				QuoteProvider: moneygopher.Ref(securities.QuoteProviderYF),
 				ListedOn: []*portfoliov1.ListedSecurity{
