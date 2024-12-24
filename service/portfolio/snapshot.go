@@ -73,7 +73,7 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 		context.Background(),
 		forwardAuth(connect.NewRequest(&portfoliov1.ListSecuritiesRequest{
 			Filter: &portfoliov1.ListSecuritiesRequest_Filter{
-				SecurityNames: names,
+				SecurityIds: names,
 			},
 		}), req),
 	)

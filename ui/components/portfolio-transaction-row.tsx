@@ -36,7 +36,7 @@ export default function PortfolioTransactionRow({
         {security && (
           <div className="text-gray-900">{security.displayName}</div>
         )}
-        <div className="text-gray-400">{event.securityName}</div>
+        <div className="text-gray-400">{event.securityId}</div>
       </td>
       <td className="hidden whitespace-nowrap px-3 py-2 text-right text-sm text-gray-500 md:table-cell">
         {Intl.NumberFormat(navigator.language, {

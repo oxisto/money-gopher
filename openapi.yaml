@@ -17,13 +17,13 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ListPortfoliosResponse'
+                                $ref: "#/components/schemas/ListPortfoliosResponse"
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Status'
+                                $ref: "#/components/schemas/Status"
         post:
             tags:
                 - PortfolioService
@@ -32,7 +32,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/Portfolio'
+                            $ref: "#/components/schemas/Portfolio"
                 required: true
             responses:
                 "200":
@@ -40,13 +40,13 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Portfolio'
+                                $ref: "#/components/schemas/Portfolio"
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Status'
+                                $ref: "#/components/schemas/Status"
     /v1/portfolios/{name}:
         get:
             tags:
@@ -57,20 +57,20 @@ paths:
                   in: path
                   required: true
                   schema:
-                    type: string
+                      type: string
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Portfolio'
+                                $ref: "#/components/schemas/Portfolio"
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Status'
+                                $ref: "#/components/schemas/Status"
     /v1/portfolios/{portfolioName}/snapshot:
         get:
             tags:
@@ -80,30 +80,30 @@ paths:
                 - name: portfolioName
                   in: path
                   description: |-
-                    PortfolioName is the name / identifier of the portfolio we want to
-                     "snapshot".
+                      PortfolioName is the name / identifier of the portfolio we want to
+                       "snapshot".
                   required: true
                   schema:
-                    type: string
+                      type: string
                 - name: time
                   in: query
                   description: Time is the point in time of the requested snapshot.
                   schema:
-                    type: string
-                    format: date-time
+                      type: string
+                      format: date-time
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/PortfolioSnapshot'
+                                $ref: "#/components/schemas/PortfolioSnapshot"
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Status'
+                                $ref: "#/components/schemas/Status"
     /v1/portfolios/{portfolioName}/transactions:
         get:
             tags:
@@ -114,20 +114,20 @@ paths:
                   in: path
                   required: true
                   schema:
-                    type: string
+                      type: string
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ListPortfolioTransactionsResponse'
+                                $ref: "#/components/schemas/ListPortfolioTransactionsResponse"
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Status'
+                                $ref: "#/components/schemas/Status"
     /v1/portfolios/{transaction.portfolio_name}/transactions:
         post:
             tags:
@@ -138,12 +138,12 @@ paths:
                   in: path
                   required: true
                   schema:
-                    type: string
+                      type: string
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/PortfolioEvent'
+                            $ref: "#/components/schemas/PortfolioEvent"
                 required: true
             responses:
                 "200":
@@ -151,38 +151,38 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/PortfolioEvent'
+                                $ref: "#/components/schemas/PortfolioEvent"
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Status'
+                                $ref: "#/components/schemas/Status"
     /v1/securities:
         get:
             tags:
                 - SecuritiesService
             operationId: SecuritiesService_ListSecurities
             parameters:
-                - name: filter.securityNames
+                - name: filter.securityIds
                   in: query
                   schema:
-                    type: array
-                    items:
-                        type: string
+                      type: array
+                      items:
+                          type: string
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ListSecuritiesResponse'
+                                $ref: "#/components/schemas/ListSecuritiesResponse"
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Status'
+                                $ref: "#/components/schemas/Status"
     /v1/securities/{name}:
         get:
             tags:
@@ -193,20 +193,20 @@ paths:
                   in: path
                   required: true
                   schema:
-                    type: string
+                      type: string
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Security'
+                                $ref: "#/components/schemas/Security"
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Status'
+                                $ref: "#/components/schemas/Status"
     /v1/transactions/{name}:
         get:
             tags:
@@ -217,20 +217,20 @@ paths:
                   in: path
                   required: true
                   schema:
-                    type: string
+                      type: string
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/PortfolioEvent'
+                                $ref: "#/components/schemas/PortfolioEvent"
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Status'
+                                $ref: "#/components/schemas/Status"
     /v1/transactions/{transaction.name}:
         put:
             tags:
@@ -241,17 +241,17 @@ paths:
                   in: path
                   required: true
                   schema:
-                    type: string
+                      type: string
                 - name: updateMask
                   in: query
                   schema:
-                    type: string
-                    format: field-mask
+                      type: string
+                      format: field-mask
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/PortfolioEvent'
+                            $ref: "#/components/schemas/PortfolioEvent"
                 required: true
             responses:
                 "200":
@@ -259,13 +259,13 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/PortfolioEvent'
+                                $ref: "#/components/schemas/PortfolioEvent"
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Status'
+                                $ref: "#/components/schemas/Status"
 components:
     schemas:
         Currency:
@@ -285,7 +285,7 @@ components:
         GoogleProtobufAny:
             type: object
             properties:
-                '@type':
+                "@type":
                     type: string
                     description: The type of the serialized message.
             additionalProperties: true
@@ -298,7 +298,7 @@ components:
                 transactions:
                     type: array
                     items:
-                        $ref: '#/components/schemas/PortfolioEvent'
+                        $ref: "#/components/schemas/PortfolioEvent"
         ListPortfoliosResponse:
             required:
                 - portfolios
@@ -307,7 +307,7 @@ components:
                 portfolios:
                     type: array
                     items:
-                        $ref: '#/components/schemas/Portfolio'
+                        $ref: "#/components/schemas/Portfolio"
         ListSecuritiesResponse:
             required:
                 - securities
@@ -316,22 +316,22 @@ components:
                 securities:
                     type: array
                     items:
-                        $ref: '#/components/schemas/Security'
+                        $ref: "#/components/schemas/Security"
         ListedSecurity:
             required:
-                - securityName
+                - securityId
                 - ticker
                 - currency
             type: object
             properties:
-                securityName:
+                securityId:
                     type: string
                 ticker:
                     type: string
                 currency:
                     type: string
                 latestQuote:
-                    $ref: '#/components/schemas/Currency'
+                    $ref: "#/components/schemas/Currency"
                 latestQuoteTimestamp:
                     type: string
                     format: date-time
@@ -354,7 +354,7 @@ components:
                 events:
                     type: array
                     items:
-                        $ref: '#/components/schemas/PortfolioEvent'
+                        $ref: "#/components/schemas/PortfolioEvent"
                     description: |-
                         Events contains all portfolio events, such as buy/sell transactions,
                          dividends or other. They need to be ordered by time (ascending).
@@ -364,7 +364,7 @@ components:
                 - type
                 - time
                 - portfolioName
-                - securityName
+                - securityId
                 - amount
                 - price
                 - fees
@@ -393,17 +393,17 @@ components:
                     format: date-time
                 portfolioName:
                     type: string
-                securityName:
+                securityId:
                     type: string
                 amount:
                     type: number
                     format: double
                 price:
-                    $ref: '#/components/schemas/Currency'
+                    $ref: "#/components/schemas/Currency"
                 fees:
-                    $ref: '#/components/schemas/Currency'
+                    $ref: "#/components/schemas/Currency"
                 taxes:
-                    $ref: '#/components/schemas/Currency'
+                    $ref: "#/components/schemas/Currency"
         PortfolioPosition:
             required:
                 - security
@@ -418,43 +418,43 @@ components:
             type: object
             properties:
                 security:
-                    $ref: '#/components/schemas/Security'
+                    $ref: "#/components/schemas/Security"
                 amount:
                     type: number
                     format: double
                 purchaseValue:
                     allOf:
-                        - $ref: '#/components/schemas/Currency'
+                        - $ref: "#/components/schemas/Currency"
                     description: |-
                         PurchaseValue was the market value of this position when it was bought
                          (net; exclusive of any fees).
                 purchasePrice:
                     allOf:
-                        - $ref: '#/components/schemas/Currency'
+                        - $ref: "#/components/schemas/Currency"
                     description: |-
                         PurchasePrice was the market price of this position when it was bought
                          (net; exclusive of any fees).
                 marketValue:
                     allOf:
-                        - $ref: '#/components/schemas/Currency'
+                        - $ref: "#/components/schemas/Currency"
                     description: |-
                         MarketValue is the current market value of this position, as retrieved from
                          the securities service.
                 marketPrice:
                     allOf:
-                        - $ref: '#/components/schemas/Currency'
+                        - $ref: "#/components/schemas/Currency"
                     description: |-
                         MarketPrice is the current market price of this position, as retrieved from
                          the securities service.
                 totalFees:
                     allOf:
-                        - $ref: '#/components/schemas/Currency'
+                        - $ref: "#/components/schemas/Currency"
                     description: |-
                         TotalFees is the total amount of fees accumulating in this position through
                          various transactions.
                 profitOrLoss:
                     allOf:
-                        - $ref: '#/components/schemas/Currency'
+                        - $ref: "#/components/schemas/Currency"
                     description: |-
                         ProfitOrLoss contains the absolute amount of profit or loss in this
                          position.
@@ -482,7 +482,7 @@ components:
                 positions:
                     type: object
                     additionalProperties:
-                        $ref: '#/components/schemas/PortfolioPosition'
+                        $ref: "#/components/schemas/PortfolioPosition"
                     description: Positions holds the current positions within the snapshot and their value.
                 firstTransactionTime:
                     type: string
@@ -492,15 +492,15 @@ components:
                     format: date-time
                 totalPurchaseValue:
                     allOf:
-                        - $ref: '#/components/schemas/Currency'
+                        - $ref: "#/components/schemas/Currency"
                     description: TotalPurchaseValue contains the total purchase value of all asset positions
                 totalMarketValue:
                     allOf:
-                        - $ref: '#/components/schemas/Currency'
+                        - $ref: "#/components/schemas/Currency"
                     description: TotalMarketValue contains the total market value of all asset positions
                 totalProfitOrLoss:
                     allOf:
-                        - $ref: '#/components/schemas/Currency'
+                        - $ref: "#/components/schemas/Currency"
                     description: |-
                         TotalProfitOrLoss contains the total absolute amount of profit or loss in
                          this snapshot, based on asset value.
@@ -512,13 +512,13 @@ components:
                     format: double
                 cash:
                     allOf:
-                        - $ref: '#/components/schemas/Currency'
+                        - $ref: "#/components/schemas/Currency"
                     description: |-
                         Cash contains the current amount of cash in the portfolio's bank
                          account(s).
                 totalPortfolioValue:
                     allOf:
-                        - $ref: '#/components/schemas/Currency'
+                        - $ref: "#/components/schemas/Currency"
                     description: |-
                         TotalPortfolioValue contains the amount of cash plus the total market value
                          of all assets.
@@ -545,7 +545,7 @@ components:
                 listedOn:
                     type: array
                     items:
-                        $ref: '#/components/schemas/ListedSecurity'
+                        $ref: "#/components/schemas/ListedSecurity"
                 quoteProvider:
                     type: string
         Status:
@@ -561,9 +561,9 @@ components:
                 details:
                     type: array
                     items:
-                        $ref: '#/components/schemas/GoogleProtobufAny'
+                        $ref: "#/components/schemas/GoogleProtobufAny"
                     description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
-            description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
+            description: "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors)."
 tags:
     - name: PortfolioService
     - name: SecuritiesService

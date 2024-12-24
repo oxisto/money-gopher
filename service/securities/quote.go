@@ -36,7 +36,7 @@ func (svc *service) TriggerSecurityQuoteUpdate(ctx context.Context, req *connect
 	)
 
 	// TODO(oxisto): Support a "list" with filtered values instead
-	for _, name := range req.Msg.SecurityNames {
+	for _, name := range req.Msg.SecurityIds {
 		// Fetch security
 		sec, err = svc.fetchSecurity(name)
 		if err != nil {
@@ -95,7 +95,7 @@ func (svc *service) updateQuote(qp QuoteProvider, ls *portfoliov1.ListedSecurity
 	ls.LatestQuoteTimestamp = timestamppb.New(t)
 
 	_, err = svc.listedSecurities.Update(
-		[]any{ls.SecurityName, ls.Ticker},
+		[]any{ls.SecurityId, ls.Ticker},
 		ls, []string{"latest_quote", "latest_quote_timestamp"},
 	)
 	if err != nil {

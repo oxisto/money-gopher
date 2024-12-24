@@ -144,7 +144,7 @@ func greenOrRed(f float64) string {
 
 type CreateTransactionCmd struct {
 	PortfolioName string    `required:"" predictor:"portfolio" help:"The name of the portfolio where the transaction will be created in"`
-	SecurityName  string    `arg:"" predictor:"security" help:"The name of the security this transaction belongs to (its ISIN)"`
+	SecurityId    string    `arg:"" predictor:"security" help:"The name of the security this transaction belongs to (its ISIN)"`
 	Type          string    `required:"" enum:"buy,sell,delivery-inbound,delivery-outbound,dividend" default:"buy"`
 	Amount        float64   `required:"" help:"The amount of securities involved in the transaction"`
 	Price         float32   `required:"" help:"The price without fees or taxes"`
@@ -157,7 +157,7 @@ func (cmd *CreateTransactionCmd) Run(s *cli.Session) error {
 	var req = connect.NewRequest(&portfoliov1.CreatePortfolioTransactionRequest{
 		Transaction: &portfoliov1.PortfolioEvent{
 			PortfolioName: cmd.PortfolioName,
-			SecurityName:  cmd.SecurityName,
+			SecurityId:    cmd.SecurityId,
 			Type:          eventTypeFrom(cmd.Type), // eventTypeFrom(cmd.Type)
 			Amount:        cmd.Amount,
 			Time:          timeOrNow(cmd.Time),
@@ -175,7 +175,7 @@ func (cmd *CreateTransactionCmd) Run(s *cli.Session) error {
 	fmt.Printf("Successfully created a %s transaction (%s) for security %s in %s.\n",
 		color.CyanString(cmd.Type),
 		color.GreenString(res.Msg.Name),
-		color.CyanString(res.Msg.SecurityName),
+		color.CyanString(res.Msg.SecurityId),
 		color.CyanString(res.Msg.PortfolioName),
 	)
 

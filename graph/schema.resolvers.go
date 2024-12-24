@@ -6,32 +6,87 @@ package graph
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/oxisto/money-gopher/db"
 	"github.com/oxisto/money-gopher/graph/model"
 )
 
-// Symbol is the resolver for the symbol field.
-func (r *listedSecurityResolver) Symbol(ctx context.Context, obj *db.ListedSecurity) (string, error) {
-	panic(fmt.Errorf("not implemented: Symbol - symbol"))
-}
-
-// Name is the resolver for the name field.
-func (r *listedSecurityResolver) Name(ctx context.Context, obj *db.ListedSecurity) (string, error) {
-	panic(fmt.Errorf("not implemented: Name - name"))
-}
-
 // Security is the resolver for the security field.
 func (r *listedSecurityResolver) Security(ctx context.Context, obj *db.ListedSecurity) (*db.Security, error) {
-	panic(fmt.Errorf("not implemented: Security - security"))
+	return r.Queries.GetSecurity(ctx, obj.SecurityID)
 }
 
 // CreateSecurity is the resolver for the createSecurity field.
-func (r *mutationResolver) CreateSecurity(ctx context.Context, input model.NewSecurity) (*db.Security, error) {
-	return r.Queries.CreateSecurity(ctx, db.CreateSecurityParams{
-		ID:          input.ID,
-		DisplayName: input.DisplayName,
+func (r *mutationResolver) CreateSecurity(ctx context.Context, input model.SecurityInput) (*db.Security, error) {
+	return withTx(r.Resolver, func(qtx *db.Queries) (*db.Security, error) {
+		sec, err := qtx.CreateSecurity(ctx, db.CreateSecurityParams{
+			ID:          input.ID,
+			DisplayName: input.DisplayName,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, listed := range input.ListedAs {
+			_, err = qtx.UpsertListedSecurity(ctx, db.UpsertListedSecurityParams{
+				SecurityID: sec.ID,
+				Ticker:     listed.Ticker,
+				Currency:   listed.Currency,
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		return sec, nil
+	})
+}
+
+// UpdateSecurity is the resolver for the updateSecurity field.
+func (r *mutationResolver) UpdateSecurity(ctx context.Context, id string, input model.SecurityInput) (*db.Security, error) {
+	return withTx(r.Resolver, func(qtx *db.Queries) (*db.Security, error) {
+		sec, err := qtx.UpdateSecurity(ctx, db.UpdateSecurityParams{
+			ID:          id,
+			DisplayName: input.DisplayName,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// Retrieve old listed securities
+		oldListed, err := qtx.ListListedSecuritiesBySecurityID(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, listed := range input.ListedAs {
+			_, err = qtx.UpsertListedSecurity(ctx, db.UpsertListedSecurityParams{
+				SecurityID: sec.ID,
+				Ticker:     listed.Ticker,
+				Currency:   listed.Currency,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			// Remove the listed security from the old list
+			for i, old := range oldListed {
+				if old.Ticker == listed.Ticker {
+					oldListed = append(oldListed[:i], oldListed[i+1:]...)
+					break
+				}
+			}
+		}
+
+		// Remove the old listed securities
+		for _, old := range oldListed {
+			_, err = qtx.DeleteListedSecurity(ctx, old.SecurityID)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		return sec, nil
 	})
 }
 
@@ -47,12 +102,16 @@ func (r *queryResolver) Securities(ctx context.Context) ([]*db.Security, error) 
 
 // QuoteProvider is the resolver for the quoteProvider field.
 func (r *securityResolver) QuoteProvider(ctx context.Context, obj *db.Security) (*string, error) {
-	panic(fmt.Errorf("not implemented: QuoteProvider - quoteProvider"))
+	if obj.QuoteProvider.Valid {
+		return &obj.QuoteProvider.String, nil
+	}
+
+	return nil, nil
 }
 
 // ListedAs is the resolver for the listedAs field.
 func (r *securityResolver) ListedAs(ctx context.Context, obj *db.Security) ([]*db.ListedSecurity, error) {
-	panic(fmt.Errorf("not implemented: ListedAs - listedAs"))
+	return r.Queries.ListListedSecuritiesBySecurityID(ctx, obj.ID)
 }
 
 // ListedSecurity returns ListedSecurityResolver implementation.
@@ -71,18 +130,3 @@ type listedSecurityResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type securityResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *listedSecurityResolver) ID(ctx context.Context, obj *db.ListedSecurity) (string, error) {
-	panic(fmt.Errorf("not implemented: ID - id"))
-}
-func (r *securityResolver) Isin(ctx context.Context, obj *db.Security) (string, error) {
-	panic(fmt.Errorf("not implemented: Isin - isin"))
-}
-*/

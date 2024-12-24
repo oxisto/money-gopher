@@ -176,7 +176,7 @@ export interface components {
             securities: components["schemas"]["Security"][];
         };
         ListedSecurity: {
-            securityName: string;
+            securityId: string;
             ticker: string;
             currency: string;
             latestQuote?: components["schemas"]["Currency"];
@@ -203,7 +203,7 @@ export interface components {
             /** Format: date-time */
             time: string;
             portfolioName: string;
-            securityName: string;
+            securityId: string;
             /** Format: double */
             amount: number;
             price: components["schemas"]["Currency"];
@@ -517,7 +517,7 @@ export interface operations {
     SecuritiesService_ListSecurities: {
         parameters: {
             query?: {
-                "filter.securityNames"?: string[];
+                "filter.securityIds"?: string[];
             };
             header?: never;
             path?: never;

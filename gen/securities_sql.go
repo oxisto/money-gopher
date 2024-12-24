@@ -43,12 +43,12 @@ quote_provider TEXT
 
 func (*ListedSecurity) InitTables(db *persistence.DB) (err error) {
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS listed_securities (
-security_name TEXT,
+security_id TEXT,
 ticker TEXT NOT NULL,
 currency TEXT NOT NULL,
 latest_quote INTEGER,
 latest_quote_timestamp DATETIME,
-PRIMARY KEY (security_name, ticker)
+PRIMARY KEY (security_id, ticker)
 );`)
 	if err != nil {
 		return err
@@ -62,7 +62,7 @@ func (*Security) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) 
 }
 
 func (*ListedSecurity) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`REPLACE INTO listed_securities (security_name, ticker, currency, latest_quote, latest_quote_timestamp) VALUES (?,?,?,?,?);`)
+	return db.Prepare(`REPLACE INTO listed_securities (security_id, ticker, currency, latest_quote, latest_quote_timestamp) VALUES (?,?,?,?,?);`)
 }
 
 func (*Security) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err error) {
@@ -70,7 +70,7 @@ func (*Security) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err error) {
 }
 
 func (*ListedSecurity) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`SELECT security_name, ticker, currency, latest_quote, latest_quote_timestamp FROM listed_securities WHERE security_name = ?`)
+	return db.Prepare(`SELECT security_id, ticker, currency, latest_quote, latest_quote_timestamp FROM listed_securities WHERE security_id = ?`)
 }
 
 func (*Security) PrepareGet(db *persistence.DB) (stmt *sql.Stmt, err error) {
@@ -78,7 +78,7 @@ func (*Security) PrepareGet(db *persistence.DB) (stmt *sql.Stmt, err error) {
 }
 
 func (*ListedSecurity) PrepareGet(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`SELECT * FROM listed_securities WHERE security_name = ? AND ticker = ?`)
+	return db.Prepare(`SELECT * FROM listed_securities WHERE security_id = ? AND ticker = ?`)
 }
 
 func (*Security) PrepareUpdate(db *persistence.DB, columns []string) (stmt *sql.Stmt, err error) {
@@ -110,7 +110,7 @@ func (*ListedSecurity) PrepareUpdate(db *persistence.DB, columns []string) (stmt
 		set[i] = persistence.Quote(col) + " = ?"
 	}
 
-	query += "UPDATE listed_securities SET " + strings.Join(set, ", ") + " WHERE security_name = ? AND ticker = ?;"
+	query += "UPDATE listed_securities SET " + strings.Join(set, ", ") + " WHERE security_id = ? AND ticker = ?;"
 
 	return db.Prepare(query)
 }
@@ -120,7 +120,7 @@ func (*Security) PrepareDelete(db *persistence.DB) (stmt *sql.Stmt, err error) {
 }
 
 func (*ListedSecurity) PrepareDelete(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`DELETE FROM listed_securities WHERE security_name = ? AND ticker = ?`)
+	return db.Prepare(`DELETE FROM listed_securities WHERE security_id = ? AND ticker = ?`)
 }
 
 func (s *Security) ReplaceIntoArgs() []any {
@@ -144,7 +144,7 @@ func (l *ListedSecurity) ReplaceIntoArgs() []any {
 		value.Valid = true
 	}
 
-	return []any{l.SecurityName, l.Ticker, l.Currency, value, pt}
+	return []any{l.SecurityId, l.Ticker, l.Currency, value, pt}
 }
 
 func (s *Security) UpdateArgs(columns []string) (args []any) {
@@ -165,8 +165,8 @@ func (s *Security) UpdateArgs(columns []string) (args []any) {
 func (l *ListedSecurity) UpdateArgs(columns []string) (args []any) {
 	for _, col := range columns {
 		switch col {
-		case "security_name":
-			args = append(args, l.SecurityName)
+		case "security_id":
+			args = append(args, l.SecurityId)
 		case "ticker":
 			args = append(args, l.Ticker)
 		case "currency":
@@ -205,7 +205,7 @@ func (*ListedSecurity) Scan(sc persistence.Scanner) (obj persistence.StorageObje
 		value sql.NullInt32
 	)
 
-	err = sc.Scan(&l.SecurityName, &l.Ticker, &l.Currency, &value, &t)
+	err = sc.Scan(&l.SecurityId, &l.Ticker, &l.Currency, &value, &t)
 	if err != nil {
 		return nil, err
 	}

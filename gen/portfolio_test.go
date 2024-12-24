@@ -30,7 +30,7 @@ func TestPortfolioEvent_MakeUniqueName(t *testing.T) {
 		Type          PortfolioEventType
 		Time          *timestamppb.Timestamp
 		PortfolioName string
-		SecurityName  string
+		SecurityId    string
 		Amount        float64
 		Price         *Currency
 		Fees          *Currency
@@ -44,7 +44,7 @@ func TestPortfolioEvent_MakeUniqueName(t *testing.T) {
 		{
 			name: "happy path",
 			fields: fields{
-				SecurityName:  "stock",
+				SecurityId:    "stock",
 				PortfolioName: "mybank-myportfolio",
 				Amount:        10,
 				Type:          PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
@@ -62,7 +62,7 @@ func TestPortfolioEvent_MakeUniqueName(t *testing.T) {
 				Type:          tt.fields.Type,
 				Time:          tt.fields.Time,
 				PortfolioName: tt.fields.PortfolioName,
-				SecurityName:  tt.fields.SecurityName,
+				SecurityId:    tt.fields.SecurityId,
 				Amount:        tt.fields.Amount,
 				Price:         tt.fields.Price,
 				Fees:          tt.fields.Fees,

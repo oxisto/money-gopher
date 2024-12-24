@@ -10,19 +10,25 @@ type Security {
 }
 
 type ListedSecurity {
-  symbol: String!
+  ticker: String!
   currency: String!
-  name: String!
   security: Security!
 }
 
-input NewSecurity {
+input SecurityInput {
   id: String!
   displayName: String!
+  listedAs: [ListedSecurityInput!]
+}
+
+input ListedSecurityInput {
+  ticker: String!
+  currency: String!
 }
 
 type Mutation {
-  createSecurity(input: NewSecurity!): Security!
+  createSecurity(input: SecurityInput!): Security!
+  updateSecurity(id: ID!, input: SecurityInput!): Security!
 }
 
 type Query {

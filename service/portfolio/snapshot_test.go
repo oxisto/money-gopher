@@ -41,7 +41,7 @@ var mockSecuritiesClientWithData = &mockSecuritiesClient{
 			DisplayName: "Apple, Inc.",
 			ListedOn: []*portfoliov1.ListedSecurity{
 				{
-					SecurityName:         "US0378331005",
+					SecurityId:           "US0378331005",
 					Ticker:               "APC.F",
 					Currency:             currency.EUR.String(),
 					LatestQuote:          portfoliov1.Value(10000),

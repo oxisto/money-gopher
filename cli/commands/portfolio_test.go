@@ -124,7 +124,7 @@ func TestCreateTransactionCmd_Run(t *testing.T) {
 
 	type fields struct {
 		PortfolioName string
-		SecurityName  string
+		SecurityId    string
 		Type          string
 		Amount        float64
 		Price         float32
@@ -162,7 +162,7 @@ func TestCreateTransactionCmd_Run(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := &CreateTransactionCmd{
 				PortfolioName: tt.fields.PortfolioName,
-				SecurityName:  tt.fields.SecurityName,
+				SecurityId:    tt.fields.SecurityId,
 				Type:          tt.fields.Type,
 				Amount:        tt.fields.Amount,
 				Price:         tt.fields.Price,

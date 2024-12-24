@@ -52,13 +52,13 @@ type DirectiveRoot struct {
 type ComplexityRoot struct {
 	ListedSecurity struct {
 		Currency func(childComplexity int) int
-		Name     func(childComplexity int) int
 		Security func(childComplexity int) int
-		Symbol   func(childComplexity int) int
+		Ticker   func(childComplexity int) int
 	}
 
 	Mutation struct {
-		CreateSecurity func(childComplexity int, input model.NewSecurity) int
+		CreateSecurity func(childComplexity int, input model.SecurityInput) int
+		UpdateSecurity func(childComplexity int, id string, input model.SecurityInput) int
 	}
 
 	Query struct {
@@ -75,13 +75,11 @@ type ComplexityRoot struct {
 }
 
 type ListedSecurityResolver interface {
-	Symbol(ctx context.Context, obj *db.ListedSecurity) (string, error)
-
-	Name(ctx context.Context, obj *db.ListedSecurity) (string, error)
 	Security(ctx context.Context, obj *db.ListedSecurity) (*db.Security, error)
 }
 type MutationResolver interface {
-	CreateSecurity(ctx context.Context, input model.NewSecurity) (*db.Security, error)
+	CreateSecurity(ctx context.Context, input model.SecurityInput) (*db.Security, error)
+	UpdateSecurity(ctx context.Context, id string, input model.SecurityInput) (*db.Security, error)
 }
 type QueryResolver interface {
 	Security(ctx context.Context, id string) (*db.Security, error)
@@ -118,13 +116,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ListedSecurity.Currency(childComplexity), true
 
-	case "ListedSecurity.name":
-		if e.complexity.ListedSecurity.Name == nil {
-			break
-		}
-
-		return e.complexity.ListedSecurity.Name(childComplexity), true
-
 	case "ListedSecurity.security":
 		if e.complexity.ListedSecurity.Security == nil {
 			break
@@ -132,12 +123,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ListedSecurity.Security(childComplexity), true
 
-	case "ListedSecurity.symbol":
-		if e.complexity.ListedSecurity.Symbol == nil {
+	case "ListedSecurity.ticker":
+		if e.complexity.ListedSecurity.Ticker == nil {
 			break
 		}
 
-		return e.complexity.ListedSecurity.Symbol(childComplexity), true
+		return e.complexity.ListedSecurity.Ticker(childComplexity), true
 
 	case "Mutation.createSecurity":
 		if e.complexity.Mutation.CreateSecurity == nil {
@@ -149,7 +140,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateSecurity(childComplexity, args["input"].(model.NewSecurity)), true
+		return e.complexity.Mutation.CreateSecurity(childComplexity, args["input"].(model.SecurityInput)), true
+
+	case "Mutation.updateSecurity":
+		if e.complexity.Mutation.UpdateSecurity == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateSecurity_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateSecurity(childComplexity, args["id"].(string), args["input"].(model.SecurityInput)), true
 
 	case "Query.securities":
 		if e.complexity.Query.Securities == nil {
@@ -206,7 +209,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
-		ec.unmarshalInputNewSecurity,
+		ec.unmarshalInputListedSecurityInput,
+		ec.unmarshalInputSecurityInput,
 	)
 	first := true
 
@@ -336,13 +340,54 @@ func (ec *executionContext) field_Mutation_createSecurity_args(ctx context.Conte
 func (ec *executionContext) field_Mutation_createSecurity_argsInput(
 	ctx context.Context,
 	rawArgs map[string]any,
-) (model.NewSecurity, error) {
+) (model.SecurityInput, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNNewSecurity2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋgraphᚋmodelᚐNewSecurity(ctx, tmp)
+		return ec.unmarshalNSecurityInput2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋgraphᚋmodelᚐSecurityInput(ctx, tmp)
 	}
 
-	var zeroVal model.NewSecurity
+	var zeroVal model.SecurityInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateSecurity_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_updateSecurity_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := ec.field_Mutation_updateSecurity_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateSecurity_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateSecurity_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.SecurityInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNSecurityInput2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋgraphᚋmodelᚐSecurityInput(ctx, tmp)
+	}
+
+	var zeroVal model.SecurityInput
 	return zeroVal, nil
 }
 
@@ -446,8 +491,8 @@ func (ec *executionContext) field___Type_fields_argsIncludeDeprecated(
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _ListedSecurity_symbol(ctx context.Context, field graphql.CollectedField, obj *db.ListedSecurity) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ListedSecurity_symbol(ctx, field)
+func (ec *executionContext) _ListedSecurity_ticker(ctx context.Context, field graphql.CollectedField, obj *db.ListedSecurity) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ListedSecurity_ticker(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -460,7 +505,7 @@ func (ec *executionContext) _ListedSecurity_symbol(ctx context.Context, field gr
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.ListedSecurity().Symbol(rctx, obj)
+		return obj.Ticker, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -477,12 +522,12 @@ func (ec *executionContext) _ListedSecurity_symbol(ctx context.Context, field gr
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_ListedSecurity_symbol(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ListedSecurity_ticker(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ListedSecurity",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -527,50 +572,6 @@ func (ec *executionContext) fieldContext_ListedSecurity_currency(_ context.Conte
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ListedSecurity_name(ctx context.Context, field graphql.CollectedField, obj *db.ListedSecurity) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ListedSecurity_name(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.ListedSecurity().Name(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_ListedSecurity_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ListedSecurity",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -646,7 +647,7 @@ func (ec *executionContext) _Mutation_createSecurity(ctx context.Context, field 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateSecurity(rctx, fc.Args["input"].(model.NewSecurity))
+		return ec.resolvers.Mutation().CreateSecurity(rctx, fc.Args["input"].(model.SecurityInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -691,6 +692,71 @@ func (ec *executionContext) fieldContext_Mutation_createSecurity(ctx context.Con
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_createSecurity_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateSecurity(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateSecurity(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateSecurity(rctx, fc.Args["id"].(string), fc.Args["input"].(model.SecurityInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.Security)
+	fc.Result = res
+	return ec.marshalNSecurity2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋdbᚐSecurity(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateSecurity(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Security_id(ctx, field)
+			case "displayName":
+				return ec.fieldContext_Security_displayName(ctx, field)
+			case "quoteProvider":
+				return ec.fieldContext_Security_quoteProvider(ctx, field)
+			case "listedAs":
+				return ec.fieldContext_Security_listedAs(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Security", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateSecurity_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -1107,12 +1173,10 @@ func (ec *executionContext) fieldContext_Security_listedAs(_ context.Context, fi
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "symbol":
-				return ec.fieldContext_ListedSecurity_symbol(ctx, field)
+			case "ticker":
+				return ec.fieldContext_ListedSecurity_ticker(ctx, field)
 			case "currency":
 				return ec.fieldContext_ListedSecurity_currency(ctx, field)
-			case "name":
-				return ec.fieldContext_ListedSecurity_name(ctx, field)
 			case "security":
 				return ec.fieldContext_ListedSecurity_security(ctx, field)
 			}
@@ -2895,14 +2959,48 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(_ context.Context
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputNewSecurity(ctx context.Context, obj any) (model.NewSecurity, error) {
-	var it model.NewSecurity
+func (ec *executionContext) unmarshalInputListedSecurityInput(ctx context.Context, obj any) (model.ListedSecurityInput, error) {
+	var it model.ListedSecurityInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "displayName"}
+	fieldsInOrder := [...]string{"ticker", "currency"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "ticker":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ticker"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Ticker = data
+		case "currency":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currency"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Currency = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSecurityInput(ctx context.Context, obj any) (model.SecurityInput, error) {
+	var it model.SecurityInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "displayName", "listedAs"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -2923,6 +3021,13 @@ func (ec *executionContext) unmarshalInputNewSecurity(ctx context.Context, obj a
 				return it, err
 			}
 			it.DisplayName = data
+		case "listedAs":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("listedAs"))
+			data, err := ec.unmarshalOListedSecurityInput2ᚕᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋgraphᚋmodelᚐListedSecurityInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ListedAs = data
 		}
 	}
 
@@ -2948,83 +3053,16 @@ func (ec *executionContext) _ListedSecurity(ctx context.Context, sel ast.Selecti
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("ListedSecurity")
-		case "symbol":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ListedSecurity_symbol(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+		case "ticker":
+			out.Values[i] = ec._ListedSecurity_ticker(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "currency":
 			out.Values[i] = ec._ListedSecurity_currency(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "name":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ListedSecurity_name(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "security":
 			field := field
 
@@ -3106,6 +3144,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "createSecurity":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createSecurity(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateSecurity":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateSecurity(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -3675,6 +3720,21 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalNID2string(ctx context.Context, v any) (string, error) {
+	res, err := graphql.UnmarshalID(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	res := graphql.MarshalID(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) marshalNListedSecurity2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋdbᚐListedSecurity(ctx context.Context, sel ast.SelectionSet, v *db.ListedSecurity) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -3685,9 +3745,9 @@ func (ec *executionContext) marshalNListedSecurity2ᚖgithubᚗcomᚋoxistoᚋmo
 	return ec._ListedSecurity(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNNewSecurity2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋgraphᚋmodelᚐNewSecurity(ctx context.Context, v any) (model.NewSecurity, error) {
-	res, err := ec.unmarshalInputNewSecurity(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
+func (ec *executionContext) unmarshalNListedSecurityInput2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋgraphᚋmodelᚐListedSecurityInput(ctx context.Context, v any) (*model.ListedSecurityInput, error) {
+	res, err := ec.unmarshalInputListedSecurityInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNSecurity2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋdbᚐSecurity(ctx context.Context, sel ast.SelectionSet, v db.Security) graphql.Marshaler {
@@ -3746,6 +3806,11 @@ func (ec *executionContext) marshalNSecurity2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑ
 		return graphql.Null
 	}
 	return ec._Security(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSecurityInput2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋgraphᚋmodelᚐSecurityInput(ctx context.Context, v any) (model.SecurityInput, error) {
+	res, err := ec.unmarshalInputSecurityInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {
@@ -4087,6 +4152,26 @@ func (ec *executionContext) marshalOListedSecurity2ᚕᚖgithubᚗcomᚋoxisto�
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalOListedSecurityInput2ᚕᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋgraphᚋmodelᚐListedSecurityInputᚄ(ctx context.Context, v any) ([]*model.ListedSecurityInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*model.ListedSecurityInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNListedSecurityInput2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋgraphᚋmodelᚐListedSecurityInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
 
 func (ec *executionContext) marshalOSecurity2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋdbᚐSecurity(ctx context.Context, sel ast.SelectionSet, v *db.Security) graphql.Marshaler {

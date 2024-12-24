@@ -54,7 +54,7 @@ func Test_service_ListSecurities(t *testing.T) {
 				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {
 					assert.NoError(t, ops.Replace(&portfoliov1.Security{Id: "My Security"}))
 					rel := persistence.Relationship[*portfoliov1.ListedSecurity](ops)
-					assert.NoError(t, rel.Replace(&portfoliov1.ListedSecurity{SecurityName: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}))
+					assert.NoError(t, rel.Replace(&portfoliov1.ListedSecurity{SecurityId: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}))
 				}),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.ListSecuritiesResponse]) bool {
@@ -102,7 +102,7 @@ func Test_service_GetSecurity(t *testing.T) {
 				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {
 					ops.Replace(&portfoliov1.Security{Id: "My Security"})
 					rel := persistence.Relationship[*portfoliov1.ListedSecurity](ops)
-					assert.NoError(t, rel.Replace(&portfoliov1.ListedSecurity{SecurityName: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}))
+					assert.NoError(t, rel.Replace(&portfoliov1.ListedSecurity{SecurityId: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}))
 				}),
 			},
 			args: args{
@@ -111,7 +111,7 @@ func Test_service_GetSecurity(t *testing.T) {
 			wantRes: func(t *testing.T, s *portfoliov1.Security) bool {
 				return assert.Equals(t, &portfoliov1.Security{
 					Id:       "My Security",
-					ListedOn: []*portfoliov1.ListedSecurity{{SecurityName: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}},
+					ListedOn: []*portfoliov1.ListedSecurity{{SecurityId: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}},
 				}, s)
 			},
 			wantErr: false,

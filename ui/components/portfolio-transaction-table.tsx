@@ -16,8 +16,8 @@ const sorters = new Map<
 sorters.set("time", (a: PortfolioEvent, b: PortfolioEvent) => {
   return (a.time ?? 0) < (b.time ?? 0) ? -1 : 1;
 });
-sorters.set("securityName", (a: PortfolioEvent, b: PortfolioEvent) => {
-  return a.securityName.localeCompare(b.securityName);
+sorters.set("securityId", (a: PortfolioEvent, b: PortfolioEvent) => {
+  return a.securityId.localeCompare(b.securityId);
 });
 sorters.set("amount", (a: PortfolioEvent, b: PortfolioEvent) => {
   return a.amount - b.amount;
@@ -175,7 +175,7 @@ export default async function PortfolioTransactionTable({
               event={event}
               key={idx}
               security={securities.find(
-                (sec) => sec.name == event.securityName
+                (sec) => sec.name == event.securityId
               )}
               currency="EUR"
             />

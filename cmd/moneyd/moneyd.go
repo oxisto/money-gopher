@@ -160,6 +160,7 @@ func (cmd *moneydCmd) Run() error {
 	port := "9090"
 	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
 		Queries: db.New(pdb.DB),
+		DB:      pdb.DB,
 	}}))
 
 	srv.AddTransport(transport.Options{})

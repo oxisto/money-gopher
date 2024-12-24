@@ -49,7 +49,7 @@ func (cmd *ListSecuritiesCmd) Run(s *cli.Session) error {
 }
 
 type UpdateQuoteCmd struct {
-	SecurityNames []string `arg:""`
+	SecurityIds []string `arg:""`
 }
 
 // Exec implements [cli.Command]
@@ -57,7 +57,7 @@ func (cmd *UpdateQuoteCmd) Run(s *cli.Session) error {
 	_, err := s.SecuritiesClient.TriggerSecurityQuoteUpdate(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.TriggerQuoteUpdateRequest{
-			SecurityNames: cmd.SecurityNames,
+			SecurityIds: cmd.SecurityIds,
 		}),
 	)
 
@@ -82,7 +82,7 @@ func (cmd *UpdateAllQuotesCmd) Run(s *cli.Session) error {
 	_, err = s.SecuritiesClient.TriggerSecurityQuoteUpdate(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.TriggerQuoteUpdateRequest{
-			SecurityNames: names,
+			SecurityIds: names,
 		}),
 	)
 

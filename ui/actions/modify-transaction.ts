@@ -46,7 +46,7 @@ async function editTransaction(event: PortfolioEvent): Promise<PortfolioEvent> {
           "transaction.name": event.name,
         },
         query: {
-          updateMask: "amount,price,fees,taxes,securityName,time",
+          updateMask: "amount,price,fees,taxes,securityId,time",
         },
       },
       body: event,
@@ -62,7 +62,7 @@ function formDataToPortfolioEvent(formData: FormData): PortfolioEvent {
   return {
     name: formData.get("name")?.toString() ?? "",
     portfolioName: formData.get("portfolioName")?.toString() ?? "",
-    securityName: formData.get("securityName[value]")?.toString() ?? "",
+    securityId: formData.get("securityId[value]")?.toString() ?? "",
     type:
       (formData.get("type[value]")?.toString() as
         | "PORTFOLIO_EVENT_TYPE_UNSPECIFIED"

@@ -145,9 +145,9 @@ func readLine(cr *csv.Reader, pname string) (tx *portfoliov1.PortfolioEvent, sec
 	sec.DisplayName = record[13]
 	sec.ListedOn = []*portfoliov1.ListedSecurity{
 		{
-			SecurityName: sec.Id,
-			Ticker:       record[12],
-			Currency:     lsCurrency(record[3], record[5]),
+			SecurityId: sec.Id,
+			Ticker:     record[12],
+			Currency:   lsCurrency(record[3], record[5]),
 		},
 	}
 
@@ -159,7 +159,7 @@ func readLine(cr *csv.Reader, pname string) (tx *portfoliov1.PortfolioEvent, sec
 	}
 
 	tx.PortfolioName = pname
-	tx.SecurityName = sec.Id
+	tx.SecurityId = sec.Id
 	tx.MakeUniqueName()
 
 	return

@@ -132,11 +132,11 @@ export default function EditPortfolioTransactionForm({
                   </label>
                   <div className="mt-2 sm:col-span-2 sm:mt-0">
                     <ListBox
-                      name="securityName"
-                      value={data.securityName}
+                      name="securityId"
+                      value={data.securityId}
                       options={securityOptions}
                       onChange={(value) =>
-                        setData({ ...data, securityName: value })
+                        setData({ ...data, securityId: value })
                       }
                     />
                   </div>

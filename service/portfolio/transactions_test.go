@@ -56,14 +56,14 @@ func Test_service_CreatePortfolioTransaction(t *testing.T) {
 					Transaction: &portfoliov1.PortfolioEvent{
 						PortfolioName: "mybank-myportfolio",
 						Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
-						SecurityName:  "My Security",
+						SecurityId:    "My Security",
 						Amount:        1,
 						Price:         portfoliov1.Value(2000),
 					},
 				}),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioEvent]) bool {
-				return assert.Equals(t, "My Security", r.Msg.GetSecurityName())
+				return assert.Equals(t, "My Security", r.Msg.GetSecurityId())
 			},
 			wantSvc: func(t *testing.T, s *service) bool {
 				list, _ := s.events.List("mybank-myportfolio")
@@ -80,14 +80,14 @@ func Test_service_CreatePortfolioTransaction(t *testing.T) {
 					Transaction: &portfoliov1.PortfolioEvent{
 						PortfolioName: "mybank-myportfolio",
 						Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
-						SecurityName:  "My Security",
+						SecurityId:    "My Security",
 						Amount:        1,
 						Price:         portfoliov1.Value(2000),
 					},
 				}),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioEvent]) bool {
-				return assert.Equals(t, "My Security", r.Msg.GetSecurityName())
+				return assert.Equals(t, "My Security", r.Msg.GetSecurityId())
 			},
 			wantSvc: func(t *testing.T, s *service) bool {
 				list, _ := s.events.List("mybank-myportfolio")
@@ -261,15 +261,15 @@ func Test_service_UpdatePortfolioTransaction(t *testing.T) {
 			args: args{
 				req: connect.NewRequest(&portfoliov1.UpdatePortfolioTransactionRequest{
 					Transaction: &portfoliov1.PortfolioEvent{
-						Name:         "buy",
-						Type:         portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
-						SecurityName: "My Second Security",
+						Name:       "buy",
+						Type:       portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+						SecurityId: "My Second Security",
 					},
-					UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"security_name"}},
+					UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"security_id"}},
 				}),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioEvent]) bool {
-				return assert.Equals(t, "My Second Security", r.Msg.SecurityName)
+				return assert.Equals(t, "My Second Security", r.Msg.SecurityId)
 			},
 		},
 	}

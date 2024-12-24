@@ -8,7 +8,7 @@ interface PortfolioTransactionProps {
     name: string;
   };
 }
-interface EditPortfolioTransactionProps extends PortfolioTransactionProps {}
+interface EditPortfolioTransactionProps extends PortfolioTransactionProps { }
 
 export default async function EditPortfolioTransaction(props: EditPortfolioTransactionProps) {
   const params = await props.params;
@@ -22,7 +22,7 @@ export default async function EditPortfolioTransaction(props: EditPortfolioTrans
         name: "new",
         time: new Date().toISOString(),
         portfolioName: params.name,
-        securityName: "",
+        securityId: "",
         amount: 1,
         type: "PORTFOLIO_EVENT_TYPE_BUY",
         price: { value: 0, symbol: "EUR" },

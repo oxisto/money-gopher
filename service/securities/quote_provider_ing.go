@@ -51,7 +51,7 @@ func (ing *ing) LatestQuote(ctx context.Context, ls *portfoliov1.ListedSecurity)
 		h   header
 	)
 
-	res, err = ing.Get(fmt.Sprintf("https://component-api.wertpapiere.ing.de/api/v1/components/instrumentheader/%s", ls.SecurityName))
+	res, err = ing.Get(fmt.Sprintf("https://component-api.wertpapiere.ing.de/api/v1/components/instrumentheader/%s", ls.SecurityId))
 	if err != nil {
 		return nil, t, fmt.Errorf("could not fetch quote: %w", err)
 	}

@@ -70,9 +70,9 @@ func Test_yf_LatestQuote(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				ls: &portfoliov1.ListedSecurity{
-					SecurityName: "My Security",
-					Ticker:       "TICK",
-					Currency:     "USD",
+					SecurityId: "My Security",
+					Ticker:     "TICK",
+					Currency:   "USD",
 				},
 			},
 			wantErr: func(t *testing.T, err error) bool {
@@ -90,9 +90,9 @@ func Test_yf_LatestQuote(t *testing.T) {
 			},
 			args: args{
 				ls: &portfoliov1.ListedSecurity{
-					SecurityName: "My Security",
-					Ticker:       "TICK",
-					Currency:     "USD",
+					SecurityId: "My Security",
+					Ticker:     "TICK",
+					Currency:   "USD",
 				},
 			},
 			wantErr: func(t *testing.T, err error) bool {
@@ -110,9 +110,9 @@ func Test_yf_LatestQuote(t *testing.T) {
 			},
 			args: args{
 				ls: &portfoliov1.ListedSecurity{
-					SecurityName: "My Security",
-					Ticker:       "TICK",
-					Currency:     "USD",
+					SecurityId: "My Security",
+					Ticker:     "TICK",
+					Currency:   "USD",
 				},
 			},
 			wantErr: func(t *testing.T, err error) bool {
@@ -130,9 +130,9 @@ func Test_yf_LatestQuote(t *testing.T) {
 			},
 			args: args{
 				ls: &portfoliov1.ListedSecurity{
-					SecurityName: "My Security",
-					Ticker:       "TICK",
-					Currency:     "USD",
+					SecurityId: "My Security",
+					Ticker:     "TICK",
+					Currency:   "USD",
 				},
 			},
 			wantQuote: portfoliov1.Value(10000),

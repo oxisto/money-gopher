@@ -90,6 +90,7 @@ func OpenDB(opts Options) (db *DB, err error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not open database: %w", err)
 	}
+	inner.SetMaxOpenConns(1)
 
 	db = &DB{
 		DB: inner,

@@ -2,13 +2,19 @@
 
 package model
 
+type ListedSecurityInput struct {
+	Ticker   string `json:"ticker"`
+	Currency string `json:"currency"`
+}
+
 type Mutation struct {
 }
 
-type NewSecurity struct {
-	ID          string `json:"id"`
-	DisplayName string `json:"displayName"`
+type Query struct {
 }
 
-type Query struct {
+type SecurityInput struct {
+	ID          string                 `json:"id"`
+	DisplayName string                 `json:"displayName"`
+	ListedAs    []*ListedSecurityInput `json:"listedAs,omitempty"`
 }
