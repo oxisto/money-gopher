@@ -64,6 +64,10 @@ func main() {
 	ctx.FatalIfErrorf(err)
 }
 
+type query struct{}
+
+func (query) Hello() string { return "Hello, world!" }
+
 func (cmd *moneydCmd) Run() error {
 	var (
 		w       = os.Stdout

@@ -1,0 +1,33 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+type Security {
+  id: ID!
+  isin: String!
+  displayName: String!
+  quoteProvider: String
+  listedAs: [ListedSecurity!]
+}
+
+type ListedSecurity {
+  id: ID!
+  symbol: String!
+  currency: String!
+  name: String!
+  security: Security!
+}
+
+input NewSecurity {
+  isin: String!
+  displayName: String!
+}
+
+type Mutation {
+  createSecurity(input: NewSecurity!): Security!
+}
+
+type Query {
+  security(id: ID!): Security
+  securities: [Security!]!
+}
