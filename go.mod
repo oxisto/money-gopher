@@ -7,7 +7,7 @@ require (
 	connectrpc.com/vanguard v0.3.0
 	github.com/MicahParks/keyfunc/v3 v3.3.5
 	github.com/alecthomas/kong v1.6.0
-	github.com/fatih/color v1.17.0
+	github.com/fatih/color v1.18.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/jotaen/kong-completion v0.0.6
 	github.com/lmittmann/tint v1.0.6
