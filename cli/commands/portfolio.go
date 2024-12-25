@@ -30,8 +30,6 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/fatih/color"
-	kongcompletion "github.com/jotaen/kong-completion"
-	"github.com/posener/complete"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -268,12 +266,7 @@ func ImportTransactionsCmd(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-func WithPredictPortfolios(s *mcli.Session) kongcompletion.Option {
-	return kongcompletion.WithPredictor(
-		"portfolio",
-		PredictPortfolios(s),
-	)
-}
+/*
 
 func PredictPortfolios(s *mcli.Session) complete.PredictFunc {
 	return func(complete.Args) (names []string) {
@@ -292,3 +285,4 @@ func PredictPortfolios(s *mcli.Session) complete.PredictFunc {
 		return
 	}
 }
+*/
