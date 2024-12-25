@@ -94,7 +94,7 @@ func main() {
 	}
 
 	if err := cmd.Run(context.Background(), os.Args); err != nil {
-		log.Fatal(err)
+		slog.Error("Error while running command", tint.Err(err))
 	}
 }
 

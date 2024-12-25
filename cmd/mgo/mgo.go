@@ -17,16 +17,21 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"log/slog"
 	"os"
 
-	"github.com/oxisto/money-gopher/cli"
+	"github.com/lmittmann/tint"
 	"github.com/oxisto/money-gopher/cli/commands"
-
-	"github.com/alecthomas/kong"
-	kongcompletion "github.com/jotaen/kong-completion"
 )
 
+func main() {
+	if err := commands.CLI.Run(context.Background(), os.Args); err != nil {
+		slog.Error("Error while running command", tint.Err(err))
+	}
+}
+
+/*
 func main() {
 	var (
 		s      *cli.Session
@@ -63,3 +68,4 @@ func main() {
 	err = ctx.Run(s)
 	parser.FatalIfErrorf(err)
 }
+*/

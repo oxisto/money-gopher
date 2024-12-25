@@ -17,6 +17,18 @@
             ]
         },
         {
+            "name": "Launch cmd/mgo (empty)",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/mgo",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "--debug"
+            ]
+        },
+        {
             "name": "Launch cmd/mgo (portfolio list)",
             "type": "go",
             "request": "launch",

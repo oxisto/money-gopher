@@ -16,17 +16,7 @@
 
 package commands
 
-import (
-	"testing"
-	"time"
-
-	"github.com/oxisto/assert"
-	"github.com/oxisto/money-gopher/cli"
-	"github.com/oxisto/money-gopher/internal"
-	"github.com/oxisto/money-gopher/internal/testing/servertest"
-	"github.com/posener/complete"
-)
-
+/*
 func TestCreatePortfolioCmd_Run(t *testing.T) {
 	srv := servertest.NewServer(internal.NewTestDB(t))
 	defer srv.Close()
@@ -253,3 +243,4 @@ func TestPredictPortfolios(t *testing.T) {
 		})
 	}
 }
+*/

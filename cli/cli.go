@@ -30,7 +30,12 @@ import (
 	"connectrpc.com/connect"
 	"github.com/lmittmann/tint"
 	oauth2 "github.com/oxisto/oauth2go"
+	"github.com/urfave/cli/v3"
 )
+
+type sessionKeyType struct{}
+
+var SessionKey sessionKeyType
 
 // Session holds all necessary information about the current CLI session.
 type Session struct {
@@ -155,4 +160,26 @@ func (s *Session) initClients() {
 		connect.WithHTTPGet(),
 		connect.WithInterceptors(connect.UnaryInterceptorFunc(interceptor)),
 	)
+}
+
+func FromContext(ctx context.Context) (s *Session) {
+	s = ctx.Value(SessionKey).(*Session)
+	return
+}
+
+// InjectSession is a pre-hook that injects the session into the context.
+func InjectSession(ctx context.Context, cmd *cli.Command) (newCtx context.Context, err error) {
+	if cmd.NArg() != 0 {
+		s, err := ContinueSession()
+		if err != nil {
+			fmt.Println("Could not continue with existing session or session is missing. Please use `mgo login`.")
+			return ctx, err
+		}
+
+		newCtx = context.WithValue(ctx, SessionKey, s)
+	} else {
+		newCtx = ctx
+	}
+
+	return
 }
