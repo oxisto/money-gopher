@@ -1,7 +1,19 @@
 package commands
 
-/*
-func TestLoginCmd(t *testing.T) {
+import (
+	"context"
+	"fmt"
+	"net"
+	"net/http"
+	"testing"
+	"time"
+
+	"github.com/oxisto/assert"
+	oauth2 "github.com/oxisto/oauth2go"
+	"github.com/oxisto/oauth2go/login"
+)
+
+func TestLoginAction(t *testing.T) {
 	var (
 		err      error
 		verifier string
@@ -13,12 +25,13 @@ func TestLoginCmd(t *testing.T) {
 	authSrv, port, err = startAuthServer()
 	assert.NoError(t, err)
 
-	cmd := &LoginCmd{
-		ClientID: "cli",
-		AuthURL:  fmt.Sprintf("http://localhost:%d/authorize", port),
-		TokenURL: fmt.Sprintf("http://localhost:%d/token", port),
-		Callback: "http://localhost:10000/callback",
-	}
+	var (
+		clientID = "cli"
+		authURL  = fmt.Sprintf("http://localhost:%d/authorize", port)
+		tokenURL = fmt.Sprintf("http://localhost:%d/token", port)
+		callback = "http://localhost:10000/callback"
+	)
+	cmd := LoginCmd
 
 	verifier = "012345678901234567890123456789"
 	VerifierGenerator = func() string {
@@ -33,13 +46,19 @@ func TestLoginCmd(t *testing.T) {
 	go func() {
 		go func() {
 			<-callbackServerReady
-			_, err = http.Get(fmt.Sprintf("%s?code=%s", cmd.Callback, code))
+			_, err = http.Get(fmt.Sprintf("%s?code=%s", callback, code))
 			if err != nil {
 				assert.NoError(t, err)
 			}
 		}()
 
-		err = cmd.Run(nil)
+		err = cmd.Run(context.Background(), []string{
+			"login",
+			"--client-id", clientID,
+			"--auth-url", authURL,
+			"--token-url", tokenURL,
+			"--callback", callback,
+		})
 		assert.NoError(t, err)
 		done <- true
 	}()
@@ -77,4 +96,3 @@ func startAuthServer() (srv *oauth2.AuthorizationServer, port uint16, err error)
 
 	return
 }
-*/
