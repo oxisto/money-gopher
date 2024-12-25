@@ -58,7 +58,7 @@ PRIMARY KEY (security_id, ticker)
 }
 
 func (*Security) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`REPLACE INTO securities (name, display_name, quote_provider) VALUES (?,?,?);`)
+	return db.Prepare(`REPLACE INTO securities (id, display_name, quote_provider) VALUES (?,?,?);`)
 }
 
 func (*ListedSecurity) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) {
@@ -66,7 +66,7 @@ func (*ListedSecurity) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err e
 }
 
 func (*Security) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`SELECT name, display_name, quote_provider FROM securities`)
+	return db.Prepare(`SELECT id, display_name, quote_provider FROM securities`)
 }
 
 func (*ListedSecurity) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err error) {
@@ -74,7 +74,7 @@ func (*ListedSecurity) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err erro
 }
 
 func (*Security) PrepareGet(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`SELECT name, display_name, quote_provider FROM securities WHERE name = ?`)
+	return db.Prepare(`SELECT id, display_name, quote_provider FROM securities WHERE id = ?`)
 }
 
 func (*ListedSecurity) PrepareGet(db *persistence.DB) (stmt *sql.Stmt, err error) {
@@ -93,7 +93,7 @@ func (*Security) PrepareUpdate(db *persistence.DB, columns []string) (stmt *sql.
 		set[i] = persistence.Quote(col) + " = ?"
 	}
 
-	query += "UPDATE securities SET " + strings.Join(set, ", ") + " WHERE name = ?;"
+	query += "UPDATE securities SET " + strings.Join(set, ", ") + " WHERE id = ?;"
 
 	return db.Prepare(query)
 }
@@ -116,7 +116,7 @@ func (*ListedSecurity) PrepareUpdate(db *persistence.DB, columns []string) (stmt
 }
 
 func (*Security) PrepareDelete(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`DELETE FROM securities WHERE name = ?`)
+	return db.Prepare(`DELETE FROM securities WHERE id = ?`)
 }
 
 func (*ListedSecurity) PrepareDelete(db *persistence.DB) (stmt *sql.Stmt, err error) {

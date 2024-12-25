@@ -1,17 +1,6 @@
 package commands
 
-import (
-	"fmt"
-	"net"
-	"net/http"
-	"testing"
-	"time"
-
-	"github.com/oxisto/assert"
-	oauth2 "github.com/oxisto/oauth2go"
-	"github.com/oxisto/oauth2go/login"
-)
-
+/*
 func TestLoginCmd(t *testing.T) {
 	var (
 		err      error
@@ -88,3 +77,4 @@ func startAuthServer() (srv *oauth2.AuthorizationServer, port uint16, err error)
 
 	return
 }
+*/

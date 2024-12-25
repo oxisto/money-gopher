@@ -21,17 +21,16 @@ import (
 )
 
 var CLI = &cli.Command{
-	Name:  "mgo",
-	Usage: "The money-gopher CLI",
+	Name:                  "mgo",
+	Usage:                 "The money-gopher CLI",
+	EnableShellCompletion: true,
 	Flags: []cli.Flag{
 		&cli.BoolFlag{Name: "debug", Usage: "Enable debug mode."},
 	},
 	Commands: []*cli.Command{
-		{
-			Name:  "login",
-			Usage: "Login to the money-gopher service",
-		},
 		PortfolioCmd,
+		SecurityCmd,
+		LoginCmd,
 	},
 }
 

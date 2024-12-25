@@ -48,7 +48,7 @@ type Session struct {
 // SessionOptions holds all options to configure a [Session].
 type SessionOptions struct {
 	OAuth2Config *oauth2.Config
-	HttpClient   *http.Client
+	HttpClient   *http.Client `json:"-"`
 	Token        *oauth2.Token
 	BaseURL      string
 }
@@ -103,7 +103,7 @@ func ContinueSession() (s *Session, err error) {
 	}
 
 	s = new(Session)
-	err = json.NewDecoder(file).Decode(&s)
+	err = json.NewDecoder(file).Decode(&s.opts)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse session file: %w", err)
 	}
@@ -123,7 +123,8 @@ func (s *Session) Save() (err error) {
 		return
 	}
 
-	err = json.NewEncoder(file).Encode(s)
+	// We don't want to save the clients, so we only save the options.
+	err = json.NewEncoder(file).Encode(s.opts)
 	if err != nil {
 		return fmt.Errorf("could not save session file: %w", err)
 	}
@@ -147,6 +148,10 @@ func (s *Session) initClients() {
 			}
 			return next(ctx, req)
 		})
+	}
+
+	if s.opts.HttpClient == nil {
+		s.opts.HttpClient = http.DefaultClient
 	}
 
 	s.PortfolioClient = portfoliov1connect.NewPortfolioServiceClient(
