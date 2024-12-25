@@ -20,17 +20,19 @@ require (
 	github.com/oxisto/assert v0.0.6
 	github.com/oxisto/oauth2go v0.14.0
 	github.com/posener/complete v1.2.3
+	github.com/urfave/cli/v3 v3.0.0-beta1
 	github.com/vektah/gqlparser/v2 v2.5.20
 	golang.org/x/net v0.33.0
 	golang.org/x/text v0.21.0
 	google.golang.org/protobuf v1.36.0
 )
 
+require github.com/google/go-cmp v0.6.0 // indirect
+
 require (
 	github.com/MicahParks/jwkset v0.5.19 // indirect
 	github.com/agnivade/levenshtein v1.2.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
