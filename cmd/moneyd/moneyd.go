@@ -34,7 +34,6 @@ import (
 	"connectrpc.com/connect"
 	"connectrpc.com/vanguard"
 	"github.com/MicahParks/keyfunc/v3"
-	"github.com/alecthomas/kong"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/lmittmann/tint"
 	"github.com/mattn/go-colorable"
@@ -42,36 +41,62 @@ import (
 	oauth2 "github.com/oxisto/oauth2go"
 	"github.com/oxisto/oauth2go/login"
 	"github.com/oxisto/oauth2go/storage"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
 
-var cmd moneydCmd
+var cfg moneydConfig
 
-type moneydCmd struct {
-	Debug bool `help:"Enable debug mode."`
+type moneydConfig struct {
+	Debug bool
 
-	EmbeddedOAuth2ServerDashboardCallback string `default:"http://localhost:3000/api/auth/callback/money-gopher" help:"Specifies the callback URL for the dashboard, if the embedded oauth2 server is used."`
+	EmbeddedOAuth2ServerDashboardCallback string
 
-	PrivateKeyFile     string `default:"private.key"`
-	PrivateKeyPassword string `default:"moneymoneymoney"`
+	PrivateKeyFile     string
+	PrivateKeyPassword string
 }
 
 func main() {
-	ctx := kong.Parse(&cmd)
+	cmd := &cli.Command{
+		Name:  "moneyd",
+		Usage: "Starts the Money Gopher server.",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{Name: "debug", Aliases: []string{"d"},
+				Destination: &cfg.Debug},
+			&cli.StringFlag{
+				Name:        "embedded-oauth2-server-dashboard-callback",
+				Value:       "http://localhost:3000/api/auth/callback/money-gopher",
+				Usage:       "Specifies the callback URL for the dashboard, if the embedded oauth2 server is used",
+				Destination: &cfg.EmbeddedOAuth2ServerDashboardCallback,
+			},
+			&cli.StringFlag{
+				Name:        "private-key-file",
+				Value:       "private.key",
+				Destination: &cfg.PrivateKeyFile,
+			},
+			&cli.StringFlag{
+				Name:        "private-key-password",
+				Value:       "moneymoneymoney",
+				Destination: &cfg.PrivateKeyPassword,
+			},
+		},
+		Action: run,
+	}
 
-	err := ctx.Run()
-	ctx.FatalIfErrorf(err)
+	if err := cmd.Run(context.Background(), os.Args); err != nil {
+		slog.Error("Error while running command", tint.Err(err))
+	}
 }
 
-func (cmd *moneydCmd) Run() error {
+func run(ctx context.Context, cmd *cli.Command) error {
 	var (
 		w       = os.Stdout
 		level   = slog.LevelInfo
 		authSrv *oauth2.AuthorizationServer
 	)
 
-	if cmd.Debug {
+	if cfg.Debug {
 		level = slog.LevelDebug
 	}
 
@@ -86,7 +111,7 @@ func (cmd *moneydCmd) Run() error {
 	slog.SetDefault(logger)
 	slog.Info("Welcome to the Money Gopher", "money", "🤑")
 
-	db, err := persistence.OpenDB(persistence.Options{})
+	pdb, err := persistence.OpenDB(persistence.Options{})
 	if err != nil {
 		slog.Error("Error while opening database", tint.Err(err))
 		return err
@@ -94,7 +119,7 @@ func (cmd *moneydCmd) Run() error {
 
 	authSrv = oauth2.NewServer(
 		":8000",
-		oauth2.WithClient("dashboard", "", cmd.EmbeddedOAuth2ServerDashboardCallback),
+		oauth2.WithClient("dashboard", "", cfg.EmbeddedOAuth2ServerDashboardCallback),
 		oauth2.WithClient("cli", "", "http://localhost:10000/callback"),
 		oauth2.WithPublicURL("http://localhost:8000"),
 		login.WithLoginPage(
@@ -102,7 +127,7 @@ func (cmd *moneydCmd) Run() error {
 		),
 		oauth2.WithAllowedOrigins("*"),
 		oauth2.WithSigningKeysFunc(func() map[int]*ecdsa.PrivateKey {
-			return storage.LoadSigningKeys(cmd.PrivateKeyFile, cmd.PrivateKeyPassword, true)
+			return storage.LoadSigningKeys(cfg.PrivateKeyFile, cfg.PrivateKeyPassword, true)
 		}),
 	)
 	go authSrv.ListenAndServe()
@@ -115,12 +140,12 @@ func (cmd *moneydCmd) Run() error {
 	portfolioService := vanguard.NewService(
 		portfoliov1connect.NewPortfolioServiceHandler(portfolio.NewService(
 			portfolio.Options{
-				DB:               db,
+				DB:               pdb,
 				SecuritiesClient: portfoliov1connect.NewSecuritiesServiceClient(http.DefaultClient, portfolio.DefaultSecuritiesServiceURL),
 			},
 		), interceptors))
 	securitiesService := vanguard.NewService(
-		portfoliov1connect.NewSecuritiesServiceHandler(securities.NewService(db), interceptors),
+		portfoliov1connect.NewSecuritiesServiceHandler(securities.NewService(pdb), interceptors),
 	)
 
 	transcoder, err := vanguard.NewTranscoder([]*vanguard.Service{

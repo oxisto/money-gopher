@@ -7,15 +7,23 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/oxisto/money-gopher/cli"
+	mcli "github.com/oxisto/money-gopher/cli"
 	oauth2 "github.com/oxisto/oauth2go"
+
+	"github.com/urfave/cli/v3"
 )
 
-type LoginCmd struct {
-	ClientID string `default:"cli"`
-	AuthURL  string `default:"http://localhost:8000/authorize"`
-	TokenURL string `default:"http://localhost:8000/token"`
-	Callback string `default:"http://localhost:10000/callback"`
+// LoginCmd is the command to login to the Money Gopher server.
+var LoginCmd = &cli.Command{
+	Name:   "login",
+	Usage:  "Login to the Money Gopher server",
+	Action: LoginAction,
+	Flags: []cli.Flag{
+		&cli.StringFlag{Name: "client-id", Usage: "The client ID to use for the OAuth 2.0 flow", Value: "cli"},
+		&cli.StringFlag{Name: "auth-url", Usage: "The authorization URL for the OAuth 2.0 flow", Value: "http://localhost:8000/authorize"},
+		&cli.StringFlag{Name: "token-url", Usage: "The token URL for the OAuth 2.0 flow", Value: "http://localhost:8000/token"},
+		&cli.StringFlag{Name: "callback", Usage: "The callback URL for the OAuth 2.0 flow", Value: "http://localhost:10000/callback"},
+	},
 }
 
 var (
@@ -34,10 +42,11 @@ type callbackServer struct {
 	code     chan string
 }
 
-func (l *LoginCmd) Run(s *cli.Session) error {
+// LoginAction is the action for the login command.
+func LoginAction(ctx context.Context, cmd *cli.Command) error {
 	var (
 		err     error
-		session *cli.Session
+		session *mcli.Session
 		sock    net.Listener
 		code    string
 		config  *oauth2.Config
@@ -45,12 +54,12 @@ func (l *LoginCmd) Run(s *cli.Session) error {
 
 	// Create an OAuth 2 config. TODO: Use oauth2 metadata discovery instead
 	config = &oauth2.Config{
-		ClientID: l.ClientID,
+		ClientID: cmd.String("client-id"),
 		Endpoint: oauth2.Endpoint{
-			AuthURL:  l.AuthURL,
-			TokenURL: l.TokenURL,
+			AuthURL:  cmd.String("auth-url"),
+			TokenURL: cmd.String("token-url"),
 		},
-		RedirectURL: l.Callback,
+		RedirectURL: cmd.String("callback"),
 	}
 
 	srv := newCallbackServer(config)
@@ -82,7 +91,7 @@ func (l *LoginCmd) Run(s *cli.Session) error {
 		return err
 	}
 
-	session = cli.NewSession(&cli.SessionOptions{
+	session = mcli.NewSession(&mcli.SessionOptions{
 		OAuth2Config: config,
 		Token:        token,
 	})

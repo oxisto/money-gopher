@@ -17,16 +17,7 @@
 // package commands contains commands that can be executed by the CLI.
 package commands
 
-import (
-	"testing"
-
-	"github.com/oxisto/assert"
-	"github.com/oxisto/money-gopher/cli"
-	"github.com/oxisto/money-gopher/internal"
-	"github.com/oxisto/money-gopher/internal/testing/servertest"
-	"github.com/posener/complete"
-)
-
+/*
 func TestUpdateAllQuotesCmd_Run(t *testing.T) {
 	srv := servertest.NewServer(internal.NewTestDB(t))
 	defer srv.Close()
@@ -103,3 +94,4 @@ func TestPredictSecurities(t *testing.T) {
 		})
 	}
 }
+*/

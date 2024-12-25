@@ -17,17 +17,32 @@
 package commands
 
 import (
-	kongcompletion "github.com/jotaen/kong-completion"
+	"github.com/urfave/cli/v3"
 )
 
-var CLI struct {
+var CLI = &cli.Command{
+	Name:                  "mgo",
+	Usage:                 "The money-gopher CLI",
+	EnableShellCompletion: true,
+	Flags: []cli.Flag{
+		&cli.BoolFlag{Name: "debug", Usage: "Enable debug mode."},
+	},
+	Commands: []*cli.Command{
+		PortfolioCmd,
+		SecurityCmd,
+		LoginCmd,
+	},
+}
+
+/*var CLI struct {
 	Debug bool `help:"Enable debug mode."`
 
 	Login LoginCmd `cmd:"" help:"Login command."`
 
-	Security    SecurityCmd    `cmd:"" help:"Security commands."`
-	Portfolio   PortfolioCmd   `cmd:"" help:"Portfolio commands."`
+	Security SecurityCmd `cmd:"" help:"Security commands."`
+	//Portfolio   PortfolioCmd   `cmd:"" help:"Portfolio commands."`
 	BankAccount BankAccountCmd `cmd:"" help:"Bank account commands."`
 
 	Completion kongcompletion.Completion `cmd:"" help:"Outputs shell code for initializing tab completions" hidden:"" completion-shell-default:"false"`
 }
+*/
