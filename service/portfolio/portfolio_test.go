@@ -35,29 +35,29 @@ import (
 func myPortfolio(t *testing.T) persistence.StorageOperations[*portfoliov1.Portfolio] {
 	return internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Portfolio]) {
 		assert.NoError(t, ops.Replace(&portfoliov1.Portfolio{
-			Name:        "mybank-myportfolio",
+			Id:          "mybank-myportfolio",
 			DisplayName: "My Portfolio",
 		}))
 		rel := persistence.Relationship[*portfoliov1.PortfolioEvent](ops)
 		assert.NoError(t, rel.Replace(&portfoliov1.PortfolioEvent{
-			Name:          "buy",
-			Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
-			PortfolioName: "mybank-myportfolio",
-			SecurityId:    "US0378331005",
-			Amount:        20,
-			Price:         portfoliov1.Value(10708),
-			Fees:          portfoliov1.Value(1025),
-			Time:          timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)),
+			Id:          "buy",
+			Type:        portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+			PortfolioId: "mybank-myportfolio",
+			SecurityId:  "US0378331005",
+			Amount:      20,
+			Price:       portfoliov1.Value(10708),
+			Fees:        portfoliov1.Value(1025),
+			Time:        timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)),
 		}))
 		assert.NoError(t, rel.Replace(&portfoliov1.PortfolioEvent{
-			Name:          "sell",
-			Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
-			PortfolioName: "mybank-myportfolio",
-			SecurityId:    "US0378331005",
-			Amount:        10,
-			Price:         portfoliov1.Value(14588),
-			Fees:          portfoliov1.Value(855),
-			Time:          timestamppb.New(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)),
+			Id:          "sell",
+			Type:        portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
+			PortfolioId: "mybank-myportfolio",
+			SecurityId:  "US0378331005",
+			Amount:      10,
+			Price:       portfoliov1.Value(14588),
+			Fees:        portfoliov1.Value(855),
+			Time:        timestamppb.New(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)),
 		}))
 	})
 }
@@ -65,7 +65,7 @@ func myPortfolio(t *testing.T) persistence.StorageOperations[*portfoliov1.Portfo
 func myCash(t *testing.T) persistence.StorageOperations[*portfoliov1.BankAccount] {
 	return internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.BankAccount]) {
 		assert.NoError(t, ops.Replace(&portfoliov1.BankAccount{
-			Name:        "mybank-mycash",
+			Id:          "mybank-mycash",
 			DisplayName: "My Cash",
 		}))
 	})
@@ -74,29 +74,29 @@ func myCash(t *testing.T) persistence.StorageOperations[*portfoliov1.BankAccount
 func zeroPositions(t *testing.T) persistence.StorageOperations[*portfoliov1.Portfolio] {
 	return internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Portfolio]) {
 		assert.NoError(t, ops.Replace(&portfoliov1.Portfolio{
-			Name:        "mybank-myportfolio",
+			Id:          "mybank-myportfolio",
 			DisplayName: "My Portfolio",
 		}))
 		rel := persistence.Relationship[*portfoliov1.PortfolioEvent](ops)
 		assert.NoError(t, rel.Replace(&portfoliov1.PortfolioEvent{
-			Name:          "buy",
-			Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
-			PortfolioName: "mybank-myportfolio",
-			SecurityId:    "sec123",
-			Amount:        10,
-			Price:         portfoliov1.Value(10000),
-			Fees:          portfoliov1.Zero(),
-			Time:          timestamppb.New(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)),
+			Id:          "buy",
+			Type:        portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+			PortfolioId: "mybank-myportfolio",
+			SecurityId:  "sec123",
+			Amount:      10,
+			Price:       portfoliov1.Value(10000),
+			Fees:        portfoliov1.Zero(),
+			Time:        timestamppb.New(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)),
 		}))
 		assert.NoError(t, rel.Replace(&portfoliov1.PortfolioEvent{
-			Name:          "sell",
-			Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
-			PortfolioName: "mybank-myportfolio",
-			SecurityId:    "sec123",
-			Amount:        10,
-			Price:         portfoliov1.Value(10000),
-			Fees:          portfoliov1.Zero(),
-			Time:          timestamppb.New(time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)),
+			Id:          "sell",
+			Type:        portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
+			PortfolioId: "mybank-myportfolio",
+			SecurityId:  "sec123",
+			Amount:      10,
+			Price:       portfoliov1.Value(10000),
+			Fees:        portfoliov1.Zero(),
+			Time:        timestamppb.New(time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)),
 		}))
 	})
 }
@@ -104,7 +104,7 @@ func zeroPositions(t *testing.T) persistence.StorageOperations[*portfoliov1.Port
 func emptyPortfolio(t *testing.T) persistence.StorageOperations[*portfoliov1.Portfolio] {
 	return internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Portfolio]) {
 		assert.NoError(t, ops.Replace(&portfoliov1.Portfolio{
-			Name:        "mybank-myportfolio",
+			Id:          "mybank-myportfolio",
 			DisplayName: "My Portfolio",
 		}))
 	})
@@ -135,14 +135,14 @@ func Test_service_CreatePortfolio(t *testing.T) {
 			args: args{
 				req: connect.NewRequest(&portfoliov1.CreatePortfolioRequest{
 					Portfolio: &portfoliov1.Portfolio{
-						Name:        "mybank-myportfolio",
+						Id:          "mybank-myportfolio",
 						DisplayName: "My Portfolio",
 					},
 				}),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.Portfolio]) bool {
 				return true &&
-					assert.Equals(t, "mybank-myportfolio", r.Msg.Name) &&
+					assert.Equals(t, "mybank-myportfolio", r.Msg.Id) &&
 					assert.Equals(t, "My Portfolio", r.Msg.DisplayName)
 			},
 			wantSvc: func(t *testing.T, s *service) bool {
@@ -192,7 +192,7 @@ func Test_service_ListPortfolios(t *testing.T) {
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.ListPortfoliosResponse]) bool {
 				return true &&
-					assert.Equals(t, "mybank-myportfolio", r.Msg.Portfolios[0].Name) &&
+					assert.Equals(t, "mybank-myportfolio", r.Msg.Portfolios[0].Id) &&
 					assert.Equals(t, "My Portfolio", r.Msg.Portfolios[0].DisplayName) &&
 					assert.Equals(t, 2, len(r.Msg.Portfolios[0].Events))
 			},
@@ -238,7 +238,7 @@ func Test_service_GetPortfolio(t *testing.T) {
 			},
 			args: args{
 				req: connect.NewRequest(&portfoliov1.GetPortfolioRequest{
-					Name: "mybank-myportfolio",
+					Id: "mybank-myportfolio",
 				}),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.Portfolio]) bool {
@@ -288,7 +288,7 @@ func Test_service_UpdatePortfolio(t *testing.T) {
 			args: args{
 				req: connect.NewRequest(&portfoliov1.UpdatePortfolioRequest{
 					Portfolio: &portfoliov1.Portfolio{
-						Name:        "mybank-myportfolio",
+						Id:          "mybank-myportfolio",
 						DisplayName: "My Second Portfolio",
 					},
 					UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"display_name"}},
@@ -341,7 +341,7 @@ func Test_service_DeletePortfolio(t *testing.T) {
 			},
 			args: args{
 				req: connect.NewRequest(&portfoliov1.DeletePortfolioRequest{
-					Name: "mybank-myportfolio",
+					Id: "mybank-myportfolio",
 				}),
 			},
 			wantSvc: func(t *testing.T, s *service) bool {

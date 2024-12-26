@@ -39,7 +39,7 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 	)
 
 	// Retrieve transactions
-	p.Events, err = svc.events.List(req.Msg.PortfolioName)
+	p.Events, err = svc.events.List(req.Msg.PortfolioId)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

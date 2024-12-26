@@ -44,7 +44,7 @@ var PortfolioCmd = &cli.Command{
 			Usage:  "Creates a new portfolio",
 			Action: CreatePortfolio,
 			Flags: []cli.Flag{
-				&cli.StringFlag{Name: "name", Usage: "The identifier of the portfolio, e.g. mybank-myportfolio", Required: true},
+				&cli.StringFlag{Name: "id", Usage: "The identifier of the portfolio, e.g. mybank-myportfolio", Required: true},
 				&cli.StringFlag{Name: "display-name", Usage: "The display name of the portfolio"},
 			},
 		},
@@ -59,7 +59,7 @@ var PortfolioCmd = &cli.Command{
 			Usage:  "Shows details about one portfolio",
 			Action: ShowPortfolio,
 			Flags: []cli.Flag{
-				&cli.StringFlag{Name: "portfolio-name", Usage: "The identifier of the portfolio, e.g. mybank-myportfolio", Required: true},
+				&cli.StringFlag{Name: "portfolio-id", Usage: "The identifier of the portfolio, e.g. mybank-myportfolio", Required: true},
 			},
 		},
 		{
@@ -71,8 +71,8 @@ var PortfolioCmd = &cli.Command{
 					Usage:  "Creates a transaction. Defaults to a \"buy\" transaction",
 					Action: CreateTransaction,
 					Flags: []cli.Flag{
-						&cli.StringFlag{Name: "portfolio-name", Usage: "The name of the portfolio where the transaction will be created in", Required: true},
-						&cli.StringFlag{Name: "security-id", Usage: "The name of the security this transaction belongs to (its ISIN)", Required: true},
+						&cli.StringFlag{Name: "portfolio-id", Usage: "The name of the portfolio where the transaction will be created in", Required: true},
+						&cli.StringFlag{Name: "security-id", Usage: "The ID of the security this transaction belongs to (its ISIN)", Required: true},
 						&cli.StringFlag{Name: "type", Usage: "The type of the transaction", Required: true, DefaultText: "buy"},
 						&cli.FloatFlag{Name: "amount", Usage: "The amount of securities involved in the transaction", Required: true},
 						&cli.FloatFlag{Name: "price", Usage: "The price without fees or taxes", Required: true},
@@ -86,7 +86,7 @@ var PortfolioCmd = &cli.Command{
 					Usage:  "Imports transactions from CSV",
 					Action: ImportTransactions,
 					Flags: []cli.Flag{
-						&cli.StringFlag{Name: "portfolio-name", Usage: "The name of the portfolio where the transaction will be created in", Required: true},
+						&cli.StringFlag{Name: "portfolio-id", Usage: "The name of the portfolio where the transaction will be created in", Required: true},
 						&cli.StringFlag{Name: "csv-file", Usage: "The path to the CSV file to import", Required: true},
 					},
 				},
@@ -112,7 +112,7 @@ func ListPortfolio(ctx context.Context, cmd *cli.Command) error {
 			snapshot, _ := s.PortfolioClient.GetPortfolioSnapshot(
 				context.Background(),
 				connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
-					PortfolioName: portfolio.Name,
+					PortfolioId: portfolio.Id,
 				}),
 			)
 
@@ -149,7 +149,7 @@ func CreatePortfolio(ctx context.Context, cmd *cli.Command) error {
 		context.Background(),
 		connect.NewRequest(&portfoliov1.CreatePortfolioRequest{
 			Portfolio: &portfoliov1.Portfolio{
-				Name:        cmd.String("name"),
+				Id:          cmd.String("id"),
 				DisplayName: cmd.String("display-name"),
 			},
 		}),
@@ -168,8 +168,8 @@ func ShowPortfolio(ctx context.Context, cmd *cli.Command) error {
 	res, err := s.PortfolioClient.GetPortfolioSnapshot(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
-			PortfolioName: cmd.String("portfolio-name"),
-			Time:          timestamppb.Now(),
+			PortfolioId: cmd.String("portfolio-id"),
+			Time:        timestamppb.Now(),
 		}),
 	)
 	if err != nil {
@@ -193,14 +193,14 @@ func CreateTransaction(ctx context.Context, cmd *cli.Command) error {
 	s := mcli.FromContext(ctx)
 	var req = connect.NewRequest(&portfoliov1.CreatePortfolioTransactionRequest{
 		Transaction: &portfoliov1.PortfolioEvent{
-			PortfolioName: cmd.String("portfolio-name"),
-			SecurityId:    cmd.String("security-id"),
-			Type:          eventTypeFrom(cmd.String("type")),
-			Amount:        cmd.Float("amount"),
-			Time:          timeOrNow(cmd.Timestamp("time")),
-			Price:         portfoliov1.Value(int32(cmd.Float("price") * 100)),
-			Fees:          portfoliov1.Value(int32(cmd.Float("fees") * 100)),
-			Taxes:         portfoliov1.Value(int32(cmd.Float("taxes") * 100)),
+			PortfolioId: cmd.String("portfolio-id"),
+			SecurityId:  cmd.String("security-id"),
+			Type:        eventTypeFrom(cmd.String("type")),
+			Amount:      cmd.Float("amount"),
+			Time:        timeOrNow(cmd.Timestamp("time")),
+			Price:       portfoliov1.Value(int32(cmd.Float("price") * 100)),
+			Fees:        portfoliov1.Value(int32(cmd.Float("fees") * 100)),
+			Taxes:       portfoliov1.Value(int32(cmd.Float("taxes") * 100)),
 		},
 	})
 
@@ -211,9 +211,9 @@ func CreateTransaction(ctx context.Context, cmd *cli.Command) error {
 
 	fmt.Printf("Successfully created a %s transaction (%s) for security %s in %s.\n",
 		color.CyanString(cmd.String("type")),
-		color.GreenString(res.Msg.Name),
+		color.GreenString(res.Msg.Id),
 		color.CyanString(res.Msg.SecurityId),
-		color.CyanString(res.Msg.PortfolioName),
+		color.CyanString(res.Msg.PortfolioId),
 	)
 
 	return nil
@@ -259,8 +259,8 @@ func ImportTransactions(ctx context.Context, cmd *cli.Command) error {
 	res, err := s.PortfolioClient.ImportTransactions(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.ImportTransactionsRequest{
-			PortfolioName: cmd.String("portfolio-name"),
-			FromCsv:       string(b),
+			PortfolioId: cmd.String("portfolio-id"),
+			FromCsv:     string(b),
 		}),
 	)
 	if err != nil {
@@ -283,6 +283,6 @@ func PredictPortfolios(ctx context.Context, cmd *cli.Command) {
 	}
 
 	for _, p := range res.Msg.Portfolios {
-		fmt.Fprintf(cmd.Root().Writer, "%s:%s\n", p.Name, p.DisplayName)
+		fmt.Fprintf(cmd.Root().Writer, "%s:%s\n", p.Id, p.DisplayName)
 	}
 }

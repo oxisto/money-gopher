@@ -38,7 +38,7 @@ var BankAccountCmd = &cli.Command{
 			Usage:  "Creates a new bank account",
 			Action: CreateBankAccount,
 			Flags: []cli.Flag{
-				&cli.StringFlag{Name: "name", Usage: "The identifier of the portfolio, e.g. mybank-myportfolio", Required: true},
+				&cli.StringFlag{Name: "id", Usage: "The identifier of the portfolio, e.g. mybank-myportfolio", Required: true},
 				&cli.StringFlag{Name: "display-name", Usage: "The display name of the portfolio"},
 			},
 		},
@@ -52,7 +52,7 @@ func CreateBankAccount(ctx context.Context, cmd *cli.Command) error {
 		context.Background(),
 		connect.NewRequest(&portfoliov1.CreateBankAccountRequest{
 			BankAccount: &portfoliov1.BankAccount{
-				Name:        cmd.String("name"),
+				Id:          cmd.String("id"),
 				DisplayName: cmd.String("display-name"),
 			},
 		}),

@@ -61,19 +61,19 @@ func (tx *PortfolioEvent) MakeUniqueName() {
 	//  - amount
 	h := fnv.New64a()
 	h.Write([]byte(tx.SecurityId))
-	h.Write([]byte(tx.PortfolioName))
+	h.Write([]byte(tx.PortfolioId))
 	h.Write([]byte(tx.Time.AsTime().Local().Format(time.DateTime)))
 	h.Write([]byte(strconv.FormatInt(int64(tx.Type), 10)))
 	h.Write([]byte(strconv.FormatInt(int64(tx.Amount), 10)))
 
-	tx.Name = strconv.FormatUint(h.Sum64(), 16)
+	tx.Id = strconv.FormatUint(h.Sum64(), 16)
 }
 
 // LogValue implements slog.LogValuer.
 func (tx *PortfolioEvent) LogValue() slog.Value {
 	return slog.GroupValue(
-		slog.String("name", tx.Name),
-		slog.String("security.name", tx.SecurityId),
+		slog.String("id", tx.Id),
+		slog.String("security.id", tx.SecurityId),
 		slog.Float64("amount", float64(tx.Amount)),
 		slog.String("price", tx.Price.Pretty()),
 		slog.String("fees", tx.Fees.Pretty()),
@@ -84,7 +84,7 @@ func (tx *PortfolioEvent) LogValue() slog.Value {
 // LogValue implements slog.LogValuer.
 func (ls *ListedSecurity) LogValue() slog.Value {
 	return slog.GroupValue(
-		slog.String("name", ls.SecurityId),
+		slog.String("id", ls.SecurityId),
 		slog.String("ticker", ls.Ticker),
 	)
 }

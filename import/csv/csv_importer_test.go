@@ -102,7 +102,7 @@ func Test_readLine(t *testing.T) {
 				}(),
 			},
 			wantTx: &portfoliov1.PortfolioEvent{
-				Name:       "9e7b470b7566beca",
+				Id:         "9e7b470b7566beca",
 				SecurityId: "US0378331005",
 				Type:       portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
 				Time:       timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 0, time.Local)),
@@ -134,7 +134,7 @@ func Test_readLine(t *testing.T) {
 				}(),
 			},
 			wantTx: &portfoliov1.PortfolioEvent{
-				Name:       "1070dafc882785a0",
+				Id:         "1070dafc882785a0",
 				SecurityId: "US00827B1061",
 				Type:       portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
 				Time:       timestamppb.New(time.Date(2022, 1, 1, 9, 0, 0, 0, time.Local)),
@@ -166,7 +166,7 @@ func Test_readLine(t *testing.T) {
 				}(),
 			},
 			wantTx: &portfoliov1.PortfolioEvent{
-				Name:       "8bb43fed65b35685",
+				Id:         "8bb43fed65b35685",
 				SecurityId: "DE0005557508",
 				Type:       portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
 				Time:       timestamppb.New(time.Date(2022, 1, 1, 8, 0, 6, 0, time.Local)),

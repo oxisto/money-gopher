@@ -1,4 +1,4 @@
-import client, { PortfolioEvent } from "@/lib/api";
+import client, { SchemaPortfolioEvent } from "@/lib/api";
 import { dateTimeLocalFormat } from "@/lib/util";
 import dayjs from "dayjs";
 import { revalidatePath } from "next/cache";
@@ -8,24 +8,24 @@ export async function modifyTransaction(formData: FormData) {
   "use server";
 
   // Build a portfolio transaction from the formdata
-  let event: PortfolioEvent = formDataToPortfolioEvent(formData);
+  let event: SchemaPortfolioEvent = formDataToPortfolioEvent(formData);
   const newEvent =
-    event.name == "new"
+    event.id == "new"
       ? await createTransaction(event)
       : await editTransaction(event);
-  revalidatePath(`/portfolios/${newEvent.portfolioName}/transactions`);
-  redirect(`/portfolios/${newEvent.portfolioName}/transactions`);
+  revalidatePath(`/portfolios/${newEvent.portfolioId}/transactions`);
+  redirect(`/portfolios/${newEvent.portfolioId}/transactions`);
 }
 
 async function createTransaction(
-  event: PortfolioEvent,
-): Promise<PortfolioEvent> {
+  event: SchemaPortfolioEvent,
+): Promise<SchemaPortfolioEvent> {
   const { data: newEvent, error } = await client.POST(
-    "/v1/portfolios/{transaction.portfolio_name}/transactions",
+    "/v1/portfolios/{transaction.portfolio_id}/transactions",
     {
       params: {
         path: {
-          "transaction.portfolio_name": event.portfolioName,
+          "transaction.portfolio_id": event.portfolioId,
         },
       },
       body: event,
@@ -37,13 +37,13 @@ async function createTransaction(
   return newEvent;
 }
 
-async function editTransaction(event: PortfolioEvent): Promise<PortfolioEvent> {
+async function editTransaction(event: SchemaPortfolioEvent): Promise<SchemaPortfolioEvent> {
   const { data: newEvent, error } = await client.PUT(
-    "/v1/transactions/{transaction.name}",
+    "/v1/transactions/{transaction.id}",
     {
       params: {
         path: {
-          "transaction.name": event.name,
+          "transaction.id": event.id,
         },
         query: {
           updateMask: "amount,price,fees,taxes,securityName,time",
@@ -58,11 +58,11 @@ async function editTransaction(event: PortfolioEvent): Promise<PortfolioEvent> {
   return newEvent;
 }
 
-function formDataToPortfolioEvent(formData: FormData): PortfolioEvent {
+function formDataToPortfolioEvent(formData: FormData): SchemaPortfolioEvent {
   return {
-    name: formData.get("name")?.toString() ?? "",
-    portfolioName: formData.get("portfolioName")?.toString() ?? "",
-    securityName: formData.get("securityName[value]")?.toString() ?? "",
+    id: formData.get("id")?.toString() ?? "",
+    portfolioId: formData.get("portfolioId")?.toString() ?? "",
+    securityId: formData.get("securityId[value]")?.toString() ?? "",
     type:
       (formData.get("type[value]")?.toString() as
         | "PORTFOLIO_EVENT_TYPE_UNSPECIFIED"

@@ -106,7 +106,7 @@ func Test_service_GetSecurity(t *testing.T) {
 				}),
 			},
 			args: args{
-				req: connect.NewRequest(&portfoliov1.GetSecurityRequest{Name: "My Security"}),
+				req: connect.NewRequest(&portfoliov1.GetSecurityRequest{Id: "My Security"}),
 			},
 			wantRes: func(t *testing.T, s *portfoliov1.Security) bool {
 				return assert.Equals(t, &portfoliov1.Security{
@@ -204,7 +204,7 @@ func Test_service_DeleteSecurity(t *testing.T) {
 				}),
 			},
 			args: args{req: connect.NewRequest(&portfoliov1.DeleteSecurityRequest{
-				Name: "My Stock",
+				Id: "My Stock",
 			})},
 			wantRes: func(t *testing.T, e *emptypb.Empty) bool {
 				return assert.Equals(t, &emptypb.Empty{}, e)

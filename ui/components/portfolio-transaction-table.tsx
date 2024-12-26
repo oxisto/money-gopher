@@ -1,43 +1,43 @@
 import TableSorter from "@/components//table-sorter";
 import PortfolioTransactionRow from "@/components/portfolio-transaction-row";
-import client, { PortfolioEvent } from "@/lib/api";
+import client, { SchemaPortfolioEvent } from "@/lib/api";
 
 interface PortfolioTransactionTableProps {
-  events: PortfolioEvent[];
+  events: SchemaPortfolioEvent[];
 }
 
-let sortBy = "name";
+let sortBy = "id";
 let asc = false;
 
 const sorters = new Map<
   string,
-  (a: PortfolioEvent, b: PortfolioEvent) => number
+  (a: SchemaPortfolioEvent, b: SchemaPortfolioEvent) => number
 >();
-sorters.set("time", (a: PortfolioEvent, b: PortfolioEvent) => {
+sorters.set("time", (a: SchemaPortfolioEvent, b: SchemaPortfolioEvent) => {
   return (a.time ?? 0) < (b.time ?? 0) ? -1 : 1;
 });
-sorters.set("securityName", (a: PortfolioEvent, b: PortfolioEvent) => {
+sorters.set("securityName", (a: SchemaPortfolioEvent, b: SchemaPortfolioEvent) => {
   return a.securityName.localeCompare(b.securityName);
 });
-sorters.set("amount", (a: PortfolioEvent, b: PortfolioEvent) => {
+sorters.set("amount", (a: SchemaPortfolioEvent, b: SchemaPortfolioEvent) => {
   return a.amount - b.amount;
 });
-sorters.set("price", (a: PortfolioEvent, b: PortfolioEvent) => {
+sorters.set("price", (a: SchemaPortfolioEvent, b: SchemaPortfolioEvent) => {
   return (a.price?.value ?? 0) - (b.price?.value ?? 0);
 });
-sorters.set("fees", (a: PortfolioEvent, b: PortfolioEvent) => {
+sorters.set("fees", (a: SchemaPortfolioEvent, b: SchemaPortfolioEvent) => {
   return (a.fees?.value ?? 0) - (b.fees?.value ?? 0);
 });
-sorters.set("taxes", (a: PortfolioEvent, b: PortfolioEvent) => {
+sorters.set("taxes", (a: SchemaPortfolioEvent, b: SchemaPortfolioEvent) => {
   return (a.taxes?.value ?? 0) - (b.taxes?.value ?? 0);
 });
 
 function getPositions(
-  transactions: PortfolioEvent[],
+  transactions: SchemaPortfolioEvent[],
   sortBy: string,
   asc: boolean
-): PortfolioEvent[] {
-  return transactions.sort((a: PortfolioEvent, b: PortfolioEvent) => {
+): SchemaPortfolioEvent[] {
+  return transactions.sort((a: SchemaPortfolioEvent, b: SchemaPortfolioEvent) => {
     const sort = sorters.get(sortBy)?.call(null, a, b) ?? 0;
     return asc ? sort : -sort;
   });

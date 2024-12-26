@@ -20,7 +20,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/portfolios/{name}": {
+    "/v1/portfolios/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -36,7 +36,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/portfolios/{portfolioName}/snapshot": {
+    "/v1/portfolios/{portfolioId}/snapshot": {
         parameters: {
             query?: never;
             header?: never;
@@ -52,7 +52,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/portfolios/{portfolioName}/transactions": {
+    "/v1/portfolios/{portfolioId}/transactions": {
         parameters: {
             query?: never;
             header?: never;
@@ -68,7 +68,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/portfolios/{transaction.portfolio_name}/transactions": {
+    "/v1/portfolios/{transaction.portfolio_id}/transactions": {
         parameters: {
             query?: never;
             header?: never;
@@ -100,7 +100,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/securities/{name}": {
+    "/v1/securities/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -116,7 +116,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/transactions/{name}": {
+    "/v1/transactions/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -132,7 +132,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/transactions/{transaction.name}": {
+    "/v1/transactions/{transaction.id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -176,7 +176,7 @@ export interface components {
             securities: components["schemas"]["Security"][];
         };
         ListedSecurity: {
-            securityName: string;
+            securityId: string;
             ticker: string;
             currency: string;
             latestQuote?: components["schemas"]["Currency"];
@@ -184,17 +184,17 @@ export interface components {
             latestQuoteTimestamp?: string;
         };
         Portfolio: {
-            name: string;
+            id: string;
             displayName: string;
-            /** @description BankAccountName contains the name/identifier of the underlying bank
+            /** @description BankAccountId contains the id/identifier of the underlying bank
              *      account. */
-            bankAccountName: string;
+            bankAccountId: string;
             /** @description Events contains all portfolio events, such as buy/sell transactions,
              *      dividends or other. They need to be ordered by time (ascending). */
             events?: components["schemas"]["PortfolioEvent"][];
         };
         PortfolioEvent: {
-            name: string;
+            id: string;
             /**
              * Format: enum
              * @enum {string}
@@ -202,8 +202,8 @@ export interface components {
             type: "PORTFOLIO_EVENT_TYPE_UNSPECIFIED" | "PORTFOLIO_EVENT_TYPE_BUY" | "PORTFOLIO_EVENT_TYPE_SELL" | "PORTFOLIO_EVENT_TYPE_DELIVERY_INBOUND" | "PORTFOLIO_EVENT_TYPE_DELIVERY_OUTBOUND" | "PORTFOLIO_EVENT_TYPE_DIVIDEND" | "PORTFOLIO_EVENT_TYPE_INTEREST" | "PORTFOLIO_EVENT_TYPE_DEPOSIT_CASH" | "PORTFOLIO_EVENT_TYPE_WITHDRAW_CASH" | "PORTFOLIO_EVENT_TYPE_ACCOUNT_FEES" | "PORTFOLIO_EVENT_TYPE_TAX_REFUND";
             /** Format: date-time */
             time: string;
-            portfolioName: string;
-            securityName: string;
+            portfolioId: string;
+            securityId: string;
             /** Format: double */
             amount: number;
             price: components["schemas"]["Currency"];
@@ -278,10 +278,10 @@ export interface components {
             totalPortfolioValue: components["schemas"]["Currency"];
         };
         Security: {
-            /** @description Name contains the unique resource name. For a stock or bond, this should be
+            /** @description Id contains the unique resource ID. For a stock or bond, this should be
              *      an ISIN. */
-            name: string;
-            /** @description DisplayName contains the human readable name. */
+            id: string;
+            /** @description DisplayName contains the human readable id. */
             displayName: string;
             listedOn: components["schemas"]["ListedSecurity"][];
             quoteProvider: string;
@@ -386,7 +386,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                name: string;
+                id: string;
             };
             cookie?: never;
         };
@@ -420,9 +420,9 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description PortfolioName is the name / identifier of the portfolio we want to
+                /** @description PortfolioId is the identifier of the portfolio we want to
                  *      "snapshot". */
-                portfolioName: string;
+                portfolioId: string;
             };
             cookie?: never;
         };
@@ -453,7 +453,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                portfolioName: string;
+                portfolioId: string;
             };
             cookie?: never;
         };
@@ -484,7 +484,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                "transaction.portfolio_name": string;
+                "transaction.portfolio_id": string;
             };
             cookie?: never;
         };
@@ -517,7 +517,7 @@ export interface operations {
     SecuritiesService_ListSecurities: {
         parameters: {
             query?: {
-                "filter.securityNames"?: string[];
+                "filter.securityIds"?: string[];
             };
             header?: never;
             path?: never;
@@ -550,7 +550,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                name: string;
+                id: string;
             };
             cookie?: never;
         };
@@ -581,7 +581,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                name: string;
+                id: string;
             };
             cookie?: never;
         };
@@ -614,7 +614,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                "transaction.name": string;
+                "transaction.id": string;
             };
             cookie?: never;
         };

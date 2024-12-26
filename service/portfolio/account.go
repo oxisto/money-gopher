@@ -40,7 +40,7 @@ func (svc *service) CreateBankAccount(ctx context.Context, req *connect.Request[
 
 func (svc *service) UpdateBankAccount(ctx context.Context, req *connect.Request[portfoliov1.UpdateBankAccountRequest]) (res *connect.Response[portfoliov1.BankAccount], err error) {
 	return crud.Update(
-		req.Msg.Account.Name,
+		req.Msg.Account.Id,
 		req.Msg.Account,
 		req.Msg.UpdateMask.Paths,
 		svc.bankAccounts,
@@ -51,5 +51,5 @@ func (svc *service) UpdateBankAccount(ctx context.Context, req *connect.Request[
 }
 
 func (svc *service) DeleteBankAccount(ctx context.Context, req *connect.Request[portfoliov1.DeleteBankAccountRequest]) (res *connect.Response[emptypb.Empty], err error) {
-	return crud.Delete(req.Msg.Name, svc.bankAccounts)
+	return crud.Delete(req.Msg.Id, svc.bankAccounts)
 }

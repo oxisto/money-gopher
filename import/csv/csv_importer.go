@@ -158,7 +158,7 @@ func readLine(cr *csv.Reader, pname string) (tx *portfoliov1.PortfolioEvent, sec
 		sec.QuoteProvider = moneygopher.Ref(securities.QuoteProviderING)
 	}
 
-	tx.PortfolioName = pname
+	tx.PortfolioId = pname
 	tx.SecurityId = sec.Id
 	tx.MakeUniqueName()
 

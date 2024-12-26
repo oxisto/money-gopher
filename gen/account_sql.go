@@ -26,7 +26,7 @@ import (
 
 func (*BankAccount) InitTables(db *persistence.DB) (err error) {
 	_, err1 := db.Exec(`CREATE TABLE IF NOT EXISTS bank_accounts (
-name TEXT PRIMARY KEY,
+id TEXT PRIMARY KEY,
 display_name TEXT NOT NULL
 );`)
 	err2 := (&PortfolioEvent{}).InitTables(db)
@@ -35,15 +35,15 @@ display_name TEXT NOT NULL
 }
 
 func (*BankAccount) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`REPLACE INTO bank_accounts (name, display_name) VALUES (?,?);`)
+	return db.Prepare(`REPLACE INTO bank_accounts (id, display_name) VALUES (?,?);`)
 }
 
 func (*BankAccount) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`SELECT name, display_name FROM bank_accounts`)
+	return db.Prepare(`SELECT id, display_name FROM bank_accounts`)
 }
 
 func (*BankAccount) PrepareGet(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`SELECT name, display_name FROM bank_accounts WHERE name = ?`)
+	return db.Prepare(`SELECT id, display_name FROM bank_accounts WHERE id = ?`)
 }
 
 func (*BankAccount) PrepareUpdate(db *persistence.DB, columns []string) (stmt *sql.Stmt, err error) {
@@ -58,24 +58,24 @@ func (*BankAccount) PrepareUpdate(db *persistence.DB, columns []string) (stmt *s
 		set[i] = persistence.Quote(col) + " = ?"
 	}
 
-	query += "UPDATE bank_accounts SET " + strings.Join(set, ", ") + " WHERE name = ?;"
+	query += "UPDATE bank_accounts SET " + strings.Join(set, ", ") + " WHERE id = ?;"
 
 	return db.Prepare(query)
 }
 
 func (*BankAccount) PrepareDelete(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`DELETE FROM bank_accounts WHERE name = ?`)
+	return db.Prepare(`DELETE FROM bank_accounts WHERE id = ?`)
 }
 
 func (p *BankAccount) ReplaceIntoArgs() []any {
-	return []any{p.Name, p.DisplayName}
+	return []any{p.Id, p.DisplayName}
 }
 
 func (p *BankAccount) UpdateArgs(columns []string) (args []any) {
 	for _, col := range columns {
 		switch col {
-		case "name":
-			args = append(args, p.Name)
+		case "id":
+			args = append(args, p.Id)
 		case "display_name":
 			args = append(args, p.DisplayName)
 		}
@@ -89,7 +89,7 @@ func (*BankAccount) Scan(sc persistence.Scanner) (obj persistence.StorageObject,
 		acc BankAccount
 	)
 
-	err = sc.Scan(&acc.Name, &acc.DisplayName)
+	err = sc.Scan(&acc.Id, &acc.DisplayName)
 	if err != nil {
 		return nil, err
 	}

@@ -5,13 +5,13 @@ import FormattedCurrency from "@/components/formatted-currency";
 import CurrencyInput from "@/components/forms/currency-input";
 import DateInput from "@/components/forms/date-input";
 import ListBox from "@/components/forms/listbox";
-import { Currency, PortfolioEvent, Security } from "@/lib/api";
+import { SchemaCurrency, SchemaPortfolioEvent, SchemaSecurity } from "@/lib/api";
 import { useMemo, useState } from "react";
 
 interface EditPortfolioTransactionFormProps {
   create: Boolean;
-  event: PortfolioEvent;
-  securities: Security[];
+  event: SchemaPortfolioEvent;
+  securities: SchemaSecurity[];
   action: (formData: FormData) => void;
 }
 
@@ -28,7 +28,7 @@ export default function EditPortfolioTransactionForm({
       data.type == "PORTFOLIO_EVENT_TYPE_SELL",
     [data],
   );
-  const total = useMemo<Currency>(() => {
+  const total = useMemo<SchemaCurrency>(() => {
     return {
       value:
         data.amount * (data.price.value ?? 0) +
@@ -64,7 +64,7 @@ export default function EditPortfolioTransactionForm({
 
   return (
     <form action={action}>
-      <input type="hidden" name="name" value={data.name} />
+      <input type="hidden" name="id" value={data.name} />
       <input type="hidden" name="portfolioName" value={data.portfolioName} />
       <div className="space-y-12 sm:space-y-16">
         <div>

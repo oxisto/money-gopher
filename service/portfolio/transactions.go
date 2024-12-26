@@ -79,7 +79,7 @@ func (svc *service) CreatePortfolioTransaction(ctx context.Context, req *connect
 
 func (svc *service) GetPortfolioTransaction(ctx context.Context, req *connect.Request[portfoliov1.GetPortfolioTransactionRequest]) (res *connect.Response[portfoliov1.PortfolioEvent], err error) {
 	return crud.Get(
-		req.Msg.Name,
+		req.Msg.Id,
 		svc.events,
 		func(obj *portfoliov1.PortfolioEvent) *portfoliov1.PortfolioEvent {
 			return obj
@@ -97,7 +97,7 @@ func (svc *service) ListPortfolioTransactions(ctx context.Context, req *connect.
 			res.Msg.Transactions = list
 			return nil
 		},
-		req.Msg.PortfolioName,
+		req.Msg.PortfolioId,
 	)
 }
 
@@ -109,7 +109,7 @@ func (svc *service) UpdatePortfolioTransaction(ctx context.Context, req *connect
 	)
 
 	return crud.Update(
-		req.Msg.Transaction.Name,
+		req.Msg.Transaction.Id,
 		req.Msg.Transaction,
 		req.Msg.UpdateMask.Paths,
 		svc.events,
@@ -130,7 +130,7 @@ func (svc *service) ImportTransactions(ctx context.Context, req *connect.Request
 		secs []*portfoliov1.Security
 	)
 
-	txs, secs = csv.Import(bytes.NewReader([]byte(req.Msg.FromCsv)), req.Msg.PortfolioName)
+	txs, secs = csv.Import(bytes.NewReader([]byte(req.Msg.FromCsv)), req.Msg.PortfolioId)
 
 	for _, sec := range secs {
 		// TODO(oxisto): Once "Create" is really create and not replace, we need

@@ -43,7 +43,7 @@ func (svc *service) CreateSecurity(ctx context.Context, req *connect.Request[por
 
 func (svc *service) GetSecurity(ctx context.Context, req *connect.Request[portfoliov1.GetSecurityRequest]) (res *connect.Response[portfoliov1.Security], err error) {
 	return crud.Get(
-		req.Msg.Name,
+		req.Msg.Id,
 		svc.securities,
 		func(obj *portfoliov1.Security) *portfoliov1.Security {
 			obj.ListedOn, _ = svc.listedSecurities.List(obj.Id)
@@ -91,7 +91,7 @@ func (svc *service) UpdateSecurity(ctx context.Context, req *connect.Request[por
 
 func (svc *service) DeleteSecurity(ctx context.Context, req *connect.Request[portfoliov1.DeleteSecurityRequest]) (res *connect.Response[emptypb.Empty], err error) {
 	return crud.Delete(
-		req.Msg.Name,
+		req.Msg.Id,
 		svc.securities,
 	)
 }
