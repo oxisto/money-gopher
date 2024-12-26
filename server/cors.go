@@ -22,8 +22,8 @@ import (
 	"strings"
 )
 
-// HandleCORS is a middleware that handles CORS headers.
-func HandleCORS(h http.Handler) http.Handler {
+// handleCORS is a middleware that handles CORS headers.
+func handleCORS(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Add("Vary", "Origin")

@@ -1,77 +1,74 @@
+// Copyright 2024 Christian Banse
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// This file is part of The Money Gopher.
+
 package commands
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"log/slog"
-	"net/http"
 	"os"
 	"time"
 
-	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	"github.com/oxisto/money-gopher/persistence"
 	"github.com/oxisto/money-gopher/server"
-	"github.com/oxisto/money-gopher/service/portfolio"
-	"github.com/oxisto/money-gopher/service/securities"
 
-	"connectrpc.com/connect"
-	"connectrpc.com/vanguard"
 	"github.com/lmittmann/tint"
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
-	oauth2 "github.com/oxisto/oauth2go"
-	"github.com/oxisto/oauth2go/login"
-	"github.com/oxisto/oauth2go/storage"
 	"github.com/urfave/cli/v3"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 )
 
-var cfg moneydConfig
+// opts holds the options for the server.
+var opts server.Options
 
-type moneydConfig struct {
-	Debug bool
-
-	EmbeddedOAuth2ServerDashboardCallback string
-
-	PrivateKeyFile     string
-	PrivateKeyPassword string
-}
-
+// ServerCmd is the command to start the Money Gopher server.
 var ServerCmd = &cli.Command{
 	Name:  "moneyd",
 	Usage: "Starts the Money Gopher server.",
 	Flags: []cli.Flag{
 		&cli.BoolFlag{Name: "debug", Aliases: []string{"d"},
-			Destination: &cfg.Debug},
+			Destination: &opts.Debug},
 		&cli.StringFlag{
 			Name:        "embedded-oauth2-server-dashboard-callback",
 			Value:       "http://localhost:3000/api/auth/callback/money-gopher",
 			Usage:       "Specifies the callback URL for the dashboard, if the embedded oauth2 server is used",
-			Destination: &cfg.EmbeddedOAuth2ServerDashboardCallback,
+			Destination: &opts.EmbeddedOAuth2ServerDashboardCallback,
 		},
 		&cli.StringFlag{
 			Name:        "private-key-file",
 			Value:       "private.key",
-			Destination: &cfg.PrivateKeyFile,
+			Destination: &opts.PrivateKeyFile,
 		},
 		&cli.StringFlag{
 			Name:        "private-key-password",
 			Value:       "moneymoneymoney",
-			Destination: &cfg.PrivateKeyPassword,
+			Destination: &opts.PrivateKeyPassword,
 		},
 	},
 	Action: RunServer,
 }
 
+// RunServer is the action for the server command.
 func RunServer(ctx context.Context, cmd *cli.Command) error {
 	var (
-		w       = os.Stdout
-		level   = slog.LevelInfo
-		authSrv *oauth2.AuthorizationServer
+		w     = os.Stdout
+		level = slog.LevelInfo
 	)
 
-	if cfg.Debug {
+	if opts.Debug {
 		level = slog.LevelDebug
 	}
 
@@ -92,59 +89,5 @@ func RunServer(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	authSrv = oauth2.NewServer(
-		":8000",
-		oauth2.WithClient("dashboard", "", cfg.EmbeddedOAuth2ServerDashboardCallback),
-		oauth2.WithClient("cli", "", "http://localhost:10000/callback"),
-		oauth2.WithPublicURL("http://localhost:8000"),
-		login.WithLoginPage(
-			login.WithUser("money", "money"),
-		),
-		oauth2.WithAllowedOrigins("*"),
-		oauth2.WithSigningKeysFunc(func() map[int]*ecdsa.PrivateKey {
-			return storage.LoadSigningKeys(cfg.PrivateKeyFile, cfg.PrivateKeyPassword, true)
-		}),
-	)
-	go authSrv.ListenAndServe()
-
-	interceptors := connect.WithInterceptors(
-		server.NewSimpleLoggingInterceptor(),
-		server.NewAuthInterceptor(),
-	)
-
-	portfolioService := vanguard.NewService(
-		portfoliov1connect.NewPortfolioServiceHandler(portfolio.NewService(
-			portfolio.Options{
-				DB:               pdb,
-				SecuritiesClient: portfoliov1connect.NewSecuritiesServiceClient(http.DefaultClient, portfolio.DefaultSecuritiesServiceURL),
-			},
-		), interceptors))
-	securitiesService := vanguard.NewService(
-		portfoliov1connect.NewSecuritiesServiceHandler(securities.NewService(pdb), interceptors),
-	)
-
-	transcoder, err := vanguard.NewTranscoder([]*vanguard.Service{
-		portfolioService,
-		securitiesService,
-	}, vanguard.WithCodec(func(tr vanguard.TypeResolver) vanguard.Codec {
-		codec := vanguard.NewJSONCodec(tr)
-		codec.MarshalOptions.EmitDefaultValues = true
-		return codec
-	}))
-	if err != nil {
-		slog.Error("transcoder failed", tint.Err(err))
-		return err
-	}
-
-	mux := http.NewServeMux()
-	mux.Handle("/", transcoder)
-
-	err = http.ListenAndServe(
-		":8080",
-		h2c.NewHandler(server.HandleCORS(mux), &http2.Server{}),
-	)
-
-	slog.Error("listen failed", tint.Err(err))
-
-	return err
+	return server.StartServer(pdb, opts)
 }
