@@ -8,7 +8,7 @@ import { Suspense } from "react";
 import "./globals.css";
 
 const inter = localFont({
-  src: "fonts/interVariable.woff2",
+  src: "../public/fonts/interVariable.woff2",
   variable: "--sans",
 });
 

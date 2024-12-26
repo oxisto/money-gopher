@@ -42,6 +42,6 @@ jobs:
       - name: Build UI
         run: |
           npm install
-          ls -l fonts/interVariable.woff2
+          ls -l public/fonts/interVariable.woff2
           npm run build
         working-directory: ./ui
