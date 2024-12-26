@@ -31,6 +31,7 @@ var CLI = &cli.Command{
 	Commands: []*cli.Command{
 		PortfolioCmd,
 		SecuritiesCmd,
+		BankAccountCmd,
 		LoginCmd,
 	},
 }

@@ -26,10 +26,10 @@ import (
 
 	mcli "github.com/oxisto/money-gopher/cli"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
-	"github.com/urfave/cli/v3"
 
 	"connectrpc.com/connect"
 	"github.com/fatih/color"
+	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
