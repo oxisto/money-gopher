@@ -160,7 +160,7 @@ func readLine(cr *csv.Reader, pname string) (tx *portfoliov1.PortfolioEvent, sec
 
 	tx.PortfolioId = pname
 	tx.SecurityId = sec.Id
-	tx.MakeUniqueName()
+	tx.MakeUniqueID()
 
 	return
 }

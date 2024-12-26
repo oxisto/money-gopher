@@ -46,7 +46,7 @@ async function editTransaction(event: SchemaPortfolioEvent): Promise<SchemaPortf
           "transaction.id": event.id,
         },
         query: {
-          updateMask: "amount,price,fees,taxes,securityName,time",
+          updateMask: "amount,price,fees,taxes,securityId,time",
         },
       },
       body: event,

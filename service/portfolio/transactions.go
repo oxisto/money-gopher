@@ -35,9 +35,9 @@ var portfolioEventSetter = func(obj *portfoliov1.PortfolioEvent) *portfoliov1.Po
 }
 
 var (
-	ErrMissingSecurityName = errors.New("the specified transaction type requires a security name")
-	ErrMissingPrice        = errors.New("a transaction requires a price")
-	ErrMissingAmount       = errors.New("the specified transaction type requires an amount")
+	ErrMissingSecurityId = errors.New("the specified transaction type requires a security ID")
+	ErrMissingPrice      = errors.New("a transaction requires a price")
+	ErrMissingAmount     = errors.New("the specified transaction type requires an amount")
 )
 
 func (svc *service) CreatePortfolioTransaction(ctx context.Context, req *connect.Request[portfoliov1.CreatePortfolioTransactionRequest]) (res *connect.Response[portfoliov1.PortfolioEvent], err error) {
@@ -51,7 +51,7 @@ func (svc *service) CreatePortfolioTransaction(ctx context.Context, req *connect
 		fallthrough
 	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY:
 		if tx.SecurityId == "" {
-			return nil, connect.NewError(connect.CodeInvalidArgument, ErrMissingSecurityName)
+			return nil, connect.NewError(connect.CodeInvalidArgument, ErrMissingSecurityId)
 		} else if tx.Amount == 0 {
 			return nil, connect.NewError(connect.CodeInvalidArgument, ErrMissingAmount)
 		}
@@ -63,7 +63,7 @@ func (svc *service) CreatePortfolioTransaction(ctx context.Context, req *connect
 	}
 
 	// Create a unique name for the transaction
-	tx.MakeUniqueName()
+	tx.MakeUniqueID()
 
 	slog.Info(
 		"Creating transaction",

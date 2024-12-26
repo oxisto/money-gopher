@@ -68,7 +68,7 @@ func TestPortfolioEvent_MakeUniqueName(t *testing.T) {
 				Fees:        tt.fields.Fees,
 				Taxes:       tt.fields.Taxes,
 			}
-			tx.MakeUniqueName()
+			tx.MakeUniqueID()
 			tt.want(t, tx)
 		})
 	}

@@ -95,7 +95,7 @@ func Test_service_CreatePortfolioTransaction(t *testing.T) {
 			},
 		},
 		{
-			name: "missing security name",
+			name: "missing security ID",
 			fields: fields{
 				portfolios: myPortfolio(t),
 			},

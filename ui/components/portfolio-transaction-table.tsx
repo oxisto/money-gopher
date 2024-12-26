@@ -16,8 +16,8 @@ const sorters = new Map<
 sorters.set("time", (a: SchemaPortfolioEvent, b: SchemaPortfolioEvent) => {
   return (a.time ?? 0) < (b.time ?? 0) ? -1 : 1;
 });
-sorters.set("securityName", (a: SchemaPortfolioEvent, b: SchemaPortfolioEvent) => {
-  return a.securityName.localeCompare(b.securityName);
+sorters.set("securityId", (a: SchemaPortfolioEvent, b: SchemaPortfolioEvent) => {
+  return a.securityId.localeCompare(b.securityId);
 });
 sorters.set("amount", (a: SchemaPortfolioEvent, b: SchemaPortfolioEvent) => {
   return a.amount - b.amount;
@@ -37,7 +37,7 @@ function getPositions(
   sortBy: string,
   asc: boolean
 ): SchemaPortfolioEvent[] {
-  return transactions.sort((a: SchemaPortfolioEvent, b: SchemaPortfolioEvent) => {
+  return transactions?.sort((a: SchemaPortfolioEvent, b: SchemaPortfolioEvent) => {
     const sort = sorters.get(sortBy)?.call(null, a, b) ?? 0;
     return asc ? sort : -sort;
   });
@@ -170,12 +170,12 @@ export default async function PortfolioTransactionTable({
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200">
-          {sorted.map((event, idx) => (
+          {sorted?.map((event, idx) => (
             <PortfolioTransactionRow
               event={event}
               key={idx}
               security={securities.find(
-                (sec) => sec.name == event.securityName
+                (sec) => sec.id == event.securityId
               )}
               currency="EUR"
             />

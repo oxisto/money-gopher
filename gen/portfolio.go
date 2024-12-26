@@ -53,10 +53,10 @@ func EventsBefore(txs []*PortfolioEvent, t time.Time) (out []*PortfolioEvent) {
 	return
 }
 
-func (tx *PortfolioEvent) MakeUniqueName() {
-	// Create a unique name based on a hash containing:
-	//  - security name
-	//  - portfolio name
+func (tx *PortfolioEvent) MakeUniqueID() {
+	// Create a unique ID based on a hash containing:
+	//  - security ID
+	//  - portfolio ID
 	//  - date
 	//  - amount
 	h := fnv.New64a()
