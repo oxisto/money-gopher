@@ -83,7 +83,7 @@ func Import(r io.Reader, pname string) (txs []*portfoliov1.PortfolioEvent, secs 
 
 	// Compact securities
 	secs = slices.CompactFunc(secs, func(a *portfoliov1.Security, b *portfoliov1.Security) bool {
-		return a.Name == b.Name
+		return a.Id == b.Id
 	})
 
 	return
@@ -141,13 +141,13 @@ func readLine(cr *csv.Reader, pname string) (tx *portfoliov1.PortfolioEvent, sec
 	}
 
 	sec = new(portfoliov1.Security)
-	sec.Name = record[10]
+	sec.Id = record[10]
 	sec.DisplayName = record[13]
 	sec.ListedOn = []*portfoliov1.ListedSecurity{
 		{
-			SecurityName: sec.Name,
-			Ticker:       record[12],
-			Currency:     lsCurrency(record[3], record[5]),
+			SecurityId: sec.Id,
+			Ticker:     record[12],
+			Currency:   lsCurrency(record[3], record[5]),
 		},
 	}
 
@@ -159,7 +159,7 @@ func readLine(cr *csv.Reader, pname string) (tx *portfoliov1.PortfolioEvent, sec
 	}
 
 	tx.PortfolioName = pname
-	tx.SecurityName = sec.Name
+	tx.SecurityId = sec.Id
 	tx.MakeUniqueName()
 
 	return

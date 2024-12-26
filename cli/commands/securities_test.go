@@ -37,7 +37,7 @@ func TestUpdateQuote(t *testing.T) {
 	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
 		ops := persistence.Ops[*portfoliov1.Security](db)
 		ops.Replace(&portfoliov1.Security{
-			Name:          "mysecurity",
+			Id:            "mysecurity",
 			QuoteProvider: moneygopher.Ref("mock"),
 		})
 	}))
@@ -58,7 +58,7 @@ func TestUpdateQuote(t *testing.T) {
 				ctx: clitest.NewSessionContext(t, srv),
 				cmd: clitest.MockCommand(t,
 					SecuritiesCmd.Command("update-quote").Flags,
-					"--security-names", "mysecurity",
+					"--security-ids", "mysecurity",
 				),
 			},
 		},
@@ -76,7 +76,7 @@ func TestUpdateAllQuotes(t *testing.T) {
 	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
 		ops := persistence.Ops[*portfoliov1.Security](db)
 		ops.Replace(&portfoliov1.Security{
-			Name:          "mysecurity",
+			Id:            "mysecurity",
 			QuoteProvider: moneygopher.Ref("mock"),
 		})
 	}))
@@ -112,7 +112,7 @@ func TestListSecurities(t *testing.T) {
 	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
 		ops := persistence.Ops[*portfoliov1.Security](db)
 		ops.Replace(&portfoliov1.Security{
-			Name:          "mysecurity",
+			Id:            "mysecurity",
 			QuoteProvider: moneygopher.Ref("mock"),
 		})
 	}))

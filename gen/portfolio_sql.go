@@ -108,7 +108,7 @@ name TEXT PRIMARY KEY,
 type INTEGER NOT NULL,
 time DATETIME NOT NULL,
 portfolio_name TEXT NOT NULL, 
-security_name TEXT NOT NULL,
+security_id TEXT NOT NULL,
 amount REAL,
 price INTEGER,
 fees INTEGER,
@@ -123,12 +123,12 @@ taxes INTEGER
 
 func (*PortfolioEvent) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) {
 	return db.Prepare(`REPLACE INTO portfolio_events
-(name, type, time, portfolio_name, security_name, amount, price, fees, taxes)
+(name, type, time, portfolio_name, security_id, amount, price, fees, taxes)
 VALUES (?,?,?,?,?,?,?,?,?);`)
 }
 
 func (*PortfolioEvent) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`SELECT name, type, time, portfolio_name, security_name, amount, price, fees, taxes
+	return db.Prepare(`SELECT name, type, time, portfolio_name, security_id, amount, price, fees, taxes
 FROM portfolio_events WHERE portfolio_name = ? ORDER BY time ASC`)
 }
 
@@ -163,7 +163,7 @@ func (e *PortfolioEvent) ReplaceIntoArgs() []any {
 		e.Type,
 		e.Time.AsTime(),
 		e.PortfolioName,
-		e.SecurityName,
+		e.SecurityId,
 		e.Amount,
 		e.Price.GetValue(),
 		e.Fees.GetValue(),
@@ -182,8 +182,8 @@ func (e *PortfolioEvent) UpdateArgs(columns []string) (args []any) {
 			args = append(args, e.Time.AsTime())
 		case "portfolio_name":
 			args = append(args, e.PortfolioName)
-		case "security_name":
-			args = append(args, e.SecurityName)
+		case "security_id":
+			args = append(args, e.SecurityId)
 		case "amount":
 			args = append(args, e.Amount)
 		case "price":
@@ -213,7 +213,7 @@ func (*PortfolioEvent) Scan(sc persistence.Scanner) (obj persistence.StorageObje
 		&e.Type,
 		&t,
 		&e.PortfolioName,
-		&e.SecurityName,
+		&e.SecurityId,
 		&e.Amount,
 		&e.Price.Value,
 		&e.Fees.Value,

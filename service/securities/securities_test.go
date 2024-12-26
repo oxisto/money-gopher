@@ -52,14 +52,14 @@ func Test_service_ListSecurities(t *testing.T) {
 			name: "happy path",
 			fields: fields{
 				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {
-					assert.NoError(t, ops.Replace(&portfoliov1.Security{Name: "My Security"}))
+					assert.NoError(t, ops.Replace(&portfoliov1.Security{Id: "My Security"}))
 					rel := persistence.Relationship[*portfoliov1.ListedSecurity](ops)
-					assert.NoError(t, rel.Replace(&portfoliov1.ListedSecurity{SecurityName: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}))
+					assert.NoError(t, rel.Replace(&portfoliov1.ListedSecurity{SecurityId: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}))
 				}),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.ListSecuritiesResponse]) bool {
 				return true &&
-					assert.Equals(t, "My Security", r.Msg.Securities[0].Name) &&
+					assert.Equals(t, "My Security", r.Msg.Securities[0].Id) &&
 					assert.Equals(t, 1, len(r.Msg.Securities[0].ListedOn))
 			},
 			wantErr: false,
@@ -100,9 +100,9 @@ func Test_service_GetSecurity(t *testing.T) {
 			name: "happy path",
 			fields: fields{
 				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {
-					ops.Replace(&portfoliov1.Security{Name: "My Security"})
+					ops.Replace(&portfoliov1.Security{Id: "My Security"})
 					rel := persistence.Relationship[*portfoliov1.ListedSecurity](ops)
-					assert.NoError(t, rel.Replace(&portfoliov1.ListedSecurity{SecurityName: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}))
+					assert.NoError(t, rel.Replace(&portfoliov1.ListedSecurity{SecurityId: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}))
 				}),
 			},
 			args: args{
@@ -110,8 +110,8 @@ func Test_service_GetSecurity(t *testing.T) {
 			},
 			wantRes: func(t *testing.T, s *portfoliov1.Security) bool {
 				return assert.Equals(t, &portfoliov1.Security{
-					Name:     "My Security",
-					ListedOn: []*portfoliov1.ListedSecurity{{SecurityName: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}},
+					Id:       "My Security",
+					ListedOn: []*portfoliov1.ListedSecurity{{SecurityId: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}},
 				}, s)
 			},
 			wantErr: false,
@@ -152,14 +152,14 @@ func Test_service_UpdateSecurity(t *testing.T) {
 			name: "change display_name",
 			fields: fields{
 				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {
-					ops.Replace(&portfoliov1.Security{Name: "My Stock"})
+					ops.Replace(&portfoliov1.Security{Id: "My Stock"})
 				}),
 			},
 			args: args{req: connect.NewRequest(&portfoliov1.UpdateSecurityRequest{
-				Security:   &portfoliov1.Security{Name: "My Stock", DisplayName: "Test"},
+				Security:   &portfoliov1.Security{Id: "My Stock", DisplayName: "Test"},
 				UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"display_name"}},
 			})},
-			wantRes: connect.NewResponse(&portfoliov1.Security{Name: "My Stock", DisplayName: "Test"}),
+			wantRes: connect.NewResponse(&portfoliov1.Security{Id: "My Stock", DisplayName: "Test"}),
 			wantErr: false,
 		},
 	}
@@ -200,7 +200,7 @@ func Test_service_DeleteSecurity(t *testing.T) {
 			name: "happy path",
 			fields: fields{
 				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {
-					ops.Replace(&portfoliov1.Security{Name: "My Stock"})
+					ops.Replace(&portfoliov1.Security{Id: "My Stock"})
 				}),
 			},
 			args: args{req: connect.NewRequest(&portfoliov1.DeleteSecurityRequest{

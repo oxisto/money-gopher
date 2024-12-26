@@ -302,7 +302,7 @@ func TestCreateTransaction(t *testing.T) {
 				cmd: clitest.MockCommand(t,
 					PortfolioCmd.Commands[3].Commands[0].Flags,
 					"--portfolio-name", "myportfolio",
-					"--security-name", "mysecurity",
+					"--security-id", "mysecurity",
 					"--type", "buy",
 					"--amount", "10",
 					"--price", "10",

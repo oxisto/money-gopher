@@ -50,7 +50,7 @@ func (svc *service) CreatePortfolioTransaction(ctx context.Context, req *connect
 	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL:
 		fallthrough
 	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY:
-		if tx.SecurityName == "" {
+		if tx.SecurityId == "" {
 			return nil, connect.NewError(connect.CodeInvalidArgument, ErrMissingSecurityName)
 		} else if tx.Amount == 0 {
 			return nil, connect.NewError(connect.CodeInvalidArgument, ErrMissingAmount)

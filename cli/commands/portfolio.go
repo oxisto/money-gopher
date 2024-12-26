@@ -72,7 +72,7 @@ var PortfolioCmd = &cli.Command{
 					Action: CreateTransaction,
 					Flags: []cli.Flag{
 						&cli.StringFlag{Name: "portfolio-name", Usage: "The name of the portfolio where the transaction will be created in", Required: true},
-						&cli.StringFlag{Name: "security-name", Usage: "The name of the security this transaction belongs to (its ISIN)", Required: true},
+						&cli.StringFlag{Name: "security-id", Usage: "The name of the security this transaction belongs to (its ISIN)", Required: true},
 						&cli.StringFlag{Name: "type", Usage: "The type of the transaction", Required: true, DefaultText: "buy"},
 						&cli.FloatFlag{Name: "amount", Usage: "The amount of securities involved in the transaction", Required: true},
 						&cli.FloatFlag{Name: "price", Usage: "The price without fees or taxes", Required: true},
@@ -194,7 +194,7 @@ func CreateTransaction(ctx context.Context, cmd *cli.Command) error {
 	var req = connect.NewRequest(&portfoliov1.CreatePortfolioTransactionRequest{
 		Transaction: &portfoliov1.PortfolioEvent{
 			PortfolioName: cmd.String("portfolio-name"),
-			SecurityName:  cmd.String("security-name"),
+			SecurityId:    cmd.String("security-id"),
 			Type:          eventTypeFrom(cmd.String("type")),
 			Amount:        cmd.Float("amount"),
 			Time:          timeOrNow(cmd.Timestamp("time")),
@@ -212,7 +212,7 @@ func CreateTransaction(ctx context.Context, cmd *cli.Command) error {
 	fmt.Printf("Successfully created a %s transaction (%s) for security %s in %s.\n",
 		color.CyanString(cmd.String("type")),
 		color.GreenString(res.Msg.Name),
-		color.CyanString(res.Msg.SecurityName),
+		color.CyanString(res.Msg.SecurityId),
 		color.CyanString(res.Msg.PortfolioName),
 	)
 

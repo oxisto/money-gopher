@@ -164,7 +164,7 @@ paths:
                 - SecuritiesService
             operationId: SecuritiesService_ListSecurities
             parameters:
-                - name: filter.securityNames
+                - name: filter.securityIds
                   in: query
                   schema:
                     type: array
@@ -319,12 +319,12 @@ components:
                         $ref: '#/components/schemas/Security'
         ListedSecurity:
             required:
-                - securityName
+                - securityId
                 - ticker
                 - currency
             type: object
             properties:
-                securityName:
+                securityId:
                     type: string
                 ticker:
                     type: string
@@ -364,7 +364,7 @@ components:
                 - type
                 - time
                 - portfolioName
-                - securityName
+                - securityId
                 - amount
                 - price
                 - fees
@@ -393,7 +393,7 @@ components:
                     format: date-time
                 portfolioName:
                     type: string
-                securityName:
+                securityId:
                     type: string
                 amount:
                     type: number
@@ -528,16 +528,16 @@ components:
                  the portfolio at a certain time in the past.
         Security:
             required:
-                - name
+                - id
                 - displayName
                 - listedOn
                 - quoteProvider
             type: object
             properties:
-                name:
+                id:
                     type: string
                     description: |-
-                        Name contains the unique resource name. For a stock or bond, this should be
+                        Id contains the unique resource ID. For a stock or bond, this should be
                          an ISIN.
                 displayName:
                     type: string

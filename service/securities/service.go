@@ -41,18 +41,18 @@ func NewService(db *persistence.DB) portfoliov1connect.SecuritiesServiceHandler 
 	listedSecurities := persistence.Relationship[*portfoliov1.ListedSecurity](securities)
 	secs := []*portfoliov1.Security{
 		{
-			Name:        "US0378331005",
+			Id:          "US0378331005",
 			DisplayName: "Apple Inc.",
 			ListedOn: []*portfoliov1.ListedSecurity{
 				{
-					SecurityName:         "US0378331005",
+					SecurityId:           "US0378331005",
 					Ticker:               "APC.F",
 					Currency:             currency.EUR.String(),
 					LatestQuote:          portfoliov1.Value(15016),
 					LatestQuoteTimestamp: timestamppb.New(time.Date(2023, 4, 21, 0, 0, 0, 0, time.Local)),
 				},
 				{
-					SecurityName:         "US0378331005",
+					SecurityId:           "US0378331005",
 					Ticker:               "AAPL",
 					Currency:             currency.USD.String(),
 					LatestQuote:          portfoliov1.Value(16502),

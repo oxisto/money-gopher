@@ -62,20 +62,20 @@ func Test_service_TriggerSecurityQuoteUpdate(t *testing.T) {
 			fields: fields{
 				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {
 					ops.Replace(&portfoliov1.Security{
-						Name:          "My Security",
+						Id:            "My Security",
 						QuoteProvider: moneygopher.Ref("mock"),
 					})
 					rel := persistence.Relationship[*portfoliov1.ListedSecurity](ops)
 					assert.NoError(t, rel.Replace(&portfoliov1.ListedSecurity{
-						SecurityName: "My Security",
-						Ticker:       "SEC",
-						Currency:     currency.EUR.String(),
+						SecurityId: "My Security",
+						Ticker:     "SEC",
+						Currency:   currency.EUR.String(),
 					}))
 				}),
 			},
 			args: args{
 				req: connect.NewRequest(&portfoliov1.TriggerQuoteUpdateRequest{
-					SecurityNames: []string{"My Security"},
+					SecurityIds: []string{"My Security"},
 				}),
 			},
 			wantRes: func(t *testing.T, tqur *portfoliov1.TriggerQuoteUpdateResponse) bool {
@@ -124,14 +124,14 @@ func Test_service_updateQuote(t *testing.T) {
 			name: "happy path",
 			fields: fields{
 				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {
-					ops.Replace(&portfoliov1.Security{Name: "My Security"})
+					ops.Replace(&portfoliov1.Security{Id: "My Security"})
 					rel := persistence.Relationship[*portfoliov1.ListedSecurity](ops)
-					assert.NoError(t, rel.Replace(&portfoliov1.ListedSecurity{SecurityName: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}))
+					assert.NoError(t, rel.Replace(&portfoliov1.ListedSecurity{SecurityId: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}))
 				}),
 			},
 			args: args{
 				qp: &mockQuoteProvider{},
-				ls: &portfoliov1.ListedSecurity{SecurityName: "My Security", Ticker: "SEC", Currency: currency.EUR.String()},
+				ls: &portfoliov1.ListedSecurity{SecurityId: "My Security", Ticker: "SEC", Currency: currency.EUR.String()},
 			},
 			want: func(t *testing.T, ls *portfoliov1.ListedSecurity) bool {
 				return assert.Equals(t, 100, int(ls.LatestQuote.Value))

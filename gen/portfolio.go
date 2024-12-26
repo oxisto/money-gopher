@@ -27,7 +27,7 @@ func (p *Portfolio) EventMap() (m map[string][]*PortfolioEvent) {
 	m = make(map[string][]*PortfolioEvent)
 
 	for _, tx := range p.Events {
-		name := tx.GetSecurityName()
+		name := tx.GetSecurityId()
 		if name != "" {
 			m[name] = append(m[name], tx)
 		} else {
@@ -60,7 +60,7 @@ func (tx *PortfolioEvent) MakeUniqueName() {
 	//  - date
 	//  - amount
 	h := fnv.New64a()
-	h.Write([]byte(tx.SecurityName))
+	h.Write([]byte(tx.SecurityId))
 	h.Write([]byte(tx.PortfolioName))
 	h.Write([]byte(tx.Time.AsTime().Local().Format(time.DateTime)))
 	h.Write([]byte(strconv.FormatInt(int64(tx.Type), 10)))
@@ -73,7 +73,7 @@ func (tx *PortfolioEvent) MakeUniqueName() {
 func (tx *PortfolioEvent) LogValue() slog.Value {
 	return slog.GroupValue(
 		slog.String("name", tx.Name),
-		slog.String("security.name", tx.SecurityName),
+		slog.String("security.name", tx.SecurityId),
 		slog.Float64("amount", float64(tx.Amount)),
 		slog.String("price", tx.Price.Pretty()),
 		slog.String("fees", tx.Fees.Pretty()),
@@ -84,7 +84,7 @@ func (tx *PortfolioEvent) LogValue() slog.Value {
 // LogValue implements slog.LogValuer.
 func (ls *ListedSecurity) LogValue() slog.Value {
 	return slog.GroupValue(
-		slog.String("name", ls.SecurityName),
+		slog.String("name", ls.SecurityId),
 		slog.String("ticker", ls.Ticker),
 	)
 }
