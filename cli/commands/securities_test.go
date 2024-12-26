@@ -22,13 +22,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oxisto/assert"
 	moneygopher "github.com/oxisto/money-gopher"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/internal"
 	"github.com/oxisto/money-gopher/internal/testing/clitest"
 	"github.com/oxisto/money-gopher/internal/testing/servertest"
 	"github.com/oxisto/money-gopher/persistence"
+
+	"github.com/oxisto/assert"
 	"github.com/urfave/cli/v3"
 )
 
@@ -151,5 +152,42 @@ func TestListSecurities(t *testing.T) {
 				tt.wantRec(t, rec)
 			}
 		})
+	}
+}
+
+func TestPredictSecurities(t *testing.T) {
+	srv := servertest.NewServer(internal.NewTestDB(t))
+	defer srv.Close()
+
+	type args struct {
+		ctx context.Context
+		cmd *cli.Command
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantRec assert.Want[*clitest.CommandRecorder]
+	}{
+		{
+			name: "happy path",
+			args: args{
+				ctx: clitest.NewSessionContext(t, srv),
+				cmd: &cli.Command{},
+			},
+			wantRec: func(t *testing.T, rec *clitest.CommandRecorder) bool {
+				return assert.Equals(t, "US0378331005:Apple Inc.\n", rec.String())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		rec := clitest.Record(tt.args.cmd)
+		t.Run(tt.name, func(t *testing.T) {
+			PredictSecurities(tt.args.ctx, tt.args.cmd)
+		})
+
+		if tt.wantRec != nil {
+			tt.wantRec(t, rec)
+		}
 	}
 }

@@ -27,6 +27,7 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+// BankAccountCmd is the command for bank account related commands.
 var BankAccountCmd = &cli.Command{
 	Name:   "bank-account",
 	Usage:  "Manage bank accounts",
@@ -44,6 +45,7 @@ var BankAccountCmd = &cli.Command{
 	},
 }
 
+// CreateBankAccount creates a new bank account.
 func CreateBankAccount(ctx context.Context, cmd *cli.Command) error {
 	s := mcli.FromContext(ctx)
 	res, err := s.PortfolioClient.CreateBankAccount(
