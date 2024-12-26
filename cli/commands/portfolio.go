@@ -33,6 +33,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// PortfolioCmd is the command for portfolio related commands.
 var PortfolioCmd = &cli.Command{
 	Name:   "portfolio",
 	Usage:  "Manage portfolios and transactions",
@@ -94,6 +95,7 @@ var PortfolioCmd = &cli.Command{
 	},
 }
 
+// ListPortfolio lists all portfolios.
 func ListPortfolio(ctx context.Context, cmd *cli.Command) error {
 	s := mcli.FromContext(ctx)
 	res, err := s.PortfolioClient.ListPortfolios(
@@ -140,6 +142,7 @@ func ListPortfolio(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
+// CreatePortfolio creates a new portfolio.
 func CreatePortfolio(ctx context.Context, cmd *cli.Command) error {
 	s := mcli.FromContext(ctx)
 	res, err := s.PortfolioClient.CreatePortfolio(
@@ -159,6 +162,7 @@ func CreatePortfolio(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
+// ShowPortfolio shows details about a portfolio.
 func ShowPortfolio(ctx context.Context, cmd *cli.Command) error {
 	s := mcli.FromContext(ctx)
 	res, err := s.PortfolioClient.GetPortfolioSnapshot(
@@ -184,6 +188,7 @@ func greenOrRed(f float64) string {
 	}
 }
 
+// CreateTransaction creates a transaction.
 func CreateTransaction(ctx context.Context, cmd *cli.Command) error {
 	s := mcli.FromContext(ctx)
 	var req = connect.NewRequest(&portfoliov1.CreatePortfolioTransactionRequest{

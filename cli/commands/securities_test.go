@@ -17,6 +17,19 @@
 // package commands contains commands that can be executed by the CLI.
 package commands
 
+import (
+	"context"
+	"testing"
+
+	moneygopher "github.com/oxisto/money-gopher"
+	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"github.com/oxisto/money-gopher/internal"
+	"github.com/oxisto/money-gopher/internal/testing/clitest"
+	"github.com/oxisto/money-gopher/internal/testing/servertest"
+	"github.com/oxisto/money-gopher/persistence"
+	"github.com/urfave/cli/v3"
+)
+
 /*
 func TestUpdateAllQuotesCmd_Run(t *testing.T) {
 	srv := servertest.NewServer(internal.NewTestDB(t))
@@ -95,3 +108,78 @@ func TestPredictSecurities(t *testing.T) {
 	}
 }
 */
+
+func TestUpdateQuote(t *testing.T) {
+	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
+		ops := persistence.Ops[*portfoliov1.Security](db)
+		ops.Replace(&portfoliov1.Security{
+			Name:          "mysecurity",
+			QuoteProvider: moneygopher.Ref("mock"),
+		})
+	}))
+	defer srv.Close()
+
+	type args struct {
+		ctx context.Context
+		cmd *cli.Command
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			args: args{
+				ctx: clitest.NewSessionContext(t, srv),
+				cmd: clitest.MockCommand(t,
+					SecuritiesCmd.Command("update-quote").Flags,
+					"--security-names", "mysecurity",
+				),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := UpdateQuote(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
+				t.Errorf("UpdateQuote() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestUpdateAllQuotes(t *testing.T) {
+	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
+		ops := persistence.Ops[*portfoliov1.Security](db)
+		ops.Replace(&portfoliov1.Security{
+			Name:          "mysecurity",
+			QuoteProvider: moneygopher.Ref("mock"),
+		})
+	}))
+	defer srv.Close()
+
+	type args struct {
+		ctx context.Context
+		cmd *cli.Command
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			args: args{
+				ctx: clitest.NewSessionContext(t, srv),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := UpdateAllQuotes(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
+				t.Errorf("UpdateAllQuotes() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

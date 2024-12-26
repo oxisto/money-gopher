@@ -28,22 +28,23 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-var SecurityCmd = &cli.Command{
-	Name:   "security",
-	Usage:  "Security commands",
+// SecuritiesCmd is the command for security related commands.
+var SecuritiesCmd = &cli.Command{
+	Name:   "securities",
+	Usage:  "Securities commands",
 	Before: mcli.InjectSession,
 	Commands: []*cli.Command{
 		{
 			Name:   "list",
 			Usage:  "Lists all securities",
-			Action: ListSecuritiesCmd,
+			Action: ListSecurities,
 		},
 		{
 			Name:   "update-quote",
 			Usage:  "Triggers an update of one or more securities' quotes",
-			Action: UpdateQuoteCmd,
+			Action: UpdateQuote,
 			Flags: []cli.Flag{
-				&cli.StringSliceFlag{Name: "security-ids", Usage: "The security IDs to update", Required: true},
+				&cli.StringSliceFlag{Name: "security-names", Usage: "The security IDs to update", Required: true},
 			},
 			EnableShellCompletion: true,
 			ShellComplete:         PredictSecurities,
@@ -51,12 +52,13 @@ var SecurityCmd = &cli.Command{
 		{
 			Name:   "update-all-quotes",
 			Usage:  "Triggers an update of all quotes",
-			Action: UpdateAllQuotesCmd,
+			Action: UpdateAllQuotes,
 		},
 	},
 }
 
-func ListSecuritiesCmd(ctx context.Context, cmd *cli.Command) error {
+// ListSecurities lists all securities.
+func ListSecurities(ctx context.Context, cmd *cli.Command) error {
 	s := mcli.FromContext(ctx)
 	res, err := s.SecuritiesClient.ListSecurities(context.Background(), connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}))
 	if err != nil {
@@ -67,7 +69,8 @@ func ListSecuritiesCmd(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-func UpdateQuoteCmd(ctx context.Context, cmd *cli.Command) error {
+// UpdateQuote triggers an update of one or more securities' quotes.
+func UpdateQuote(ctx context.Context, cmd *cli.Command) error {
 	s := mcli.FromContext(ctx)
 	_, err := s.SecuritiesClient.TriggerSecurityQuoteUpdate(
 		context.Background(),
@@ -79,7 +82,8 @@ func UpdateQuoteCmd(ctx context.Context, cmd *cli.Command) error {
 	return err
 }
 
-func UpdateAllQuotesCmd(ctx context.Context, cmd *cli.Command) error {
+// UpdateAllQuotes triggers an update of all quotes.
+func UpdateAllQuotes(ctx context.Context, cmd *cli.Command) error {
 	s := mcli.FromContext(ctx)
 	res, err := s.SecuritiesClient.ListSecurities(context.Background(), connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}))
 	if err != nil {

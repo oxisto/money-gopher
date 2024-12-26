@@ -20,6 +20,7 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+// CLI is the main CLI command.
 var CLI = &cli.Command{
 	Name:                  "mgo",
 	Usage:                 "The money-gopher CLI",
@@ -29,20 +30,7 @@ var CLI = &cli.Command{
 	},
 	Commands: []*cli.Command{
 		PortfolioCmd,
-		SecurityCmd,
+		SecuritiesCmd,
 		LoginCmd,
 	},
 }
-
-/*var CLI struct {
-	Debug bool `help:"Enable debug mode."`
-
-	Login LoginCmd `cmd:"" help:"Login command."`
-
-	Security SecurityCmd `cmd:"" help:"Security commands."`
-	//Portfolio   PortfolioCmd   `cmd:"" help:"Portfolio commands."`
-	BankAccount BankAccountCmd `cmd:"" help:"Bank account commands."`
-
-	Completion kongcompletion.Completion `cmd:"" help:"Outputs shell code for initializing tab completions" hidden:"" completion-shell-default:"false"`
-}
-*/

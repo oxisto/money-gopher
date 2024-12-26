@@ -17,7 +17,7 @@ import (
 var LoginCmd = &cli.Command{
 	Name:   "login",
 	Usage:  "Login to the Money Gopher server",
-	Action: LoginAction,
+	Action: Login,
 	Flags: []cli.Flag{
 		&cli.StringFlag{Name: "client-id", Usage: "The client ID to use for the OAuth 2.0 flow", Value: "cli"},
 		&cli.StringFlag{Name: "auth-url", Usage: "The authorization URL for the OAuth 2.0 flow", Value: "http://localhost:8000/authorize"},
@@ -42,8 +42,8 @@ type callbackServer struct {
 	code     chan string
 }
 
-// LoginAction is the action for the login command.
-func LoginAction(ctx context.Context, cmd *cli.Command) error {
+// Login is the action for the login command.
+func Login(ctx context.Context, cmd *cli.Command) error {
 	var (
 		err     error
 		session *mcli.Session
