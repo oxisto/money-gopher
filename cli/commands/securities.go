@@ -64,8 +64,7 @@ func ListSecurities(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-
-	fmt.Println(res.Msg.Securities)
+	fmt.Fprintln(cmd.Writer, res.Msg.Securities)
 	return nil
 }
 

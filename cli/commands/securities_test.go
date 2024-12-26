@@ -19,8 +19,10 @@ package commands
 
 import (
 	"context"
+	"strings"
 	"testing"
 
+	"github.com/oxisto/assert"
 	moneygopher "github.com/oxisto/money-gopher"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/internal"
@@ -29,85 +31,6 @@ import (
 	"github.com/oxisto/money-gopher/persistence"
 	"github.com/urfave/cli/v3"
 )
-
-/*
-func TestUpdateAllQuotesCmd_Run(t *testing.T) {
-	srv := servertest.NewServer(internal.NewTestDB(t))
-	defer srv.Close()
-
-	type args struct {
-		s *cli.Session
-	}
-	tests := []struct {
-		name    string
-		cmd     *UpdateAllQuotesCmd
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "happy path",
-			args: args{
-				s: func() *cli.Session {
-					return cli.NewSession(&cli.SessionOptions{
-						BaseURL:    srv.URL,
-						HttpClient: srv.Client(),
-					})
-				}(),
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cmd := &UpdateAllQuotesCmd{}
-			if err := cmd.Run(tt.args.s); (err != nil) != tt.wantErr {
-				t.Errorf("UpdateAllQuotesCmd.Run() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestPredictSecurities(t *testing.T) {
-	srv := servertest.NewServer(internal.NewTestDB(t))
-	defer srv.Close()
-
-	type args struct {
-		s *cli.Session
-		a complete.Args
-	}
-	tests := []struct {
-		name string
-		args args
-		want assert.Want[[]string]
-	}{
-		{
-			name: "happy path",
-			args: args{
-				s: func() *cli.Session {
-					return cli.NewSession(&cli.SessionOptions{
-						BaseURL:    srv.URL,
-						HttpClient: srv.Client(),
-					})
-				}(),
-				a: complete.Args{
-					All:  []string{},
-					Last: "my",
-				},
-			},
-			want: func(t *testing.T, s []string) bool {
-				return len(s) > 0
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			fn := PredictSecurities(tt.args.s)
-			got := fn.Predict(tt.args.a)
-			tt.want(t, got)
-		})
-	}
-}
-*/
 
 func TestUpdateQuote(t *testing.T) {
 	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
@@ -179,6 +102,53 @@ func TestUpdateAllQuotes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := UpdateAllQuotes(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
 				t.Errorf("UpdateAllQuotes() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestListSecurities(t *testing.T) {
+	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
+		ops := persistence.Ops[*portfoliov1.Security](db)
+		ops.Replace(&portfoliov1.Security{
+			Name:          "mysecurity",
+			QuoteProvider: moneygopher.Ref("mock"),
+		})
+	}))
+	defer srv.Close()
+
+	type args struct {
+		ctx context.Context
+		cmd *cli.Command
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+		wantRec assert.Want[*clitest.CommandRecorder]
+	}{
+		{
+			name: "happy path",
+			args: args{
+				ctx: clitest.NewSessionContext(t, srv),
+				cmd: clitest.MockCommand(t, SecuritiesCmd.Command("list").Flags),
+			},
+			wantRec: func(t *testing.T, rec *clitest.CommandRecorder) bool {
+				return assert.Equals(t, true, strings.Contains(rec.String(), "mysecurity"))
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := clitest.NewCommandRecorder()
+			tt.args.cmd.Writer = rec
+			if err := ListSecurities(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
+				t.Errorf("ListSecurities() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if tt.wantRec != nil {
+				tt.wantRec(t, rec)
 			}
 		})
 	}

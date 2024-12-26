@@ -1,6 +1,7 @@
 package clitest
 
 import (
+	"bytes"
 	"context"
 	"net/http/httptest"
 	"testing"
@@ -9,6 +10,10 @@ import (
 
 	"github.com/urfave/cli/v3"
 )
+
+type CommandRecorder struct {
+	*bytes.Buffer
+}
 
 // NewSessionContext creates a new context with a [cli.Session] attached to it.
 // The session is connected to the given server.
@@ -19,6 +24,10 @@ func NewSessionContext(t *testing.T, srv *httptest.Server) context.Context {
 	})
 
 	return context.WithValue(context.Background(), mcli.SessionKey, s)
+}
+
+func NewCommandRecorder() *CommandRecorder {
+	return &CommandRecorder{Buffer: new(bytes.Buffer)}
 }
 
 // MockCommand creates a mock command with the given flags and parses the

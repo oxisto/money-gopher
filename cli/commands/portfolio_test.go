@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/oxisto/assert"
 	"github.com/oxisto/money-gopher/internal"
 	"github.com/oxisto/money-gopher/internal/testing/clitest"
 	"github.com/oxisto/money-gopher/internal/testing/servertest"
@@ -252,6 +253,7 @@ func TestShowPortfolio(t *testing.T) {
 		name    string
 		args    args
 		wantErr bool
+		wantRec assert.Want[*clitest.CommandRecorder]
 	}{
 		{
 			name: "happy path",
@@ -267,8 +269,14 @@ func TestShowPortfolio(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			rec := clitest.NewCommandRecorder()
+			tt.args.cmd.Writer = rec
 			if err := ShowPortfolio(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
 				t.Errorf("ShowPortfolio() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if tt.wantRec != nil {
+				tt.wantRec(t, rec)
 			}
 		})
 	}
