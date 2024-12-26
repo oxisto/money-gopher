@@ -1,9 +1,9 @@
-import { Currency } from "@/lib/api";
+import { SchemaCurrency } from "@/lib/api";
 import { toDecimal } from "@/lib/currency";
 import { useFormatter } from "next-intl";
 
 interface FormattedCurrencyProps {
-  value: Currency;
+  value: SchemaCurrency;
 }
 
 export default function FormattedCurrency({ value }: FormattedCurrencyProps) {

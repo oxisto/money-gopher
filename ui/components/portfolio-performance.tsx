@@ -1,4 +1,4 @@
-import { PortfolioSnapshot } from "@/lib/api";
+import { SchemaPortfolioSnapshot } from "@/lib/api";
 import { classNames } from "@/lib/util";
 import {
   ArrowTrendingDownIcon,
@@ -8,7 +8,7 @@ import FormattedCurrency from "./formatted-currency";
 import FormattedPercentage from "./formatted-percentage";
 
 interface PortfolioPerformanceProps {
-  snapshot: PortfolioSnapshot;
+  snapshot: SchemaPortfolioSnapshot;
   showIcon: boolean;
 }
 

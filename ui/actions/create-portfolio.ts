@@ -6,9 +6,9 @@ export async function createPortfolio(formData: FormData) {
   "use server";
 
   const portfolio: SchemaPortfolio = {
-    name: formData.get("id")?.toString() ?? "",
+    id: formData.get("id")?.toString() ?? "",
     displayName: formData.get("displayName")?.toString() ?? "",
-    bankAccountName: "",
+    bankAccountId: "",
   };
 
   const { data: newPortfolio, error } = await client.POST("/v1/portfolios", {
@@ -20,6 +20,6 @@ export async function createPortfolio(formData: FormData) {
 
   if (newPortfolio) {
     revalidatePath("/portfolios");
-    redirect(`/portfolios/${newPortfolio.name}`);
+    redirect(`/portfolios/${newPortfolio.id}`);
   }
 }

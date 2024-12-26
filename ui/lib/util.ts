@@ -1,10 +1,10 @@
-import { Currency } from "@/lib/api";
+import { SchemaCurrency } from "@/lib/api";
 
 export function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-export function currency(c: Currency | undefined): string {
+export function currency(c: SchemaCurrency | undefined): string {
   if (c === undefined) {
     return "";
   }

@@ -29,7 +29,7 @@ export default function PortfolioPositionRow({
           <div className="text-gray-900">
             {shorten(position.security.displayName)}
           </div>
-          <div className="text-gray-400">{position.security.name}</div>
+          <div className="text-gray-400">{position.security.id}</div>
         </td>
         <td
           className="hidden whitespace-nowrap px-3 py-2 text-right text-sm text-gray-500

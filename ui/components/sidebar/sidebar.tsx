@@ -2,6 +2,7 @@ import { DashboardItem, DividendsItem, PerformanceItem, SecuritiesItem } from "@
 import { PortfolioItem } from "@/components/sidebar/portfolio";
 import { auth } from "@/lib/auth";
 import { classNames } from "@/lib/util";
+import Image from "next/image";
 
 const navigation = [DashboardItem, SecuritiesItem, PortfolioItem, DividendsItem, PerformanceItem]
 
@@ -20,7 +21,7 @@ export default function Sidebar({ isDesktop = false }) {
       )}
     >
       <div className="flex h-16 shrink-0 items-center">
-        <img
+        <Image
           alt="Your Company"
           src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=500"
           className="h-8 w-auto"
@@ -31,7 +32,7 @@ export default function Sidebar({ isDesktop = false }) {
           <li>
             <ul role="list" className="-mx-2 space-y-1">
               {navigation.map((Item, idx) => (
-                <Item key={idx}/>
+                <Item key={idx} />
               ))}
             </ul>
           </li>
@@ -77,7 +78,7 @@ export async function SidebarProfile() {
         href="#"
         className="flex items-center gap-x-4 px-6 py-3 text-sm font-semibold leading-6 text-white hover:bg-gray-800"
       >
-        <img
+        <Image
           alt=""
           src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
           className="h-8 w-8 rounded-full bg-gray-800"
