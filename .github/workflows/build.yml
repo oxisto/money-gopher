@@ -41,7 +41,6 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: Build UI
         run: |
-          npm install
-          ls -l public/fonts/interVariable.woff2
+          npm ci
           npm run build
         working-directory: ./ui
