@@ -26,8 +26,17 @@ func NewSessionContext(t *testing.T, srv *httptest.Server) context.Context {
 	return context.WithValue(context.Background(), mcli.SessionKey, s)
 }
 
+// NewCommandRecorder creates a new command recorder.
 func NewCommandRecorder() *CommandRecorder {
 	return &CommandRecorder{Buffer: new(bytes.Buffer)}
+}
+
+// Record creates a new command recorder and sets it as the writer for the given
+// command.
+func Record(cli *cli.Command) *CommandRecorder {
+	r := NewCommandRecorder()
+	cli.Writer = r
+	return r
 }
 
 // MockCommand creates a mock command with the given flags and parses the
