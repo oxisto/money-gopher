@@ -26,7 +26,7 @@ import (
 )
 
 func main() {
-	if err := commands.CLI.Run(context.Background(), os.Args); err != nil {
+	if err := commands.CLICmd.Run(context.Background(), os.Args); err != nil {
 		slog.Error("Error while running command", tint.Err(err))
 	}
 }

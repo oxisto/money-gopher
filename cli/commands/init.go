@@ -20,8 +20,8 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-// CLI is the main CLI command.
-var CLI = &cli.Command{
+// CLICmd is the main CLICmd command.
+var CLICmd = &cli.Command{
 	Name:                  "mgo",
 	Usage:                 "The money-gopher CLI",
 	EnableShellCompletion: true,
