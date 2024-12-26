@@ -72,7 +72,7 @@ var PortfolioCmd = &cli.Command{
 					Action: CreateTransaction,
 					Flags: []cli.Flag{
 						&cli.StringFlag{Name: "portfolio-name", Usage: "The name of the portfolio where the transaction will be created in", Required: true},
-						&cli.StringFlag{Name: "security-id", Usage: "The name of the security this transaction belongs to (its ISIN)", Required: true},
+						&cli.StringFlag{Name: "security-name", Usage: "The name of the security this transaction belongs to (its ISIN)", Required: true},
 						&cli.StringFlag{Name: "type", Usage: "The type of the transaction", Required: true, DefaultText: "buy"},
 						&cli.FloatFlag{Name: "amount", Usage: "The amount of securities involved in the transaction", Required: true},
 						&cli.FloatFlag{Name: "price", Usage: "The price without fees or taxes", Required: true},
