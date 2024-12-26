@@ -1,4 +1,4 @@
-import { Currency } from "@/lib/api";
+import { SchemaCurrency } from "@/lib/api";
 import { toDecimal } from "@/lib/currency";
 import { Field, Input, Label } from "@headlessui/react";
 import { useFormatter } from "next-intl";
@@ -7,10 +7,10 @@ import { ChangeEvent, InputHTMLAttributes, useState } from "react";
 interface CurrencyInputProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange"> {
   name: string;
-  value?: Currency;
+  value?: SchemaCurrency;
   symbol: string;
   children: React.ReactNode;
-  onChange?: (value: Currency) => void;
+  onChange?: (value: SchemaCurrency) => void;
 }
 
 export default function CurrencyInput({

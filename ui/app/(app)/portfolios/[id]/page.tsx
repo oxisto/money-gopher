@@ -6,19 +6,19 @@ import Link from "next/link";
 
 export interface PortfolioProps {
   params: Promise<{
-    name: string;
+    id: string;
   }>;
 }
 
 export default async function Portfolio(props: PortfolioProps) {
   const params = await props.params;
-  const { data: portfolio } = await client.GET("/v1/portfolios/{name}", {
-    params: { path: { name: params.name } },
+  const { data: portfolio } = await client.GET("/v1/portfolios/{id}", {
+    params: { path: { id: params.id } },
   });
   const { data: snapshot } = await client.GET(
-    "/v1/portfolios/{portfolioName}/snapshot",
+    "/v1/portfolios/{portfolioId}/snapshot",
     {
-      params: { path: { portfolioName: params.name } },
+      params: { path: { portfolioId: params.id } },
     }
   );
 
@@ -28,7 +28,7 @@ export default async function Portfolio(props: PortfolioProps) {
         <PortfolioPositionsTable snapshot={snapshot} />
 
         <div className="space-x-2">
-          <Link href={`/portfolios/${portfolio.name}/transactions/`}>
+          <Link href={`/portfolios/${portfolio.id}/transactions/`}>
             <Button>Show transactions list</Button>
           </Link>
 

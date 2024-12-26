@@ -1,7 +1,7 @@
 import FormattedCurrency from "@/components//formatted-currency";
 import PortfolioPositionRow from "@/components/portfolio-position-row";
 import TableSorter from "@/components/table-sorter";
-import { PortfolioPosition, PortfolioSnapshot } from "@/lib/api";
+import { SchemaPortfolioPosition, SchemaPortfolioSnapshot } from "@/lib/api";
 import { classNames } from "@/lib/util";
 import {
   ArrowDownIcon,
@@ -12,34 +12,34 @@ import FormattedPercentage from "./formatted-percentage";
 
 const sorters = new Map<
   string,
-  (a: PortfolioPosition, b: PortfolioPosition) => number
+  (a: SchemaPortfolioPosition, b: SchemaPortfolioPosition) => number
 >();
-sorters.set("displayName", (a: PortfolioPosition, b: PortfolioPosition) => {
+sorters.set("displayName", (a: SchemaPortfolioPosition, b: SchemaPortfolioPosition) => {
   return (
     a.security?.displayName.localeCompare(b.security?.displayName ?? "") ?? 0
   );
 });
-sorters.set("amount", (a: PortfolioPosition, b: PortfolioPosition) => {
+sorters.set("amount", (a: SchemaPortfolioPosition, b: SchemaPortfolioPosition) => {
   return a.amount - b.amount;
 });
-sorters.set("purchaseValue", (a: PortfolioPosition, b: PortfolioPosition) => {
+sorters.set("purchaseValue", (a: SchemaPortfolioPosition, b: SchemaPortfolioPosition) => {
   return (a.purchaseValue?.value ?? 0) - (b.purchaseValue?.value ?? 0);
 });
-sorters.set("marketValue", (a: PortfolioPosition, b: PortfolioPosition) => {
+sorters.set("marketValue", (a: SchemaPortfolioPosition, b: SchemaPortfolioPosition) => {
   return (a.marketValue?.value ?? 0) - (b.marketValue?.value ?? 0);
 });
 
 interface PortfolioPositionsTableProps {
-  snapshot: PortfolioSnapshot;
+  snapshot: SchemaPortfolioSnapshot;
 }
 
 function getPositions(
-  snapshot: PortfolioSnapshot,
+  snapshot: SchemaPortfolioSnapshot,
   sortBy: string,
   asc: boolean,
-): PortfolioPosition[] {
+): SchemaPortfolioPosition[] {
   let positions = Object.values(snapshot.positions ?? {});
-  return positions.sort((a: PortfolioPosition, b: PortfolioPosition) => {
+  return positions.sort((a: SchemaPortfolioPosition, b: SchemaPortfolioPosition) => {
     const sort = sorters.get(sortBy)?.call(null, a, b) ?? 0;
     return asc ? sort : -sort;
   });

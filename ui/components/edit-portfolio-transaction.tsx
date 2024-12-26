@@ -5,13 +5,13 @@ import FormattedCurrency from "@/components/formatted-currency";
 import CurrencyInput from "@/components/forms/currency-input";
 import DateInput from "@/components/forms/date-input";
 import ListBox from "@/components/forms/listbox";
-import { Currency, PortfolioEvent, Security } from "@/lib/api";
+import { SchemaCurrency, SchemaPortfolioEvent, SchemaSecurity } from "@/lib/api";
 import { useMemo, useState } from "react";
 
 interface EditPortfolioTransactionFormProps {
   create: Boolean;
-  event: PortfolioEvent;
-  securities: Security[];
+  event: SchemaPortfolioEvent;
+  securities: SchemaSecurity[];
   action: (formData: FormData) => void;
 }
 
@@ -28,7 +28,7 @@ export default function EditPortfolioTransactionForm({
       data.type == "PORTFOLIO_EVENT_TYPE_SELL",
     [data],
   );
-  const total = useMemo<Currency>(() => {
+  const total = useMemo<SchemaCurrency>(() => {
     return {
       value:
         data.amount * (data.price.value ?? 0) +
@@ -59,13 +59,13 @@ export default function EditPortfolioTransactionForm({
     { value: "PORTFOLIO_EVENT_TYPE_TAX_REFUND", display: "Tax Refund" },
   ];
   const securityOptions = securities.map((s) => {
-    return { value: s.name, display: s.displayName };
+    return { value: s.id, display: s.displayName };
   });
 
   return (
     <form action={action}>
-      <input type="hidden" name="name" value={data.name} />
-      <input type="hidden" name="portfolioName" value={data.portfolioName} />
+      <input type="hidden" name="id" value={data.id} />
+      <input type="hidden" name="portfolioId" value={data.portfolioId} />
       <div className="space-y-12 sm:space-y-16">
         <div>
           <h2 className="text-base font-semibold leading-7 text-gray-900">
@@ -75,12 +75,12 @@ export default function EditPortfolioTransactionForm({
             {create ? (
               <>
                 This allows you to create a new transaction and add it to
-                portfolio <b>{data.portfolioName}</b>.
+                portfolio <b>{data.portfolioId}</b>.
               </>
             ) : (
               <>
                 This allows you to edit the existing transaction{" "}
-                <b>{data.name}</b> in portfolio <b>{data.portfolioName}</b>.
+                <b>{data.id}</b> in portfolio <b>{data.portfolioId}</b>.
               </>
             )}
           </p>
@@ -132,11 +132,11 @@ export default function EditPortfolioTransactionForm({
                   </label>
                   <div className="mt-2 sm:col-span-2 sm:mt-0">
                     <ListBox
-                      name="securityName"
-                      value={data.securityName}
+                      name="securityId"
+                      value={data.securityId}
                       options={securityOptions}
                       onChange={(value) =>
-                        setData({ ...data, securityName: value })
+                        setData({ ...data, securityId: value })
                       }
                     />
                   </div>

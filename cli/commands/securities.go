@@ -44,7 +44,7 @@ var SecuritiesCmd = &cli.Command{
 			Usage:  "Triggers an update of one or more securities' quotes",
 			Action: UpdateQuote,
 			Flags: []cli.Flag{
-				&cli.StringSliceFlag{Name: "security-names", Usage: "The security IDs to update", Required: true},
+				&cli.StringSliceFlag{Name: "security-ids", Usage: "The security IDs to update", Required: true},
 			},
 			EnableShellCompletion: true,
 			ShellComplete:         PredictSecurities,
@@ -74,7 +74,7 @@ func UpdateQuote(ctx context.Context, cmd *cli.Command) error {
 	_, err := s.SecuritiesClient.TriggerSecurityQuoteUpdate(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.TriggerQuoteUpdateRequest{
-			SecurityNames: cmd.StringSlice("security-names"),
+			SecurityIds: cmd.StringSlice("security-ids"),
 		}),
 	)
 
@@ -92,13 +92,13 @@ func UpdateAllQuotes(ctx context.Context, cmd *cli.Command) error {
 	var names []string
 
 	for _, sec := range res.Msg.Securities {
-		names = append(names, sec.Name)
+		names = append(names, sec.Id)
 	}
 
 	_, err = s.SecuritiesClient.TriggerSecurityQuoteUpdate(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.TriggerQuoteUpdateRequest{
-			SecurityNames: names,
+			SecurityIds: names,
 		}),
 	)
 
@@ -117,6 +117,6 @@ func PredictSecurities(ctx context.Context, cmd *cli.Command) {
 	}
 
 	for _, p := range res.Msg.Securities {
-		fmt.Fprintf(cmd.Root().Writer, "%s:%s\n", p.Name, p.DisplayName)
+		fmt.Fprintf(cmd.Root().Writer, "%s:%s\n", p.Id, p.DisplayName)
 	}
 }

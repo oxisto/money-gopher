@@ -27,7 +27,7 @@ message ListPortfoliosResponse {
 }
 
 message GetPortfolioRequest {
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message UpdatePortfolioRequest {
@@ -36,13 +36,13 @@ message UpdatePortfolioRequest {
 }
 
 message DeletePortfolioRequest {
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message GetPortfolioSnapshotRequest {
-  // PortfolioName is the name / identifier of the portfolio we want to
+  // PortfolioId is the identifier of the portfolio we want to
   // "snapshot".
-  string portfolio_name = 1 [(google.api.field_behavior) = REQUIRED];
+  string portfolio_id = 1 [(google.api.field_behavior) = REQUIRED];
 
   // Time is the point in time of the requested snapshot.
   google.protobuf.Timestamp time = 2 [(google.api.field_behavior) = REQUIRED];
@@ -53,11 +53,11 @@ message CreatePortfolioTransactionRequest {
 }
 
 message GetPortfolioTransactionRequest {
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message ListPortfolioTransactionsRequest {
-  string portfolio_name = 1 [(google.api.field_behavior) = REQUIRED];
+  string portfolio_id = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message ListPortfolioTransactionsResponse {
@@ -74,7 +74,7 @@ message DeletePortfolioTransactionRequest {
 }
 
 message ImportTransactionsRequest {
-  string portfolio_name = 1 [(google.api.field_behavior) = REQUIRED];
+  string portfolio_id = 1 [(google.api.field_behavior) = REQUIRED];
   string from_csv = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
@@ -88,17 +88,17 @@ message UpdateBankAccountRequest {
 }
 
 message DeleteBankAccountRequest {
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message Portfolio {
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
 
   string display_name = 2 [(google.api.field_behavior) = REQUIRED];
 
-  // BankAccountName contains the name/identifier of the underlying bank
+  // BankAccountId contains the id/identifier of the underlying bank
   // account.
-  string bank_account_name = 3 [(google.api.field_behavior) = REQUIRED];
+  string bank_account_id = 3 [(google.api.field_behavior) = REQUIRED];
 
   // Events contains all portfolio events, such as buy/sell transactions,
   // dividends or other. They need to be ordered by time (ascending).
@@ -106,7 +106,7 @@ message Portfolio {
 }
 
 message BankAccount {
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
 
   string display_name = 2 [(google.api.field_behavior) = REQUIRED];
 }
@@ -200,11 +200,11 @@ enum PortfolioEventType {
 }
 
 message PortfolioEvent {
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
   PortfolioEventType type = 2 [(google.api.field_behavior) = REQUIRED];
   google.protobuf.Timestamp time = 3 [(google.api.field_behavior) = REQUIRED];
-  string portfolio_name = 4 [(google.api.field_behavior) = REQUIRED];
-  string security_name = 5 [(google.api.field_behavior) = REQUIRED];
+  string portfolio_id = 4 [(google.api.field_behavior) = REQUIRED];
+  string security_id = 5 [(google.api.field_behavior) = REQUIRED];
 
   double amount = 10 [(google.api.field_behavior) = REQUIRED];
   Currency price = 11 [(google.api.field_behavior) = REQUIRED];
@@ -225,33 +225,33 @@ service PortfolioService {
   }
   rpc GetPortfolio(GetPortfolioRequest) returns (Portfolio) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (google.api.http) = {get: "/v1/portfolios/{name}"};
+    option (google.api.http) = {get: "/v1/portfolios/{id}"};
   }
   rpc UpdatePortfolio(UpdatePortfolioRequest) returns (Portfolio);
   rpc DeletePortfolio(DeletePortfolioRequest) returns (google.protobuf.Empty);
 
   rpc GetPortfolioSnapshot(GetPortfolioSnapshotRequest) returns (PortfolioSnapshot) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (google.api.http) = {get: "/v1/portfolios/{portfolio_name}/snapshot"};
+    option (google.api.http) = {get: "/v1/portfolios/{portfolio_id}/snapshot"};
   }
 
   rpc CreatePortfolioTransaction(CreatePortfolioTransactionRequest) returns (PortfolioEvent) {
     option (google.api.http) = {
-      post: "/v1/portfolios/{transaction.portfolio_name}/transactions"
+      post: "/v1/portfolios/{transaction.portfolio_id}/transactions"
       body: "transaction"
     };
   }
   rpc GetPortfolioTransaction(GetPortfolioTransactionRequest) returns (PortfolioEvent) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (google.api.http) = {get: "/v1/transactions/{name}"};
+    option (google.api.http) = {get: "/v1/transactions/{id}"};
   }
   rpc ListPortfolioTransactions(ListPortfolioTransactionsRequest) returns (ListPortfolioTransactionsResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (google.api.http) = {get: "/v1/portfolios/{portfolio_name}/transactions"};
+    option (google.api.http) = {get: "/v1/portfolios/{portfolio_id}/transactions"};
   }
   rpc UpdatePortfolioTransaction(UpdatePortfolioTransactionRequest) returns (PortfolioEvent) {
     option (google.api.http) = {
-      put: "/v1/transactions/{transaction.name}"
+      put: "/v1/transactions/{transaction.id}"
       body: "transaction"
     };
   }
@@ -265,11 +265,11 @@ service PortfolioService {
 }
 
 message Security {
-  // Name contains the unique resource name. For a stock or bond, this should be
+  // Id contains the unique resource ID. For a stock or bond, this should be
   // an ISIN.
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // DisplayName contains the human readable name.
+  // DisplayName contains the human readable id.
   string display_name = 2 [(google.api.field_behavior) = REQUIRED];
 
   repeated ListedSecurity listed_on = 4 [(google.api.field_behavior) = REQUIRED];
@@ -278,7 +278,7 @@ message Security {
 }
 
 message ListedSecurity {
-  string security_name = 1 [(google.api.field_behavior) = REQUIRED];
+  string security_id = 1 [(google.api.field_behavior) = REQUIRED];
   string ticker = 3 [(google.api.field_behavior) = REQUIRED];
   string currency = 4 [(google.api.field_behavior) = REQUIRED];
 
@@ -288,7 +288,7 @@ message ListedSecurity {
 
 message ListSecuritiesRequest {
   message Filter {
-    repeated string security_names = 1;
+    repeated string security_ids = 1;
   }
 
   optional Filter filter = 5;
@@ -299,7 +299,7 @@ message ListSecuritiesResponse {
 }
 
 message GetSecurityRequest {
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message CreateSecurityRequest {
@@ -312,11 +312,11 @@ message UpdateSecurityRequest {
 }
 
 message DeleteSecurityRequest {
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message TriggerQuoteUpdateRequest {
-  repeated string security_names = 1;
+  repeated string security_ids = 1;
 }
 
 message TriggerQuoteUpdateResponse {}
@@ -328,7 +328,7 @@ service SecuritiesService {
   }
   rpc GetSecurity(GetSecurityRequest) returns (Security) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (google.api.http) = {get: "/v1/securities/{name}"};
+    option (google.api.http) = {get: "/v1/securities/{id}"};
   }
   rpc CreateSecurity(CreateSecurityRequest) returns (Security);
   rpc UpdateSecurity(UpdateSecurityRequest) returns (Security);

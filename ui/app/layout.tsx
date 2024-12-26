@@ -3,15 +3,9 @@ import Sidebar from "@/components/sidebar/sidebar";
 import { classNames } from "@/lib/util";
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getMessages } from "next-intl/server";
-import localFont from "next/font/local";
+import { Inter } from "./fonts";
 import { Suspense } from "react";
 import "./globals.css";
-
-const inter = localFont({
-  src: "../node_modules/inter-ui/variable/interVariable.woff2",
-  variable: "--sans",
-});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -25,7 +19,7 @@ export default async function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full bg-gray-100">
-      <body className={classNames(inter.className, "h-full")}>
+      <body className={classNames(Inter.className, "h-full")}>
         <Nav
           mobileSidebar={<Sidebar isDesktop={false} />}
           desktopSidebar={<Sidebar isDesktop={true} />}

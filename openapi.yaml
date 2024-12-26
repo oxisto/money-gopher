@@ -47,13 +47,13 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/portfolios/{name}:
+    /v1/portfolios/{id}:
         get:
             tags:
                 - PortfolioService
             operationId: PortfolioService_GetPortfolio
             parameters:
-                - name: name
+                - name: id
                   in: path
                   required: true
                   schema:
@@ -71,16 +71,16 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/portfolios/{portfolioName}/snapshot:
+    /v1/portfolios/{portfolioId}/snapshot:
         get:
             tags:
                 - PortfolioService
             operationId: PortfolioService_GetPortfolioSnapshot
             parameters:
-                - name: portfolioName
+                - name: portfolioId
                   in: path
                   description: |-
-                    PortfolioName is the name / identifier of the portfolio we want to
+                    PortfolioId is the identifier of the portfolio we want to
                      "snapshot".
                   required: true
                   schema:
@@ -104,13 +104,13 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/portfolios/{portfolioName}/transactions:
+    /v1/portfolios/{portfolioId}/transactions:
         get:
             tags:
                 - PortfolioService
             operationId: PortfolioService_ListPortfolioTransactions
             parameters:
-                - name: portfolioName
+                - name: portfolioId
                   in: path
                   required: true
                   schema:
@@ -128,13 +128,13 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/portfolios/{transaction.portfolio_name}/transactions:
+    /v1/portfolios/{transaction.portfolio_id}/transactions:
         post:
             tags:
                 - PortfolioService
             operationId: PortfolioService_CreatePortfolioTransaction
             parameters:
-                - name: transaction.portfolio_name
+                - name: transaction.portfolio_id
                   in: path
                   required: true
                   schema:
@@ -164,7 +164,7 @@ paths:
                 - SecuritiesService
             operationId: SecuritiesService_ListSecurities
             parameters:
-                - name: filter.securityNames
+                - name: filter.securityIds
                   in: query
                   schema:
                     type: array
@@ -183,13 +183,13 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/securities/{name}:
+    /v1/securities/{id}:
         get:
             tags:
                 - SecuritiesService
             operationId: SecuritiesService_GetSecurity
             parameters:
-                - name: name
+                - name: id
                   in: path
                   required: true
                   schema:
@@ -207,13 +207,13 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/transactions/{name}:
+    /v1/transactions/{id}:
         get:
             tags:
                 - PortfolioService
             operationId: PortfolioService_GetPortfolioTransaction
             parameters:
-                - name: name
+                - name: id
                   in: path
                   required: true
                   schema:
@@ -231,13 +231,13 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/transactions/{transaction.name}:
+    /v1/transactions/{transaction.id}:
         put:
             tags:
                 - PortfolioService
             operationId: PortfolioService_UpdatePortfolioTransaction
             parameters:
-                - name: transaction.name
+                - name: transaction.id
                   in: path
                   required: true
                   schema:
@@ -319,12 +319,12 @@ components:
                         $ref: '#/components/schemas/Security'
         ListedSecurity:
             required:
-                - securityName
+                - securityId
                 - ticker
                 - currency
             type: object
             properties:
-                securityName:
+                securityId:
                     type: string
                 ticker:
                     type: string
@@ -337,19 +337,19 @@ components:
                     format: date-time
         Portfolio:
             required:
-                - name
+                - id
                 - displayName
-                - bankAccountName
+                - bankAccountId
             type: object
             properties:
-                name:
+                id:
                     type: string
                 displayName:
                     type: string
-                bankAccountName:
+                bankAccountId:
                     type: string
                     description: |-
-                        BankAccountName contains the name/identifier of the underlying bank
+                        BankAccountId contains the id/identifier of the underlying bank
                          account.
                 events:
                     type: array
@@ -360,18 +360,18 @@ components:
                          dividends or other. They need to be ordered by time (ascending).
         PortfolioEvent:
             required:
-                - name
+                - id
                 - type
                 - time
-                - portfolioName
-                - securityName
+                - portfolioId
+                - securityId
                 - amount
                 - price
                 - fees
                 - taxes
             type: object
             properties:
-                name:
+                id:
                     type: string
                 type:
                     enum:
@@ -391,9 +391,9 @@ components:
                 time:
                     type: string
                     format: date-time
-                portfolioName:
+                portfolioId:
                     type: string
-                securityName:
+                securityId:
                     type: string
                 amount:
                     type: number
@@ -528,20 +528,20 @@ components:
                  the portfolio at a certain time in the past.
         Security:
             required:
-                - name
+                - id
                 - displayName
                 - listedOn
                 - quoteProvider
             type: object
             properties:
-                name:
+                id:
                     type: string
                     description: |-
-                        Name contains the unique resource name. For a stock or bond, this should be
+                        Id contains the unique resource ID. For a stock or bond, this should be
                          an ISIN.
                 displayName:
                     type: string
-                    description: DisplayName contains the human readable name.
+                    description: DisplayName contains the human readable id.
                 listedOn:
                     type: array
                     items:

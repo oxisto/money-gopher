@@ -48,7 +48,7 @@ func (svc *service) ListPortfolios(ctx context.Context, req *connect.Request[por
 			res.Msg.Portfolios = list
 
 			for _, p := range res.Msg.Portfolios {
-				p.Events, err = svc.events.List(p.Name)
+				p.Events, err = svc.events.List(p.Id)
 				if err != nil {
 					return err
 				}
@@ -61,10 +61,10 @@ func (svc *service) ListPortfolios(ctx context.Context, req *connect.Request[por
 
 func (svc *service) GetPortfolio(ctx context.Context, req *connect.Request[portfoliov1.GetPortfolioRequest]) (res *connect.Response[portfoliov1.Portfolio], err error) {
 	return crud.Get(
-		req.Msg.Name,
+		req.Msg.Id,
 		svc.portfolios,
 		func(obj *portfoliov1.Portfolio) *portfoliov1.Portfolio {
-			obj.Events, _ = svc.events.List(obj.Name)
+			obj.Events, _ = svc.events.List(obj.Id)
 
 			return obj
 		},
@@ -73,7 +73,7 @@ func (svc *service) GetPortfolio(ctx context.Context, req *connect.Request[portf
 
 func (svc *service) UpdatePortfolio(ctx context.Context, req *connect.Request[portfoliov1.UpdatePortfolioRequest]) (res *connect.Response[portfoliov1.Portfolio], err error) {
 	return crud.Update(
-		req.Msg.Portfolio.Name,
+		req.Msg.Portfolio.Id,
 		req.Msg.Portfolio,
 		req.Msg.UpdateMask.Paths,
 		svc.portfolios,
@@ -84,5 +84,5 @@ func (svc *service) UpdatePortfolio(ctx context.Context, req *connect.Request[po
 }
 
 func (svc *service) DeletePortfolio(ctx context.Context, req *connect.Request[portfoliov1.DeletePortfolioRequest]) (res *connect.Response[emptypb.Empty], err error) {
-	return crud.Delete(req.Msg.Name, svc.portfolios)
+	return crud.Delete(req.Msg.Id, svc.portfolios)
 }

@@ -1,6 +1,6 @@
 import FormattedDate from "@/components/formatted-date";
 import PortfolioPerformance from "@/components/portfolio-performance";
-import client, { Portfolio } from "@/lib/api";
+import client, { SchemaPortfolio } from "@/lib/api";
 import {
   ArrowTrendingUpIcon,
   CalendarDaysIcon,
@@ -14,16 +14,16 @@ interface PortfolioCardProps {
   /**
    * The portfolio to show.
    */
-  portfolio: Portfolio;
+  portfolio: SchemaPortfolio;
 }
 
 export default async function PortfolioCard({ portfolio }: PortfolioCardProps) {
   const { data: snapshot } = await client.GET(
-    "/v1/portfolios/{portfolioName}/snapshot",
+    "/v1/portfolios/{portfolioId}/snapshot",
     {
       params: {
         path: {
-          portfolioName: portfolio.name,
+          portfolioId: portfolio.id,
         },
       },
     },
@@ -37,7 +37,7 @@ export default async function PortfolioCard({ portfolio }: PortfolioCardProps) {
           <dl className="flex flex-wrap">
             <div className="flex-auto pl-6 pt-6">
               <dt className="text-sm font-semibold leading-6 text-gray-900">
-                <Link href={`/portfolios/${portfolio.name}`}>
+                <Link href={`/portfolios/${portfolio.id}`}>
                   {portfolio.displayName}
                 </Link>
               </dt>
@@ -106,7 +106,7 @@ export default async function PortfolioCard({ portfolio }: PortfolioCardProps) {
           </dl>
           <div className="mt-6 border-t border-gray-900/5 px-6 py-6">
             <a
-              href={"/portfolios/" + portfolio.name}
+              href={"/portfolios/" + portfolio.id}
               className="text-sm font-semibold leading-6 text-gray-900"
             >
               Show positions

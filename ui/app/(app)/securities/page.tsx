@@ -55,15 +55,15 @@ export default async function Securities() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {securities.map((security) => (
-                  <tr key={security.name}>
+                  <tr key={security.id}>
                     <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">
-                      {security.name}
+                      {security.id}
                     </td>
                     <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                       {security.displayName}
                     </td>
                     <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                      {security.listedOn.map((ls) => (
+                      {security.listedOn?.map((ls) => (
                         <div key={ls.ticker}>
                           {ls.ticker} |{" "}
                           {ls.latestQuote && (
@@ -77,7 +77,7 @@ export default async function Securities() {
                         href="#"
                         className="text-indigo-600 hover:text-indigo-900"
                       >
-                        Edit<span className="sr-only">, {security.name}</span>
+                        Edit<span className="sr-only">, {security.id}</span>
                       </a>
                     </td>
                   </tr>

@@ -54,16 +54,16 @@ func Test_service_CreatePortfolioTransaction(t *testing.T) {
 			args: args{
 				req: connect.NewRequest(&portfoliov1.CreatePortfolioTransactionRequest{
 					Transaction: &portfoliov1.PortfolioEvent{
-						PortfolioName: "mybank-myportfolio",
-						Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
-						SecurityName:  "My Security",
-						Amount:        1,
-						Price:         portfoliov1.Value(2000),
+						PortfolioId: "mybank-myportfolio",
+						Type:        portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+						SecurityId:  "My Security",
+						Amount:      1,
+						Price:       portfoliov1.Value(2000),
 					},
 				}),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioEvent]) bool {
-				return assert.Equals(t, "My Security", r.Msg.GetSecurityName())
+				return assert.Equals(t, "My Security", r.Msg.GetSecurityId())
 			},
 			wantSvc: func(t *testing.T, s *service) bool {
 				list, _ := s.events.List("mybank-myportfolio")
@@ -78,16 +78,16 @@ func Test_service_CreatePortfolioTransaction(t *testing.T) {
 			args: args{
 				req: connect.NewRequest(&portfoliov1.CreatePortfolioTransactionRequest{
 					Transaction: &portfoliov1.PortfolioEvent{
-						PortfolioName: "mybank-myportfolio",
-						Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
-						SecurityName:  "My Security",
-						Amount:        1,
-						Price:         portfoliov1.Value(2000),
+						PortfolioId: "mybank-myportfolio",
+						Type:        portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
+						SecurityId:  "My Security",
+						Amount:      1,
+						Price:       portfoliov1.Value(2000),
 					},
 				}),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioEvent]) bool {
-				return assert.Equals(t, "My Security", r.Msg.GetSecurityName())
+				return assert.Equals(t, "My Security", r.Msg.GetSecurityId())
 			},
 			wantSvc: func(t *testing.T, s *service) bool {
 				list, _ := s.events.List("mybank-myportfolio")
@@ -95,17 +95,17 @@ func Test_service_CreatePortfolioTransaction(t *testing.T) {
 			},
 		},
 		{
-			name: "missing security name",
+			name: "missing security ID",
 			fields: fields{
 				portfolios: myPortfolio(t),
 			},
 			args: args{
 				req: connect.NewRequest(&portfoliov1.CreatePortfolioTransactionRequest{
 					Transaction: &portfoliov1.PortfolioEvent{
-						PortfolioName: "mybank-myportfolio",
-						Type:          portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
-						Amount:        1,
-						Price:         portfoliov1.Value(2000),
+						PortfolioId: "mybank-myportfolio",
+						Type:        portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
+						Amount:      1,
+						Price:       portfoliov1.Value(2000),
 					},
 				}),
 			},
@@ -164,11 +164,11 @@ func Test_service_GetPortfolioTransaction(t *testing.T) {
 			},
 			args: args{
 				req: connect.NewRequest(&portfoliov1.GetPortfolioTransactionRequest{
-					Name: "buy",
+					Id: "buy",
 				}),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioEvent]) bool {
-				return assert.Equals(t, "buy", r.Msg.Name) && assert.Equals(t, "mybank-myportfolio", r.Msg.PortfolioName)
+				return assert.Equals(t, "buy", r.Msg.Id) && assert.Equals(t, "mybank-myportfolio", r.Msg.PortfolioId)
 			},
 		},
 	}
@@ -212,7 +212,7 @@ func Test_service_ListPortfolioTransactions(t *testing.T) {
 			},
 			args: args{
 				req: connect.NewRequest(&portfoliov1.ListPortfolioTransactionsRequest{
-					PortfolioName: "mybank-myportfolio",
+					PortfolioId: "mybank-myportfolio",
 				}),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.ListPortfolioTransactionsResponse]) bool {
@@ -261,15 +261,15 @@ func Test_service_UpdatePortfolioTransaction(t *testing.T) {
 			args: args{
 				req: connect.NewRequest(&portfoliov1.UpdatePortfolioTransactionRequest{
 					Transaction: &portfoliov1.PortfolioEvent{
-						Name:         "buy",
-						Type:         portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
-						SecurityName: "My Second Security",
+						Id:         "buy",
+						Type:       portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+						SecurityId: "My Second Security",
 					},
-					UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"security_name"}},
+					UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"security_id"}},
 				}),
 			},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioEvent]) bool {
-				return assert.Equals(t, "My Second Security", r.Msg.SecurityName)
+				return assert.Equals(t, "My Second Security", r.Msg.SecurityId)
 			},
 		},
 	}
@@ -363,7 +363,7 @@ func Test_service_ImportTransactions(t *testing.T) {
 			},
 			args: args{
 				req: connect.NewRequest(&portfoliov1.ImportTransactionsRequest{
-					PortfolioName: "mybank-myportfolio",
+					PortfolioId: "mybank-myportfolio",
 					FromCsv: `Date;Type;Value;Transaction Currency;Gross Amount;Currency Gross Amount;Exchange Rate;Fees;Taxes;Shares;ISIN;WKN;Ticker Symbol;Security Name;Note
 2021-06-05T00:00;Buy;2.151,85;EUR;;;;10,25;0,00;20;US0378331005;865985;APC.F;Apple Inc.;
 2021-06-05T00:00;Sell;-2.151,85;EUR;;;;10,25;0,00;20;US0378331005;865985;APC.F;Apple Inc.;

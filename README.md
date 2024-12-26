@@ -85,7 +85,7 @@ curl \
 This should print something like the following.
 
 ```json
-{"portfolios":[{"name":"mybank-myportfolio","displayName":"My Portfolio"}]}
+{"portfolios":[{"id":"mybank-myportfolio","displayName":"My Portfolio"}]}
 ```
 
 ## Using `mgo`
@@ -100,7 +100,7 @@ To add transactions (buy, sell, etc.) to an existing portfolio, the command `mgo
 portfolio transaction create` can be used. The following shows an example for
 the security with the ISIN US0378331005.
 ```zsh
-mgo portfolio transactions create US0378331005 --portfolio-name mybank-myportfolio --amount 5 --price 120 --time="2022-01-01 10:00"
+mgo portfolio transactions create US0378331005 --portfolio-id mybank-myportfolio --amount 5 --price 120 --time="2022-01-01 10:00"
 ```
 
 When successful, this should print something like the following.

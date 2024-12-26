@@ -13,7 +13,7 @@ export async function PortfolioItem() {
           href: "/portfolios",
           icon: "folder",
           children: portfolios.map((p) => {
-            return { name: p.displayName, href: `/portfolios/${p.name}` };
+            return { name: p.displayName, href: `/portfolios/${p.id}` };
           }),
         }}
       />

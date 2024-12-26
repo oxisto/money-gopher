@@ -31,7 +31,7 @@ var _ persistence.StorageObject = &Portfolio{}
 
 func (*Portfolio) InitTables(db *persistence.DB) (err error) {
 	_, err1 := db.Exec(`CREATE TABLE IF NOT EXISTS portfolios (
-name TEXT PRIMARY KEY,
+id TEXT PRIMARY KEY,
 display_name TEXT NOT NULL
 );`)
 	err2 := (&PortfolioEvent{}).InitTables(db)
@@ -40,15 +40,15 @@ display_name TEXT NOT NULL
 }
 
 func (*Portfolio) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`REPLACE INTO portfolios (name, display_name) VALUES (?,?);`)
+	return db.Prepare(`REPLACE INTO portfolios (id, display_name) VALUES (?,?);`)
 }
 
 func (*Portfolio) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`SELECT name, display_name FROM portfolios`)
+	return db.Prepare(`SELECT id, display_name FROM portfolios`)
 }
 
 func (*Portfolio) PrepareGet(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`SELECT name, display_name FROM portfolios WHERE name = ?`)
+	return db.Prepare(`SELECT id, display_name FROM portfolios WHERE id = ?`)
 }
 
 func (*Portfolio) PrepareUpdate(db *persistence.DB, columns []string) (stmt *sql.Stmt, err error) {
@@ -63,24 +63,24 @@ func (*Portfolio) PrepareUpdate(db *persistence.DB, columns []string) (stmt *sql
 		set[i] = persistence.Quote(col) + " = ?"
 	}
 
-	query += "UPDATE portfolios SET " + strings.Join(set, ", ") + " WHERE name = ?;"
+	query += "UPDATE portfolios SET " + strings.Join(set, ", ") + " WHERE id = ?;"
 
 	return db.Prepare(query)
 }
 
 func (*Portfolio) PrepareDelete(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`DELETE FROM portfolios WHERE name = ?`)
+	return db.Prepare(`DELETE FROM portfolios WHERE id = ?`)
 }
 
 func (p *Portfolio) ReplaceIntoArgs() []any {
-	return []any{p.Name, p.DisplayName}
+	return []any{p.Id, p.DisplayName}
 }
 
 func (p *Portfolio) UpdateArgs(columns []string) (args []any) {
 	for _, col := range columns {
 		switch col {
-		case "name":
-			args = append(args, p.Name)
+		case "id":
+			args = append(args, p.Id)
 		case "display_name":
 			args = append(args, p.DisplayName)
 		}
@@ -94,7 +94,7 @@ func (*Portfolio) Scan(sc persistence.Scanner) (obj persistence.StorageObject, e
 		p Portfolio
 	)
 
-	err = sc.Scan(&p.Name, &p.DisplayName)
+	err = sc.Scan(&p.Id, &p.DisplayName)
 	if err != nil {
 		return nil, err
 	}
@@ -104,11 +104,11 @@ func (*Portfolio) Scan(sc persistence.Scanner) (obj persistence.StorageObject, e
 
 func (*PortfolioEvent) InitTables(db *persistence.DB) (err error) {
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS portfolio_events (
-name TEXT PRIMARY KEY,
+id TEXT PRIMARY KEY,
 type INTEGER NOT NULL,
 time DATETIME NOT NULL,
-portfolio_name TEXT NOT NULL, 
-security_name TEXT NOT NULL,
+portfolio_id TEXT NOT NULL, 
+security_id TEXT NOT NULL,
 amount REAL,
 price INTEGER,
 fees INTEGER,
@@ -123,17 +123,17 @@ taxes INTEGER
 
 func (*PortfolioEvent) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) {
 	return db.Prepare(`REPLACE INTO portfolio_events
-(name, type, time, portfolio_name, security_name, amount, price, fees, taxes)
+(id, type, time, portfolio_id, security_id, amount, price, fees, taxes)
 VALUES (?,?,?,?,?,?,?,?,?);`)
 }
 
 func (*PortfolioEvent) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`SELECT name, type, time, portfolio_name, security_name, amount, price, fees, taxes
-FROM portfolio_events WHERE portfolio_name = ? ORDER BY time ASC`)
+	return db.Prepare(`SELECT id, type, time, portfolio_id, security_id, amount, price, fees, taxes
+FROM portfolio_events WHERE portfolio_id = ? ORDER BY time ASC`)
 }
 
 func (*PortfolioEvent) PrepareGet(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`SELECT * FROM portfolio_events WHERE name = ?`)
+	return db.Prepare(`SELECT * FROM portfolio_events WHERE id = ?`)
 }
 
 func (*PortfolioEvent) PrepareUpdate(db *persistence.DB, columns []string) (stmt *sql.Stmt, err error) {
@@ -148,22 +148,22 @@ func (*PortfolioEvent) PrepareUpdate(db *persistence.DB, columns []string) (stmt
 		set[i] = persistence.Quote(col) + " = ?"
 	}
 
-	query += "UPDATE portfolio_events SET " + strings.Join(set, ", ") + " WHERE name = ?;"
+	query += "UPDATE portfolio_events SET " + strings.Join(set, ", ") + " WHERE id = ?;"
 
 	return db.Prepare(query)
 }
 
 func (*PortfolioEvent) PrepareDelete(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`DELETE FROM portfolio_events WHERE name = ?`)
+	return db.Prepare(`DELETE FROM portfolio_events WHERE id = ?`)
 }
 
 func (e *PortfolioEvent) ReplaceIntoArgs() []any {
 	return []any{
-		e.Name,
+		e.Id,
 		e.Type,
 		e.Time.AsTime(),
-		e.PortfolioName,
-		e.SecurityName,
+		e.PortfolioId,
+		e.SecurityId,
 		e.Amount,
 		e.Price.GetValue(),
 		e.Fees.GetValue(),
@@ -174,16 +174,16 @@ func (e *PortfolioEvent) ReplaceIntoArgs() []any {
 func (e *PortfolioEvent) UpdateArgs(columns []string) (args []any) {
 	for _, col := range columns {
 		switch col {
-		case "name":
-			args = append(args, e.Name)
+		case "id":
+			args = append(args, e.Id)
 		case "type":
 			args = append(args, e.Type)
 		case "time":
 			args = append(args, e.Time.AsTime())
-		case "portfolio_name":
-			args = append(args, e.PortfolioName)
-		case "security_name":
-			args = append(args, e.SecurityName)
+		case "portfolio_id":
+			args = append(args, e.PortfolioId)
+		case "security_id":
+			args = append(args, e.SecurityId)
 		case "amount":
 			args = append(args, e.Amount)
 		case "price":
@@ -209,11 +209,11 @@ func (*PortfolioEvent) Scan(sc persistence.Scanner) (obj persistence.StorageObje
 	e.Taxes = Zero()
 
 	err = sc.Scan(
-		&e.Name,
+		&e.Id,
 		&e.Type,
 		&t,
-		&e.PortfolioName,
-		&e.SecurityName,
+		&e.PortfolioId,
+		&e.SecurityId,
 		&e.Amount,
 		&e.Price.Value,
 		&e.Fees.Value,

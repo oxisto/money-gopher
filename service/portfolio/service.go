@@ -56,14 +56,14 @@ func NewService(opts Options) portfoliov1connect.PortfolioServiceHandler {
 
 	// Add a simple starter portfolio
 	s.portfolios.Replace(&portfoliov1.Portfolio{
-		Name:            "mybank-myportfolio",
-		DisplayName:     "My Portfolio",
-		BankAccountName: "mybank-mycash",
+		Id:            "mybank-myportfolio",
+		DisplayName:   "My Portfolio",
+		BankAccountId: "mybank-mycash",
 	})
 
 	// Add its cash account
 	s.bankAccounts.Replace(&portfoliov1.BankAccount{
-		Name:        "mybank-mycash",
+		Id:          "mybank-mycash",
 		DisplayName: "My Cash Account",
 	})
 

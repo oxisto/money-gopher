@@ -1,4 +1,3 @@
-import { PortfolioEvent } from "@/lib/api";
 import {
   Listbox,
   ListboxButton,
@@ -7,7 +6,7 @@ import {
   ListboxProps,
 } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/24/outline";
-import { SelectHTMLAttributes, useState } from "react";
+import { useState } from "react";
 
 interface ListBoxProps<T>
   extends ListboxProps<
@@ -27,9 +26,9 @@ export default function ListBox<T>({
 }: ListBoxProps<T>) {
   const [selected, setSelected] = useState<
     | {
-        value: T;
-        display: string;
-      }
+      value: T;
+      display: string;
+    }
     | undefined
   >(options.find((option) => option.value == value));
   return (

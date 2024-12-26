@@ -43,10 +43,10 @@ func (svc *service) CreateSecurity(ctx context.Context, req *connect.Request[por
 
 func (svc *service) GetSecurity(ctx context.Context, req *connect.Request[portfoliov1.GetSecurityRequest]) (res *connect.Response[portfoliov1.Security], err error) {
 	return crud.Get(
-		req.Msg.Name,
+		req.Msg.Id,
 		svc.securities,
 		func(obj *portfoliov1.Security) *portfoliov1.Security {
-			obj.ListedOn, _ = svc.listedSecurities.List(obj.Name)
+			obj.ListedOn, _ = svc.listedSecurities.List(obj.Id)
 
 			return obj
 		},
@@ -60,7 +60,7 @@ func (svc *service) ListSecurities(ctx context.Context, req *connect.Request[por
 			res.Msg.Securities = list
 
 			for _, sec := range res.Msg.Securities {
-				sec.ListedOn, err = svc.listedSecurities.List(sec.Name)
+				sec.ListedOn, err = svc.listedSecurities.List(sec.Id)
 				if err != nil {
 					return err
 				}
@@ -73,7 +73,7 @@ func (svc *service) ListSecurities(ctx context.Context, req *connect.Request[por
 
 func (svc *service) UpdateSecurity(ctx context.Context, req *connect.Request[portfoliov1.UpdateSecurityRequest]) (res *connect.Response[portfoliov1.Security], err error) {
 	return crud.Update(
-		req.Msg.Security.Name,
+		req.Msg.Security.Id,
 		req.Msg.Security,
 		req.Msg.UpdateMask.Paths,
 		svc.securities,
@@ -91,7 +91,7 @@ func (svc *service) UpdateSecurity(ctx context.Context, req *connect.Request[por
 
 func (svc *service) DeleteSecurity(ctx context.Context, req *connect.Request[portfoliov1.DeleteSecurityRequest]) (res *connect.Response[emptypb.Empty], err error) {
 	return crud.Delete(
-		req.Msg.Name,
+		req.Msg.Id,
 		svc.securities,
 	)
 }
@@ -101,7 +101,7 @@ func (svc *service) fetchSecurity(name string) (sec *portfoliov1.Security, err e
 		name,
 		svc.securities,
 		func(obj *portfoliov1.Security) *portfoliov1.Security {
-			obj.ListedOn, _ = svc.listedSecurities.List(obj.Name)
+			obj.ListedOn, _ = svc.listedSecurities.List(obj.Id)
 
 			return obj
 		},

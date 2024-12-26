@@ -37,11 +37,11 @@ import (
 var mockSecuritiesClientWithData = &mockSecuritiesClient{
 	securities: []*portfoliov1.Security{
 		{
-			Name:        "US0378331005",
+			Id:          "US0378331005",
 			DisplayName: "Apple, Inc.",
 			ListedOn: []*portfoliov1.ListedSecurity{
 				{
-					SecurityName:         "US0378331005",
+					SecurityId:           "US0378331005",
 					Ticker:               "APC.F",
 					Currency:             currency.EUR.String(),
 					LatestQuote:          portfoliov1.Value(10000),
@@ -76,11 +76,11 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 				securities: mockSecuritiesClientWithData,
 			},
 			args: args{req: connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
-				PortfolioName: "mybank-myportfolio",
+				PortfolioId: "mybank-myportfolio",
 			})},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioSnapshot]) bool {
 				return true &&
-					assert.Equals(t, "US0378331005", r.Msg.Positions["US0378331005"].Security.Name) &&
+					assert.Equals(t, "US0378331005", r.Msg.Positions["US0378331005"].Security.Id) &&
 					assert.Equals(t, 10, r.Msg.Positions["US0378331005"].Amount) &&
 					assert.Equals(t, portfoliov1.Value(107080), r.Msg.Positions["US0378331005"].PurchaseValue) &&
 					assert.Equals(t, portfoliov1.Value(10708), r.Msg.Positions["US0378331005"].PurchasePrice) &&
@@ -94,14 +94,14 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 				securities: mockSecuritiesClientWithData,
 			},
 			args: args{req: connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
-				PortfolioName: "mybank-myportfolio",
-				Time:          timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC)),
+				PortfolioId: "mybank-myportfolio",
+				Time:        timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC)),
 			})},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioSnapshot]) bool {
 				pos := r.Msg.Positions["US0378331005"]
 
 				return true &&
-					assert.Equals(t, "US0378331005", pos.Security.Name) &&
+					assert.Equals(t, "US0378331005", pos.Security.Id) &&
 					assert.Equals(t, 20, pos.Amount) &&
 					assert.Equals(t, portfoliov1.Value(214160), pos.PurchaseValue) &&
 					assert.Equals(t, portfoliov1.Value(10708), pos.PurchasePrice) &&
@@ -116,8 +116,8 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 				securities: mockSecuritiesClientWithData,
 			},
 			args: args{req: connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
-				PortfolioName: "mybank-myportfolio",
-				Time:          timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC)),
+				PortfolioId: "mybank-myportfolio",
+				Time:        timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC)),
 			})},
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioSnapshot]) bool {
 				return true &&
@@ -132,8 +132,8 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 				securities: &mockSecuritiesClient{listSecuritiesError: io.EOF},
 			},
 			args: args{req: connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
-				PortfolioName: "mybank-myportfolio",
-				Time:          timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC)),
+				PortfolioId: "mybank-myportfolio",
+				Time:        timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC)),
 			})},
 			wantErr: true,
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioSnapshot]) bool {
@@ -147,8 +147,8 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 				securities: &mockSecuritiesClient{listSecuritiesError: io.EOF},
 			},
 			args: args{req: connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
-				PortfolioName: "mybank-myportfolio",
-				Time:          timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC)),
+				PortfolioId: "mybank-myportfolio",
+				Time:        timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC)),
 			})},
 			wantErr: true,
 			wantRes: func(t *testing.T, r *connect.Response[portfoliov1.PortfolioSnapshot]) bool {

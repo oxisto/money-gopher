@@ -35,9 +35,9 @@ var portfolioEventSetter = func(obj *portfoliov1.PortfolioEvent) *portfoliov1.Po
 }
 
 var (
-	ErrMissingSecurityName = errors.New("the specified transaction type requires a security name")
-	ErrMissingPrice        = errors.New("a transaction requires a price")
-	ErrMissingAmount       = errors.New("the specified transaction type requires an amount")
+	ErrMissingSecurityId = errors.New("the specified transaction type requires a security ID")
+	ErrMissingPrice      = errors.New("a transaction requires a price")
+	ErrMissingAmount     = errors.New("the specified transaction type requires an amount")
 )
 
 func (svc *service) CreatePortfolioTransaction(ctx context.Context, req *connect.Request[portfoliov1.CreatePortfolioTransactionRequest]) (res *connect.Response[portfoliov1.PortfolioEvent], err error) {
@@ -50,8 +50,8 @@ func (svc *service) CreatePortfolioTransaction(ctx context.Context, req *connect
 	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL:
 		fallthrough
 	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY:
-		if tx.SecurityName == "" {
-			return nil, connect.NewError(connect.CodeInvalidArgument, ErrMissingSecurityName)
+		if tx.SecurityId == "" {
+			return nil, connect.NewError(connect.CodeInvalidArgument, ErrMissingSecurityId)
 		} else if tx.Amount == 0 {
 			return nil, connect.NewError(connect.CodeInvalidArgument, ErrMissingAmount)
 		}
@@ -63,7 +63,7 @@ func (svc *service) CreatePortfolioTransaction(ctx context.Context, req *connect
 	}
 
 	// Create a unique name for the transaction
-	tx.MakeUniqueName()
+	tx.MakeUniqueID()
 
 	slog.Info(
 		"Creating transaction",
@@ -79,7 +79,7 @@ func (svc *service) CreatePortfolioTransaction(ctx context.Context, req *connect
 
 func (svc *service) GetPortfolioTransaction(ctx context.Context, req *connect.Request[portfoliov1.GetPortfolioTransactionRequest]) (res *connect.Response[portfoliov1.PortfolioEvent], err error) {
 	return crud.Get(
-		req.Msg.Name,
+		req.Msg.Id,
 		svc.events,
 		func(obj *portfoliov1.PortfolioEvent) *portfoliov1.PortfolioEvent {
 			return obj
@@ -97,7 +97,7 @@ func (svc *service) ListPortfolioTransactions(ctx context.Context, req *connect.
 			res.Msg.Transactions = list
 			return nil
 		},
-		req.Msg.PortfolioName,
+		req.Msg.PortfolioId,
 	)
 }
 
@@ -109,7 +109,7 @@ func (svc *service) UpdatePortfolioTransaction(ctx context.Context, req *connect
 	)
 
 	return crud.Update(
-		req.Msg.Transaction.Name,
+		req.Msg.Transaction.Id,
 		req.Msg.Transaction,
 		req.Msg.UpdateMask.Paths,
 		svc.events,
@@ -130,7 +130,7 @@ func (svc *service) ImportTransactions(ctx context.Context, req *connect.Request
 		secs []*portfoliov1.Security
 	)
 
-	txs, secs = csv.Import(bytes.NewReader([]byte(req.Msg.FromCsv)), req.Msg.PortfolioName)
+	txs, secs = csv.Import(bytes.NewReader([]byte(req.Msg.FromCsv)), req.Msg.PortfolioId)
 
 	for _, sec := range secs {
 		// TODO(oxisto): Once "Create" is really create and not replace, we need

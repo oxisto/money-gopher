@@ -1,14 +1,14 @@
-import client, { Portfolio } from "@/lib/api";
+import client, { SchemaPortfolio } from "@/lib/api";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 export async function createPortfolio(formData: FormData) {
   "use server";
 
-  const portfolio: Portfolio = {
-    name: formData.get("name")?.toString() ?? "",
+  const portfolio: SchemaPortfolio = {
+    id: formData.get("id")?.toString() ?? "",
     displayName: formData.get("displayName")?.toString() ?? "",
-    bankAccountName: "",
+    bankAccountId: "",
   };
 
   const { data: newPortfolio, error } = await client.POST("/v1/portfolios", {
@@ -20,6 +20,6 @@ export async function createPortfolio(formData: FormData) {
 
   if (newPortfolio) {
     revalidatePath("/portfolios");
-    redirect(`/portfolios/${newPortfolio.name}`);
+    redirect(`/portfolios/${newPortfolio.id}`);
   }
 }

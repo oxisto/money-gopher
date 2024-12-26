@@ -39,7 +39,7 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 	)
 
 	// Retrieve transactions
-	p.Events, err = svc.events.List(req.Msg.PortfolioName)
+	p.Events, err = svc.events.List(req.Msg.PortfolioId)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -64,7 +64,7 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 		snap.FirstTransactionTime = p.Events[0].Time
 	}
 
-	// Retrieve the event map; a map of events indexed by their security name
+	// Retrieve the event map; a map of events indexed by their security ID
 	m = p.EventMap()
 	names = keys(m)
 
@@ -73,7 +73,7 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 		context.Background(),
 		forwardAuth(connect.NewRequest(&portfoliov1.ListSecuritiesRequest{
 			Filter: &portfoliov1.ListSecuritiesRequest_Filter{
-				SecurityNames: names,
+				SecurityIds: names,
 			},
 		}), req),
 	)
@@ -85,7 +85,7 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 
 	// Make a map out of the securities list so we can access it easier
 	secmap = moneygopher.Map(secres.Msg.Securities, func(s *portfoliov1.Security) string {
-		return s.Name
+		return s.Id
 	})
 
 	// We need to look at the portfolio events up to the time of the snapshot

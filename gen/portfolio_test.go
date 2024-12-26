@@ -30,7 +30,7 @@ func TestPortfolioEvent_MakeUniqueName(t *testing.T) {
 		Type          PortfolioEventType
 		Time          *timestamppb.Timestamp
 		PortfolioName string
-		SecurityName  string
+		SecurityId    string
 		Amount        float64
 		Price         *Currency
 		Fees          *Currency
@@ -44,31 +44,31 @@ func TestPortfolioEvent_MakeUniqueName(t *testing.T) {
 		{
 			name: "happy path",
 			fields: fields{
-				SecurityName:  "stock",
+				SecurityId:    "stock",
 				PortfolioName: "mybank-myportfolio",
 				Amount:        10,
 				Type:          PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
 				Time:          timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.Local)),
 			},
 			want: func(t *testing.T, tx *PortfolioEvent) bool {
-				return assert.Equals(t, "a04f32c39c6b9086", tx.Name)
+				return assert.Equals(t, "a04f32c39c6b9086", tx.Id)
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tx := &PortfolioEvent{
-				Name:          tt.fields.Name,
-				Type:          tt.fields.Type,
-				Time:          tt.fields.Time,
-				PortfolioName: tt.fields.PortfolioName,
-				SecurityName:  tt.fields.SecurityName,
-				Amount:        tt.fields.Amount,
-				Price:         tt.fields.Price,
-				Fees:          tt.fields.Fees,
-				Taxes:         tt.fields.Taxes,
+				Id:          tt.fields.Name,
+				Type:        tt.fields.Type,
+				Time:        tt.fields.Time,
+				PortfolioId: tt.fields.PortfolioName,
+				SecurityId:  tt.fields.SecurityId,
+				Amount:      tt.fields.Amount,
+				Price:       tt.fields.Price,
+				Fees:        tt.fields.Fees,
+				Taxes:       tt.fields.Taxes,
 			}
-			tx.MakeUniqueName()
+			tx.MakeUniqueID()
 			tt.want(t, tx)
 		})
 	}

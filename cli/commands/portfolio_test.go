@@ -27,158 +27,6 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-/*
-func TestCreatePortfolioCmd_Run(t *testing.T) {
-	srv := servertest.NewServer(internal.NewTestDB(t))
-	defer srv.Close()
-
-	type fields struct {
-		Name        string
-		DisplayName string
-	}
-	type args struct {
-		s *cli.Session
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "happy path",
-			fields: fields{
-				Name:        "myportfolio",
-				DisplayName: "My Portfolio",
-			},
-			args: args{
-				s: func() *cli.Session {
-					return cli.NewSession(&cli.SessionOptions{
-						BaseURL:    srv.URL,
-						HttpClient: srv.Client(),
-					})
-				}(),
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cmd := &CreatePortfolioCmd{
-				Name:        tt.fields.Name,
-				DisplayName: tt.fields.DisplayName,
-			}
-			if err := cmd.Run(tt.args.s); (err != nil) != tt.wantErr {
-				t.Errorf("CreatePortfolioCmd.Run() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestShowPortfolioCmd_Run(t *testing.T) {
-	srv := servertest.NewServer(internal.NewTestDB(t))
-	defer srv.Close()
-
-	type fields struct {
-		PortfolioName string
-	}
-	type args struct {
-		s *cli.Session
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "happy path",
-			fields: fields{
-				PortfolioName: "myportfolio",
-			},
-			args: args{
-				s: func() *cli.Session {
-					return cli.NewSession(&cli.SessionOptions{
-						BaseURL:    srv.URL,
-						HttpClient: srv.Client(),
-					})
-				}(),
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cmd := &ShowPortfolioCmd{
-				PortfolioName: tt.fields.PortfolioName,
-			}
-			if err := cmd.Run(tt.args.s); (err != nil) != tt.wantErr {
-				t.Errorf("ShowPortfolioCmd.Run() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestCreateTransactionCmd_Run(t *testing.T) {
-	srv := servertest.NewServer(internal.NewTestDB(t))
-	defer srv.Close()
-
-	type fields struct {
-		PortfolioName string
-		SecurityId    string
-		Type          string
-		Amount        float64
-		Price         float32
-		Fees          float32
-		Taxes         float32
-		Time          time.Time
-	}
-	type args struct {
-		s *cli.Session
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "happy path",
-			fields: fields{
-				PortfolioName: "myportfolio",
-				Price:         10.0,
-			},
-			args: args{
-				s: func() *cli.Session {
-					return cli.NewSession(&cli.SessionOptions{
-						BaseURL:    srv.URL,
-						HttpClient: srv.Client(),
-					})
-				}(),
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cmd := &CreateTransactionCmd{
-				PortfolioName: tt.fields.PortfolioName,
-				SecurityId:    tt.fields.SecurityId,
-				Type:          tt.fields.Type,
-				Amount:        tt.fields.Amount,
-				Price:         tt.fields.Price,
-				Fees:          tt.fields.Fees,
-				Taxes:         tt.fields.Taxes,
-				Time:          tt.fields.Time,
-			}
-			if err := cmd.Run(tt.args.s); (err != nil) != tt.wantErr {
-				t.Errorf("CreateTransactionCmd.Run() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-*/
-
 func TestListPortfolio(t *testing.T) {
 	srv := servertest.NewServer(internal.NewTestDB(t))
 	defer srv.Close()
@@ -261,7 +109,7 @@ func TestShowPortfolio(t *testing.T) {
 				ctx: clitest.NewSessionContext(t, srv),
 				cmd: clitest.MockCommand(t,
 					PortfolioCmd.Commands[2].Flags,
-					"--portfolio-name", "myportfolio",
+					"--portfolio-id", "myportfolio",
 				),
 			},
 		},
@@ -301,8 +149,8 @@ func TestCreateTransaction(t *testing.T) {
 				ctx: clitest.NewSessionContext(t, srv),
 				cmd: clitest.MockCommand(t,
 					PortfolioCmd.Commands[3].Commands[0].Flags,
-					"--portfolio-name", "myportfolio",
-					"--security-name", "mysecurity",
+					"--portfolio-id", "myportfolio",
+					"--security-id", "mysecurity",
 					"--type", "buy",
 					"--amount", "10",
 					"--price", "10",
@@ -342,7 +190,7 @@ func TestImportTransactions(t *testing.T) {
 				ctx: clitest.NewSessionContext(t, srv),
 				cmd: clitest.MockCommand(t,
 					PortfolioCmd.Command("transactions").Command("import").Flags,
-					"--portfolio-name", "myportfolio",
+					"--portfolio-id", "myportfolio",
 					"--csv-file", "../../internal/testdata/transactions.csv",
 				),
 			},
