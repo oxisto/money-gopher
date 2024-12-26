@@ -30,7 +30,13 @@ import (
 	"connectrpc.com/connect"
 	"github.com/lmittmann/tint"
 	oauth2 "github.com/oxisto/oauth2go"
+	"github.com/urfave/cli/v3"
 )
+
+type sessionKeyType struct{}
+
+// SessionKey is the key for the session in the context.
+var SessionKey sessionKeyType
 
 // Session holds all necessary information about the current CLI session.
 type Session struct {
@@ -43,7 +49,7 @@ type Session struct {
 // SessionOptions holds all options to configure a [Session].
 type SessionOptions struct {
 	OAuth2Config *oauth2.Config
-	HttpClient   *http.Client
+	HttpClient   *http.Client `json:"-"`
 	Token        *oauth2.Token
 	BaseURL      string
 }
@@ -72,6 +78,7 @@ func (opts *SessionOptions) MergeWith(other *SessionOptions) *SessionOptions {
 // DefaultBaseURL is the default base URL for all services.
 const DefaultBaseURL = "http://localhost:8080"
 
+// NewSession creates a new session.
 func NewSession(opts *SessionOptions) (s *Session) {
 	def := &SessionOptions{
 		HttpClient: opts.HttpClient,
@@ -87,6 +94,7 @@ func NewSession(opts *SessionOptions) (s *Session) {
 	return s
 }
 
+// ContinueSession continues a session from a file.
 func ContinueSession() (s *Session, err error) {
 	var (
 		file *os.File
@@ -98,7 +106,7 @@ func ContinueSession() (s *Session, err error) {
 	}
 
 	s = new(Session)
-	err = json.NewDecoder(file).Decode(&s)
+	err = json.NewDecoder(file).Decode(&s.opts)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse session file: %w", err)
 	}
@@ -108,6 +116,7 @@ func ContinueSession() (s *Session, err error) {
 	return
 }
 
+// Save saves the session to a file.
 func (s *Session) Save() (err error) {
 	var (
 		file *os.File
@@ -118,7 +127,8 @@ func (s *Session) Save() (err error) {
 		return
 	}
 
-	err = json.NewEncoder(file).Encode(s)
+	// We don't want to save the clients, so we only save the options.
+	err = json.NewEncoder(file).Encode(s.opts)
 	if err != nil {
 		return fmt.Errorf("could not save session file: %w", err)
 	}
@@ -126,6 +136,7 @@ func (s *Session) Save() (err error) {
 	return nil
 }
 
+// initClients initializes the clients for the session.
 func (s *Session) initClients() {
 	interceptor := func(next connect.UnaryFunc) connect.UnaryFunc {
 		return connect.UnaryFunc(func(
@@ -144,6 +155,10 @@ func (s *Session) initClients() {
 		})
 	}
 
+	if s.opts.HttpClient == nil {
+		s.opts.HttpClient = http.DefaultClient
+	}
+
 	s.PortfolioClient = portfoliov1connect.NewPortfolioServiceClient(
 		s.opts.HttpClient, s.opts.BaseURL,
 		connect.WithHTTPGet(),
@@ -155,4 +170,27 @@ func (s *Session) initClients() {
 		connect.WithHTTPGet(),
 		connect.WithInterceptors(connect.UnaryInterceptorFunc(interceptor)),
 	)
+}
+
+// FromContext extracts the session from the context.
+func FromContext(ctx context.Context) (s *Session) {
+	s = ctx.Value(SessionKey).(*Session)
+	return
+}
+
+// InjectSession is a pre-hook that injects the session into the context.
+func InjectSession(ctx context.Context, cmd *cli.Command) (newCtx context.Context, err error) {
+	if cmd.NArg() != 0 {
+		s, err := ContinueSession()
+		if err != nil {
+			fmt.Println("Could not continue with existing session or session is missing. Please use `mgo login`.")
+			return ctx, err
+		}
+
+		newCtx = context.WithValue(ctx, SessionKey, s)
+	} else {
+		newCtx = ctx
+	}
+
+	return
 }

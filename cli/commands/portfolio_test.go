@@ -17,16 +17,17 @@
 package commands
 
 import (
+	"context"
 	"testing"
-	"time"
 
 	"github.com/oxisto/assert"
-	"github.com/oxisto/money-gopher/cli"
 	"github.com/oxisto/money-gopher/internal"
+	"github.com/oxisto/money-gopher/internal/testing/clitest"
 	"github.com/oxisto/money-gopher/internal/testing/servertest"
-	"github.com/posener/complete"
+	"github.com/urfave/cli/v3"
 )
 
+/*
 func TestCreatePortfolioCmd_Run(t *testing.T) {
 	srv := servertest.NewServer(internal.NewTestDB(t))
 	defer srv.Close()
@@ -124,7 +125,7 @@ func TestCreateTransactionCmd_Run(t *testing.T) {
 
 	type fields struct {
 		PortfolioName string
-		SecurityName  string
+		SecurityId    string
 		Type          string
 		Amount        float64
 		Price         float32
@@ -162,7 +163,7 @@ func TestCreateTransactionCmd_Run(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := &CreateTransactionCmd{
 				PortfolioName: tt.fields.PortfolioName,
-				SecurityName:  tt.fields.SecurityName,
+				SecurityId:    tt.fields.SecurityId,
 				Type:          tt.fields.Type,
 				Amount:        tt.fields.Amount,
 				Price:         tt.fields.Price,
@@ -176,38 +177,182 @@ func TestCreateTransactionCmd_Run(t *testing.T) {
 		})
 	}
 }
+*/
 
-func TestListPortfolioCmd_Run(t *testing.T) {
+func TestListPortfolio(t *testing.T) {
 	srv := servertest.NewServer(internal.NewTestDB(t))
 	defer srv.Close()
 
 	type args struct {
-		s *cli.Session
+		ctx context.Context
+		cmd *cli.Command
 	}
 	tests := []struct {
 		name    string
-		l       *ListPortfolioCmd
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "happy path",
 			args: args{
-				s: func() *cli.Session {
-					return cli.NewSession(&cli.SessionOptions{
-						BaseURL:    srv.URL,
-						HttpClient: srv.Client(),
-					})
-				}(),
+				ctx: clitest.NewSessionContext(t, srv),
+				cmd: &cli.Command{},
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			l := &ListPortfolioCmd{}
-			if err := l.Run(tt.args.s); (err != nil) != tt.wantErr {
-				t.Errorf("ListPortfolioCmd.Run() error = %v, wantErr %v", err, tt.wantErr)
+			if err := ListPortfolio(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
+				t.Errorf("ListPortfolio() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestCreatePortfolio(t *testing.T) {
+	srv := servertest.NewServer(internal.NewTestDB(t))
+	defer srv.Close()
+
+	type args struct {
+		ctx context.Context
+		cmd *cli.Command
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			args: args{
+				ctx: clitest.NewSessionContext(t, srv),
+				cmd: &cli.Command{},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := CreatePortfolio(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
+				t.Errorf("CreatePortfolio() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestShowPortfolio(t *testing.T) {
+	srv := servertest.NewServer(internal.NewTestDB(t))
+	defer srv.Close()
+
+	type args struct {
+		ctx context.Context
+		cmd *cli.Command
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+		wantRec assert.Want[*clitest.CommandRecorder]
+	}{
+		{
+			name: "happy path",
+			args: args{
+				ctx: clitest.NewSessionContext(t, srv),
+				cmd: clitest.MockCommand(t,
+					PortfolioCmd.Commands[2].Flags,
+					"--portfolio-name", "myportfolio",
+				),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := clitest.NewCommandRecorder()
+			tt.args.cmd.Writer = rec
+			if err := ShowPortfolio(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
+				t.Errorf("ShowPortfolio() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if tt.wantRec != nil {
+				tt.wantRec(t, rec)
+			}
+		})
+	}
+}
+
+func TestCreateTransaction(t *testing.T) {
+	srv := servertest.NewServer(internal.NewTestDB(t))
+	defer srv.Close()
+
+	type args struct {
+		ctx context.Context
+		cmd *cli.Command
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			args: args{
+				ctx: clitest.NewSessionContext(t, srv),
+				cmd: clitest.MockCommand(t,
+					PortfolioCmd.Commands[3].Commands[0].Flags,
+					"--portfolio-name", "myportfolio",
+					"--security-name", "mysecurity",
+					"--type", "buy",
+					"--amount", "10",
+					"--price", "10",
+					"--fees", "0",
+					"--taxes", "0",
+					"--time", "2023-01-01",
+				),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := CreateTransaction(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
+				t.Errorf("CreateTransaction() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestImportTransactions(t *testing.T) {
+	srv := servertest.NewServer(internal.NewTestDB(t))
+	defer srv.Close()
+
+	type args struct {
+		ctx context.Context
+		cmd *cli.Command
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			args: args{
+				ctx: clitest.NewSessionContext(t, srv),
+				cmd: clitest.MockCommand(t,
+					PortfolioCmd.Command("transactions").Command("import").Flags,
+					"--portfolio-name", "myportfolio",
+					"--csv-file", "../../internal/testdata/transactions.csv",
+				),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := ImportTransactions(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
+				t.Errorf("ImportTransactions() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -218,38 +363,33 @@ func TestPredictPortfolios(t *testing.T) {
 	defer srv.Close()
 
 	type args struct {
-		s *cli.Session
-		a complete.Args
+		ctx context.Context
+		cmd *cli.Command
 	}
 	tests := []struct {
-		name string
-		args args
-		want assert.Want[[]string]
+		name    string
+		args    args
+		wantRec assert.Want[*clitest.CommandRecorder]
 	}{
 		{
 			name: "happy path",
 			args: args{
-				s: func() *cli.Session {
-					return cli.NewSession(&cli.SessionOptions{
-						BaseURL:    srv.URL,
-						HttpClient: srv.Client(),
-					})
-				}(),
-				a: complete.Args{
-					All:  []string{},
-					Last: "my",
-				},
+				ctx: clitest.NewSessionContext(t, srv),
+				cmd: &cli.Command{},
 			},
-			want: func(t *testing.T, s []string) bool {
-				return len(s) > 0
+			wantRec: func(t *testing.T, r *clitest.CommandRecorder) bool {
+				return assert.Equals(t, "mybank-myportfolio:My Portfolio\n", r.String())
 			},
 		},
 	}
 	for _, tt := range tests {
+		rec := clitest.Record(tt.args.cmd)
 		t.Run(tt.name, func(t *testing.T) {
-			fn := PredictPortfolios(tt.args.s)
-			got := fn.Predict(tt.args.a)
-			tt.want(t, got)
+			PredictPortfolios(tt.args.ctx, tt.args.cmd)
 		})
+
+		if tt.wantRec != nil {
+			tt.wantRec(t, rec)
+		}
 	}
 }

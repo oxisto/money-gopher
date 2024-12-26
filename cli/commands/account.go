@@ -20,28 +20,40 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/oxisto/money-gopher/cli"
+	mcli "github.com/oxisto/money-gopher/cli"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 
 	"connectrpc.com/connect"
+	"github.com/urfave/cli/v3"
 )
 
-type BankAccountCmd struct {
-	Create CreateBankAccountCmd `cmd:"" help:"Creates a new bank account."`
+// BankAccountCmd is the command for bank account related commands.
+var BankAccountCmd = &cli.Command{
+	Name:   "bank-account",
+	Usage:  "Manage bank accounts",
+	Before: mcli.InjectSession,
+	Commands: []*cli.Command{
+		{
+			Name:   "create",
+			Usage:  "Creates a new bank account",
+			Action: CreateBankAccount,
+			Flags: []cli.Flag{
+				&cli.StringFlag{Name: "name", Usage: "The identifier of the portfolio, e.g. mybank-myportfolio", Required: true},
+				&cli.StringFlag{Name: "display-name", Usage: "The display name of the portfolio"},
+			},
+		},
+	},
 }
 
-type CreateBankAccountCmd struct {
-	Name        string `help:"The identifier of the portfolio, e.g. mybank-myportfolio" required:""`
-	DisplayName string `help:"The display name of the portfolio"`
-}
-
-func (cmd *CreateBankAccountCmd) Run(s *cli.Session) error {
+// CreateBankAccount creates a new bank account.
+func CreateBankAccount(ctx context.Context, cmd *cli.Command) error {
+	s := mcli.FromContext(ctx)
 	res, err := s.PortfolioClient.CreateBankAccount(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.CreateBankAccountRequest{
 			BankAccount: &portfoliov1.BankAccount{
-				Name:        cmd.Name,
-				DisplayName: cmd.DisplayName,
+				Name:        cmd.String("name"),
+				DisplayName: cmd.String("display-name"),
 			},
 		}),
 	)
@@ -49,6 +61,6 @@ func (cmd *CreateBankAccountCmd) Run(s *cli.Session) error {
 		return err
 	}
 
-	fmt.Println(res.Msg)
+	fmt.Fprint(cmd.Writer, res.Msg)
 	return nil
 }

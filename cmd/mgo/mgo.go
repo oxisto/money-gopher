@@ -17,49 +17,16 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"log/slog"
 	"os"
 
-	"github.com/oxisto/money-gopher/cli"
+	"github.com/lmittmann/tint"
 	"github.com/oxisto/money-gopher/cli/commands"
-
-	"github.com/alecthomas/kong"
-	kongcompletion "github.com/jotaen/kong-completion"
 )
 
 func main() {
-	var (
-		s      *cli.Session
-		ctx    *kong.Context
-		parser *kong.Kong
-		err    error
-	)
-
-	parser = kong.Must(&commands.CLI,
-		kong.Name("mgo"),
-		kong.Description("A shell-like example app."),
-		kong.UsageOnError(),
-	)
-
-	// Proceed as normal after kongplete.Complete.
-	ctx, err = parser.Parse(os.Args[1:])
-	parser.FatalIfErrorf(err)
-
-	// The only command we allow without a session is "Login"
-	if ctx.Args[0] != "login" {
-		// TODO(oxisto): Can we move this to a pre-hook?
-		s, err = cli.ContinueSession()
-		if err != nil {
-			fmt.Println("Could not continue with existing session or session is missing. Please use `mgo login`.")
-			return
-		}
+	if err := commands.CLICmd.Run(context.Background(), os.Args); err != nil {
+		slog.Error("Error while running command", tint.Err(err))
 	}
-
-	kongcompletion.Register(parser,
-		commands.WithPredictPortfolios(s),
-		commands.WithPredictSecurities(s),
-	)
-
-	err = ctx.Run(s)
-	parser.FatalIfErrorf(err)
 }

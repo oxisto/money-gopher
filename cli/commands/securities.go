@@ -21,53 +21,69 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/oxisto/money-gopher/cli"
+	mcli "github.com/oxisto/money-gopher/cli"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 
 	"connectrpc.com/connect"
-	kongcompletion "github.com/jotaen/kong-completion"
-	"github.com/posener/complete"
+	"github.com/urfave/cli/v3"
 )
 
-type SecurityCmd struct {
-	List            ListSecuritiesCmd  `cmd:"" help:"Lists all securities."`
-	UpdateQuote     UpdateQuoteCmd     `cmd:"" help:"Triggers an update of one or more securities' quotes."`
-	UpdateAllQuotes UpdateAllQuotesCmd `cmd:"" help:"Triggers an update of all quotes."`
+// SecuritiesCmd is the command for security related commands.
+var SecuritiesCmd = &cli.Command{
+	Name:   "securities",
+	Usage:  "Securities commands",
+	Before: mcli.InjectSession,
+	Commands: []*cli.Command{
+		{
+			Name:   "list",
+			Usage:  "Lists all securities",
+			Action: ListSecurities,
+		},
+		{
+			Name:   "update-quote",
+			Usage:  "Triggers an update of one or more securities' quotes",
+			Action: UpdateQuote,
+			Flags: []cli.Flag{
+				&cli.StringSliceFlag{Name: "security-names", Usage: "The security IDs to update", Required: true},
+			},
+			EnableShellCompletion: true,
+			ShellComplete:         PredictSecurities,
+		},
+		{
+			Name:   "update-all-quotes",
+			Usage:  "Triggers an update of all quotes",
+			Action: UpdateAllQuotes,
+		},
+	},
 }
 
-type ListSecuritiesCmd struct{}
-
-// Exec implements [repl.Command]
-func (cmd *ListSecuritiesCmd) Run(s *cli.Session) error {
+// ListSecurities lists all securities.
+func ListSecurities(ctx context.Context, cmd *cli.Command) error {
+	s := mcli.FromContext(ctx)
 	res, err := s.SecuritiesClient.ListSecurities(context.Background(), connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}))
 	if err != nil {
 		return err
 	}
-
-	fmt.Println(res.Msg.Securities)
+	fmt.Fprintln(cmd.Writer, res.Msg.Securities)
 	return nil
 }
 
-type UpdateQuoteCmd struct {
-	SecurityNames []string `arg:""`
-}
-
-// Exec implements [cli.Command]
-func (cmd *UpdateQuoteCmd) Run(s *cli.Session) error {
+// UpdateQuote triggers an update of one or more securities' quotes.
+func UpdateQuote(ctx context.Context, cmd *cli.Command) error {
+	s := mcli.FromContext(ctx)
 	_, err := s.SecuritiesClient.TriggerSecurityQuoteUpdate(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.TriggerQuoteUpdateRequest{
-			SecurityNames: cmd.SecurityNames,
+			SecurityNames: cmd.StringSlice("security-names"),
 		}),
 	)
 
 	return err
 }
 
-type UpdateAllQuotesCmd struct{}
-
-// Exec implements [cli.Command]
-func (cmd *UpdateAllQuotesCmd) Run(s *cli.Session) error {
+// UpdateAllQuotes triggers an update of all quotes.
+func UpdateAllQuotes(ctx context.Context, cmd *cli.Command) error {
+	s := mcli.FromContext(ctx)
 	res, err := s.SecuritiesClient.ListSecurities(context.Background(), connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}))
 	if err != nil {
 		return err
@@ -89,27 +105,18 @@ func (cmd *UpdateAllQuotesCmd) Run(s *cli.Session) error {
 	return err
 }
 
-func WithPredictSecurities(s *cli.Session) kongcompletion.Option {
-	return kongcompletion.WithPredictor(
-		"security",
-		PredictSecurities(s),
+// PredictSecurities predicts the securities for shell completion.
+func PredictSecurities(ctx context.Context, cmd *cli.Command) {
+	s := mcli.FromContext(ctx)
+	res, err := s.SecuritiesClient.ListSecurities(
+		context.Background(),
+		connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}),
 	)
-}
-
-func PredictSecurities(s *cli.Session) complete.PredictFunc {
-	return func(complete.Args) (names []string) {
-		res, err := s.SecuritiesClient.ListSecurities(
-			context.Background(),
-			connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}),
-		)
-		if err != nil {
-			return nil
-		}
-
-		for _, p := range res.Msg.Securities {
-			names = append(names, p.Name)
-		}
-
+	if err != nil {
 		return
+	}
+
+	for _, p := range res.Msg.Securities {
+		fmt.Fprintf(cmd.Root().Writer, "%s:%s\n", p.Name, p.DisplayName)
 	}
 }
