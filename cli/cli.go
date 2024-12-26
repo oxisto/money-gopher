@@ -35,6 +35,7 @@ import (
 
 type sessionKeyType struct{}
 
+// SessionKey is the key for the session in the context.
 var SessionKey sessionKeyType
 
 // Session holds all necessary information about the current CLI session.
@@ -77,6 +78,7 @@ func (opts *SessionOptions) MergeWith(other *SessionOptions) *SessionOptions {
 // DefaultBaseURL is the default base URL for all services.
 const DefaultBaseURL = "http://localhost:8080"
 
+// NewSession creates a new session.
 func NewSession(opts *SessionOptions) (s *Session) {
 	def := &SessionOptions{
 		HttpClient: opts.HttpClient,
@@ -92,6 +94,7 @@ func NewSession(opts *SessionOptions) (s *Session) {
 	return s
 }
 
+// ContinueSession continues a session from a file.
 func ContinueSession() (s *Session, err error) {
 	var (
 		file *os.File
@@ -113,6 +116,7 @@ func ContinueSession() (s *Session, err error) {
 	return
 }
 
+// Save saves the session to a file.
 func (s *Session) Save() (err error) {
 	var (
 		file *os.File
@@ -132,6 +136,7 @@ func (s *Session) Save() (err error) {
 	return nil
 }
 
+// initClients initializes the clients for the session.
 func (s *Session) initClients() {
 	interceptor := func(next connect.UnaryFunc) connect.UnaryFunc {
 		return connect.UnaryFunc(func(
@@ -167,6 +172,7 @@ func (s *Session) initClients() {
 	)
 }
 
+// FromContext extracts the session from the context.
 func FromContext(ctx context.Context) (s *Session) {
 	s = ctx.Value(SessionKey).(*Session)
 	return

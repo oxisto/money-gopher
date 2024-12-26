@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	mcli "github.com/oxisto/money-gopher/cli"
+
 	"github.com/oxisto/assert"
 	oauth2 "github.com/oxisto/oauth2go"
 	"github.com/oxisto/oauth2go/login"
@@ -60,6 +62,11 @@ func TestLoginAction(t *testing.T) {
 			"--callback", callback,
 		})
 		assert.NoError(t, err)
+
+		// Resume the session
+		_, err := mcli.ContinueSession()
+		assert.NoError(t, err)
+
 		done <- true
 	}()
 
