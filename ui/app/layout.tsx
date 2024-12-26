@@ -3,13 +3,12 @@ import Sidebar from "@/components/sidebar/sidebar";
 import { classNames } from "@/lib/util";
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getMessages } from "next-intl/server";
 import localFont from "next/font/local";
 import { Suspense } from "react";
 import "./globals.css";
 
 const inter = localFont({
-  src: "../node_modules/inter-ui/variable/interVariable.woff2",
+  src: "fonts/interVariable.woff2",
   variable: "--sans",
 });
 
