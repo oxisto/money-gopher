@@ -18,10 +18,10 @@ package securities
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 	"time"
 
-	moneygopher "github.com/oxisto/money-gopher"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/internal"
 	"github.com/oxisto/money-gopher/persistence"
@@ -44,7 +44,7 @@ func Test_service_TriggerSecurityQuoteUpdate(t *testing.T) {
 	RegisterQuoteProvider(QuoteProviderMock, &mockQP{})
 
 	type fields struct {
-		securities persistence.StorageOperations[*portfoliov1.Security]
+		db *persistence.DB
 	}
 	type args struct {
 		ctx context.Context
@@ -60,20 +60,22 @@ func Test_service_TriggerSecurityQuoteUpdate(t *testing.T) {
 		{
 			name: "happy path",
 			fields: fields{
-				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {
-					ops.Replace(&portfoliov1.Security{
-						Id:            "My Security",
-						QuoteProvider: moneygopher.Ref("mock"),
+				db: internal.NewTestDB(t, func(db *persistence.DB) {
+					_, err := db.CreateSecurity(context.Background(), persistence.CreateSecurityParams{
+						ID:            "My Security",
+						QuoteProvider: sql.NullString{String: QuoteProviderMock, Valid: true},
 					})
-					rel := persistence.Relationship[*portfoliov1.ListedSecurity](ops)
-					assert.NoError(t, rel.Replace(&portfoliov1.ListedSecurity{
-						SecurityId: "My Security",
+					assert.NoError(t, err)
+					_, err = db.UpsertListedSecurity(context.Background(), persistence.UpsertListedSecurityParams{
+						SecurityID: "My Security",
 						Ticker:     "SEC",
 						Currency:   currency.EUR.String(),
-					}))
+					})
+					assert.NoError(t, err)
 				}),
 			},
 			args: args{
+				ctx: context.TODO(),
 				req: connect.NewRequest(&portfoliov1.TriggerQuoteUpdateRequest{
 					SecurityIds: []string{"My Security"},
 				}),
@@ -86,8 +88,7 @@ func Test_service_TriggerSecurityQuoteUpdate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &service{
-				securities:       tt.fields.securities,
-				listedSecurities: persistence.Relationship[*portfoliov1.ListedSecurity](tt.fields.securities),
+				db: tt.fields.db,
 			}
 			gotRes, err := svc.TriggerSecurityQuoteUpdate(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
@@ -107,7 +108,7 @@ func (mockQuoteProvider) LatestQuote(_ context.Context, _ *persistence.ListedSec
 
 func Test_service_updateQuote(t *testing.T) {
 	type fields struct {
-		securities persistence.StorageOperations[*portfoliov1.Security]
+		db *persistence.DB
 	}
 	type args struct {
 		qp QuoteProvider
@@ -123,10 +124,18 @@ func Test_service_updateQuote(t *testing.T) {
 		{
 			name: "happy path",
 			fields: fields{
-				securities: internal.NewTestDBOps(t, func(ops persistence.StorageOperations[*portfoliov1.Security]) {
-					ops.Replace(&portfoliov1.Security{Id: "My Security"})
-					rel := persistence.Relationship[*portfoliov1.ListedSecurity](ops)
-					assert.NoError(t, rel.Replace(&portfoliov1.ListedSecurity{SecurityId: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}))
+				db: internal.NewTestDB(t, func(db *persistence.DB) {
+					_, err := db.CreateSecurity(context.Background(), persistence.CreateSecurityParams{
+						ID:            "My Security",
+						QuoteProvider: sql.NullString{String: QuoteProviderMock, Valid: true},
+					})
+					assert.NoError(t, err)
+					_, err = db.UpsertListedSecurity(context.Background(), persistence.UpsertListedSecurityParams{
+						SecurityID: "My Security",
+						Ticker:     "SEC",
+						Currency:   currency.EUR.String(),
+					})
+					assert.NoError(t, err)
 				}),
 			},
 			args: args{
@@ -141,8 +150,7 @@ func Test_service_updateQuote(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &service{
-				securities:       tt.fields.securities,
-				listedSecurities: persistence.Relationship[*portfoliov1.ListedSecurity](tt.fields.securities),
+				db: tt.fields.db,
 			}
 			if err := svc.updateQuote(tt.args.qp, tt.args.ls); (err != nil) != tt.wantErr {
 				t.Errorf("updateQuote() error = %v, wantErr %v", err, tt.wantErr)

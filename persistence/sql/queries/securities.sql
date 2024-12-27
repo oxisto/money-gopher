@@ -16,9 +16,9 @@ ORDER BY
 
 -- name: CreateSecurity :one
 INSERT INTO
-    securities (id, display_name)
+    securities (id, display_name, quote_provider)
 VALUES
-    (?, ?) RETURNING *;
+    (?, ?, ?) RETURNING *;
 
 -- name: UpdateSecurity :one
 UPDATE securities
