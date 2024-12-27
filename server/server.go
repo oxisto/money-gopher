@@ -18,7 +18,6 @@ package server
 
 import (
 	"crypto/ecdsa"
-	"log"
 	"log/slog"
 	"net/http"
 
@@ -105,6 +104,7 @@ func StartServer(pdb *persistence.DB, opts Options) (err error) {
 
 	mux := http.NewServeMux()
 	mux.Handle("/", transcoder)
+	ConfigureGraphQL(mux, pdb)
 
 	err = http.ListenAndServe(
 		":8080",
@@ -115,8 +115,8 @@ func StartServer(pdb *persistence.DB, opts Options) (err error) {
 	return err
 }
 
-func StartGraphQLServer(db *persistence.DB) (err error) {
-	port := "9090"
+// ConfigureGraphQL configures the GraphQL server for a [http.ServeMux].
+func ConfigureGraphQL(mux *http.ServeMux, db *persistence.DB) (err error) {
 	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
 		DB: db,
 	}}))
@@ -127,10 +127,8 @@ func StartGraphQLServer(db *persistence.DB) (err error) {
 
 	srv.Use(extension.Introspection{})
 
-	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", srv)
+	mux.Handle("/graphql", playground.Handler("GraphQL playground", "/graphql/query"))
+	mux.Handle("/graphql/query", srv)
 
-	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
 	return err
 }

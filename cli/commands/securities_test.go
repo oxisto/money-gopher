@@ -19,17 +19,15 @@ package commands
 
 import (
 	"context"
-	"strings"
 	"testing"
 
+	"github.com/oxisto/assert"
 	moneygopher "github.com/oxisto/money-gopher"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/internal"
 	"github.com/oxisto/money-gopher/internal/testing/clitest"
 	"github.com/oxisto/money-gopher/internal/testing/servertest"
 	"github.com/oxisto/money-gopher/persistence"
-
-	"github.com/oxisto/assert"
 	"github.com/urfave/cli/v3"
 )
 
@@ -142,7 +140,19 @@ func TestListSecurities(t *testing.T) {
 				cmd: clitest.MockCommand(t, SecuritiesCmd.Command("list").Flags),
 			},
 			wantRec: func(t *testing.T, rec *clitest.CommandRecorder) bool {
-				return assert.Equals(t, true, strings.Contains(rec.String(), "1234"))
+				return assert.Equals(t, `{
+  "securities": [
+    {
+      "id": "1234",
+      "displayName": "One Two Three Four"
+    },
+    {
+      "id": "US0378331005",
+      "displayName": "Apple Inc."
+    }
+  ]
+}
+`, rec.String())
 			},
 		},
 	}
@@ -153,6 +163,60 @@ func TestListSecurities(t *testing.T) {
 			tt.args.cmd.Writer = rec
 			if err := ListSecurities(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
 				t.Errorf("ListSecurities() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if tt.wantRec != nil {
+				tt.wantRec(t, rec)
+			}
+		})
+	}
+}
+
+func TestShowSecurity(t *testing.T) {
+	srv := servertest.NewServer(internal.NewTestDB(t))
+	defer srv.Close()
+
+	type args struct {
+		ctx context.Context
+		cmd *cli.Command
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+		wantRec assert.Want[*clitest.CommandRecorder]
+	}{
+		{
+			name: "happy path",
+			args: args{
+				ctx: clitest.NewSessionContext(t, srv),
+				cmd: clitest.MockCommand(t, SecuritiesCmd.Command("show").Flags, "--security-id", "US0378331005"),
+			},
+			wantRec: func(t *testing.T, rec *clitest.CommandRecorder) bool {
+				return assert.Equals(t, `{
+  "security": {
+    "id": "US0378331005",
+    "displayName": "Apple Inc.",
+    "listedAs": [
+      {
+        "ticker": "AAPL"
+      },
+      {
+        "ticker": "APC.F"
+      }
+    ]
+  }
+}
+`, rec.String())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := clitest.Record(tt.args.cmd)
+			if err := ShowSecurity(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
+				t.Errorf("ShowSecurity() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
 			if tt.wantRec != nil {
