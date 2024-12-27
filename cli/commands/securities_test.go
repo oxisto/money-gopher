@@ -110,14 +110,13 @@ func TestUpdateAllQuotes(t *testing.T) {
 
 func TestListSecurities(t *testing.T) {
 	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
-		q := persistence.New(db)
-		_, err := q.CreateSecurity(context.Background(), persistence.CreateSecurityParams{
+		_, err := db.CreateSecurity(context.Background(), persistence.CreateSecurityParams{
 			ID:          "1234",
 			DisplayName: "One Two Three Four",
 		})
 		assert.NoError(t, err)
 
-		_, err = q.UpsertListedSecurity(context.Background(), persistence.UpsertListedSecurityParams{
+		_, err = db.UpsertListedSecurity(context.Background(), persistence.UpsertListedSecurityParams{
 			SecurityID: "1234",
 			Ticker:     "ONE",
 			Currency:   "USD",

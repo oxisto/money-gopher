@@ -49,7 +49,10 @@ func (o Options) LogValue() slog.Value {
 }
 
 // DB is a type alias around [sql.DB] to avoid importing the [database/sql] package.
-type DB = sql.DB
+type DB struct {
+	*Queries
+	*sql.DB
+}
 
 type StorageObject interface {
 	InitTables(db *DB) (err error)
@@ -80,22 +83,23 @@ type ops[T StorageObject] struct {
 }
 
 // OpenDB opens a connection to our database.
-func OpenDB(opts Options) (db *DB, q *Queries, err error) {
+func OpenDB(opts Options) (db *DB, err error) {
 	if opts.UseInMemory {
 		opts.DSN = ":memory:?_pragma=foreign_keys(1)"
 	} else if opts.DSN == "" {
 		opts.DSN = "money.db"
 	}
 
-	db, err = sql.Open("sqlite3", opts.DSN)
+	inner, err := sql.Open("sqlite3", opts.DSN)
 	if err != nil {
-		return nil, nil, fmt.Errorf("could not open database: %w", err)
+		return nil, fmt.Errorf("could not open database: %w", err)
 	}
+	db = &DB{Queries: New(inner), DB: inner}
 
 	slog.Info("Successfully opened database connection", "opts", opts)
 
 	// Prepare database migrations with goose
-	provider, err := goose.NewProvider(database.DialectSQLite3, db, migrations.Embed)
+	provider, err := goose.NewProvider(database.DialectSQLite3, db.DB, migrations.Embed)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -103,15 +107,12 @@ func OpenDB(opts Options) (db *DB, q *Queries, err error) {
 	// Apply all migrations
 	results, err := provider.Up(context.Background())
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	for _, result := range results {
 		slog.Debug("Applied migration.", "migration", result)
 	}
-
-	// Create a new query object
-	q = New(db)
 
 	return
 }
