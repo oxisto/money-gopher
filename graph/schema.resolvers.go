@@ -6,14 +6,45 @@ package graph
 
 import (
 	"context"
+	"fmt"
 	"slices"
+	"time"
 
 	"github.com/oxisto/money-gopher/persistence"
 )
 
+// Currency is the resolver for the currency field.
+func (r *currencyResolver) Currency(ctx context.Context, obj *persistence.Currency) (string, error) {
+	panic(fmt.Errorf("not implemented: Currency - currency"))
+}
+
 // Security is the resolver for the security field.
 func (r *listedSecurityResolver) Security(ctx context.Context, obj *persistence.ListedSecurity) (*persistence.Security, error) {
 	return r.DB.GetSecurity(ctx, obj.SecurityID)
+}
+
+// LatestQuote is the resolver for the latestQuote field.
+func (r *listedSecurityResolver) LatestQuote(ctx context.Context, obj *persistence.ListedSecurity) (*persistence.Currency, error) {
+	if obj.LatestQuote.Valid {
+		return &persistence.Currency{
+			Value:  int32(obj.LatestQuote.Int64),
+			Symbol: obj.Currency,
+		}, nil
+	} else {
+		return nil, nil
+	}
+}
+
+// LatestQuoteTimestamp is the resolver for the latestQuoteTimestamp field.
+func (r *listedSecurityResolver) LatestQuoteTimestamp(ctx context.Context, obj *persistence.ListedSecurity) (*string, error) {
+	var s string
+
+	if obj.LatestQuoteTimestamp.Valid {
+		s = obj.LatestQuoteTimestamp.Time.Format(time.RFC3339)
+		return &s, nil
+	} else {
+		return nil, nil
+	}
 }
 
 // CreateSecurity is the resolver for the createSecurity field.
@@ -91,6 +122,16 @@ func (r *mutationResolver) UpdateSecurity(ctx context.Context, id string, input 
 	})
 }
 
+// TriggerQuoteUpdate is the resolver for the triggerQuoteUpdate field.
+func (r *mutationResolver) TriggerQuoteUpdate(ctx context.Context, securityIDs []string) (b bool, err error) {
+	err = r.QuoteUpdater.UpdateQuotes(ctx, securityIDs)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 // Security is the resolver for the security field.
 func (r *queryResolver) Security(ctx context.Context, id string) (*persistence.Security, error) {
 	return r.DB.GetSecurity(ctx, id)
@@ -112,8 +153,11 @@ func (r *securityResolver) QuoteProvider(ctx context.Context, obj *persistence.S
 
 // ListedAs is the resolver for the listedAs field.
 func (r *securityResolver) ListedAs(ctx context.Context, obj *persistence.Security) ([]*persistence.ListedSecurity, error) {
-	return r.DB.ListListedSecuritiesBySecurityID(ctx, obj.ID)
+	return obj.ListedAs(ctx, r.DB)
 }
+
+// Currency returns CurrencyResolver implementation.
+func (r *Resolver) Currency() CurrencyResolver { return &currencyResolver{r} }
 
 // ListedSecurity returns ListedSecurityResolver implementation.
 func (r *Resolver) ListedSecurity() ListedSecurityResolver { return &listedSecurityResolver{r} }
@@ -127,6 +171,7 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 // Security returns SecurityResolver implementation.
 func (r *Resolver) Security() SecurityResolver { return &securityResolver{r} }
 
+type currencyResolver struct{ *Resolver }
 type listedSecurityResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

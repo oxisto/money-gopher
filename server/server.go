@@ -85,8 +85,9 @@ func StartServer(pdb *persistence.DB, opts Options) (err error) {
 				SecuritiesClient: portfoliov1connect.NewSecuritiesServiceClient(http.DefaultClient, portfolio.DefaultSecuritiesServiceURL),
 			},
 		), interceptors))
+	svc := securities.NewService(pdb)
 	securitiesService := vanguard.NewService(
-		portfoliov1connect.NewSecuritiesServiceHandler(securities.NewService(pdb), interceptors),
+		portfoliov1connect.NewSecuritiesServiceHandler(svc, interceptors),
 	)
 
 	transcoder, err = vanguard.NewTranscoder([]*vanguard.Service{
@@ -104,7 +105,7 @@ func StartServer(pdb *persistence.DB, opts Options) (err error) {
 
 	mux := http.NewServeMux()
 	mux.Handle("/", transcoder)
-	ConfigureGraphQL(mux, pdb)
+	ConfigureGraphQL(mux, pdb, svc.(securities.QuoteUpdater))
 
 	err = http.ListenAndServe(
 		":8080",
@@ -116,9 +117,14 @@ func StartServer(pdb *persistence.DB, opts Options) (err error) {
 }
 
 // ConfigureGraphQL configures the GraphQL server for a [http.ServeMux].
-func ConfigureGraphQL(mux *http.ServeMux, db *persistence.DB) (err error) {
+func ConfigureGraphQL(
+	mux *http.ServeMux,
+	db *persistence.DB,
+	qu securities.QuoteUpdater,
+) (err error) {
 	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
-		DB: db,
+		DB:           db,
+		QuoteUpdater: qu,
 	}}))
 
 	srv.AddTransport(transport.Options{})

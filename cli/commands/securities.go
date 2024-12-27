@@ -114,15 +114,19 @@ func ShowSecurity(ctx context.Context, cmd *cli.Command) (err error) {
 }
 
 // UpdateQuote triggers an update of one or more securities' quotes.
-func UpdateQuote(ctx context.Context, cmd *cli.Command) error {
+func UpdateQuote(ctx context.Context, cmd *cli.Command) (err error) {
 	s := mcli.FromContext(ctx)
-	_, err := s.SecuritiesClient.TriggerSecurityQuoteUpdate(
-		context.Background(),
-		connect.NewRequest(&portfoliov1.TriggerQuoteUpdateRequest{
-			SecurityIds: cmd.StringSlice("security-ids"),
-		}),
-	)
 
+	var query struct {
+		TriggerQuoteUpdate bool `graphql:"triggerQuoteUpdate(securityIDs: $IDs)" json:"security"`
+	}
+
+	err = s.GraphQL.Mutate(context.Background(), &query, map[string]interface{}{
+		"IDs": []graphql.String{"1"},
+	})
+	if err != nil {
+		return err
+	}
 	return err
 }
 

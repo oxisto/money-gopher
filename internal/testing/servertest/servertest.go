@@ -17,7 +17,7 @@ import (
 func NewServer(db *persistence.DB) *httptest.Server {
 	mux := http.NewServeMux()
 	srv := httptest.NewServer(h2c.NewHandler(mux, &http2.Server{}))
-	server.ConfigureGraphQL(mux, db)
+	svc := securities.NewService(db)
 
 	mux.Handle(portfoliov1connect.NewPortfolioServiceHandler(portfolio.NewService(
 		portfolio.Options{
@@ -25,7 +25,9 @@ func NewServer(db *persistence.DB) *httptest.Server {
 			SecuritiesClient: portfoliov1connect.NewSecuritiesServiceClient(srv.Client(), srv.URL),
 		},
 	)))
-	mux.Handle(portfoliov1connect.NewSecuritiesServiceHandler(securities.NewService(db)))
+	mux.Handle(portfoliov1connect.NewSecuritiesServiceHandler(svc))
+
+	server.ConfigureGraphQL(mux, db, svc.(securities.QuoteUpdater))
 
 	return srv
 }

@@ -36,8 +36,8 @@ const QuoteProviderMock = "mock"
 type mockQP struct {
 }
 
-func (m *mockQP) LatestQuote(ctx context.Context, ls *portfoliov1.ListedSecurity) (quote *portfoliov1.Currency, t time.Time, err error) {
-	return portfoliov1.Value(100), time.Now(), nil
+func (m *mockQP) LatestQuote(ctx context.Context, ls *persistence.ListedSecurity) (quote *persistence.Currency, t time.Time, err error) {
+	return persistence.Value(100), time.Now(), nil
 }
 
 func Test_service_TriggerSecurityQuoteUpdate(t *testing.T) {
@@ -101,8 +101,8 @@ func Test_service_TriggerSecurityQuoteUpdate(t *testing.T) {
 
 type mockQuoteProvider struct{}
 
-func (mockQuoteProvider) LatestQuote(_ context.Context, _ *portfoliov1.ListedSecurity) (quote *portfoliov1.Currency, t time.Time, err error) {
-	return portfoliov1.Value(100), time.Date(1, 0, 0, 0, 0, 0, 0, time.UTC), nil
+func (mockQuoteProvider) LatestQuote(_ context.Context, _ *persistence.ListedSecurity) (quote *persistence.Currency, t time.Time, err error) {
+	return persistence.Value(100), time.Date(1, 0, 0, 0, 0, 0, 0, time.UTC), nil
 }
 
 func Test_service_updateQuote(t *testing.T) {
@@ -111,13 +111,13 @@ func Test_service_updateQuote(t *testing.T) {
 	}
 	type args struct {
 		qp QuoteProvider
-		ls *portfoliov1.ListedSecurity
+		ls *persistence.ListedSecurity
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    assert.Want[*portfoliov1.ListedSecurity]
+		want    assert.Want[*persistence.ListedSecurity]
 		wantErr bool
 	}{
 		{
@@ -131,10 +131,10 @@ func Test_service_updateQuote(t *testing.T) {
 			},
 			args: args{
 				qp: &mockQuoteProvider{},
-				ls: &portfoliov1.ListedSecurity{SecurityId: "My Security", Ticker: "SEC", Currency: currency.EUR.String()},
+				ls: &persistence.ListedSecurity{SecurityID: "My Security", Ticker: "SEC", Currency: currency.EUR.String()},
 			},
-			want: func(t *testing.T, ls *portfoliov1.ListedSecurity) bool {
-				return assert.Equals(t, 100, int(ls.LatestQuote.Value))
+			want: func(t *testing.T, ls *persistence.ListedSecurity) bool {
+				return assert.Equals(t, 100, int(ls.LatestQuote.Int64))
 			},
 		},
 	}
