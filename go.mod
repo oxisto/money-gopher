@@ -18,6 +18,7 @@ require (
 	github.com/oxisto/assert v0.1.2
 	github.com/oxisto/oauth2go v0.14.0
 	github.com/pressly/goose/v3 v3.24.0
+	github.com/shurcooL/graphql v0.0.0-20230722043721-ed46e5a46466
 	github.com/urfave/cli/v3 v3.0.0-beta1
 	github.com/vektah/gqlparser/v2 v2.5.20
 	golang.org/x/net v0.33.0

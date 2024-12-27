@@ -89,7 +89,5 @@ func RunServer(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	go server.StartGraphQLServer(db)
-
 	return server.StartServer(db, opts)
 }

@@ -23,6 +23,7 @@ import (
 
 	mcli "github.com/oxisto/money-gopher/cli"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"github.com/shurcooL/graphql"
 
 	"connectrpc.com/connect"
 	"github.com/urfave/cli/v3"
@@ -38,6 +39,14 @@ var SecuritiesCmd = &cli.Command{
 			Name:   "list",
 			Usage:  "Lists all securities",
 			Action: ListSecurities,
+		},
+		{
+			Name:   "show",
+			Usage:  "Shows information about a security",
+			Action: ShowSecurity,
+			Flags: []cli.Flag{
+				&cli.StringFlag{Name: "security-id", Usage: "The security ID", Required: true},
+			},
 		},
 		{
 			Name:   "update-quote",
@@ -58,13 +67,49 @@ var SecuritiesCmd = &cli.Command{
 }
 
 // ListSecurities lists all securities.
-func ListSecurities(ctx context.Context, cmd *cli.Command) error {
+func ListSecurities(ctx context.Context, cmd *cli.Command) (err error) {
 	s := mcli.FromContext(ctx)
-	res, err := s.SecuritiesClient.ListSecurities(context.Background(), connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}))
+
+	var query struct {
+		Securities []struct {
+			ID          string `json:"id"`
+			DisplayName string `json:"displayName"`
+		} `json:"securities"`
+	}
+
+	err = s.GraphQL.Query(context.Background(), &query, nil)
 	if err != nil {
 		return err
 	}
-	fmt.Fprintln(cmd.Writer, res.Msg.Securities)
+
+	s.WriteJSON(cmd.Writer, query)
+
+	return nil
+}
+
+// ShowSecurity shows information about a security.
+func ShowSecurity(ctx context.Context, cmd *cli.Command) (err error) {
+	s := mcli.FromContext(ctx)
+
+	var query struct {
+		Security struct {
+			ID          string `json:"id"`
+			DisplayName string `json:"displayName"`
+			ListedAs    []struct {
+				Ticker string `json:"ticker"`
+			} `json:"listedAs"`
+		} `graphql:"security(id: $id)" json:"security"`
+	}
+
+	err = s.GraphQL.Query(context.Background(), &query, map[string]interface{}{
+		"id": graphql.String(cmd.String("security-id")),
+	})
+	if err != nil {
+		return err
+	}
+
+	s.WriteJSON(cmd.Writer, query)
+
 	return nil
 }
 

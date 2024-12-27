@@ -21,11 +21,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
 
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
+	"github.com/shurcooL/graphql"
 
 	"connectrpc.com/connect"
 	"github.com/lmittmann/tint"
@@ -42,6 +44,7 @@ var SessionKey sessionKeyType
 type Session struct {
 	PortfolioClient  portfoliov1connect.PortfolioServiceClient  `json:"-"`
 	SecuritiesClient portfoliov1connect.SecuritiesServiceClient `json:"-"`
+	GraphQL          *graphql.Client
 
 	opts *SessionOptions
 }
@@ -77,6 +80,9 @@ func (opts *SessionOptions) MergeWith(other *SessionOptions) *SessionOptions {
 
 // DefaultBaseURL is the default base URL for all services.
 const DefaultBaseURL = "http://localhost:8080"
+
+// DefaultGraphURL is the default URL for the GraphQL service.
+const DefaultGraphURL = "http://localhost:9090/graphql"
 
 // NewSession creates a new session.
 func NewSession(opts *SessionOptions) (s *Session) {
@@ -170,6 +176,14 @@ func (s *Session) initClients() {
 		connect.WithHTTPGet(),
 		connect.WithInterceptors(connect.UnaryInterceptorFunc(interceptor)),
 	)
+
+	s.GraphQL = graphql.NewClient(s.opts.BaseURL+"/graphql/query", s.opts.HttpClient)
+}
+
+func (s *Session) WriteJSON(w io.Writer, v any) {
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	enc.Encode(v)
 }
 
 // FromContext extracts the session from the context.

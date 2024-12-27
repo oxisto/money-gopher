@@ -6,6 +6,7 @@ import (
 
 	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	"github.com/oxisto/money-gopher/persistence"
+	"github.com/oxisto/money-gopher/server"
 	"github.com/oxisto/money-gopher/service/portfolio"
 	"github.com/oxisto/money-gopher/service/securities"
 
@@ -16,6 +17,7 @@ import (
 func NewServer(db *persistence.DB) *httptest.Server {
 	mux := http.NewServeMux()
 	srv := httptest.NewServer(h2c.NewHandler(mux, &http2.Server{}))
+	server.ConfigureGraphQL(mux, db)
 
 	mux.Handle(portfoliov1connect.NewPortfolioServiceHandler(portfolio.NewService(
 		portfolio.Options{
