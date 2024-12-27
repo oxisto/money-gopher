@@ -24,6 +24,7 @@ import (
 	"github.com/oxisto/money-gopher/internal"
 	"github.com/oxisto/money-gopher/internal/testing/clitest"
 	"github.com/oxisto/money-gopher/internal/testing/servertest"
+	"github.com/oxisto/money-gopher/persistence"
 	"github.com/urfave/cli/v3"
 )
 
@@ -59,7 +60,13 @@ func TestListPortfolio(t *testing.T) {
 }
 
 func TestCreatePortfolio(t *testing.T) {
-	srv := servertest.NewServer(internal.NewTestDB(t))
+	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
+		_, err := db.Queries.CreateBankAccount(context.Background(), persistence.CreateBankAccountParams{
+			ID:          "mybank",
+			DisplayName: "My Bank",
+		})
+		assert.NoError(t, err)
+	}))
 	defer srv.Close()
 
 	type args struct {
@@ -75,7 +82,12 @@ func TestCreatePortfolio(t *testing.T) {
 			name: "happy path",
 			args: args{
 				ctx: clitest.NewSessionContext(t, srv),
-				cmd: &cli.Command{},
+				cmd: clitest.MockCommand(t,
+					PortfolioCmd.Command("create").Flags,
+					"--bank-account-id", "mybank",
+					"--id", "mynewportfolio",
+					"--display-name", "My New Portfolio",
+				),
 			},
 		},
 	}

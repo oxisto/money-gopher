@@ -73,13 +73,7 @@ func TestUpdateQuote(t *testing.T) {
 }
 
 func TestUpdateAllQuotes(t *testing.T) {
-	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
-		ops := persistence.Ops[*portfoliov1.Security](db)
-		ops.Replace(&portfoliov1.Security{
-			Id:            "mysecurity",
-			QuoteProvider: moneygopher.Ref("mock"),
-		})
-	}))
+	srv := servertest.NewServer(internal.NewTestDB(t))
 	defer srv.Close()
 
 	type args struct {

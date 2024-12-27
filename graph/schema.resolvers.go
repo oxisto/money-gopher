@@ -6,17 +6,11 @@ package graph
 
 import (
 	"context"
-	"fmt"
 	"slices"
 	"time"
 
 	"github.com/oxisto/money-gopher/persistence"
 )
-
-// Currency is the resolver for the currency field.
-func (r *currencyResolver) Currency(ctx context.Context, obj *persistence.Currency) (string, error) {
-	panic(fmt.Errorf("not implemented: Currency - currency"))
-}
 
 // Security is the resolver for the security field.
 func (r *listedSecurityResolver) Security(ctx context.Context, obj *persistence.ListedSecurity) (*persistence.Security, error) {
@@ -142,6 +136,16 @@ func (r *queryResolver) Securities(ctx context.Context) ([]*persistence.Security
 	return r.DB.ListSecurities(ctx)
 }
 
+// Portfolio is the resolver for the portfolio field.
+func (r *queryResolver) Portfolio(ctx context.Context, id string) (*persistence.Portfolio, error) {
+	return r.DB.GetPortfolio(ctx, id)
+}
+
+// Portfolios is the resolver for the portfolios field.
+func (r *queryResolver) Portfolios(ctx context.Context) ([]*persistence.Portfolio, error) {
+	return r.DB.ListPortfolios(ctx)
+}
+
 // QuoteProvider is the resolver for the quoteProvider field.
 func (r *securityResolver) QuoteProvider(ctx context.Context, obj *persistence.Security) (*string, error) {
 	if obj.QuoteProvider.Valid {
@@ -156,9 +160,6 @@ func (r *securityResolver) ListedAs(ctx context.Context, obj *persistence.Securi
 	return obj.ListedAs(ctx, r.DB)
 }
 
-// Currency returns CurrencyResolver implementation.
-func (r *Resolver) Currency() CurrencyResolver { return &currencyResolver{r} }
-
 // ListedSecurity returns ListedSecurityResolver implementation.
 func (r *Resolver) ListedSecurity() ListedSecurityResolver { return &listedSecurityResolver{r} }
 
@@ -171,7 +172,6 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 // Security returns SecurityResolver implementation.
 func (r *Resolver) Security() SecurityResolver { return &securityResolver{r} }
 
-type currencyResolver struct{ *Resolver }
 type listedSecurityResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

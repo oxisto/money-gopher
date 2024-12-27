@@ -8,6 +8,13 @@ import (
 	"database/sql"
 )
 
+type BankAccount struct {
+	// ID is the primary identifier for a bank account.
+	ID string
+	// DisplayName is the human-readable name of the bank account.
+	DisplayName string
+}
+
 // ListedSecurity represents a security that is listed on a particular exchange.
 type ListedSecurity struct {
 	// SecurityID is the ID of the security.
@@ -20,6 +27,15 @@ type ListedSecurity struct {
 	LatestQuote sql.NullInt64
 	// LatestQuoteTimestamp is the timestamp of the latest quote.
 	LatestQuoteTimestamp sql.NullTime
+}
+
+type Portfolio struct {
+	// ID is the primary identifier for a portfolio.
+	ID string
+	// DisplayName is the human-readable name of the portfolio.
+	DisplayName string
+	// BankAccountID is the ID of the bank account that holds the portfolio.
+	BankAccountID string
 }
 
 // Security represents a security that can be traded on an exchange.
