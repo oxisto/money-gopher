@@ -12,18 +12,19 @@ import (
 
 const createSecurity = `-- name: CreateSecurity :one
 INSERT INTO
-    securities (id, display_name)
+    securities (id, display_name, quote_provider)
 VALUES
-    (?, ?) RETURNING id, display_name, quote_provider
+    (?, ?, ?) RETURNING id, display_name, quote_provider
 `
 
 type CreateSecurityParams struct {
-	ID          string
-	DisplayName string
+	ID            string
+	DisplayName   string
+	QuoteProvider sql.NullString
 }
 
 func (q *Queries) CreateSecurity(ctx context.Context, arg CreateSecurityParams) (*Security, error) {
-	row := q.db.QueryRowContext(ctx, createSecurity, arg.ID, arg.DisplayName)
+	row := q.db.QueryRowContext(ctx, createSecurity, arg.ID, arg.DisplayName, arg.QuoteProvider)
 	var i Security
 	err := row.Scan(&i.ID, &i.DisplayName, &i.QuoteProvider)
 	return &i, err
