@@ -18,13 +18,18 @@
 package persistence
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"log/slog"
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/oxisto/money-gopher/persistence/sql/migrations"
+	"github.com/pressly/goose/v3"
+	"github.com/pressly/goose/v3/database"
 )
 
 // Options are database options
@@ -79,7 +84,7 @@ type ops[T StorageObject] struct {
 }
 
 // OpenDB opens a connection to our database.
-func OpenDB(opts Options) (db *DB, err error) {
+func OpenDB(opts Options) (db *DB, q *Queries, err error) {
 	if opts.UseInMemory {
 		opts.DSN = ":memory:?_pragma=foreign_keys(1)"
 	} else if opts.DSN == "" {
@@ -88,7 +93,7 @@ func OpenDB(opts Options) (db *DB, err error) {
 
 	inner, err := sql.Open("sqlite3", opts.DSN)
 	if err != nil {
-		return nil, fmt.Errorf("could not open database: %w", err)
+		return nil, nil, fmt.Errorf("could not open database: %w", err)
 	}
 
 	db = &DB{
@@ -97,6 +102,25 @@ func OpenDB(opts Options) (db *DB, err error) {
 	db.initTables()
 
 	slog.Info("Successfully opened database connection", "opts", opts)
+
+	// Prepare database migrations with goose
+	provider, err := goose.NewProvider(database.DialectSQLite3, inner, migrations.Embed)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Apply all migrations
+	results, err := provider.Up(context.Background())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for _, result := range results {
+		slog.Debug("Applied migration.", "migration", result)
+	}
+
+	// Create a new query object
+	q = New(db)
 
 	return
 }

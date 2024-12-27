@@ -110,11 +110,19 @@ func TestUpdateAllQuotes(t *testing.T) {
 
 func TestListSecurities(t *testing.T) {
 	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
-		ops := persistence.Ops[*portfoliov1.Security](db)
-		ops.Replace(&portfoliov1.Security{
-			Id:            "mysecurity",
-			QuoteProvider: moneygopher.Ref("mock"),
+		q := persistence.New(db)
+		_, err := q.CreateSecurity(context.Background(), persistence.CreateSecurityParams{
+			ID:          "1234",
+			DisplayName: "One Two Three Four",
 		})
+		assert.NoError(t, err)
+
+		_, err = q.UpsertListedSecurity(context.Background(), persistence.UpsertListedSecurityParams{
+			SecurityID: "1234",
+			Ticker:     "ONE",
+			Currency:   "USD",
+		})
+		assert.NoError(t, err)
 	}))
 	defer srv.Close()
 
@@ -135,7 +143,7 @@ func TestListSecurities(t *testing.T) {
 				cmd: clitest.MockCommand(t, SecuritiesCmd.Command("list").Flags),
 			},
 			wantRec: func(t *testing.T, rec *clitest.CommandRecorder) bool {
-				return assert.Equals(t, true, strings.Contains(rec.String(), "mysecurity"))
+				return assert.Equals(t, true, strings.Contains(rec.String(), "1234"))
 			},
 		},
 	}

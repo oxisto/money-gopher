@@ -47,7 +47,7 @@ type Options struct {
 }
 
 // StartServer starts the server.
-func StartServer(pdb *persistence.DB, opts Options) (err error) {
+func StartServer(pdb *persistence.DB, q *persistence.Queries, opts Options) (err error) {
 	var (
 		authSrv    *oauth2.AuthorizationServer
 		transcoder *vanguard.Transcoder
