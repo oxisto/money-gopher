@@ -16,6 +16,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          cache-dependency-path: "**/*.sum"
       - name: Set up node.js
         uses: actions/setup-node@v4
         with:
@@ -24,9 +25,14 @@ jobs:
         uses: bufbuild/buf-setup-action@v1.48.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up tools
+        run: |
+          go install github.com/mfridman/tparse
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc
+          go install github.com/99designs/gqlgen
+        working-directory: ./tools
       - name: Build Backend
         run: |
-          go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
           go generate ./...
           go build -v ./...
       - name: Test Backend
