@@ -1,0 +1,33 @@
+type Security {
+  id: String!
+  displayName: String!
+  quoteProvider: String
+  listedAs: [ListedSecurity!]
+}
+
+type ListedSecurity {
+  ticker: String!
+  currency: String!
+  security: Security!
+}
+
+input SecurityInput {
+  id: String!
+  displayName: String!
+  listedAs: [ListedSecurityInput!]
+}
+
+input ListedSecurityInput {
+  ticker: String!
+  currency: String!
+}
+
+type Mutation {
+  createSecurity(input: SecurityInput!): Security!
+  updateSecurity(id: ID!, input: SecurityInput!): Security!
+}
+
+type Query {
+  security(id: String!): Security
+  securities: [Security!]!
+}
