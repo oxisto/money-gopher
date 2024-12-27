@@ -48,12 +48,8 @@ func (o Options) LogValue() slog.Value {
 		slog.String("dsn", o.DSN))
 }
 
-// DB is a wrapper around [sql.DB]. This allows us to access all the
-// functionalities of [sql.DB] as well as accessing the DB object in our
-// internal functions.
-type DB struct {
-	*sql.DB
-}
+// DB is a type alias around [sql.DB] to avoid importing the [database/sql] package.
+type DB = sql.DB
 
 type StorageObject interface {
 	InitTables(db *DB) (err error)
@@ -91,20 +87,15 @@ func OpenDB(opts Options) (db *DB, q *Queries, err error) {
 		opts.DSN = "money.db"
 	}
 
-	inner, err := sql.Open("sqlite3", opts.DSN)
+	db, err = sql.Open("sqlite3", opts.DSN)
 	if err != nil {
 		return nil, nil, fmt.Errorf("could not open database: %w", err)
 	}
 
-	db = &DB{
-		DB: inner,
-	}
-	db.initTables()
-
 	slog.Info("Successfully opened database connection", "opts", opts)
 
 	// Prepare database migrations with goose
-	provider, err := goose.NewProvider(database.DialectSQLite3, inner, migrations.Embed)
+	provider, err := goose.NewProvider(database.DialectSQLite3, db, migrations.Embed)
 	if err != nil {
 		log.Fatal(err)
 	}
