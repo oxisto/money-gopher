@@ -25,7 +25,7 @@ import (
 	"testing"
 	"time"
 
-	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"github.com/oxisto/money-gopher/persistence"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/oxisto/assert"
@@ -51,13 +51,13 @@ func Test_yf_LatestQuote(t *testing.T) {
 	}
 	type args struct {
 		ctx context.Context
-		ls  *portfoliov1.ListedSecurity
+		ls  *persistence.ListedSecurity
 	}
 	tests := []struct {
 		name      string
 		fields    fields
 		args      args
-		wantQuote *portfoliov1.Currency
+		wantQuote *persistence.Currency
 		wantTime  time.Time
 		wantErr   assert.Want[error]
 	}{
@@ -70,8 +70,8 @@ func Test_yf_LatestQuote(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				ls: &portfoliov1.ListedSecurity{
-					SecurityId: "My Security",
+				ls: &persistence.ListedSecurity{
+					SecurityID: "My Security",
 					Ticker:     "TICK",
 					Currency:   "USD",
 				},
@@ -90,8 +90,8 @@ func Test_yf_LatestQuote(t *testing.T) {
 				}),
 			},
 			args: args{
-				ls: &portfoliov1.ListedSecurity{
-					SecurityId: "My Security",
+				ls: &persistence.ListedSecurity{
+					SecurityID: "My Security",
 					Ticker:     "TICK",
 					Currency:   "USD",
 				},
@@ -110,8 +110,8 @@ func Test_yf_LatestQuote(t *testing.T) {
 				}),
 			},
 			args: args{
-				ls: &portfoliov1.ListedSecurity{
-					SecurityId: "My Security",
+				ls: &persistence.ListedSecurity{
+					SecurityID: "My Security",
 					Ticker:     "TICK",
 					Currency:   "USD",
 				},
@@ -130,13 +130,13 @@ func Test_yf_LatestQuote(t *testing.T) {
 				}),
 			},
 			args: args{
-				ls: &portfoliov1.ListedSecurity{
-					SecurityId: "My Security",
+				ls: &persistence.ListedSecurity{
+					SecurityID: "My Security",
 					Ticker:     "TICK",
 					Currency:   "USD",
 				},
 			},
-			wantQuote: portfoliov1.Value(10000),
+			wantQuote: persistence.Value(10000),
 			wantTime:  time.Date(2023, 05, 04, 20, 0, 0, 0, time.UTC),
 			wantErr:   func(t *testing.T, err error) bool { return true },
 		},

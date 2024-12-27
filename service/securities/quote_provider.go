@@ -20,7 +20,7 @@ import (
 	"context"
 	"time"
 
-	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"github.com/oxisto/money-gopher/persistence"
 )
 
 // providers contains a map of all quote providers
@@ -39,5 +39,5 @@ func RegisterQuoteProvider(name string, qp QuoteProvider) {
 // QuoteProvider is an interface that retrieves quotes for a [ListedSecurity]. They
 // can either be historical quotes or the latest quote.
 type QuoteProvider interface {
-	LatestQuote(ctx context.Context, ls *portfoliov1.ListedSecurity) (quote *portfoliov1.Currency, t time.Time, err error)
+	LatestQuote(ctx context.Context, ls *persistence.ListedSecurity) (quote *persistence.Currency, t time.Time, err error)
 }

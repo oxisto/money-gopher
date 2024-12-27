@@ -1,3 +1,10 @@
+scalar Date
+
+type Currency {
+  value: Int!
+  currency: String!
+}
+
 type Security {
   id: String!
   displayName: String!
@@ -9,6 +16,8 @@ type ListedSecurity {
   ticker: String!
   currency: String!
   security: Security!
+  latestQuote: Currency
+  latestQuoteTimestamp: Date
 }
 
 input SecurityInput {
@@ -25,6 +34,11 @@ input ListedSecurityInput {
 type Mutation {
   createSecurity(input: SecurityInput!): Security!
   updateSecurity(id: ID!, input: SecurityInput!): Security!
+  """
+  Triggers a quote update for the given security IDs. If no security IDs are
+  provided, all securities will be updated.
+  """
+  triggerQuoteUpdate(securityIDs: [String!]): Boolean!
 }
 
 type Query {

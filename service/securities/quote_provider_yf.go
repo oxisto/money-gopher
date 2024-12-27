@@ -24,7 +24,7 @@ import (
 	"net/http"
 	"time"
 
-	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"github.com/oxisto/money-gopher/persistence"
 )
 
 var ErrEmptyResult = errors.New("empty result")
@@ -46,7 +46,7 @@ type chart struct {
 	} `json:"chart"`
 }
 
-func (yf *yf) LatestQuote(ctx context.Context, ls *portfoliov1.ListedSecurity) (quote *portfoliov1.Currency, t time.Time, err error) {
+func (yf *yf) LatestQuote(ctx context.Context, ls *persistence.ListedSecurity) (quote *persistence.Currency, t time.Time, err error) {
 	var (
 		res *http.Response
 		ch  chart
@@ -66,6 +66,6 @@ func (yf *yf) LatestQuote(ctx context.Context, ls *portfoliov1.ListedSecurity) (
 		return nil, t, ErrEmptyResult
 	}
 
-	return portfoliov1.Value(int32(ch.Chart.Results[0].Meta.RegularMarketPrice * 100)),
+	return persistence.Value(int32(ch.Chart.Results[0].Meta.RegularMarketPrice * 100)),
 		time.Unix(ch.Chart.Results[0].Meta.RegularMarketTime, 0), nil
 }

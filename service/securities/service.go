@@ -18,6 +18,7 @@
 package securities
 
 import (
+	"context"
 	"time"
 
 	moneygopher "github.com/oxisto/money-gopher"
@@ -34,6 +35,14 @@ type service struct {
 	listedSecurities persistence.StorageOperations[*portfoliov1.ListedSecurity]
 
 	portfoliov1connect.UnimplementedSecuritiesServiceHandler
+	db *persistence.DB
+}
+
+// QuoteUpdater is an interface that allows to trigger an update of the quotes
+// for the given securities.
+type QuoteUpdater interface {
+	// UpdateQuotes triggers an update of the quotes for the given securities.
+	UpdateQuotes(ctx context.Context, IDs []string) error
 }
 
 func NewService(db *persistence.DB) portfoliov1connect.SecuritiesServiceHandler {
@@ -74,5 +83,6 @@ func NewService(db *persistence.DB) portfoliov1connect.SecuritiesServiceHandler 
 	return &service{
 		securities:       securities,
 		listedSecurities: listedSecurities,
+		db:               db,
 	}
 }

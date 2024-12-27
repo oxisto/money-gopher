@@ -21,4 +21,5 @@ CREATE TABLE
 
 -- +goose Down
 DROP TABLE securities;
+
 DROP TABLE listed_securities;

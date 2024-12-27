@@ -166,23 +166,39 @@ func (q *Queries) UpdateSecurity(ctx context.Context, arg UpdateSecurityParams) 
 
 const upsertListedSecurity = `-- name: UpsertListedSecurity :one
 INSERT INTO
-    listed_securities (security_id, ticker, currency)
+    listed_securities (
+        security_id,
+        ticker,
+        currency,
+        latest_quote,
+        latest_quote_timestamp
+    )
 VALUES
-    (?, ?, ?) ON CONFLICT (security_id, ticker) DO
+    (?, ?, ?, ?, ?) ON CONFLICT (security_id, ticker) DO
 UPDATE
 SET
     ticker = excluded.ticker,
-    currency = excluded.currency RETURNING security_id, ticker, currency, latest_quote, latest_quote_timestamp
+    currency = excluded.currency,
+    latest_quote = excluded.latest_quote,
+    latest_quote_timestamp = excluded.latest_quote_timestamp RETURNING security_id, ticker, currency, latest_quote, latest_quote_timestamp
 `
 
 type UpsertListedSecurityParams struct {
-	SecurityID string
-	Ticker     string
-	Currency   string
+	SecurityID           string
+	Ticker               string
+	Currency             string
+	LatestQuote          sql.NullInt64
+	LatestQuoteTimestamp sql.NullTime
 }
 
 func (q *Queries) UpsertListedSecurity(ctx context.Context, arg UpsertListedSecurityParams) (*ListedSecurity, error) {
-	row := q.db.QueryRowContext(ctx, upsertListedSecurity, arg.SecurityID, arg.Ticker, arg.Currency)
+	row := q.db.QueryRowContext(ctx, upsertListedSecurity,
+		arg.SecurityID,
+		arg.Ticker,
+		arg.Currency,
+		arg.LatestQuote,
+		arg.LatestQuoteTimestamp,
+	)
 	var i ListedSecurity
 	err := row.Scan(
 		&i.SecurityID,

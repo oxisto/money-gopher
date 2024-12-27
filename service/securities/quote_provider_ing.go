@@ -23,7 +23,7 @@ import (
 	"net/http"
 	"time"
 
-	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"github.com/oxisto/money-gopher/persistence"
 )
 
 const QuoteProviderING = "ing"
@@ -45,13 +45,13 @@ type header struct {
 	WKN              string    `json:"wkn"`
 }
 
-func (ing *ing) LatestQuote(ctx context.Context, ls *portfoliov1.ListedSecurity) (quote *portfoliov1.Currency, t time.Time, err error) {
+func (ing *ing) LatestQuote(ctx context.Context, ls *persistence.ListedSecurity) (quote *persistence.Currency, t time.Time, err error) {
 	var (
 		res *http.Response
 		h   header
 	)
 
-	res, err = ing.Get(fmt.Sprintf("https://component-api.wertpapiere.ing.de/api/v1/components/instrumentheader/%s", ls.SecurityId))
+	res, err = ing.Get(fmt.Sprintf("https://component-api.wertpapiere.ing.de/api/v1/components/instrumentheader/%s", ls.SecurityID))
 	if err != nil {
 		return nil, t, fmt.Errorf("could not fetch quote: %w", err)
 	}
@@ -62,8 +62,8 @@ func (ing *ing) LatestQuote(ctx context.Context, ls *portfoliov1.ListedSecurity)
 	}
 
 	if h.HasBidAsk {
-		return portfoliov1.Value(int32(h.Bid * 100)), h.BidDate, nil
+		return persistence.Value(int32(h.Bid * 100)), h.BidDate, nil
 	} else {
-		return portfoliov1.Value(int32(h.Price * 100)), h.PriceChangedDate, nil
+		return persistence.Value(int32(h.Price * 100)), h.PriceChangedDate, nil
 	}
 }

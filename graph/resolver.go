@@ -2,6 +2,7 @@ package graph
 
 import (
 	"github.com/oxisto/money-gopher/persistence"
+	"github.com/oxisto/money-gopher/service/securities"
 )
 
 // This file will not be regenerated automatically.
@@ -9,7 +10,8 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	DB *persistence.DB
+	DB           *persistence.DB
+	QuoteUpdater securities.QuoteUpdater
 }
 
 func withTx[T any](r *Resolver, f func(qtx *persistence.Queries) (*T, error)) (res *T, err error) {

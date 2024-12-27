@@ -18,51 +18,53 @@ package securities
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 	"time"
 
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"github.com/oxisto/money-gopher/persistence"
 
 	"connectrpc.com/connect"
 	"github.com/lmittmann/tint"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (svc *service) TriggerSecurityQuoteUpdate(ctx context.Context, req *connect.Request[portfoliov1.TriggerQuoteUpdateRequest]) (res *connect.Response[portfoliov1.TriggerQuoteUpdateResponse], err error) {
+// UpdateQuotes triggers an update of the quotes for the given securities.
+func (svc *service) UpdateQuotes(ctx context.Context, IDs []string) (err error) {
 	var (
-		sec *portfoliov1.Security
-		qp  QuoteProvider
-		ok  bool
+		sec    *persistence.Security
+		listed []*persistence.ListedSecurity
+		qp     QuoteProvider
+		ok     bool
 	)
 
-	// TODO(oxisto): Support a "list" with filtered values instead
-	for _, name := range req.Msg.SecurityIds {
+	for _, id := range IDs {
 		// Fetch security
-		sec, err = svc.fetchSecurity(name)
+		sec, err = svc.db.GetSecurity(ctx, id)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
+			return err
 		}
 
-		res = connect.NewResponse(&portfoliov1.TriggerQuoteUpdateResponse{})
-
-		if sec.QuoteProvider == nil {
-			slog.Warn("No quote provider configured for security", "security", sec.Id)
+		if !sec.QuoteProvider.Valid {
+			slog.Warn("No quote provider configured for security", "security", sec.ID)
 			return
 		}
 
-		qp, ok = providers[*sec.QuoteProvider]
+		qp, ok = providers[sec.QuoteProvider.String]
 		if !ok {
 			return
 		}
 
+		listed, err = sec.ListedAs(ctx, svc.db)
+		if err != nil {
+			return err
+		}
+
 		// Trigger update from quote provider in separate go-routine
 		// TODO(oxisto): Use sync/errgroup instead
-		for idx := range sec.ListedOn {
-			idx := idx
+		for _, ls := range listed {
 			go func() {
-				ls := sec.ListedOn[idx]
-
-				slog.Debug("Triggering quote update", "security", ls, "provider", *sec.QuoteProvider)
+				slog.Debug("Triggering quote update", "security", ls, "provider", sec.QuoteProvider)
 
 				err = svc.updateQuote(qp, ls)
 				if err != nil {
@@ -75,9 +77,20 @@ func (svc *service) TriggerSecurityQuoteUpdate(ctx context.Context, req *connect
 	return
 }
 
-func (svc *service) updateQuote(qp QuoteProvider, ls *portfoliov1.ListedSecurity) (err error) {
+func (svc *service) TriggerSecurityQuoteUpdate(ctx context.Context, req *connect.Request[portfoliov1.TriggerQuoteUpdateRequest]) (res *connect.Response[portfoliov1.TriggerQuoteUpdateResponse], err error) {
+	err = svc.UpdateQuotes(ctx, req.Msg.SecurityIds)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	res = connect.NewResponse(&portfoliov1.TriggerQuoteUpdateResponse{})
+
+	return
+}
+
+func (svc *service) updateQuote(qp QuoteProvider, ls *persistence.ListedSecurity) (err error) {
 	var (
-		quote  *portfoliov1.Currency
+		quote  *persistence.Currency
 		t      time.Time
 		ctx    context.Context
 		cancel context.CancelFunc
@@ -91,13 +104,14 @@ func (svc *service) updateQuote(qp QuoteProvider, ls *portfoliov1.ListedSecurity
 		return err
 	}
 
-	ls.LatestQuote = quote
-	ls.LatestQuoteTimestamp = timestamppb.New(t)
+	ls.LatestQuote = sql.NullInt64{Int64: int64(quote.Value), Valid: true}
+	ls.LatestQuoteTimestamp = sql.NullTime{Time: t, Valid: true}
 
-	_, err = svc.listedSecurities.Update(
-		[]any{ls.SecurityId, ls.Ticker},
-		ls, []string{"latest_quote", "latest_quote_timestamp"},
-	)
+	_, err = svc.db.UpsertListedSecurity(ctx, persistence.UpsertListedSecurityParams{
+		SecurityID: ls.SecurityID,
+		Ticker:     ls.Ticker,
+		Currency:   ls.Currency,
+	})
 	if err != nil {
 		return err
 	}
