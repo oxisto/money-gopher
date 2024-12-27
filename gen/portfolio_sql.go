@@ -40,7 +40,7 @@ display_name TEXT NOT NULL
 }
 
 func (*Portfolio) PrepareReplace(db *persistence.DB) (stmt *sql.Stmt, err error) {
-	return db.Prepare(`REPLACE INTO portfolios (id, display_name) VALUES (?,?);`)
+	return db.Prepare(`REPLACE INTO portfolios (id, display_name, bank_account_id) VALUES (?,?,?);`)
 }
 
 func (*Portfolio) PrepareList(db *persistence.DB) (stmt *sql.Stmt, err error) {
@@ -73,7 +73,7 @@ func (*Portfolio) PrepareDelete(db *persistence.DB) (stmt *sql.Stmt, err error) 
 }
 
 func (p *Portfolio) ReplaceIntoArgs() []any {
-	return []any{p.Id, p.DisplayName}
+	return []any{p.Id, p.DisplayName, p.BankAccountId}
 }
 
 func (p *Portfolio) UpdateArgs(columns []string) (args []any) {
@@ -83,6 +83,8 @@ func (p *Portfolio) UpdateArgs(columns []string) (args []any) {
 			args = append(args, p.Id)
 		case "display_name":
 			args = append(args, p.DisplayName)
+		case "bank_account_id":
+			args = append(args, p.BankAccountId)
 		}
 	}
 

@@ -33,10 +33,22 @@ import (
 func (svc *service) UpdateQuotes(ctx context.Context, IDs []string) (err error) {
 	var (
 		sec    *persistence.Security
+		secs   []*persistence.Security
 		listed []*persistence.ListedSecurity
 		qp     QuoteProvider
 		ok     bool
 	)
+
+	if len(IDs) == 0 {
+		secs, err = svc.db.ListSecurities(ctx)
+		if err != nil {
+			return err
+		}
+
+		for _, sec := range secs {
+			IDs = append(IDs, sec.ID)
+		}
+	}
 
 	for _, id := range IDs {
 		// Fetch security

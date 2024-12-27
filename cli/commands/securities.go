@@ -132,31 +132,26 @@ func UpdateQuote(ctx context.Context, cmd *cli.Command) (err error) {
 	if err != nil {
 		return err
 	}
+
 	return err
 }
 
 // UpdateAllQuotes triggers an update of all quotes.
-func UpdateAllQuotes(ctx context.Context, cmd *cli.Command) error {
+func UpdateAllQuotes(ctx context.Context, cmd *cli.Command) (err error) {
 	s := mcli.FromContext(ctx)
-	res, err := s.SecuritiesClient.ListSecurities(context.Background(), connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}))
+
+	var query struct {
+		TriggerQuoteUpdate bool `graphql:"triggerQuoteUpdate(securityIDs: $IDs)" json:"security"`
+	}
+
+	err = s.GraphQL.Mutate(context.Background(), &query, map[string]interface{}{
+		"IDs": []graphql.String{},
+	})
 	if err != nil {
 		return err
 	}
 
-	var names []string
-
-	for _, sec := range res.Msg.Securities {
-		names = append(names, sec.Id)
-	}
-
-	_, err = s.SecuritiesClient.TriggerSecurityQuoteUpdate(
-		context.Background(),
-		connect.NewRequest(&portfoliov1.TriggerQuoteUpdateRequest{
-			SecurityIds: names,
-		}),
-	)
-
-	return err
+	return
 }
 
 // PredictSecurities predicts the securities for shell completion.
