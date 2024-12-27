@@ -121,8 +121,13 @@ func UpdateQuote(ctx context.Context, cmd *cli.Command) (err error) {
 		TriggerQuoteUpdate bool `graphql:"triggerQuoteUpdate(securityIDs: $IDs)" json:"security"`
 	}
 
+	var ids []graphql.String
+	for _, id := range cmd.StringSlice("security-ids") {
+		ids = append(ids, graphql.String(id))
+	}
+
 	err = s.GraphQL.Mutate(context.Background(), &query, map[string]interface{}{
-		"IDs": []graphql.String{"1"},
+		"IDs": ids,
 	})
 	if err != nil {
 		return err
