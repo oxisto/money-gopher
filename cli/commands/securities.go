@@ -23,9 +23,9 @@ import (
 
 	mcli "github.com/oxisto/money-gopher/cli"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
-	"github.com/shurcooL/graphql"
 
 	"connectrpc.com/connect"
+	"github.com/shurcooL/graphql"
 	"github.com/urfave/cli/v3"
 )
 

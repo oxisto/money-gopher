@@ -21,13 +21,14 @@ import (
 	"context"
 	"testing"
 
-	"github.com/oxisto/assert"
 	moneygopher "github.com/oxisto/money-gopher"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"github.com/oxisto/money-gopher/internal"
 	"github.com/oxisto/money-gopher/internal/testing/clitest"
 	"github.com/oxisto/money-gopher/internal/testing/servertest"
 	"github.com/oxisto/money-gopher/persistence"
+
+	"github.com/oxisto/assert"
 	"github.com/urfave/cli/v3"
 )
 
