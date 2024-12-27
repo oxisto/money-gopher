@@ -18,13 +18,18 @@
 package persistence
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"log/slog"
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/oxisto/money-gopher/persistence/sql/migrations"
+	"github.com/pressly/goose/v3"
+	"github.com/pressly/goose/v3/database"
 )
 
 // Options are database options
@@ -43,12 +48,8 @@ func (o Options) LogValue() slog.Value {
 		slog.String("dsn", o.DSN))
 }
 
-// DB is a wrapper around [sql.DB]. This allows us to access all the
-// functionalities of [sql.DB] as well as accessing the DB object in our
-// internal functions.
-type DB struct {
-	*sql.DB
-}
+// DB is a type alias around [sql.DB] to avoid importing the [database/sql] package.
+type DB = sql.DB
 
 type StorageObject interface {
 	InitTables(db *DB) (err error)
@@ -79,24 +80,38 @@ type ops[T StorageObject] struct {
 }
 
 // OpenDB opens a connection to our database.
-func OpenDB(opts Options) (db *DB, err error) {
+func OpenDB(opts Options) (db *DB, q *Queries, err error) {
 	if opts.UseInMemory {
 		opts.DSN = ":memory:?_pragma=foreign_keys(1)"
 	} else if opts.DSN == "" {
 		opts.DSN = "money.db"
 	}
 
-	inner, err := sql.Open("sqlite3", opts.DSN)
+	db, err = sql.Open("sqlite3", opts.DSN)
 	if err != nil {
-		return nil, fmt.Errorf("could not open database: %w", err)
+		return nil, nil, fmt.Errorf("could not open database: %w", err)
 	}
-
-	db = &DB{
-		DB: inner,
-	}
-	db.initTables()
 
 	slog.Info("Successfully opened database connection", "opts", opts)
+
+	// Prepare database migrations with goose
+	provider, err := goose.NewProvider(database.DialectSQLite3, db, migrations.Embed)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Apply all migrations
+	results, err := provider.Up(context.Background())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for _, result := range results {
+		slog.Debug("Applied migration.", "migration", result)
+	}
+
+	// Create a new query object
+	q = New(db)
 
 	return
 }

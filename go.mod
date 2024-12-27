@@ -14,6 +14,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/oxisto/assert v0.0.6
 	github.com/oxisto/oauth2go v0.14.0
+	github.com/pressly/goose/v3 v3.24.0
 	github.com/urfave/cli/v3 v3.0.0-beta1
 	golang.org/x/net v0.33.0
 	golang.org/x/text v0.21.0
@@ -22,8 +23,12 @@ require (
 
 require (
 	github.com/MicahParks/jwkset v0.5.19 // indirect
+	github.com/mfridman/interpolate v0.0.2 // indirect
+	github.com/sethvargo/go-retry v0.3.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241223144023-3abc09e42ca8

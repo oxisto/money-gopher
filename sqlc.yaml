@@ -1,0 +1,10 @@
+version: "2"
+sql:
+  - engine: "sqlite"
+    queries: "persistence/sql/queries"
+    schema: "persistence/sql/migrations"
+    gen:
+      go:
+        package: "persistence"
+        out: "persistence"
+        emit_result_struct_pointers: true

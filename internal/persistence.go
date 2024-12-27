@@ -27,7 +27,7 @@ func NewTestDB(t *testing.T, inits ...func(db *persistence.DB)) (db *persistence
 		err error
 	)
 
-	db, err = persistence.OpenDB(persistence.Options{UseInMemory: true})
+	db, _, err = persistence.OpenDB(persistence.Options{UseInMemory: true})
 	if err != nil {
 		t.Fatalf("Could not create test DB: %v", err)
 	}

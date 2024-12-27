@@ -54,7 +54,7 @@ func TestOpenDB(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotDb, err := OpenDB(tt.args.opts)
+			gotDb, _, err := OpenDB(tt.args.opts)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("OpenDB() error = %v, wantErr %v", err, tt.wantErr)
 				return

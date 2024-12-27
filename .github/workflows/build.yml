@@ -26,6 +26,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Build Backend
         run: |
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
           go generate ./...
           go build -v ./...
       - name: Test Backend

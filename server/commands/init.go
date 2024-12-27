@@ -83,11 +83,11 @@ func RunServer(ctx context.Context, cmd *cli.Command) error {
 	slog.SetDefault(logger)
 	slog.Info("Welcome to the Money Gopher", "money", "🤑")
 
-	pdb, err := persistence.OpenDB(persistence.Options{})
+	pdb, q, err := persistence.OpenDB(persistence.Options{})
 	if err != nil {
 		slog.Error("Error while opening database", tint.Err(err))
 		return err
 	}
 
-	return server.StartServer(pdb, opts)
+	return server.StartServer(pdb, q, opts)
 }
