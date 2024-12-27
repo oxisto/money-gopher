@@ -24,6 +24,7 @@
 			"kongcompletion",
 			"lmittmann",
 			"mcli",
+			"mfridman",
 			"modernc",
 			"moneyd",
 			"moneygopher",
@@ -41,9 +42,11 @@
 			"secres",
 			"servertest",
 			"sidebaritems",
+			"sqlc",
 			"steeze",
 			"tailwindcss",
-			"timestamppb"
+			"timestamppb",
+			"tparse"
 		],
 		"editor.tabSize": 4,
 		"typescript.tsdk": "ui-next/node_modules/typescript/lib",
