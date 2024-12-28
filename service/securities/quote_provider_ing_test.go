@@ -26,6 +26,7 @@ import (
 	"time"
 
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/oxisto/assert"
 )
@@ -112,9 +113,9 @@ func Test_ing_LatestQuote(t *testing.T) {
 				Client: tt.fields.Client,
 			}
 			gotQuote, gotTime, err := ing.LatestQuote(tt.args.ctx, tt.args.ls)
-			assert.Equals(t, true, tt.wantErr(t, err))
-			assert.Equals(t, tt.wantQuote, gotQuote)
-			assert.Equals(t, tt.wantTime.UTC(), gotTime.UTC())
+			assert.Equals(t, true, tt.wantErr(t, err), protocmp.Transform())
+			assert.Equals(t, tt.wantQuote, gotQuote, protocmp.Transform())
+			assert.Equals(t, tt.wantTime.UTC(), gotTime.UTC(), protocmp.Transform())
 		})
 	}
 }

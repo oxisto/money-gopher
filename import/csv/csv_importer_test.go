@@ -28,6 +28,7 @@ import (
 
 	"github.com/oxisto/assert"
 	"github.com/oxisto/money-gopher/service/securities"
+	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -274,8 +275,8 @@ func Test_readLine(t *testing.T) {
 				tt.wantErr(t, err)
 				return
 			}
-			assert.Equals(t, tt.wantTx, gotTx)
-			assert.Equals(t, tt.wantSec, gotSec)
+			assert.Equals(t, tt.wantTx, gotTx, protocmp.Transform())
+			assert.Equals(t, tt.wantSec, gotSec, protocmp.Transform())
 		})
 	}
 }

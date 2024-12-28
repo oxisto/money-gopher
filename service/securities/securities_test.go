@@ -29,6 +29,7 @@ import (
 	"github.com/oxisto/assert"
 	"golang.org/x/text/currency"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
@@ -112,7 +113,7 @@ func Test_service_GetSecurity(t *testing.T) {
 				return assert.Equals(t, &portfoliov1.Security{
 					Id:       "My Security",
 					ListedOn: []*portfoliov1.ListedSecurity{{SecurityId: "My Security", Ticker: "SEC", Currency: currency.EUR.String()}},
-				}, s)
+				}, s, protocmp.Transform())
 			},
 			wantErr: false,
 		},
@@ -207,7 +208,7 @@ func Test_service_DeleteSecurity(t *testing.T) {
 				Id: "My Stock",
 			})},
 			wantRes: func(t *testing.T, e *emptypb.Empty) bool {
-				return assert.Equals(t, &emptypb.Empty{}, e)
+				return assert.Equals(t, &emptypb.Empty{}, e, protocmp.Transform())
 			},
 			wantErr: false,
 		},
