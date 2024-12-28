@@ -30,6 +30,7 @@ import (
 	"github.com/oxisto/assert"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
 	"golang.org/x/text/currency"
+	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -82,9 +83,9 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 				return true &&
 					assert.Equals(t, "US0378331005", r.Msg.Positions["US0378331005"].Security.Id) &&
 					assert.Equals(t, 10, r.Msg.Positions["US0378331005"].Amount) &&
-					assert.Equals(t, portfoliov1.Value(107080), r.Msg.Positions["US0378331005"].PurchaseValue) &&
-					assert.Equals(t, portfoliov1.Value(10708), r.Msg.Positions["US0378331005"].PurchasePrice) &&
-					assert.Equals(t, portfoliov1.Value(100000), r.Msg.TotalMarketValue)
+					assert.Equals(t, portfoliov1.Value(107080), r.Msg.Positions["US0378331005"].PurchaseValue, protocmp.Transform()) &&
+					assert.Equals(t, portfoliov1.Value(10708), r.Msg.Positions["US0378331005"].PurchasePrice, protocmp.Transform()) &&
+					assert.Equals(t, portfoliov1.Value(100000), r.Msg.TotalMarketValue, protocmp.Transform())
 			},
 		},
 		{
@@ -103,10 +104,10 @@ func Test_service_GetPortfolioSnapshot(t *testing.T) {
 				return true &&
 					assert.Equals(t, "US0378331005", pos.Security.Id) &&
 					assert.Equals(t, 20, pos.Amount) &&
-					assert.Equals(t, portfoliov1.Value(214160), pos.PurchaseValue) &&
-					assert.Equals(t, portfoliov1.Value(10708), pos.PurchasePrice) &&
-					assert.Equals(t, portfoliov1.Value(10000), pos.MarketPrice) &&
-					assert.Equals(t, portfoliov1.Value(200000), pos.MarketValue)
+					assert.Equals(t, portfoliov1.Value(214160), pos.PurchaseValue, protocmp.Transform()) &&
+					assert.Equals(t, portfoliov1.Value(10708), pos.PurchasePrice, protocmp.Transform()) &&
+					assert.Equals(t, portfoliov1.Value(10000), pos.MarketPrice, protocmp.Transform()) &&
+					assert.Equals(t, portfoliov1.Value(200000), pos.MarketValue, protocmp.Transform())
 			},
 		},
 		{
