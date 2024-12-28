@@ -8,6 +8,22 @@ CREATE TABLE
     );
 
 CREATE TABLE
+    IF NOT EXISTS portfolio_events (
+        id TEXT PRIMARY KEY,
+        type INTEGER NOT NULL,
+        time DATETIME NOT NULL,
+        portfolio_id TEXT NOT NULL,
+        security_id TEXT NOT NULL,
+        amount REAL,
+        price INTEGER,
+        price_currency TEXT,
+        fees INTEGER,
+        fees_currency TEXT,
+        taxes INTEGER,
+        taxes_currency TEXT
+    );
+
+CREATE TABLE
     IF NOT EXISTS bank_accounts (
         id TEXT PRIMARY KEY, -- ID is the primary identifier for a bank account.
         display_name TEXT NOT NULL -- DisplayName is the human-readable name of the bank account.
@@ -15,5 +31,7 @@ CREATE TABLE
 
 -- +goose Down
 DROP TABLE portfolios;
+
+DROP TABLE portfolio_events;
 
 DROP TABLE bank_accounts;

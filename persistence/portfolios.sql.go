@@ -28,6 +28,22 @@ func (q *Queries) CreateBankAccount(ctx context.Context, arg CreateBankAccountPa
 	return &i, err
 }
 
+const getBankAccount = `-- name: GetBankAccount :one
+SELECT
+    id, display_name
+FROM
+    bank_accounts
+WHERE
+    id = ?
+`
+
+func (q *Queries) GetBankAccount(ctx context.Context, id string) (*BankAccount, error) {
+	row := q.db.QueryRowContext(ctx, getBankAccount, id)
+	var i BankAccount
+	err := row.Scan(&i.ID, &i.DisplayName)
+	return &i, err
+}
+
 const getPortfolio = `-- name: GetPortfolio :one
 SELECT
     id, display_name, bank_account_id

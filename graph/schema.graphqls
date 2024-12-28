@@ -23,6 +23,59 @@ type ListedSecurity {
 type Portfolio {
   id: String!
   displayName: String!
+  bankAccount: BankAccount!
+  snapshot(time: Date!): PortfolioSnapshot
+  events: [PortfolioEvent!]!
+}
+
+type PortfolioSnapshot {
+  time: Date!
+  position: [PortfolioPosition!]!
+}
+
+type PortfolioPosition {
+  security: Security!
+  quantity: Int!
+
+  """
+  PurchaseValue was the market value of this position when it was bought (net;
+  exclusive of any fees).
+  """
+  purchaseValue: Currency!
+
+  """
+  PurchasePrice was the market price of this position when it was bought (net;
+  exclusive of any fees).
+  """
+  purchasePrice: Currency!
+
+  """
+  MarketValue is the current market value of this position, as retrieved from
+  the securities service.
+  """
+  marketValue: Currency!
+
+  """
+  MarketPrice is the current market price of this position, as retrieved from
+  the securities service.
+  """
+  marketPrice: Currency!
+
+  """
+  TotalFees is the total amount of fees accumulating in this position through
+  various transactions.
+  """
+  totalFees: Currency!
+
+  """
+  ProfitOrLoss contains the absolute amount of profit or loss in this position.
+  """
+  profitOrLoss: Currency!
+
+  """
+  Gains contains the relative amount of profit or loss in this position.
+  """
+  gains: Float!
 }
 
 type BankAccount {
