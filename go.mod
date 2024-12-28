@@ -12,7 +12,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mattn/go-sqlite3 v1.14.24
-	github.com/oxisto/assert v0.0.6
+	github.com/oxisto/assert v0.1.1
 	github.com/oxisto/oauth2go v0.14.0
 	github.com/pressly/goose/v3 v3.24.0
 	github.com/urfave/cli/v3 v3.0.0-beta1
@@ -20,6 +20,8 @@ require (
 	golang.org/x/text v0.21.0
 	google.golang.org/protobuf v1.36.0
 )
+
+require github.com/google/go-cmp v0.6.0 // indirect
 
 require (
 	github.com/MicahParks/jwkset v0.5.19 // indirect
