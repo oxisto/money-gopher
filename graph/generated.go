@@ -41,6 +41,7 @@ type Config struct {
 type ResolverRoot interface {
 	ListedSecurity() ListedSecurityResolver
 	Mutation() MutationResolver
+	Portfolio() PortfolioResolver
 	Query() QueryResolver
 	Security() SecurityResolver
 }
@@ -74,8 +75,27 @@ type ComplexityRoot struct {
 	}
 
 	Portfolio struct {
+		BankAccount func(childComplexity int) int
 		DisplayName func(childComplexity int) int
 		ID          func(childComplexity int) int
+		Snapshot    func(childComplexity int, time string) int
+	}
+
+	PortfolioPosition struct {
+		Gains         func(childComplexity int) int
+		MarketPrice   func(childComplexity int) int
+		MarketValue   func(childComplexity int) int
+		ProfitOrLoss  func(childComplexity int) int
+		PurchasePrice func(childComplexity int) int
+		PurchaseValue func(childComplexity int) int
+		Quantity      func(childComplexity int) int
+		Security      func(childComplexity int) int
+		TotalFees     func(childComplexity int) int
+	}
+
+	PortfolioSnapshot struct {
+		Position func(childComplexity int) int
+		Time     func(childComplexity int) int
 	}
 
 	Query struct {
@@ -102,6 +122,10 @@ type MutationResolver interface {
 	CreateSecurity(ctx context.Context, input SecurityInput) (*persistence.Security, error)
 	UpdateSecurity(ctx context.Context, id string, input SecurityInput) (*persistence.Security, error)
 	TriggerQuoteUpdate(ctx context.Context, securityIDs []string) (bool, error)
+}
+type PortfolioResolver interface {
+	BankAccount(ctx context.Context, obj *persistence.Portfolio) (*persistence.BankAccount, error)
+	Snapshot(ctx context.Context, obj *persistence.Portfolio, time string) (*PortfolioSnapshot, error)
 }
 type QueryResolver interface {
 	Security(ctx context.Context, id string) (*persistence.Security, error)
@@ -232,6 +256,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateSecurity(childComplexity, args["id"].(string), args["input"].(SecurityInput)), true
 
+	case "Portfolio.bankAccount":
+		if e.complexity.Portfolio.BankAccount == nil {
+			break
+		}
+
+		return e.complexity.Portfolio.BankAccount(childComplexity), true
+
 	case "Portfolio.displayName":
 		if e.complexity.Portfolio.DisplayName == nil {
 			break
@@ -245,6 +276,95 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Portfolio.ID(childComplexity), true
+
+	case "Portfolio.snapshot":
+		if e.complexity.Portfolio.Snapshot == nil {
+			break
+		}
+
+		args, err := ec.field_Portfolio_snapshot_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Portfolio.Snapshot(childComplexity, args["time"].(string)), true
+
+	case "PortfolioPosition.gains":
+		if e.complexity.PortfolioPosition.Gains == nil {
+			break
+		}
+
+		return e.complexity.PortfolioPosition.Gains(childComplexity), true
+
+	case "PortfolioPosition.marketPrice":
+		if e.complexity.PortfolioPosition.MarketPrice == nil {
+			break
+		}
+
+		return e.complexity.PortfolioPosition.MarketPrice(childComplexity), true
+
+	case "PortfolioPosition.marketValue":
+		if e.complexity.PortfolioPosition.MarketValue == nil {
+			break
+		}
+
+		return e.complexity.PortfolioPosition.MarketValue(childComplexity), true
+
+	case "PortfolioPosition.profitOrLoss":
+		if e.complexity.PortfolioPosition.ProfitOrLoss == nil {
+			break
+		}
+
+		return e.complexity.PortfolioPosition.ProfitOrLoss(childComplexity), true
+
+	case "PortfolioPosition.purchasePrice":
+		if e.complexity.PortfolioPosition.PurchasePrice == nil {
+			break
+		}
+
+		return e.complexity.PortfolioPosition.PurchasePrice(childComplexity), true
+
+	case "PortfolioPosition.purchaseValue":
+		if e.complexity.PortfolioPosition.PurchaseValue == nil {
+			break
+		}
+
+		return e.complexity.PortfolioPosition.PurchaseValue(childComplexity), true
+
+	case "PortfolioPosition.quantity":
+		if e.complexity.PortfolioPosition.Quantity == nil {
+			break
+		}
+
+		return e.complexity.PortfolioPosition.Quantity(childComplexity), true
+
+	case "PortfolioPosition.security":
+		if e.complexity.PortfolioPosition.Security == nil {
+			break
+		}
+
+		return e.complexity.PortfolioPosition.Security(childComplexity), true
+
+	case "PortfolioPosition.totalFees":
+		if e.complexity.PortfolioPosition.TotalFees == nil {
+			break
+		}
+
+		return e.complexity.PortfolioPosition.TotalFees(childComplexity), true
+
+	case "PortfolioSnapshot.position":
+		if e.complexity.PortfolioSnapshot.Position == nil {
+			break
+		}
+
+		return e.complexity.PortfolioSnapshot.Position(childComplexity), true
+
+	case "PortfolioSnapshot.time":
+		if e.complexity.PortfolioSnapshot.Time == nil {
+			break
+		}
+
+		return e.complexity.PortfolioSnapshot.Time(childComplexity), true
 
 	case "Query.portfolio":
 		if e.complexity.Query.Portfolio == nil {
@@ -522,6 +642,29 @@ func (ec *executionContext) field_Mutation_updateSecurity_argsInput(
 	}
 
 	var zeroVal SecurityInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Portfolio_snapshot_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Portfolio_snapshot_argsTime(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["time"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Portfolio_snapshot_argsTime(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("time"))
+	if tmp, ok := rawArgs["time"]; ok {
+		return ec.unmarshalNDate2string(ctx, tmp)
+	}
+
+	var zeroVal string
 	return zeroVal, nil
 }
 
@@ -1327,6 +1470,664 @@ func (ec *executionContext) fieldContext_Portfolio_displayName(_ context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _Portfolio_bankAccount(ctx context.Context, field graphql.CollectedField, obj *persistence.Portfolio) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Portfolio_bankAccount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Portfolio().BankAccount(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*persistence.BankAccount)
+	fc.Result = res
+	return ec.marshalNBankAccount2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐBankAccount(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Portfolio_bankAccount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Portfolio",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_BankAccount_id(ctx, field)
+			case "displayName":
+				return ec.fieldContext_BankAccount_displayName(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type BankAccount", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Portfolio_snapshot(ctx context.Context, field graphql.CollectedField, obj *persistence.Portfolio) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Portfolio_snapshot(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Portfolio().Snapshot(rctx, obj, fc.Args["time"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*PortfolioSnapshot)
+	fc.Result = res
+	return ec.marshalOPortfolioSnapshot2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋgraphᚐPortfolioSnapshot(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Portfolio_snapshot(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Portfolio",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "time":
+				return ec.fieldContext_PortfolioSnapshot_time(ctx, field)
+			case "position":
+				return ec.fieldContext_PortfolioSnapshot_position(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PortfolioSnapshot", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Portfolio_snapshot_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PortfolioPosition_security(ctx context.Context, field graphql.CollectedField, obj *PortfolioPosition) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PortfolioPosition_security(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Security, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*persistence.Security)
+	fc.Result = res
+	return ec.marshalNSecurity2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐSecurity(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PortfolioPosition_security(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PortfolioPosition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Security_id(ctx, field)
+			case "displayName":
+				return ec.fieldContext_Security_displayName(ctx, field)
+			case "quoteProvider":
+				return ec.fieldContext_Security_quoteProvider(ctx, field)
+			case "listedAs":
+				return ec.fieldContext_Security_listedAs(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Security", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PortfolioPosition_quantity(ctx context.Context, field graphql.CollectedField, obj *PortfolioPosition) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PortfolioPosition_quantity(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Quantity, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PortfolioPosition_quantity(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PortfolioPosition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PortfolioPosition_purchaseValue(ctx context.Context, field graphql.CollectedField, obj *PortfolioPosition) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PortfolioPosition_purchaseValue(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PurchaseValue, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*persistence.Currency)
+	fc.Result = res
+	return ec.marshalNCurrency2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐCurrency(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PortfolioPosition_purchaseValue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PortfolioPosition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "value":
+				return ec.fieldContext_Currency_value(ctx, field)
+			case "symbol":
+				return ec.fieldContext_Currency_symbol(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Currency", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PortfolioPosition_purchasePrice(ctx context.Context, field graphql.CollectedField, obj *PortfolioPosition) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PortfolioPosition_purchasePrice(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PurchasePrice, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*persistence.Currency)
+	fc.Result = res
+	return ec.marshalNCurrency2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐCurrency(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PortfolioPosition_purchasePrice(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PortfolioPosition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "value":
+				return ec.fieldContext_Currency_value(ctx, field)
+			case "symbol":
+				return ec.fieldContext_Currency_symbol(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Currency", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PortfolioPosition_marketValue(ctx context.Context, field graphql.CollectedField, obj *PortfolioPosition) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PortfolioPosition_marketValue(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MarketValue, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*persistence.Currency)
+	fc.Result = res
+	return ec.marshalNCurrency2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐCurrency(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PortfolioPosition_marketValue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PortfolioPosition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "value":
+				return ec.fieldContext_Currency_value(ctx, field)
+			case "symbol":
+				return ec.fieldContext_Currency_symbol(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Currency", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PortfolioPosition_marketPrice(ctx context.Context, field graphql.CollectedField, obj *PortfolioPosition) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PortfolioPosition_marketPrice(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MarketPrice, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*persistence.Currency)
+	fc.Result = res
+	return ec.marshalNCurrency2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐCurrency(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PortfolioPosition_marketPrice(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PortfolioPosition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "value":
+				return ec.fieldContext_Currency_value(ctx, field)
+			case "symbol":
+				return ec.fieldContext_Currency_symbol(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Currency", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PortfolioPosition_totalFees(ctx context.Context, field graphql.CollectedField, obj *PortfolioPosition) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PortfolioPosition_totalFees(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalFees, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*persistence.Currency)
+	fc.Result = res
+	return ec.marshalNCurrency2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐCurrency(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PortfolioPosition_totalFees(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PortfolioPosition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "value":
+				return ec.fieldContext_Currency_value(ctx, field)
+			case "symbol":
+				return ec.fieldContext_Currency_symbol(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Currency", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PortfolioPosition_profitOrLoss(ctx context.Context, field graphql.CollectedField, obj *PortfolioPosition) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PortfolioPosition_profitOrLoss(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ProfitOrLoss, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*persistence.Currency)
+	fc.Result = res
+	return ec.marshalNCurrency2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐCurrency(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PortfolioPosition_profitOrLoss(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PortfolioPosition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "value":
+				return ec.fieldContext_Currency_value(ctx, field)
+			case "symbol":
+				return ec.fieldContext_Currency_symbol(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Currency", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PortfolioPosition_gains(ctx context.Context, field graphql.CollectedField, obj *PortfolioPosition) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PortfolioPosition_gains(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Gains, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PortfolioPosition_gains(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PortfolioPosition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PortfolioSnapshot_time(ctx context.Context, field graphql.CollectedField, obj *PortfolioSnapshot) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PortfolioSnapshot_time(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Time, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNDate2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PortfolioSnapshot_time(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PortfolioSnapshot",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Date does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PortfolioSnapshot_position(ctx context.Context, field graphql.CollectedField, obj *PortfolioSnapshot) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PortfolioSnapshot_position(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Position, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*PortfolioPosition)
+	fc.Result = res
+	return ec.marshalNPortfolioPosition2ᚕᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋgraphᚐPortfolioPositionᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PortfolioSnapshot_position(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PortfolioSnapshot",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "security":
+				return ec.fieldContext_PortfolioPosition_security(ctx, field)
+			case "quantity":
+				return ec.fieldContext_PortfolioPosition_quantity(ctx, field)
+			case "purchaseValue":
+				return ec.fieldContext_PortfolioPosition_purchaseValue(ctx, field)
+			case "purchasePrice":
+				return ec.fieldContext_PortfolioPosition_purchasePrice(ctx, field)
+			case "marketValue":
+				return ec.fieldContext_PortfolioPosition_marketValue(ctx, field)
+			case "marketPrice":
+				return ec.fieldContext_PortfolioPosition_marketPrice(ctx, field)
+			case "totalFees":
+				return ec.fieldContext_PortfolioPosition_totalFees(ctx, field)
+			case "profitOrLoss":
+				return ec.fieldContext_PortfolioPosition_profitOrLoss(ctx, field)
+			case "gains":
+				return ec.fieldContext_PortfolioPosition_gains(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PortfolioPosition", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_security(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_security(ctx, field)
 	if err != nil {
@@ -1483,6 +2284,10 @@ func (ec *executionContext) fieldContext_Query_portfolio(ctx context.Context, fi
 				return ec.fieldContext_Portfolio_id(ctx, field)
 			case "displayName":
 				return ec.fieldContext_Portfolio_displayName(ctx, field)
+			case "bankAccount":
+				return ec.fieldContext_Portfolio_bankAccount(ctx, field)
+			case "snapshot":
+				return ec.fieldContext_Portfolio_snapshot(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Portfolio", field.Name)
 		},
@@ -1544,6 +2349,10 @@ func (ec *executionContext) fieldContext_Query_portfolios(_ context.Context, fie
 				return ec.fieldContext_Portfolio_id(ctx, field)
 			case "displayName":
 				return ec.fieldContext_Portfolio_displayName(ctx, field)
+			case "bankAccount":
+				return ec.fieldContext_Portfolio_bankAccount(ctx, field)
+			case "snapshot":
+				return ec.fieldContext_Portfolio_snapshot(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Portfolio", field.Name)
 		},
@@ -4029,10 +4838,202 @@ func (ec *executionContext) _Portfolio(ctx context.Context, sel ast.SelectionSet
 		case "id":
 			out.Values[i] = ec._Portfolio_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "displayName":
 			out.Values[i] = ec._Portfolio_displayName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "bankAccount":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Portfolio_bankAccount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "snapshot":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Portfolio_snapshot(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var portfolioPositionImplementors = []string{"PortfolioPosition"}
+
+func (ec *executionContext) _PortfolioPosition(ctx context.Context, sel ast.SelectionSet, obj *PortfolioPosition) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, portfolioPositionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PortfolioPosition")
+		case "security":
+			out.Values[i] = ec._PortfolioPosition_security(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "quantity":
+			out.Values[i] = ec._PortfolioPosition_quantity(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "purchaseValue":
+			out.Values[i] = ec._PortfolioPosition_purchaseValue(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "purchasePrice":
+			out.Values[i] = ec._PortfolioPosition_purchasePrice(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "marketValue":
+			out.Values[i] = ec._PortfolioPosition_marketValue(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "marketPrice":
+			out.Values[i] = ec._PortfolioPosition_marketPrice(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalFees":
+			out.Values[i] = ec._PortfolioPosition_totalFees(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "profitOrLoss":
+			out.Values[i] = ec._PortfolioPosition_profitOrLoss(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "gains":
+			out.Values[i] = ec._PortfolioPosition_gains(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var portfolioSnapshotImplementors = []string{"PortfolioSnapshot"}
+
+func (ec *executionContext) _PortfolioSnapshot(ctx context.Context, sel ast.SelectionSet, obj *PortfolioSnapshot) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, portfolioSnapshotImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PortfolioSnapshot")
+		case "time":
+			out.Values[i] = ec._PortfolioSnapshot_time(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "position":
+			out.Values[i] = ec._PortfolioSnapshot_position(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -4627,6 +5628,20 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) marshalNBankAccount2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐBankAccount(ctx context.Context, sel ast.SelectionSet, v persistence.BankAccount) graphql.Marshaler {
+	return ec._BankAccount(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNBankAccount2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐBankAccount(ctx context.Context, sel ast.SelectionSet, v *persistence.BankAccount) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._BankAccount(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v any) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -4642,6 +5657,46 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNCurrency2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐCurrency(ctx context.Context, sel ast.SelectionSet, v *persistence.Currency) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Currency(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDate2string(ctx context.Context, v any) (string, error) {
+	res, err := graphql.UnmarshalString(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDate2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {
+	res, err := graphql.UnmarshalFloatContext(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
+	res := graphql.MarshalFloatContext(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return graphql.WrapContextMarshaler(ctx, res)
+}
+
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v any) (string, error) {
 	res, err := graphql.UnmarshalID(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -4649,6 +5704,21 @@ func (ec *executionContext) unmarshalNID2string(ctx context.Context, v any) (str
 
 func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	res := graphql.MarshalID(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v any) (int, error) {
+	res, err := graphql.UnmarshalInt(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	res := graphql.MarshalInt(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -4739,6 +5809,60 @@ func (ec *executionContext) marshalNPortfolio2ᚖgithubᚗcomᚋoxistoᚋmoney�
 		return graphql.Null
 	}
 	return ec._Portfolio(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNPortfolioPosition2ᚕᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋgraphᚐPortfolioPositionᚄ(ctx context.Context, sel ast.SelectionSet, v []*PortfolioPosition) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPortfolioPosition2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋgraphᚐPortfolioPosition(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNPortfolioPosition2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋgraphᚐPortfolioPosition(ctx context.Context, sel ast.SelectionSet, v *PortfolioPosition) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PortfolioPosition(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNSecurity2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐSecurity(ctx context.Context, sel ast.SelectionSet, v persistence.Security) graphql.Marshaler {
@@ -5193,6 +6317,13 @@ func (ec *executionContext) marshalOPortfolio2ᚖgithubᚗcomᚋoxistoᚋmoney�
 		return graphql.Null
 	}
 	return ec._Portfolio(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOPortfolioSnapshot2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋgraphᚐPortfolioSnapshot(ctx context.Context, sel ast.SelectionSet, v *PortfolioSnapshot) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._PortfolioSnapshot(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOSecurity2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐSecurity(ctx context.Context, sel ast.SelectionSet, v *persistence.Security) graphql.Marshaler {

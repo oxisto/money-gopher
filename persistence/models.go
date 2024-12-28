@@ -6,6 +6,7 @@ package persistence
 
 import (
 	"database/sql"
+	"time"
 )
 
 type BankAccount struct {
@@ -36,6 +37,21 @@ type Portfolio struct {
 	DisplayName string
 	// BankAccountID is the ID of the bank account that holds the portfolio.
 	BankAccountID string
+}
+
+type PortfolioEvent struct {
+	ID            string
+	Type          int64
+	Time          time.Time
+	PortfolioID   string
+	SecurityID    string
+	Amount        sql.NullFloat64
+	Price         sql.NullInt64
+	PriceCurrency sql.NullString
+	Fees          sql.NullInt64
+	FeesCurrency  sql.NullString
+	Taxes         sql.NullInt64
+	TaxesCurrency sql.NullString
 }
 
 // Security represents a security that can be traded on an exchange.

@@ -6,6 +6,7 @@ package graph
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"time"
 
@@ -126,6 +127,16 @@ func (r *mutationResolver) TriggerQuoteUpdate(ctx context.Context, securityIDs [
 	return true, nil
 }
 
+// BankAccount is the resolver for the bankAccount field.
+func (r *portfolioResolver) BankAccount(ctx context.Context, obj *persistence.Portfolio) (*persistence.BankAccount, error) {
+	return r.DB.GetBankAccount(ctx, obj.BankAccountID)
+}
+
+// Snapshot is the resolver for the snapshot field.
+func (r *portfolioResolver) Snapshot(ctx context.Context, obj *persistence.Portfolio, time string) (*PortfolioSnapshot, error) {
+	panic(fmt.Errorf("not implemented: Snapshot - snapshot"))
+}
+
 // Security is the resolver for the security field.
 func (r *queryResolver) Security(ctx context.Context, id string) (*persistence.Security, error) {
 	return r.DB.GetSecurity(ctx, id)
@@ -166,6 +177,9 @@ func (r *Resolver) ListedSecurity() ListedSecurityResolver { return &listedSecur
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
+// Portfolio returns PortfolioResolver implementation.
+func (r *Resolver) Portfolio() PortfolioResolver { return &portfolioResolver{r} }
+
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
@@ -174,5 +188,6 @@ func (r *Resolver) Security() SecurityResolver { return &securityResolver{r} }
 
 type listedSecurityResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
+type portfolioResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type securityResolver struct{ *Resolver }

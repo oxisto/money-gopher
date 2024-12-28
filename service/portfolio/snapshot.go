@@ -19,6 +19,8 @@ package portfolio
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 
 	moneygopher "github.com/oxisto/money-gopher"
 	"github.com/oxisto/money-gopher/finance"
@@ -66,7 +68,7 @@ func (svc *service) GetPortfolioSnapshot(ctx context.Context, req *connect.Reque
 
 	// Retrieve the event map; a map of events indexed by their security ID
 	m = p.EventMap()
-	names = keys(m)
+	names = slices.Collect(maps.Keys(m))
 
 	// Retrieve market value of filtered securities
 	secres, err = svc.securities.ListSecurities(
@@ -147,17 +149,6 @@ func marketPrice(secmap map[string]*portfoliov1.Security, name string, netPrice 
 	} else {
 		return ls[0].LatestQuote
 	}
-}
-
-// TODO(oxisto): remove once maps.Keys is in the stdlib in Go 1.22
-func keys[M ~map[K]V, K comparable, V any](m M) (keys []K) {
-	keys = make([]K, 0, len(m))
-
-	for k := range m {
-		keys = append(keys, k)
-	}
-
-	return keys
 }
 
 // forwardAuth uses the authorization header of [authenticatedReq] to
