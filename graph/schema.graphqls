@@ -24,13 +24,27 @@ type Portfolio {
   id: String!
   displayName: String!
   bankAccount: BankAccount!
-  snapshot(time: Date!): PortfolioSnapshot
+  snapshot(when: Date!): PortfolioSnapshot
   events: [PortfolioEvent!]!
+}
+
+enum PortfolioEventType {
+  BUY
+  SELL
+  DIVIDEND
+}
+
+type PortfolioEvent {
+  time: Date!
+  type: PortfolioEventType!
+  security: Security
 }
 
 type PortfolioSnapshot {
   time: Date!
-  position: [PortfolioPosition!]!
+  positions: [PortfolioPosition!]!
+  firstTransactionTime: Date!
+  cash: Currency!
 }
 
 type PortfolioPosition {

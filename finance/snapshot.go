@@ -10,60 +10,68 @@ import (
 	"connectrpc.com/connect"
 	moneygopher "github.com/oxisto/money-gopher"
 	portfoliov1 "github.com/oxisto/money-gopher/gen"
-	"github.com/oxisto/money-gopher/graph"
+	"github.com/oxisto/money-gopher/models"
 	"github.com/oxisto/money-gopher/persistence"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func BuildSnapshot(time time.Time, db *persistence.DB) (*graph.PortfolioSnapshot, error) {
+// SnapshotDataProvider is an interface that provides the necessary data for
+// building a snapshot. It includes methods for retrieving portfolio events and
+// securities by their IDs.
+type SnapshotDataProvider interface {
+	ListPortfolioEventsByPortfolioID(ctx context.Context, portfolioID string) ([]*persistence.PortfolioEvent, error)
+	ListSecuritiesByIDs(ctx context.Context, ids []string) ([]*persistence.Security, error)
+}
+
+// BuildSnapshot creates a snapshot of the portfolio at a given time. It
+// calculates the performance and market value of the current positions and the
+// total value of the portfolio.
+//
+// The snapshot is built by retrieving all events and security information from
+// a [SnapshotDataProvider]. The snapshot is built by iterating over the events
+// and calculating the positions at the specified timestamp.
+func BuildSnapshot(
+	ctx context.Context,
+	timestamp *time.Time,
+	portfolioID string,
+	provider SnapshotDataProvider,
+) (snap *models.PortfolioSnapshot, err error) {
 	var (
-		snap   *portfoliov1.PortfolioSnapshot
+		events []*persistence.PortfolioEvent
 		p      portfoliov1.Portfolio
 		m      map[string][]*portfoliov1.PortfolioEvent
-		names  []string
-		secres *connect.Response[portfoliov1.ListSecuritiesResponse]
-		secmap map[string]*portfoliov1.Security
+		ids    []string
+		secs   []*persistence.Security
+		secmap map[string]*persistence.Security
 	)
 
-	// Retrieve transactions
-	p.Events, err = svc.events.List(req.Msg.PortfolioId)
+	// Retrieve events
+	events, err = provider.ListPortfolioEventsByPortfolioID(ctx, portfolioID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	// If no time is specified, we assume it to be now
-	if req.Msg.Time == nil {
-		req.Msg.Time = timestamppb.Now()
-	}
-
 	// Set up the snapshot
-	snap = &portfoliov1.PortfolioSnapshot{
-		Time:               req.Msg.Time,
-		Positions:          make(map[string]*portfoliov1.PortfolioPosition),
-		TotalPurchaseValue: portfoliov1.Zero(),
+	snap = &models.PortfolioSnapshot{
+		Time:      timestamp.Format(time.RFC3339),
+		Positions: make([]*models.PortfolioPosition, 0),
+		/*TotalPurchaseValue: portfoliov1.Zero(),
 		TotalMarketValue:   portfoliov1.Zero(),
 		TotalProfitOrLoss:  portfoliov1.Zero(),
-		Cash:               portfoliov1.Zero(),
+		Cash:               portfoliov1.Zero(),*/
 	}
 
 	// Record the first transaction time
 	if len(p.Events) > 0 {
-		snap.FirstTransactionTime = p.Events[0].Time
+		snap.FirstTransactionTime = events[0].Time.Format(time.RFC3339)
 	}
 
 	// Retrieve the event map; a map of events indexed by their security ID
 	m = p.EventMap()
-	names = slices.Collect(maps.Keys(m))
+	ids = slices.Collect(maps.Keys(m))
 
 	// Retrieve market value of filtered securities
-	secres, err = svc.securities.ListSecurities(
-		context.Background(),
-		forwardAuth(connect.NewRequest(&portfoliov1.ListSecuritiesRequest{
-			Filter: &portfoliov1.ListSecuritiesRequest_Filter{
-				SecurityIds: names,
-			},
-		}), req),
-	)
+	secs, err = provider.ListSecuritiesByIDs(context.Background(), ids)
+
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal,
 			fmt.Errorf("internal error while calling ListSecurities on securities service: %w", err),
@@ -71,16 +79,16 @@ func BuildSnapshot(time time.Time, db *persistence.DB) (*graph.PortfolioSnapshot
 	}
 
 	// Make a map out of the securities list so we can access it easier
-	secmap = moneygopher.Map(secres.Msg.Securities, func(s *portfoliov1.Security) string {
-		return s.Id
+	secmap = moneygopher.Map(secs, func(s *persistence.Security) string {
+		return s.ID
 	})
 
 	// We need to look at the portfolio events up to the time of the snapshot
 	// and calculate the current positions.
 	for name, txs := range m {
-		txs = portfoliov1.EventsBefore(txs, snap.Time.AsTime())
+		txs = eventsBefore(txs, timestamp)
 
-		c := finance.NewCalculation(txs)
+		c := NewCalculation(txs)
 
 		if name == "cash" {
 			// Add deposited/withdrawn cash directly
@@ -124,4 +132,19 @@ func BuildSnapshot(time time.Time, db *persistence.DB) (*graph.PortfolioSnapshot
 	snap.TotalPortfolioValue = snap.TotalMarketValue.Plus(snap.Cash)
 
 	return connect.NewResponse(snap), nil
+}
+
+// TODO: move to SQL query
+func eventsBefore(events []*persistence.PortfolioEvent, t time.Time) (out []*persistence.PortfolioEvent) {
+	out = make([]*persistence.PortfolioEvent, 0, len(events))
+
+	for _, event := range events {
+		if event.Time.After(t) {
+			continue
+		}
+
+		out = append(out, event)
+	}
+
+	return
 }
