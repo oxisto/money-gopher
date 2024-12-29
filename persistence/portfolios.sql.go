@@ -60,6 +60,51 @@ func (q *Queries) GetPortfolio(ctx context.Context, id string) (*Portfolio, erro
 	return &i, err
 }
 
+const listPortfolioEventsByPortfolioID = `-- name: ListPortfolioEventsByPortfolioID :many
+SELECT
+    id, type, time, portfolio_id, security_id, amount, price, price_currency, fees, fees_currency, taxes, taxes_currency
+FROM
+    portfolio_events
+WHERE
+    portfolio_id = ?
+`
+
+func (q *Queries) ListPortfolioEventsByPortfolioID(ctx context.Context, portfolioID string) ([]*PortfolioEvent, error) {
+	rows, err := q.db.QueryContext(ctx, listPortfolioEventsByPortfolioID, portfolioID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*PortfolioEvent
+	for rows.Next() {
+		var i PortfolioEvent
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Time,
+			&i.PortfolioID,
+			&i.SecurityID,
+			&i.Amount,
+			&i.Price,
+			&i.PriceCurrency,
+			&i.Fees,
+			&i.FeesCurrency,
+			&i.Taxes,
+			&i.TaxesCurrency,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPortfolios = `-- name: ListPortfolios :many
 SELECT
     id, display_name, bank_account_id

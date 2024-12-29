@@ -14,6 +14,16 @@ FROM
 ORDER BY
     id;
 
+-- name: ListSecuritiesByIDs :many
+SELECT
+    *
+FROM
+    securities
+WHERE
+    id IN (sqlc.slice ('ids'))
+ORDER BY
+    id;
+
 -- name: CreateSecurity :one
 INSERT INTO
     securities (id, display_name, quote_provider)

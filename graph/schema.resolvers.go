@@ -10,6 +10,8 @@ import (
 	"slices"
 	"time"
 
+	"github.com/oxisto/money-gopher/finance"
+	"github.com/oxisto/money-gopher/models"
 	"github.com/oxisto/money-gopher/persistence"
 )
 
@@ -43,7 +45,7 @@ func (r *listedSecurityResolver) LatestQuoteTimestamp(ctx context.Context, obj *
 }
 
 // CreateSecurity is the resolver for the createSecurity field.
-func (r *mutationResolver) CreateSecurity(ctx context.Context, input SecurityInput) (*persistence.Security, error) {
+func (r *mutationResolver) CreateSecurity(ctx context.Context, input models.SecurityInput) (*persistence.Security, error) {
 	return withTx(r.Resolver, func(qtx *persistence.Queries) (*persistence.Security, error) {
 		sec, err := qtx.CreateSecurity(ctx, persistence.CreateSecurityParams{
 			ID:          input.ID,
@@ -69,7 +71,7 @@ func (r *mutationResolver) CreateSecurity(ctx context.Context, input SecurityInp
 }
 
 // UpdateSecurity is the resolver for the updateSecurity field.
-func (r *mutationResolver) UpdateSecurity(ctx context.Context, id string, input SecurityInput) (*persistence.Security, error) {
+func (r *mutationResolver) UpdateSecurity(ctx context.Context, id string, input models.SecurityInput) (*persistence.Security, error) {
 	return withTx(r.Resolver, func(qtx *persistence.Queries) (*persistence.Security, error) {
 		sec, err := qtx.UpdateSecurity(ctx, persistence.UpdateSecurityParams{
 			ID:          id,
@@ -133,8 +135,39 @@ func (r *portfolioResolver) BankAccount(ctx context.Context, obj *persistence.Po
 }
 
 // Snapshot is the resolver for the snapshot field.
-func (r *portfolioResolver) Snapshot(ctx context.Context, obj *persistence.Portfolio, time string) (*PortfolioSnapshot, error) {
-	panic(fmt.Errorf("not implemented: Snapshot - snapshot"))
+func (r *portfolioResolver) Snapshot(ctx context.Context, obj *persistence.Portfolio, when string) (snap *models.PortfolioSnapshot, err error) {
+	var t time.Time
+
+	if when == "" {
+		t = time.Now()
+	} else {
+		t, err = time.Parse(time.RFC3339, when)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return finance.BuildSnapshot(ctx, &t, obj.ID, r.DB)
+}
+
+// Events is the resolver for the events field.
+func (r *portfolioResolver) Events(ctx context.Context, obj *persistence.Portfolio) ([]*persistence.PortfolioEvent, error) {
+	panic(fmt.Errorf("not implemented: Events - events"))
+}
+
+// Time is the resolver for the time field.
+func (r *portfolioEventResolver) Time(ctx context.Context, obj *persistence.PortfolioEvent) (string, error) {
+	panic(fmt.Errorf("not implemented: Time - time"))
+}
+
+// Type is the resolver for the type field.
+func (r *portfolioEventResolver) Type(ctx context.Context, obj *persistence.PortfolioEvent) (models.PortfolioEventType, error) {
+	panic(fmt.Errorf("not implemented: Type - type"))
+}
+
+// Security is the resolver for the security field.
+func (r *portfolioEventResolver) Security(ctx context.Context, obj *persistence.PortfolioEvent) (*persistence.Security, error) {
+	panic(fmt.Errorf("not implemented: Security - security"))
 }
 
 // Security is the resolver for the security field.
@@ -180,6 +213,9 @@ func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 // Portfolio returns PortfolioResolver implementation.
 func (r *Resolver) Portfolio() PortfolioResolver { return &portfolioResolver{r} }
 
+// PortfolioEvent returns PortfolioEventResolver implementation.
+func (r *Resolver) PortfolioEvent() PortfolioEventResolver { return &portfolioEventResolver{r} }
+
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
@@ -189,5 +225,6 @@ func (r *Resolver) Security() SecurityResolver { return &securityResolver{r} }
 type listedSecurityResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type portfolioResolver struct{ *Resolver }
+type portfolioEventResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type securityResolver struct{ *Resolver }

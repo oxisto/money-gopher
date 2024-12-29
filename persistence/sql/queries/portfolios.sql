@@ -14,6 +14,14 @@ FROM
 ORDER BY
     id;
 
+-- name: ListPortfolioEventsByPortfolioID :many
+SELECT
+    *
+FROM
+    portfolio_events
+WHERE
+    portfolio_id = ?;
+
 -- name: GetBankAccount :one
 SELECT
     *
