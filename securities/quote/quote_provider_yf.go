@@ -14,7 +14,7 @@
 //
 // This file is part of The Money Gopher.
 
-package securities
+package quote
 
 import (
 	"context"
@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/persistence"
 )
 
@@ -46,7 +47,7 @@ type chart struct {
 	} `json:"chart"`
 }
 
-func (yf *yf) LatestQuote(ctx context.Context, ls *persistence.ListedSecurity) (quote *persistence.Currency, t time.Time, err error) {
+func (yf *yf) LatestQuote(ctx context.Context, ls *persistence.ListedSecurity) (quote *currency.Currency, t time.Time, err error) {
 	var (
 		res *http.Response
 		ch  chart
@@ -66,6 +67,6 @@ func (yf *yf) LatestQuote(ctx context.Context, ls *persistence.ListedSecurity) (
 		return nil, t, ErrEmptyResult
 	}
 
-	return persistence.Value(int32(ch.Chart.Results[0].Meta.RegularMarketPrice * 100)),
+	return currency.Value(int32(ch.Chart.Results[0].Meta.RegularMarketPrice * 100)),
 		time.Unix(ch.Chart.Results[0].Meta.RegularMarketTime, 0), nil
 }

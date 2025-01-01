@@ -9,6 +9,8 @@ import (
 	"context"
 	"database/sql"
 	"strings"
+
+	currency "github.com/oxisto/money-gopher/currency"
 )
 
 const createSecurity = `-- name: CreateSecurity :one
@@ -233,7 +235,7 @@ type UpsertListedSecurityParams struct {
 	SecurityID           string
 	Ticker               string
 	Currency             string
-	LatestQuote          sql.NullInt64
+	LatestQuote          *currency.Currency
 	LatestQuoteTimestamp sql.NullTime
 }
 

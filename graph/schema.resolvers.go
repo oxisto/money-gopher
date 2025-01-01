@@ -10,38 +10,26 @@ import (
 	"slices"
 	"time"
 
+	"github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/finance"
 	"github.com/oxisto/money-gopher/models"
 	"github.com/oxisto/money-gopher/persistence"
+	"github.com/oxisto/money-gopher/securities/quote"
 )
 
 // Security is the resolver for the security field.
 func (r *listedSecurityResolver) Security(ctx context.Context, obj *persistence.ListedSecurity) (*persistence.Security, error) {
-	return r.DB.GetSecurity(ctx, obj.SecurityID)
+	panic(fmt.Errorf("not implemented: Security - security"))
 }
 
 // LatestQuote is the resolver for the latestQuote field.
-func (r *listedSecurityResolver) LatestQuote(ctx context.Context, obj *persistence.ListedSecurity) (*persistence.Currency, error) {
-	if obj.LatestQuote.Valid {
-		return &persistence.Currency{
-			Value:  int32(obj.LatestQuote.Int64),
-			Symbol: obj.Currency,
-		}, nil
-	} else {
-		return nil, nil
-	}
+func (r *listedSecurityResolver) LatestQuote(ctx context.Context, obj *persistence.ListedSecurity) (*currency.Currency, error) {
+	panic(fmt.Errorf("not implemented: LatestQuote - latestQuote"))
 }
 
 // LatestQuoteTimestamp is the resolver for the latestQuoteTimestamp field.
 func (r *listedSecurityResolver) LatestQuoteTimestamp(ctx context.Context, obj *persistence.ListedSecurity) (*string, error) {
-	var s string
-
-	if obj.LatestQuoteTimestamp.Valid {
-		s = obj.LatestQuoteTimestamp.Time.Format(time.RFC3339)
-		return &s, nil
-	} else {
-		return nil, nil
-	}
+	panic(fmt.Errorf("not implemented: LatestQuoteTimestamp - latestQuoteTimestamp"))
 }
 
 // CreateSecurity is the resolver for the createSecurity field.
@@ -121,7 +109,7 @@ func (r *mutationResolver) UpdateSecurity(ctx context.Context, id string, input 
 
 // TriggerQuoteUpdate is the resolver for the triggerQuoteUpdate field.
 func (r *mutationResolver) TriggerQuoteUpdate(ctx context.Context, securityIDs []string) (b bool, err error) {
-	err = r.QuoteUpdater.UpdateQuotes(ctx, securityIDs)
+	err = quote.UpdateQuotes(ctx, securityIDs, r.DB)
 	if err != nil {
 		return false, err
 	}
@@ -147,7 +135,7 @@ func (r *portfolioResolver) Snapshot(ctx context.Context, obj *persistence.Portf
 		}
 	}
 
-	return finance.BuildSnapshot(ctx, &t, obj.ID, r.DB)
+	return finance.BuildSnapshot(ctx, t, obj.ID, r.DB)
 }
 
 // Events is the resolver for the events field.
@@ -158,11 +146,6 @@ func (r *portfolioResolver) Events(ctx context.Context, obj *persistence.Portfol
 // Time is the resolver for the time field.
 func (r *portfolioEventResolver) Time(ctx context.Context, obj *persistence.PortfolioEvent) (string, error) {
 	panic(fmt.Errorf("not implemented: Time - time"))
-}
-
-// Type is the resolver for the type field.
-func (r *portfolioEventResolver) Type(ctx context.Context, obj *persistence.PortfolioEvent) (models.PortfolioEventType, error) {
-	panic(fmt.Errorf("not implemented: Type - type"))
 }
 
 // Security is the resolver for the security field.

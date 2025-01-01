@@ -62,7 +62,7 @@ func (q *Queries) GetPortfolio(ctx context.Context, id string) (*Portfolio, erro
 
 const listPortfolioEventsByPortfolioID = `-- name: ListPortfolioEventsByPortfolioID :many
 SELECT
-    id, type, time, portfolio_id, security_id, amount, price, price_currency, fees, fees_currency, taxes, taxes_currency
+    id, type, time, portfolio_id, security_id, amount, price, fees, taxes
 FROM
     portfolio_events
 WHERE
@@ -86,11 +86,8 @@ func (q *Queries) ListPortfolioEventsByPortfolioID(ctx context.Context, portfoli
 			&i.SecurityID,
 			&i.Amount,
 			&i.Price,
-			&i.PriceCurrency,
 			&i.Fees,
-			&i.FeesCurrency,
 			&i.Taxes,
-			&i.TaxesCurrency,
 		); err != nil {
 			return nil, err
 		}
