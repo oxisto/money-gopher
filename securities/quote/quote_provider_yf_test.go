@@ -14,7 +14,7 @@
 //
 // This file is part of The Money Gopher.
 
-package securities
+package quote
 
 import (
 	"context"
@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/persistence"
 	"google.golang.org/protobuf/testing/protocmp"
 
@@ -57,7 +58,7 @@ func Test_yf_LatestQuote(t *testing.T) {
 		name      string
 		fields    fields
 		args      args
-		wantQuote *persistence.Currency
+		wantQuote *currency.Currency
 		wantTime  time.Time
 		wantErr   assert.Want[error]
 	}{
@@ -136,7 +137,7 @@ func Test_yf_LatestQuote(t *testing.T) {
 					Currency:   "USD",
 				},
 			},
-			wantQuote: persistence.Value(10000),
+			wantQuote: currency.Value(10000),
 			wantTime:  time.Date(2023, 05, 04, 20, 0, 0, 0, time.UTC),
 			wantErr:   func(t *testing.T, err error) bool { return true },
 		},

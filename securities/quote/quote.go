@@ -14,7 +14,10 @@
 //
 // This file is part of The Money Gopher.
 
-package securities
+// package quote contains the logic to update quotes for securities. Its main
+// way to interface is the [QuoteUpdater] interface. A default implementation
+// for the interface can be created using [NewQuoteUpdater].
+package quote
 
 import (
 	"context"
@@ -22,41 +25,50 @@ import (
 	"log/slog"
 	"time"
 
-	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/persistence"
 
-	"connectrpc.com/connect"
 	"github.com/lmittmann/tint"
 )
 
-// UpdateQuotes triggers an update of the quotes for the given securities.
-func (svc *service) UpdateQuotes(ctx context.Context, IDs []string) (err error) {
+// QuoteProvider is an interface that retrieves quotes for a [ListedSecurity]. They
+// can either be historical quotes or the latest quote.
+type QuoteUpdater interface {
+	UpdateQuotes(ctx context.Context, IDs []string) (err error)
+}
+
+// qu is the internal default implementation of the [QuoteUpdater] interface.
+type qu struct {
+	db *persistence.DB
+}
+
+// NewQuoteUpdater creates a new instance of the [QuoteUpdater] interface.
+func NewQuoteUpdater(db *persistence.DB) QuoteUpdater {
+	return &qu{
+		db: db,
+	}
+}
+
+// UpdateQuotes triggers an update of the quotes for the given securities' IDs.
+func (qu *qu) UpdateQuotes(ctx context.Context, secIDs []string) (err error) {
 	var (
-		sec    *persistence.Security
 		secs   []*persistence.Security
 		listed []*persistence.ListedSecurity
 		qp     QuoteProvider
 		ok     bool
 	)
 
-	if len(IDs) == 0 {
-		secs, err = svc.db.ListSecurities(ctx)
-		if err != nil {
-			return err
-		}
-
-		for _, sec := range secs {
-			IDs = append(IDs, sec.ID)
-		}
+	// Fetch all securities if no IDs are given
+	if len(secIDs) == 0 {
+		secs, err = qu.db.ListSecurities(ctx)
+	} else {
+		secs, err = qu.db.ListSecuritiesByIDs(ctx, secIDs)
+	}
+	if err != nil {
+		return err
 	}
 
-	for _, id := range IDs {
-		// Fetch security
-		sec, err = svc.db.GetSecurity(ctx, id)
-		if err != nil {
-			return err
-		}
-
+	for _, sec := range secs {
 		if !sec.QuoteProvider.Valid {
 			slog.Warn("No quote provider configured for security", "security", sec.ID)
 			return
@@ -67,7 +79,7 @@ func (svc *service) UpdateQuotes(ctx context.Context, IDs []string) (err error) 
 			return
 		}
 
-		listed, err = sec.ListedAs(ctx, svc.db)
+		listed, err = sec.ListedAs(ctx, qu.db)
 		if err != nil {
 			return err
 		}
@@ -78,7 +90,7 @@ func (svc *service) UpdateQuotes(ctx context.Context, IDs []string) (err error) 
 			go func() {
 				slog.Debug("Triggering quote update", "security", ls, "provider", sec.QuoteProvider)
 
-				err = svc.updateQuote(qp, ls)
+				err = qu.updateQuote(qp, ls)
 				if err != nil {
 					slog.Error("An error occurred during quote update", tint.Err(err), "ls", ls)
 				}
@@ -89,20 +101,10 @@ func (svc *service) UpdateQuotes(ctx context.Context, IDs []string) (err error) 
 	return
 }
 
-func (svc *service) TriggerSecurityQuoteUpdate(ctx context.Context, req *connect.Request[portfoliov1.TriggerQuoteUpdateRequest]) (res *connect.Response[portfoliov1.TriggerQuoteUpdateResponse], err error) {
-	err = svc.UpdateQuotes(ctx, req.Msg.SecurityIds)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	res = connect.NewResponse(&portfoliov1.TriggerQuoteUpdateResponse{})
-
-	return
-}
-
-func (svc *service) updateQuote(qp QuoteProvider, ls *persistence.ListedSecurity) (err error) {
+// updateQuote updates the quote for the given [ListedSecurity] using the given [QuoteProvider].
+func (qu *qu) updateQuote(qp QuoteProvider, ls *persistence.ListedSecurity) (err error) {
 	var (
-		quote  *persistence.Currency
+		quote  *currency.Currency
 		t      time.Time
 		ctx    context.Context
 		cancel context.CancelFunc
@@ -116,10 +118,10 @@ func (svc *service) updateQuote(qp QuoteProvider, ls *persistence.ListedSecurity
 		return err
 	}
 
-	ls.LatestQuote = sql.NullInt64{Int64: int64(quote.Value), Valid: true}
+	ls.LatestQuote = quote
 	ls.LatestQuoteTimestamp = sql.NullTime{Time: t, Valid: true}
 
-	_, err = svc.db.UpsertListedSecurity(ctx, persistence.UpsertListedSecurityParams{
+	_, err = qu.db.UpsertListedSecurity(ctx, persistence.UpsertListedSecurityParams{
 		SecurityID: ls.SecurityID,
 		Ticker:     ls.Ticker,
 		Currency:   ls.Currency,

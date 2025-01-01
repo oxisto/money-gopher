@@ -1,3 +1,10 @@
+directive @goModel(
+  model: String
+  models: [String!]
+) on OBJECT | INPUT_OBJECT | SCALAR | ENUM | INTERFACE | UNION
+
+directive @goEnum(value: String) on ENUM_VALUE
+
 scalar Date
 
 type Currency {
@@ -28,10 +35,22 @@ type Portfolio {
   events: [PortfolioEvent!]!
 }
 
-enum PortfolioEventType {
+enum PortfolioEventType
+  @goModel(
+    model: "github.com/oxisto/money-gopher/portfolio/events.PortfolioEventType"
+  ) {
   BUY
+    @goEnum(
+      value: "github.com/oxisto/money-gopher/portfolio/events.PortfolioEventTypeBuy"
+    )
   SELL
+    @goEnum(
+      value: "github.com/oxisto/money-gopher/portfolio/events.PortfolioEventTypeSell"
+    )
   DIVIDEND
+    @goEnum(
+      value: "github.com/oxisto/money-gopher/portfolio/events.PortfolioEventTypeDividend"
+    )
 }
 
 type PortfolioEvent {
@@ -44,12 +63,17 @@ type PortfolioSnapshot {
   time: Date!
   positions: [PortfolioPosition!]!
   firstTransactionTime: Date!
+  totalPurchaseValue: Currency!
+  totalMarketValue: Currency!
+  totalProfitOrLoss: Currency!
+  totalGains: Float!
+  totalPortfolioValue: Currency
   cash: Currency!
 }
 
 type PortfolioPosition {
   security: Security!
-  quantity: Int!
+  amount: Float!
 
   """
   PurchaseValue was the market value of this position when it was bought (net;

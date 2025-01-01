@@ -22,15 +22,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"os"
 
-	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
 	"github.com/shurcooL/graphql"
 
-	"connectrpc.com/connect"
-	"github.com/lmittmann/tint"
 	oauth2 "github.com/oxisto/oauth2go"
 	"github.com/urfave/cli/v3"
 )
@@ -42,9 +38,7 @@ var SessionKey sessionKeyType
 
 // Session holds all necessary information about the current CLI session.
 type Session struct {
-	PortfolioClient  portfoliov1connect.PortfolioServiceClient  `json:"-"`
-	SecuritiesClient portfoliov1connect.SecuritiesServiceClient `json:"-"`
-	GraphQL          *graphql.Client
+	GraphQL *graphql.Client
 
 	opts *SessionOptions
 }
@@ -144,38 +138,9 @@ func (s *Session) Save() (err error) {
 
 // initClients initializes the clients for the session.
 func (s *Session) initClients() {
-	interceptor := func(next connect.UnaryFunc) connect.UnaryFunc {
-		return connect.UnaryFunc(func(
-			ctx context.Context,
-			req connect.AnyRequest,
-		) (connect.AnyResponse, error) {
-			if req.Spec().IsClient {
-				var t, err = s.opts.OAuth2Config.TokenSource(context.Background(), s.opts.Token).Token()
-				if err != nil {
-					slog.Error("Could not retrieve token", tint.Err(err))
-				} else {
-					req.Header().Set("Authorization", "Bearer "+t.AccessToken)
-				}
-			}
-			return next(ctx, req)
-		})
-	}
-
 	if s.opts.HttpClient == nil {
 		s.opts.HttpClient = http.DefaultClient
 	}
-
-	s.PortfolioClient = portfoliov1connect.NewPortfolioServiceClient(
-		s.opts.HttpClient, s.opts.BaseURL,
-		connect.WithHTTPGet(),
-		connect.WithInterceptors(connect.UnaryInterceptorFunc(interceptor)),
-	)
-
-	s.SecuritiesClient = portfoliov1connect.NewSecuritiesServiceClient(
-		s.opts.HttpClient, s.opts.BaseURL,
-		connect.WithHTTPGet(),
-		connect.WithInterceptors(connect.UnaryInterceptorFunc(interceptor)),
-	)
 
 	s.GraphQL = graphql.NewClient(s.opts.BaseURL+"/graphql/query", s.opts.HttpClient)
 }

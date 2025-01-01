@@ -14,7 +14,7 @@
 //
 // This file is part of The Money Gopher.
 
-package securities
+package quote
 
 import (
 	"context"
@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/persistence"
 )
 
@@ -45,7 +46,7 @@ type header struct {
 	WKN              string    `json:"wkn"`
 }
 
-func (ing *ing) LatestQuote(ctx context.Context, ls *persistence.ListedSecurity) (quote *persistence.Currency, t time.Time, err error) {
+func (ing *ing) LatestQuote(ctx context.Context, ls *persistence.ListedSecurity) (quote *currency.Currency, t time.Time, err error) {
 	var (
 		res *http.Response
 		h   header
@@ -62,8 +63,8 @@ func (ing *ing) LatestQuote(ctx context.Context, ls *persistence.ListedSecurity)
 	}
 
 	if h.HasBidAsk {
-		return persistence.Value(int32(h.Bid * 100)), h.BidDate, nil
+		return currency.Value(int32(h.Bid * 100)), h.BidDate, nil
 	} else {
-		return persistence.Value(int32(h.Price * 100)), h.PriceChangedDate, nil
+		return currency.Value(int32(h.Price * 100)), h.PriceChangedDate, nil
 	}
 }

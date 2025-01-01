@@ -119,3 +119,5 @@ call_argument_directives_with_null: true
 # if they match it will use them, otherwise it will generate them.
 autobind:
   - "github.com/oxisto/money-gopher/persistence"
+  - "github.com/oxisto/money-gopher/portfolio/events"
+  - "github.com/oxisto/money-gopher/currency"

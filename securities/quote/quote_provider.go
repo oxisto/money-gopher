@@ -14,12 +14,13 @@
 //
 // This file is part of The Money Gopher.
 
-package securities
+package quote
 
 import (
 	"context"
 	"time"
 
+	"github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/persistence"
 )
 
@@ -39,5 +40,5 @@ func RegisterQuoteProvider(name string, qp QuoteProvider) {
 // QuoteProvider is an interface that retrieves quotes for a [ListedSecurity]. They
 // can either be historical quotes or the latest quote.
 type QuoteProvider interface {
-	LatestQuote(ctx context.Context, ls *persistence.ListedSecurity) (quote *persistence.Currency, t time.Time, err error)
+	LatestQuote(ctx context.Context, ls *persistence.ListedSecurity) (quote *currency.Currency, t time.Time, err error)
 }

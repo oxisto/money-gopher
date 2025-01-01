@@ -9,7 +9,7 @@ import (
 
 	"connectrpc.com/connect"
 	moneygopher "github.com/oxisto/money-gopher"
-	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/models"
 	"github.com/oxisto/money-gopher/persistence"
 )
@@ -18,6 +18,7 @@ import (
 // building a snapshot. It includes methods for retrieving portfolio events and
 // securities by their IDs.
 type SnapshotDataProvider interface {
+	ListListedSecuritiesBySecurityID(ctx context.Context, securityID string) ([]*persistence.ListedSecurity, error)
 	ListPortfolioEventsByPortfolioID(ctx context.Context, portfolioID string) ([]*persistence.PortfolioEvent, error)
 	ListSecuritiesByIDs(ctx context.Context, ids []string) ([]*persistence.Security, error)
 }
@@ -31,14 +32,13 @@ type SnapshotDataProvider interface {
 // and calculating the positions at the specified timestamp.
 func BuildSnapshot(
 	ctx context.Context,
-	timestamp *time.Time,
+	timestamp time.Time,
 	portfolioID string,
 	provider SnapshotDataProvider,
 ) (snap *models.PortfolioSnapshot, err error) {
 	var (
 		events []*persistence.PortfolioEvent
-		p      portfoliov1.Portfolio
-		m      map[string][]*portfoliov1.PortfolioEvent
+		m      map[string][]*persistence.PortfolioEvent
 		ids    []string
 		secs   []*persistence.Security
 		secmap map[string]*persistence.Security
@@ -52,21 +52,21 @@ func BuildSnapshot(
 
 	// Set up the snapshot
 	snap = &models.PortfolioSnapshot{
-		Time:      timestamp.Format(time.RFC3339),
-		Positions: make([]*models.PortfolioPosition, 0),
-		/*TotalPurchaseValue: portfoliov1.Zero(),
-		TotalMarketValue:   portfoliov1.Zero(),
-		TotalProfitOrLoss:  portfoliov1.Zero(),
-		Cash:               portfoliov1.Zero(),*/
+		Time:               timestamp.Format(time.RFC3339),
+		Positions:          make([]*models.PortfolioPosition, 0),
+		TotalPurchaseValue: currency.Zero(),
+		TotalMarketValue:   currency.Zero(),
+		TotalProfitOrLoss:  currency.Zero(),
+		Cash:               currency.Zero(),
 	}
 
 	// Record the first transaction time
-	if len(p.Events) > 0 {
+	if len(events) > 0 {
 		snap.FirstTransactionTime = events[0].Time.Format(time.RFC3339)
 	}
 
 	// Retrieve the event map; a map of events indexed by their security ID
-	m = p.EventMap()
+	m = groupByPortfolio(events)
 	ids = slices.Collect(maps.Keys(m))
 
 	// Retrieve market value of filtered securities
@@ -103,18 +103,18 @@ func BuildSnapshot(
 		// Also add cash that is part of a securities' transaction (e.g., sell/buy)
 		snap.Cash.PlusAssign(c.Cash)
 
-		pos := &portfoliov1.PortfolioPosition{
+		pos := &models.PortfolioPosition{
 			Security:      secmap[name],
 			Amount:        c.Amount,
 			PurchaseValue: c.NetValue(),
 			PurchasePrice: c.NetPrice(),
-			MarketValue:   portfoliov1.Times(marketPrice(secmap, name, c.NetPrice()), c.Amount),
-			MarketPrice:   marketPrice(secmap, name, c.NetPrice()),
+			MarketValue:   currency.Times(marketPrice(secmap, name, c.NetPrice(), provider), c.Amount),
+			MarketPrice:   marketPrice(secmap, name, c.NetPrice(), provider),
 		}
 
 		// Calculate loss and gains
-		pos.ProfitOrLoss = portfoliov1.Minus(pos.MarketValue, pos.PurchaseValue)
-		pos.Gains = float64(portfoliov1.Minus(pos.MarketValue, pos.PurchaseValue).Value) / float64(pos.PurchaseValue.Value)
+		pos.ProfitOrLoss = currency.Minus(pos.MarketValue, pos.PurchaseValue)
+		pos.Gains = float64(currency.Minus(pos.MarketValue, pos.PurchaseValue).Value) / float64(pos.PurchaseValue.Value)
 
 		// Add to total value(s)
 		snap.TotalPurchaseValue.PlusAssign(pos.PurchaseValue)
@@ -122,18 +122,19 @@ func BuildSnapshot(
 		snap.TotalProfitOrLoss.PlusAssign(pos.ProfitOrLoss)
 
 		// Store position in map
-		snap.Positions[name] = pos
+		snap.Positions = append(snap.Positions, pos)
 	}
 
 	// Calculate total gains
-	snap.TotalGains = float64(portfoliov1.Minus(snap.TotalMarketValue, snap.TotalPurchaseValue).Value) / float64(snap.TotalPurchaseValue.Value)
+	snap.TotalGains = float64(currency.Minus(snap.TotalMarketValue, snap.TotalPurchaseValue).Value) / float64(snap.TotalPurchaseValue.Value)
 
 	// Calculate total portfolio value
 	snap.TotalPortfolioValue = snap.TotalMarketValue.Plus(snap.Cash)
 
-	return connect.NewResponse(snap), nil
+	return snap, nil
 }
 
+// eventsBefore returns all events that occurred before a given time.
 // TODO: move to SQL query
 func eventsBefore(events []*persistence.PortfolioEvent, t time.Time) (out []*persistence.PortfolioEvent) {
 	out = make([]*persistence.PortfolioEvent, 0, len(events))
@@ -147,4 +148,37 @@ func eventsBefore(events []*persistence.PortfolioEvent, t time.Time) (out []*per
 	}
 
 	return
+}
+
+// groupByPortfolio groups the events by their security ID.
+func groupByPortfolio(events []*persistence.PortfolioEvent) (m map[string][]*persistence.PortfolioEvent) {
+	for _, event := range events {
+		name := event.SecurityID
+		if name != "" {
+			m[name] = append(m[name], event)
+		} else {
+			// a little bit of a hack
+			m["cash"] = append(m["cash"], event)
+		}
+	}
+
+	return
+}
+
+func marketPrice(
+	secmap map[string]*persistence.Security,
+	name string,
+	netPrice *currency.Currency,
+	provider SnapshotDataProvider,
+) *currency.Currency {
+	ls, _ := provider.ListListedSecuritiesBySecurityID(context.Background(), name)
+
+	if ls == nil || !ls[0].LatestQuote.Valid {
+		return netPrice
+	} else {
+		return &currency.Currency{
+			Value:  int32(ls[0].LatestQuote.Int64),
+			Symbol: ls[0].Currency,
+		}
+	}
 }

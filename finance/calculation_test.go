@@ -20,14 +20,14 @@ package finance
 import (
 	"testing"
 
-	portfoliov1 "github.com/oxisto/money-gopher/gen"
-
 	"github.com/oxisto/assert"
+	"github.com/oxisto/money-gopher/persistence"
+	"github.com/oxisto/money-gopher/portfolio/events"
 )
 
 func TestNewCalculation(t *testing.T) {
 	type args struct {
-		txs []*portfoliov1.PortfolioEvent
+		txs []*persistence.PortfolioEvent
 	}
 	tests := []struct {
 		name string
@@ -37,53 +37,53 @@ func TestNewCalculation(t *testing.T) {
 		{
 			name: "buy and sell",
 			args: args{
-				txs: []*portfoliov1.PortfolioEvent{
+				txs: []*persistence.PortfolioEvent{
 					{
-						Type:  portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DEPOSIT_CASH,
-						Price: portfoliov1.Value(500000),
+						Type:  events.PortfolioEventTypeDepositCash,
+						Price: persistence.Value(500000),
 					},
 					{
-						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+						Type:   events.PortfolioEventTypeBuy,
 						Amount: 5,
-						Price:  portfoliov1.Value(18110),
-						Fees:   portfoliov1.Value(716),
+						Price:  persistence.Value(18110),
+						Fees:   persistence.Value(716),
 					},
 					{
-						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
+						Type:   events.PortfolioEventTypeSell,
 						Amount: 2,
-						Price:  portfoliov1.Value(30430),
-						Fees:   portfoliov1.Value(642),
-						Taxes:  portfoliov1.Value(1632),
+						Price:  persistence.Value(30430),
+						Fees:   persistence.Value(642),
+						Taxes:  persistence.Value(1632),
 					},
 					{
-						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+						Type:   events.PortfolioEventTypeBuy,
 						Amount: 5,
-						Price:  portfoliov1.Value(29000),
-						Fees:   portfoliov1.Value(853),
+						Price:  persistence.Value(29000),
+						Fees:   persistence.Value(853),
 					},
 					{
-						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
+						Type:   events.PortfolioEventTypeSell,
 						Amount: 3,
-						Price:  portfoliov1.Value(22000),
-						Fees:   portfoliov1.Value(845),
+						Price:  persistence.Value(22000),
+						Fees:   persistence.Value(845),
 					},
 					{
-						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+						Type:   events.PortfolioEventTypeBuy,
 						Amount: 5,
-						Price:  portfoliov1.Value(20330),
-						Fees:   portfoliov1.Value(744),
+						Price:  persistence.Value(20330),
+						Fees:   persistence.Value(744),
 					},
 					{
-						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+						Type:   events.PortfolioEventTypeBuy,
 						Amount: 5,
-						Price:  portfoliov1.Value(19645),
-						Fees:   portfoliov1.Value(736),
+						Price:  persistence.Value(19645),
+						Fees:   persistence.Value(736),
 					},
 					{
-						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+						Type:   events.PortfolioEventTypeBuy,
 						Amount: 10,
-						Price:  portfoliov1.Value(14655),
-						Fees:   portfoliov1.Value(856),
+						Price:  persistence.Value(14655),
+						Fees:   persistence.Value(856),
 					},
 				},
 			},

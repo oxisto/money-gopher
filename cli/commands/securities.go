@@ -19,12 +19,9 @@ package commands
 
 import (
 	"context"
-	"fmt"
 
 	mcli "github.com/oxisto/money-gopher/cli"
-	portfoliov1 "github.com/oxisto/money-gopher/gen"
 
-	"connectrpc.com/connect"
 	"github.com/shurcooL/graphql"
 	"github.com/urfave/cli/v3"
 )
@@ -156,7 +153,7 @@ func UpdateAllQuotes(ctx context.Context, cmd *cli.Command) (err error) {
 
 // PredictSecurities predicts the securities for shell completion.
 func PredictSecurities(ctx context.Context, cmd *cli.Command) {
-	s := mcli.FromContext(ctx)
+	/*s := mcli.FromContext(ctx)
 	res, err := s.SecuritiesClient.ListSecurities(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}),
@@ -167,5 +164,5 @@ func PredictSecurities(ctx context.Context, cmd *cli.Command) {
 
 	for _, p := range res.Msg.Securities {
 		fmt.Fprintf(cmd.Root().Writer, "%s:%s\n", p.Id, p.DisplayName)
-	}
+	}*/
 }

@@ -2,7 +2,7 @@ package graph
 
 import (
 	"github.com/oxisto/money-gopher/persistence"
-	"github.com/oxisto/money-gopher/service/securities"
+	"github.com/oxisto/money-gopher/securities/quote"
 )
 
 // This file will not be regenerated automatically.
@@ -11,7 +11,7 @@ import (
 
 type Resolver struct {
 	DB           *persistence.DB
-	QuoteUpdater securities.QuoteUpdater
+	QuoteUpdater quote.QuoteUpdater
 }
 
 func withTx[T any](r *Resolver, f func(qtx *persistence.Queries) (*T, error)) (res *T, err error) {

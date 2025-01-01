@@ -15,12 +15,9 @@ CREATE TABLE
         portfolio_id TEXT NOT NULL,
         security_id TEXT NOT NULL,
         amount REAL,
-        price INTEGER,
-        price_currency TEXT,
-        fees INTEGER,
-        fees_currency TEXT,
-        taxes INTEGER,
-        taxes_currency TEXT
+        price JSONB,
+        fees JSONB,
+        taxes JSONB
     );
 
 CREATE TABLE

@@ -25,7 +25,6 @@ import (
 	"time"
 
 	mcli "github.com/oxisto/money-gopher/cli"
-	portfoliov1 "github.com/oxisto/money-gopher/gen"
 
 	"connectrpc.com/connect"
 	"github.com/fatih/color"
