@@ -114,7 +114,7 @@ func BuildSnapshot(
 
 		// Calculate loss and gains
 		pos.ProfitOrLoss = currency.Minus(pos.MarketValue, pos.PurchaseValue)
-		pos.Gains = float64(currency.Minus(pos.MarketValue, pos.PurchaseValue).Value) / float64(pos.PurchaseValue.Value)
+		pos.Gains = float64(currency.Minus(pos.MarketValue, pos.PurchaseValue).Amount) / float64(pos.PurchaseValue.Amount)
 
 		// Add to total value(s)
 		snap.TotalPurchaseValue.PlusAssign(pos.PurchaseValue)
@@ -126,7 +126,7 @@ func BuildSnapshot(
 	}
 
 	// Calculate total gains
-	snap.TotalGains = float64(currency.Minus(snap.TotalMarketValue, snap.TotalPurchaseValue).Value) / float64(snap.TotalPurchaseValue.Value)
+	snap.TotalGains = float64(currency.Minus(snap.TotalMarketValue, snap.TotalPurchaseValue).Amount) / float64(snap.TotalPurchaseValue.Amount)
 
 	// Calculate total portfolio value
 	snap.TotalPortfolioValue = snap.TotalMarketValue.Plus(snap.Cash)
@@ -173,12 +173,9 @@ func marketPrice(
 ) *currency.Currency {
 	ls, _ := provider.ListListedSecuritiesBySecurityID(context.Background(), name)
 
-	if ls == nil || !ls[0].LatestQuote.Valid {
+	if ls == nil || ls[0].LatestQuote == nil {
 		return netPrice
 	} else {
-		return &currency.Currency{
-			Value:  int32(ls[0].LatestQuote.Int64),
-			Symbol: ls[0].Currency,
-		}
+		return ls[0].LatestQuote
 	}
 }

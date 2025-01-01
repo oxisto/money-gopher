@@ -14,7 +14,7 @@ CREATE TABLE
         time DATETIME NOT NULL,
         portfolio_id TEXT NOT NULL,
         security_id TEXT NOT NULL,
-        amount REAL,
+        amount REAL NOT NULL,
         price JSONB,
         fees JSONB,
         taxes JSONB

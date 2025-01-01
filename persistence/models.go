@@ -48,7 +48,7 @@ type PortfolioEvent struct {
 	Time        time.Time
 	PortfolioID string
 	SecurityID  string
-	Amount      sql.NullFloat64
+	Amount      float64
 	Price       *currency.Currency
 	Fees        *currency.Currency
 	Taxes       *currency.Currency

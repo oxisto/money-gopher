@@ -147,10 +147,10 @@ func readLine(cr *csv.Reader, pname string) (
 	// Calculate the price
 	if tx.Type == events.PortfolioEventTypeBuy ||
 		tx.Type == events.PortfolioEventTypeDeliveryInbound {
-		tx.Price = currency.Divide(currency.Minus(value, tx.Fees), tx.Amount.Float64)
+		tx.Price = currency.Divide(currency.Minus(value, tx.Fees), tx.Amount)
 	} else if tx.Type == events.PortfolioEventTypeSell ||
 		tx.Type == events.PortfolioEventTypeDeliveryOutbound {
-		tx.Price = currency.Times(currency.Divide(currency.Minus(currency.Minus(value, tx.Fees), tx.Taxes), tx.Amount.Float64), -1)
+		tx.Price = currency.Times(currency.Divide(currency.Minus(currency.Minus(value, tx.Fees), tx.Taxes), tx.Amount), -1)
 	}
 
 	sec = new(persistence.Security)
@@ -206,11 +206,7 @@ func txTime(s string) (t time.Time, err error) {
 	return t, nil
 }
 
-func parseFloat64(s string) (nf sql.NullFloat64, err error) {
-	var (
-		f float64
-	)
-
+func parseFloat64(s string) (f float64, err error) {
 	// We assume that the float is in German locale (this might not be true for
 	// all users), so we need to convert it
 	s = strings.ReplaceAll(s, ".", "")
@@ -218,9 +214,8 @@ func parseFloat64(s string) (nf sql.NullFloat64, err error) {
 
 	f, err = strconv.ParseFloat(s, 32)
 	if err != nil {
-		return sql.NullFloat64{Valid: false}, err
+		return 0, err
 	}
-	nf = sql.NullFloat64{Float64: f, Valid: true}
 
 	return
 }

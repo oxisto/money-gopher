@@ -14,7 +14,6 @@ import (
 	"github.com/oxisto/money-gopher/finance"
 	"github.com/oxisto/money-gopher/models"
 	"github.com/oxisto/money-gopher/persistence"
-	"github.com/oxisto/money-gopher/securities/quote"
 )
 
 // Security is the resolver for the security field.
@@ -109,7 +108,7 @@ func (r *mutationResolver) UpdateSecurity(ctx context.Context, id string, input 
 
 // TriggerQuoteUpdate is the resolver for the triggerQuoteUpdate field.
 func (r *mutationResolver) TriggerQuoteUpdate(ctx context.Context, securityIDs []string) (b bool, err error) {
-	err = quote.UpdateQuotes(ctx, securityIDs, r.DB)
+	err = r.QuoteUpdater.UpdateQuotes(ctx, securityIDs)
 	if err != nil {
 		return false, err
 	}
