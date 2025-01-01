@@ -44,6 +44,10 @@ func (mockQuoteProvider) LatestQuote(_ context.Context, _ *persistence.ListedSec
 	return currency.Value(100), time.Date(1, 0, 0, 0, 0, 0, 0, time.UTC), nil
 }
 
+func init() {
+	RegisterQuoteProvider(QuoteProviderMock, &mockQP{})
+}
+
 func Test_qu_updateQuote(t *testing.T) {
 	type fields struct {
 		db *persistence.DB
@@ -81,7 +85,7 @@ func Test_qu_updateQuote(t *testing.T) {
 				ls: &persistence.ListedSecurity{SecurityID: "My Security", Ticker: "SEC", Currency: "EUR"},
 			},
 			want: func(t *testing.T, ls *persistence.ListedSecurity) bool {
-				return assert.Equals(t, 100, int(ls.LatestQuote.Int64))
+				return assert.Equals(t, 100, ls.LatestQuote.Amount)
 			},
 		},
 	}
