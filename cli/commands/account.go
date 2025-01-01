@@ -21,7 +21,6 @@ import (
 	"fmt"
 
 	mcli "github.com/oxisto/money-gopher/cli"
-	portfoliov1 "github.com/oxisto/money-gopher/gen"
 
 	"connectrpc.com/connect"
 	"github.com/urfave/cli/v3"

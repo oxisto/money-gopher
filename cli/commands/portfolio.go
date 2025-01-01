@@ -25,7 +25,6 @@ import (
 	"time"
 
 	mcli "github.com/oxisto/money-gopher/cli"
-	portfoliov1 "github.com/oxisto/money-gopher/gen"
 
 	"connectrpc.com/connect"
 	"github.com/fatih/color"
@@ -46,6 +45,7 @@ var PortfolioCmd = &cli.Command{
 			Flags: []cli.Flag{
 				&cli.StringFlag{Name: "id", Usage: "The identifier of the portfolio, e.g. mybank-myportfolio", Required: true},
 				&cli.StringFlag{Name: "display-name", Usage: "The display name of the portfolio"},
+				&cli.StringFlag{Name: "bank-account-id", Usage: "The bank account ID of the portfolio"},
 			},
 		},
 		{
@@ -149,8 +149,9 @@ func CreatePortfolio(ctx context.Context, cmd *cli.Command) error {
 		context.Background(),
 		connect.NewRequest(&portfoliov1.CreatePortfolioRequest{
 			Portfolio: &portfoliov1.Portfolio{
-				Id:          cmd.String("id"),
-				DisplayName: cmd.String("display-name"),
+				Id:            cmd.String("id"),
+				DisplayName:   cmd.String("display-name"),
+				BankAccountId: cmd.String("bank-account-id"),
 			},
 		}),
 	)

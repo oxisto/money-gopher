@@ -6,7 +6,18 @@ package persistence
 
 import (
 	"database/sql"
+	"time"
+
+	currency "github.com/oxisto/money-gopher/currency"
+	"github.com/oxisto/money-gopher/portfolio/events"
 )
+
+type BankAccount struct {
+	// ID is the primary identifier for a bank account.
+	ID string
+	// DisplayName is the human-readable name of the bank account.
+	DisplayName string
+}
 
 // ListedSecurity represents a security that is listed on a particular exchange.
 type ListedSecurity struct {
@@ -16,10 +27,31 @@ type ListedSecurity struct {
 	Ticker string
 	// Currency is the currency in which the security is traded.
 	Currency string
-	// LatestQuote is the latest quote for the security.
-	LatestQuote sql.NullInt64
+	// LatestQuote is the latest quote for the security as a [currency.Currency].
+	LatestQuote *currency.Currency
 	// LatestQuoteTimestamp is the timestamp of the latest quote.
 	LatestQuoteTimestamp sql.NullTime
+}
+
+type Portfolio struct {
+	// ID is the primary identifier for a portfolio.
+	ID string
+	// DisplayName is the human-readable name of the portfolio.
+	DisplayName string
+	// BankAccountID is the ID of the bank account that holds the portfolio.
+	BankAccountID string
+}
+
+type PortfolioEvent struct {
+	ID          string
+	Type        events.PortfolioEventType
+	Time        time.Time
+	PortfolioID string
+	SecurityID  string
+	Amount      sql.NullFloat64
+	Price       *currency.Currency
+	Fees        *currency.Currency
+	Taxes       *currency.Currency
 }
 
 // Security represents a security that can be traded on an exchange.

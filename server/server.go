@@ -21,10 +21,12 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
+	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/oxisto/money-gopher/graph"
 	"github.com/oxisto/money-gopher/persistence"
-	"github.com/oxisto/money-gopher/service/portfolio"
-	"github.com/oxisto/money-gopher/service/securities"
 
 	"connectrpc.com/connect"
 	"connectrpc.com/vanguard"
@@ -47,7 +49,7 @@ type Options struct {
 }
 
 // StartServer starts the server.
-func StartServer(pdb *persistence.DB, q *persistence.Queries, opts Options) (err error) {
+func StartServer(pdb *persistence.DB, opts Options) (err error) {
 	var (
 		authSrv    *oauth2.AuthorizationServer
 		transcoder *vanguard.Transcoder
@@ -80,8 +82,9 @@ func StartServer(pdb *persistence.DB, q *persistence.Queries, opts Options) (err
 				SecuritiesClient: portfoliov1connect.NewSecuritiesServiceClient(http.DefaultClient, portfolio.DefaultSecuritiesServiceURL),
 			},
 		), interceptors))
+	svc := securities.NewService(pdb)
 	securitiesService := vanguard.NewService(
-		portfoliov1connect.NewSecuritiesServiceHandler(securities.NewService(pdb), interceptors),
+		portfoliov1connect.NewSecuritiesServiceHandler(svc, interceptors),
 	)
 
 	transcoder, err = vanguard.NewTranscoder([]*vanguard.Service{
@@ -99,6 +102,7 @@ func StartServer(pdb *persistence.DB, q *persistence.Queries, opts Options) (err
 
 	mux := http.NewServeMux()
 	mux.Handle("/", transcoder)
+	ConfigureGraphQL(mux, pdb, svc.(securities.QuoteUpdater))
 
 	err = http.ListenAndServe(
 		":8080",
@@ -106,5 +110,28 @@ func StartServer(pdb *persistence.DB, q *persistence.Queries, opts Options) (err
 	)
 
 	slog.Error("listen failed", tint.Err(err))
+	return err
+}
+
+// ConfigureGraphQL configures the GraphQL server for a [http.ServeMux].
+func ConfigureGraphQL(
+	mux *http.ServeMux,
+	db *persistence.DB,
+	qu securities.QuoteUpdater,
+) (err error) {
+	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
+		DB:           db,
+		QuoteUpdater: qu,
+	}}))
+
+	srv.AddTransport(transport.Options{})
+	srv.AddTransport(transport.GET{})
+	srv.AddTransport(transport.POST{})
+
+	srv.Use(extension.Introspection{})
+
+	mux.Handle("/graphql", playground.Handler("GraphQL playground", "/graphql/query"))
+	mux.Handle("/graphql/query", srv)
+
 	return err
 }

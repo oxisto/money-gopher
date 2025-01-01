@@ -1,6 +1,7 @@
 ignore:
   - "**/*.pb.go" # ignore protoc generated files
   - "**/*.connect.go" # ignore connect-go generated files
+  - "graph/generated.go" # ignore gqlgen generated files for introspection
 coverage:
   range: "70...85"
   status:
