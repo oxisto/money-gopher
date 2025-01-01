@@ -24,7 +24,7 @@ func (tx *PortfolioEvent) MakeUniqueID() {
 	h.Write([]byte(tx.PortfolioID))
 	h.Write([]byte(tx.Time.Format(time.DateTime)))
 	h.Write([]byte(strconv.FormatInt(int64(tx.Type), 10)))
-	h.Write([]byte(strconv.FormatInt(int64(tx.Amount.Float64), 10)))
+	h.Write([]byte(strconv.FormatInt(int64(tx.Amount), 10)))
 
 	tx.ID = strconv.FormatUint(h.Sum64(), 16)
 }

@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/oxisto/assert"
+	"github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/persistence"
 	"github.com/oxisto/money-gopher/portfolio/events"
 )
@@ -40,64 +41,65 @@ func TestNewCalculation(t *testing.T) {
 				txs: []*persistence.PortfolioEvent{
 					{
 						Type:  events.PortfolioEventTypeDepositCash,
-						Price: persistence.Value(500000),
+						Price: currency.Value(500000),
 					},
 					{
 						Type:   events.PortfolioEventTypeBuy,
 						Amount: 5,
-						Price:  persistence.Value(18110),
-						Fees:   persistence.Value(716),
+						Price:  currency.Value(18110),
+						Fees:   currency.Value(716),
 					},
 					{
 						Type:   events.PortfolioEventTypeSell,
 						Amount: 2,
-						Price:  persistence.Value(30430),
-						Fees:   persistence.Value(642),
-						Taxes:  persistence.Value(1632),
+						Price:  currency.Value(30430),
+						Fees:   currency.Value(642),
+						Taxes:  currency.Value(1632),
 					},
 					{
 						Type:   events.PortfolioEventTypeBuy,
 						Amount: 5,
-						Price:  persistence.Value(29000),
-						Fees:   persistence.Value(853),
+						Price:  currency.Value(29000),
+						Fees:   currency.Value(853),
 					},
 					{
 						Type:   events.PortfolioEventTypeSell,
 						Amount: 3,
-						Price:  persistence.Value(22000),
-						Fees:   persistence.Value(845),
+						Price:  currency.Value(22000),
+						Fees:   currency.Value(845),
 					},
 					{
 						Type:   events.PortfolioEventTypeBuy,
 						Amount: 5,
-						Price:  persistence.Value(20330),
-						Fees:   persistence.Value(744),
+						Price:  currency.Value(20330),
+						Fees:   currency.Value(744),
 					},
 					{
 						Type:   events.PortfolioEventTypeBuy,
 						Amount: 5,
-						Price:  persistence.Value(19645),
-						Fees:   persistence.Value(736),
+						Price:  currency.Value(19645),
+						Fees:   currency.Value(736),
 					},
 					{
 						Type:   events.PortfolioEventTypeBuy,
 						Amount: 10,
-						Price:  persistence.Value(14655),
-						Fees:   persistence.Value(856),
+						Price:  currency.Value(14655),
+						Fees:   currency.Value(856),
 					},
 				},
 			},
 			want: func(t *testing.T, c *calculation) bool {
 				return true &&
 					assert.Equals(t, 25, c.Amount) &&
-					assert.Equals(t, 491425, int(c.NetValue().Value)) &&
-					assert.Equals(t, 494614, int(c.GrossValue().Value)) &&
-					assert.Equals(t, 19657, int(c.NetPrice().Value)) &&
-					assert.Equals(t, 19785, int(c.GrossPrice().Value)) &&
-					assert.Equals(t, 44099, int(c.Cash.Value))
+					assert.Equals(t, 491425, int(c.NetValue().Amount)) &&
+					assert.Equals(t, 494614, int(c.GrossValue().Amount)) &&
+					assert.Equals(t, 19657, int(c.NetPrice().Amount)) &&
+					assert.Equals(t, 19785, int(c.GrossPrice().Amount)) &&
+					assert.Equals(t, 44099, int(c.Cash.Amount))
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := NewCalculation(tt.args.txs)

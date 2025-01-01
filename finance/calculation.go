@@ -72,10 +72,10 @@ func (c *calculation) Apply(tx *persistence.PortfolioEvent) {
 
 		// Increase the amount of shares and the fees by the value stored in the
 		// transaction
-		c.Fees.PlusAssign(tx.Fees())
-		c.Amount += tx.Amount.Float64
+		c.Fees.PlusAssign(tx.Fees)
+		c.Amount += tx.Amount
 
-		total = currency.Times(tx.Price(), tx.Amount.Float64).Plus(tx.Fees()).Plus(tx.Taxes())
+		total = currency.Times(tx.Price, tx.Amount).Plus(tx.Fees).Plus(tx.Taxes)
 
 		// Decrease our cash
 		c.Cash.MinusAssign(total)
@@ -85,10 +85,10 @@ func (c *calculation) Apply(tx *persistence.PortfolioEvent) {
 		// need to store this information to reduce the amount in the items
 		// later when a sell transaction occurs.
 		c.fifo = append(c.fifo, &fifoTx{
-			amount: tx.Amount.Float64,
-			ppu:    tx.Price(),
-			value:  currency.Times(tx.Price(), tx.Amount.Float64),
-			fees:   tx.Fees(),
+			amount: tx.Amount,
+			ppu:    tx.Price,
+			value:  currency.Times(tx.Price, tx.Amount),
+			fees:   tx.Fees,
 		})
 	case events.PortfolioEventTypeDeliveryOutbound:
 		fallthrough
@@ -100,17 +100,17 @@ func (c *calculation) Apply(tx *persistence.PortfolioEvent) {
 
 		// Increase the fees and taxes by the value stored in the
 		// transaction
-		c.Fees.PlusAssign(tx.Fees())
-		c.Taxes.PlusAssign(tx.Taxes())
+		c.Fees.PlusAssign(tx.Fees)
+		c.Taxes.PlusAssign(tx.Taxes)
 
-		total = currency.Times(tx.Price(), tx.Amount.Float64).Plus(tx.Fees()).Plus(tx.Taxes())
+		total = currency.Times(tx.Price, tx.Amount).Plus(tx.Fees).Plus(tx.Taxes)
 
 		// Increase our cash
 		c.Cash.PlusAssign(total)
 
 		// Store the amount of shares sold in this variable, since we later need
 		// to decrease it while looping through the FIFO list
-		sold = tx.Amount.Float64
+		sold = tx.Amount
 
 		// Calculate the remaining shares (if any)
 		c.Amount -= sold
@@ -153,10 +153,10 @@ func (c *calculation) Apply(tx *persistence.PortfolioEvent) {
 		}
 	case events.PortfolioEventTypeDepositCash:
 		// Add to the cash
-		c.Cash.PlusAssign(tx.Price())
+		c.Cash.PlusAssign(tx.Price)
 	case events.PortfolioEventTypeWithdrawCash:
 		// Remove from the cash
-		c.Cash.MinusAssign(tx.Price())
+		c.Cash.MinusAssign(tx.Price)
 	}
 }
 
