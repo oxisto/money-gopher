@@ -18,11 +18,9 @@ package commands
 
 import (
 	"context"
-	"fmt"
 
 	mcli "github.com/oxisto/money-gopher/cli"
 
-	"connectrpc.com/connect"
 	"github.com/urfave/cli/v3"
 )
 
@@ -46,7 +44,7 @@ var BankAccountCmd = &cli.Command{
 
 // CreateBankAccount creates a new bank account.
 func CreateBankAccount(ctx context.Context, cmd *cli.Command) error {
-	s := mcli.FromContext(ctx)
+	/*s := mcli.FromContext(ctx)
 	res, err := s.PortfolioClient.CreateBankAccount(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.CreateBankAccountRequest{
@@ -60,6 +58,6 @@ func CreateBankAccount(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	fmt.Fprint(cmd.Writer, res.Msg)
+	fmt.Fprint(cmd.Writer, res.Msg)*/
 	return nil
 }
