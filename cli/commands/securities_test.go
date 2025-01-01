@@ -21,8 +21,9 @@ import (
 	"context"
 	"testing"
 
-	moneygopher "github.com/oxisto/money-gopher"
 	"github.com/oxisto/money-gopher/internal"
+	"github.com/oxisto/money-gopher/internal/persistencetest"
+	"github.com/oxisto/money-gopher/internal/testdata"
 	"github.com/oxisto/money-gopher/internal/testing/clitest"
 	"github.com/oxisto/money-gopher/internal/testing/servertest"
 	"github.com/oxisto/money-gopher/persistence"
@@ -32,12 +33,9 @@ import (
 )
 
 func TestUpdateQuote(t *testing.T) {
-	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
-		ops := persistence.Ops[*portfoliov1.Security](db)
-		ops.Replace(&portfoliov1.Security{
-			Id:            "mysecurity",
-			QuoteProvider: moneygopher.Ref("mock"),
-		})
+	srv := servertest.NewServer(persistencetest.NewTestDB(t, func(db *persistence.DB) {
+		_, err := db.CreateSecurity(context.Background(), testdata.TestCreateSecurityParams)
+		assert.NoError(t, err)
 	}))
 	defer srv.Close()
 
@@ -56,7 +54,7 @@ func TestUpdateQuote(t *testing.T) {
 				ctx: clitest.NewSessionContext(t, srv),
 				cmd: clitest.MockCommand(t,
 					SecuritiesCmd.Command("update-quote").Flags,
-					"--security-ids", "mysecurity",
+					"--security-ids", testdata.TestCreateSecurityParams.ID,
 				),
 			},
 		},
