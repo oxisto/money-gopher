@@ -19,8 +19,10 @@ package commands
 
 import (
 	"context"
+	"fmt"
 
 	mcli "github.com/oxisto/money-gopher/cli"
+	"github.com/oxisto/money-gopher/currency"
 
 	"github.com/shurcooL/graphql"
 	"github.com/urfave/cli/v3"
@@ -115,7 +117,9 @@ func UpdateQuote(ctx context.Context, cmd *cli.Command) (err error) {
 	s := mcli.FromContext(ctx)
 
 	var query struct {
-		TriggerQuoteUpdate bool `graphql:"triggerQuoteUpdate(securityIDs: $IDs)" json:"security"`
+		TriggerQuoteUpdate []struct {
+			LatestQuote *currency.Currency `json:"latestQuote"`
+		} `graphql:"triggerQuoteUpdate(securityIDs: $IDs)" json:"security"`
 	}
 
 	var ids []graphql.String
@@ -129,6 +133,8 @@ func UpdateQuote(ctx context.Context, cmd *cli.Command) (err error) {
 	if err != nil {
 		return err
 	}
+
+	fmt.Fprintln(cmd.Writer, query.TriggerQuoteUpdate)
 
 	return err
 }

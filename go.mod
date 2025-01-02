@@ -4,7 +4,6 @@ go 1.23.4
 
 require (
 	connectrpc.com/connect v1.16.2
-	connectrpc.com/vanguard v0.3.0
 	github.com/99designs/gqlgen v0.17.61
 	github.com/MicahParks/keyfunc/v3 v3.3.5
 	github.com/fatih/color v1.18.0
@@ -20,6 +19,7 @@ require (
 	github.com/urfave/cli/v3 v3.0.0-beta1
 	github.com/vektah/gqlparser/v2 v2.5.20
 	golang.org/x/net v0.33.0
+	golang.org/x/sync v0.10.0
 	google.golang.org/protobuf v1.36.1
 )
 
@@ -37,11 +37,8 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/oauth2 v0.22.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20241230172942-26aa7a208def // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20241223144023-3abc09e42ca8 // indirect
 )
 
 replace github.com/99designs/gqlgen v0.17.61 => github.com/oxisto/gqlgen v0.17.62-0.20241227140449-4bf1c5c27bad
