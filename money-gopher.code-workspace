@@ -15,6 +15,7 @@
 			"connectrpc",
 			"DBTX",
 			"emptypb",
+			"errgroup",
 			"fatih",
 			"fieldmaskpb",
 			"headlessui",

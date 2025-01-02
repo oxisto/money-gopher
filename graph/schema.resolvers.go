@@ -10,7 +10,6 @@ import (
 	"slices"
 	"time"
 
-	"github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/finance"
 	"github.com/oxisto/money-gopher/models"
 	"github.com/oxisto/money-gopher/persistence"
@@ -19,11 +18,6 @@ import (
 // Security is the resolver for the security field.
 func (r *listedSecurityResolver) Security(ctx context.Context, obj *persistence.ListedSecurity) (*persistence.Security, error) {
 	panic(fmt.Errorf("not implemented: Security - security"))
-}
-
-// LatestQuote is the resolver for the latestQuote field.
-func (r *listedSecurityResolver) LatestQuote(ctx context.Context, obj *persistence.ListedSecurity) (*currency.Currency, error) {
-	panic(fmt.Errorf("not implemented: LatestQuote - latestQuote"))
 }
 
 // LatestQuoteTimestamp is the resolver for the latestQuoteTimestamp field.
@@ -107,13 +101,13 @@ func (r *mutationResolver) UpdateSecurity(ctx context.Context, id string, input 
 }
 
 // TriggerQuoteUpdate is the resolver for the triggerQuoteUpdate field.
-func (r *mutationResolver) TriggerQuoteUpdate(ctx context.Context, securityIDs []string) (b bool, err error) {
-	err = r.QuoteUpdater.UpdateQuotes(ctx, securityIDs)
+func (r *mutationResolver) TriggerQuoteUpdate(ctx context.Context, securityIDs []string) (updated []*persistence.ListedSecurity, err error) {
+	updated, err = r.QuoteUpdater.UpdateQuotes(ctx, securityIDs)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
-	return true, nil
+	return
 }
 
 // BankAccount is the resolver for the bankAccount field.
@@ -210,3 +204,17 @@ type portfolioResolver struct{ *Resolver }
 type portfolioEventResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type securityResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *currencyResolver) Value(ctx context.Context, obj *currency.Currency) (int, error) {
+	panic(fmt.Errorf("not implemented: Value - value"))
+}
+func (r *Resolver) Currency() CurrencyResolver { return &currencyResolver{r} }
+type currencyResolver struct{ *Resolver }
+*/

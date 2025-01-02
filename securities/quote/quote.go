@@ -27,6 +27,7 @@ import (
 
 	"github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/persistence"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/lmittmann/tint"
 )
@@ -34,7 +35,7 @@ import (
 // QuoteProvider is an interface that retrieves quotes for a [ListedSecurity]. They
 // can either be historical quotes or the latest quote.
 type QuoteUpdater interface {
-	UpdateQuotes(ctx context.Context, IDs []string) (err error)
+	UpdateQuotes(ctx context.Context, IDs []string) (updated []*persistence.ListedSecurity, err error)
 }
 
 // qu is the internal default implementation of the [QuoteUpdater] interface.
@@ -50,7 +51,8 @@ func NewQuoteUpdater(db *persistence.DB) QuoteUpdater {
 }
 
 // UpdateQuotes triggers an update of the quotes for the given securities' IDs.
-func (qu *qu) UpdateQuotes(ctx context.Context, secIDs []string) (err error) {
+// It will return the updated listed securities.
+func (qu *qu) UpdateQuotes(ctx context.Context, secIDs []string) (updated []*persistence.ListedSecurity, err error) {
 	var (
 		secs   []*persistence.Security
 		listed []*persistence.ListedSecurity
@@ -65,7 +67,7 @@ func (qu *qu) UpdateQuotes(ctx context.Context, secIDs []string) (err error) {
 		secs, err = qu.db.ListSecuritiesByIDs(ctx, secIDs)
 	}
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	for _, sec := range secs {
@@ -76,25 +78,37 @@ func (qu *qu) UpdateQuotes(ctx context.Context, secIDs []string) (err error) {
 
 		qp, ok = providers[sec.QuoteProvider.String]
 		if !ok {
+			slog.Error("Quote provider not found", "provider", sec.QuoteProvider.String)
 			return
 		}
 
 		listed, err = sec.ListedAs(ctx, qu.db)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		// Trigger update from quote provider in separate go-routine
-		// TODO(oxisto): Use sync/errgroup instead
+		g, _ := errgroup.WithContext(ctx)
 		for _, ls := range listed {
-			go func() {
+			ls := ls
+			g.Go(func() error {
 				slog.Debug("Triggering quote update", "security", ls, "provider", sec.QuoteProvider)
 
 				err = qu.updateQuote(qp, ls)
 				if err != nil {
-					slog.Error("An error occurred during quote update", tint.Err(err), "ls", ls)
+					return err
 				}
-			}()
+
+				updated = append(updated, ls)
+
+				return nil
+			})
+		}
+
+		err = g.Wait()
+		if err != nil {
+			slog.Error("An error occurred during quote update", tint.Err(err))
+			return nil, err
 		}
 	}
 

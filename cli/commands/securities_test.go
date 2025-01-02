@@ -47,6 +47,7 @@ func TestUpdateQuote(t *testing.T) {
 		name    string
 		args    args
 		wantErr bool
+		wantRec assert.Want[*clitest.CommandRecorder]
 	}{
 		{
 			name: "happy path",
@@ -57,13 +58,24 @@ func TestUpdateQuote(t *testing.T) {
 					"--security-ids", testdata.TestCreateSecurityParams.ID,
 				),
 			},
+			wantRec: func(t *testing.T, rec *clitest.CommandRecorder) bool {
+				return assert.Equals(t, `{
+				  "security": {
+				    "id": "US0378331005"`, rec.String(),
+				)
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			rec := clitest.Record(tt.args.cmd)
+
 			if err := UpdateQuote(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
 				t.Errorf("UpdateQuote() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantRec != nil {
+				tt.wantRec(t, rec)
 			}
 		})
 	}
@@ -152,12 +164,10 @@ func TestListSecurities(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rec := clitest.NewCommandRecorder()
-			tt.args.cmd.Writer = rec
+			rec := clitest.Record(tt.args.cmd)
 			if err := ListSecurities(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
 				t.Errorf("ListSecurities() error = %v, wantErr %v", err, tt.wantErr)
 			}
-
 			if tt.wantRec != nil {
 				tt.wantRec(t, rec)
 			}

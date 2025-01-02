@@ -8,7 +8,7 @@ directive @goEnum(value: String) on ENUM_VALUE
 scalar Date
 
 type Currency {
-  value: Int!
+  amount: Int!
   symbol: String!
 }
 
@@ -139,7 +139,7 @@ type Mutation {
   Triggers a quote update for the given security IDs. If no security IDs are
   provided, all securities will be updated.
   """
-  triggerQuoteUpdate(securityIDs: [String!]): Boolean!
+  triggerQuoteUpdate(securityIDs: [String!]): [ListedSecurity]!
 }
 
 type Query {

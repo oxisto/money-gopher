@@ -60,8 +60,8 @@ type ComplexityRoot struct {
 	}
 
 	Currency struct {
+		Amount func(childComplexity int) int
 		Symbol func(childComplexity int) int
-		Value  func(childComplexity int) int
 	}
 
 	ListedSecurity struct {
@@ -133,13 +133,13 @@ type ComplexityRoot struct {
 
 type ListedSecurityResolver interface {
 	Security(ctx context.Context, obj *persistence.ListedSecurity) (*persistence.Security, error)
-	LatestQuote(ctx context.Context, obj *persistence.ListedSecurity) (*currency.Currency, error)
+
 	LatestQuoteTimestamp(ctx context.Context, obj *persistence.ListedSecurity) (*string, error)
 }
 type MutationResolver interface {
 	CreateSecurity(ctx context.Context, input models.SecurityInput) (*persistence.Security, error)
 	UpdateSecurity(ctx context.Context, id string, input models.SecurityInput) (*persistence.Security, error)
-	TriggerQuoteUpdate(ctx context.Context, securityIDs []string) (bool, error)
+	TriggerQuoteUpdate(ctx context.Context, securityIDs []string) ([]*persistence.ListedSecurity, error)
 }
 type PortfolioResolver interface {
 	BankAccount(ctx context.Context, obj *persistence.Portfolio) (*persistence.BankAccount, error)
@@ -195,19 +195,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.BankAccount.ID(childComplexity), true
 
+	case "Currency.amount":
+		if e.complexity.Currency.Amount == nil {
+			break
+		}
+
+		return e.complexity.Currency.Amount(childComplexity), true
+
 	case "Currency.symbol":
 		if e.complexity.Currency.Symbol == nil {
 			break
 		}
 
 		return e.complexity.Currency.Symbol(childComplexity), true
-
-	case "Currency.value":
-		if e.complexity.Currency.Value == nil {
-			break
-		}
-
-		return e.complexity.Currency.Value(childComplexity), true
 
 	case "ListedSecurity.currency":
 		if e.complexity.ListedSecurity.Currency == nil {
@@ -980,8 +980,8 @@ func (ec *executionContext) fieldContext_BankAccount_displayName(_ context.Conte
 	return fc, nil
 }
 
-func (ec *executionContext) _Currency_value(ctx context.Context, field graphql.CollectedField, obj *currency.Currency) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Currency_value(ctx, field)
+func (ec *executionContext) _Currency_amount(ctx context.Context, field graphql.CollectedField, obj *currency.Currency) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Currency_amount(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -994,7 +994,7 @@ func (ec *executionContext) _Currency_value(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Value, nil
+		return obj.Amount, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1011,7 +1011,7 @@ func (ec *executionContext) _Currency_value(ctx context.Context, field graphql.C
 	return ec.marshalNInt2int32(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Currency_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Currency_amount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Currency",
 		Field:      field,
@@ -1224,7 +1224,7 @@ func (ec *executionContext) _ListedSecurity_latestQuote(ctx context.Context, fie
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.ListedSecurity().LatestQuote(rctx, obj)
+		return obj.LatestQuote, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1242,12 +1242,12 @@ func (ec *executionContext) fieldContext_ListedSecurity_latestQuote(_ context.Co
 	fc = &graphql.FieldContext{
 		Object:     "ListedSecurity",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "value":
-				return ec.fieldContext_Currency_value(ctx, field)
+			case "amount":
+				return ec.fieldContext_Currency_amount(ctx, field)
 			case "symbol":
 				return ec.fieldContext_Currency_symbol(ctx, field)
 			}
@@ -1454,9 +1454,9 @@ func (ec *executionContext) _Mutation_triggerQuoteUpdate(ctx context.Context, fi
 		}
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.([]*persistence.ListedSecurity)
 	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalNListedSecurity2ᚕᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐListedSecurity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_triggerQuoteUpdate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1466,7 +1466,19 @@ func (ec *executionContext) fieldContext_Mutation_triggerQuoteUpdate(ctx context
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+			switch field.Name {
+			case "ticker":
+				return ec.fieldContext_ListedSecurity_ticker(ctx, field)
+			case "currency":
+				return ec.fieldContext_ListedSecurity_currency(ctx, field)
+			case "security":
+				return ec.fieldContext_ListedSecurity_security(ctx, field)
+			case "latestQuote":
+				return ec.fieldContext_ListedSecurity_latestQuote(ctx, field)
+			case "latestQuoteTimestamp":
+				return ec.fieldContext_ListedSecurity_latestQuoteTimestamp(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ListedSecurity", field.Name)
 		},
 	}
 	defer func() {
@@ -2021,8 +2033,8 @@ func (ec *executionContext) fieldContext_PortfolioPosition_purchaseValue(_ conte
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "value":
-				return ec.fieldContext_Currency_value(ctx, field)
+			case "amount":
+				return ec.fieldContext_Currency_amount(ctx, field)
 			case "symbol":
 				return ec.fieldContext_Currency_symbol(ctx, field)
 			}
@@ -2071,8 +2083,8 @@ func (ec *executionContext) fieldContext_PortfolioPosition_purchasePrice(_ conte
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "value":
-				return ec.fieldContext_Currency_value(ctx, field)
+			case "amount":
+				return ec.fieldContext_Currency_amount(ctx, field)
 			case "symbol":
 				return ec.fieldContext_Currency_symbol(ctx, field)
 			}
@@ -2121,8 +2133,8 @@ func (ec *executionContext) fieldContext_PortfolioPosition_marketValue(_ context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "value":
-				return ec.fieldContext_Currency_value(ctx, field)
+			case "amount":
+				return ec.fieldContext_Currency_amount(ctx, field)
 			case "symbol":
 				return ec.fieldContext_Currency_symbol(ctx, field)
 			}
@@ -2171,8 +2183,8 @@ func (ec *executionContext) fieldContext_PortfolioPosition_marketPrice(_ context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "value":
-				return ec.fieldContext_Currency_value(ctx, field)
+			case "amount":
+				return ec.fieldContext_Currency_amount(ctx, field)
 			case "symbol":
 				return ec.fieldContext_Currency_symbol(ctx, field)
 			}
@@ -2221,8 +2233,8 @@ func (ec *executionContext) fieldContext_PortfolioPosition_totalFees(_ context.C
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "value":
-				return ec.fieldContext_Currency_value(ctx, field)
+			case "amount":
+				return ec.fieldContext_Currency_amount(ctx, field)
 			case "symbol":
 				return ec.fieldContext_Currency_symbol(ctx, field)
 			}
@@ -2271,8 +2283,8 @@ func (ec *executionContext) fieldContext_PortfolioPosition_profitOrLoss(_ contex
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "value":
-				return ec.fieldContext_Currency_value(ctx, field)
+			case "amount":
+				return ec.fieldContext_Currency_amount(ctx, field)
 			case "symbol":
 				return ec.fieldContext_Currency_symbol(ctx, field)
 			}
@@ -2517,8 +2529,8 @@ func (ec *executionContext) fieldContext_PortfolioSnapshot_totalPurchaseValue(_ 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "value":
-				return ec.fieldContext_Currency_value(ctx, field)
+			case "amount":
+				return ec.fieldContext_Currency_amount(ctx, field)
 			case "symbol":
 				return ec.fieldContext_Currency_symbol(ctx, field)
 			}
@@ -2567,8 +2579,8 @@ func (ec *executionContext) fieldContext_PortfolioSnapshot_totalMarketValue(_ co
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "value":
-				return ec.fieldContext_Currency_value(ctx, field)
+			case "amount":
+				return ec.fieldContext_Currency_amount(ctx, field)
 			case "symbol":
 				return ec.fieldContext_Currency_symbol(ctx, field)
 			}
@@ -2617,8 +2629,8 @@ func (ec *executionContext) fieldContext_PortfolioSnapshot_totalProfitOrLoss(_ c
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "value":
-				return ec.fieldContext_Currency_value(ctx, field)
+			case "amount":
+				return ec.fieldContext_Currency_amount(ctx, field)
 			case "symbol":
 				return ec.fieldContext_Currency_symbol(ctx, field)
 			}
@@ -2708,8 +2720,8 @@ func (ec *executionContext) fieldContext_PortfolioSnapshot_totalPortfolioValue(_
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "value":
-				return ec.fieldContext_Currency_value(ctx, field)
+			case "amount":
+				return ec.fieldContext_Currency_amount(ctx, field)
 			case "symbol":
 				return ec.fieldContext_Currency_symbol(ctx, field)
 			}
@@ -2758,8 +2770,8 @@ func (ec *executionContext) fieldContext_PortfolioSnapshot_cash(_ context.Contex
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "value":
-				return ec.fieldContext_Currency_value(ctx, field)
+			case "amount":
+				return ec.fieldContext_Currency_amount(ctx, field)
 			case "symbol":
 				return ec.fieldContext_Currency_symbol(ctx, field)
 			}
@@ -5227,8 +5239,8 @@ func (ec *executionContext) _Currency(ctx context.Context, sel ast.SelectionSet,
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Currency")
-		case "value":
-			out.Values[i] = ec._Currency_value(ctx, field, obj)
+		case "amount":
+			out.Values[i] = ec._Currency_amount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -5318,38 +5330,7 @@ func (ec *executionContext) _ListedSecurity(ctx context.Context, sel ast.Selecti
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "latestQuote":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ListedSecurity_latestQuote(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._ListedSecurity_latestQuote(ctx, field, obj)
 		case "latestQuoteTimestamp":
 			field := field
 
@@ -6548,6 +6529,44 @@ func (ec *executionContext) marshalNInt2int32(ctx context.Context, sel ast.Selec
 	return res
 }
 
+func (ec *executionContext) marshalNListedSecurity2ᚕᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐListedSecurity(ctx context.Context, sel ast.SelectionSet, v []*persistence.ListedSecurity) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOListedSecurity2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐListedSecurity(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
 func (ec *executionContext) marshalNListedSecurity2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐListedSecurity(ctx context.Context, sel ast.SelectionSet, v *persistence.ListedSecurity) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -7179,6 +7198,13 @@ func (ec *executionContext) marshalOListedSecurity2ᚕᚖgithubᚗcomᚋoxisto�
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalOListedSecurity2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐListedSecurity(ctx context.Context, sel ast.SelectionSet, v *persistence.ListedSecurity) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ListedSecurity(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOListedSecurityInput2ᚕᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋmodelsᚐListedSecurityInputᚄ(ctx context.Context, v any) ([]*models.ListedSecurityInput, error) {
