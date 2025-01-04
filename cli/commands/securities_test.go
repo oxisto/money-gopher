@@ -21,12 +21,15 @@ import (
 	"context"
 	"testing"
 
+	"github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/internal"
-	"github.com/oxisto/money-gopher/internal/persistencetest"
 	"github.com/oxisto/money-gopher/internal/testdata"
 	"github.com/oxisto/money-gopher/internal/testing/clitest"
+	"github.com/oxisto/money-gopher/internal/testing/persistencetest"
+	"github.com/oxisto/money-gopher/internal/testing/quotetest"
 	"github.com/oxisto/money-gopher/internal/testing/servertest"
 	"github.com/oxisto/money-gopher/persistence"
+	"github.com/oxisto/money-gopher/securities/quote"
 
 	"github.com/oxisto/assert"
 	"github.com/urfave/cli/v3"
@@ -36,6 +39,11 @@ func TestUpdateQuote(t *testing.T) {
 	srv := servertest.NewServer(persistencetest.NewTestDB(t, func(db *persistence.DB) {
 		_, err := db.CreateSecurity(context.Background(), testdata.TestCreateSecurityParams)
 		assert.NoError(t, err)
+
+		_, err = db.UpsertListedSecurity(context.Background(), testdata.TestUpsertListedSecurityParams)
+		assert.NoError(t, err)
+
+		quote.RegisterQuoteProvider(quotetest.QuoteProviderStatic, quotetest.NewStaticQuoteProvider(currency.Value(100)))
 	}))
 	defer srv.Close()
 
@@ -60,8 +68,16 @@ func TestUpdateQuote(t *testing.T) {
 			},
 			wantRec: func(t *testing.T, rec *clitest.CommandRecorder) bool {
 				return assert.Equals(t, `{
-				  "security": {
-				    "id": "US0378331005"`, rec.String(),
+  "updated": [
+    {
+      "latestQuote": {
+        "value": 100,
+        "symbol": "EUR"
+      }
+    }
+  ]
+}
+`, rec.String(),
 				)
 			},
 		},
@@ -70,7 +86,6 @@ func TestUpdateQuote(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rec := clitest.Record(tt.args.cmd)
-
 			if err := UpdateQuote(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
 				t.Errorf("UpdateQuote() error = %v, wantErr %v", err, tt.wantErr)
 			}

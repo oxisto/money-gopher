@@ -19,7 +19,6 @@ package commands
 
 import (
 	"context"
-	"fmt"
 
 	mcli "github.com/oxisto/money-gopher/cli"
 	"github.com/oxisto/money-gopher/currency"
@@ -119,7 +118,7 @@ func UpdateQuote(ctx context.Context, cmd *cli.Command) (err error) {
 	var query struct {
 		TriggerQuoteUpdate []struct {
 			LatestQuote *currency.Currency `json:"latestQuote"`
-		} `graphql:"triggerQuoteUpdate(securityIDs: $IDs)" json:"security"`
+		} `graphql:"triggerQuoteUpdate(securityIDs: $IDs)" json:"updated"`
 	}
 
 	var ids []graphql.String
@@ -134,7 +133,7 @@ func UpdateQuote(ctx context.Context, cmd *cli.Command) (err error) {
 		return err
 	}
 
-	fmt.Fprintln(cmd.Writer, query.TriggerQuoteUpdate)
+	s.WriteJSON(cmd.Writer, query)
 
 	return err
 }

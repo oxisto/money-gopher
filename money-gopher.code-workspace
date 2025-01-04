@@ -41,6 +41,7 @@
 			"protobuf",
 			"protocmp",
 			"protoreflect",
+			"quotetest",
 			"rgossiaux",
 			"secmap",
 			"secres",

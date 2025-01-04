@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/oxisto/assert"
-	"github.com/oxisto/money-gopher/internal/persistencetest"
+	"github.com/oxisto/money-gopher/internal/testing/persistencetest"
 	"github.com/oxisto/money-gopher/models"
 	"github.com/oxisto/money-gopher/persistence"
 )
