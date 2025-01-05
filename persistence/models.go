@@ -12,6 +12,16 @@ import (
 	"github.com/oxisto/money-gopher/portfolio/events"
 )
 
+// Accounts represents an account, such as a brokerage account or a bank
+type Account struct {
+	// ID is the primary identifier for a brokerage account.
+	ID string
+	// DisplayName is the human-readable name of the brokerage account.
+	DisplayName string
+	// Type is the type of the account.
+	Type int64
+}
+
 type BankAccount struct {
 	// ID is the primary identifier for a bank account.
 	ID string
@@ -33,6 +43,7 @@ type ListedSecurity struct {
 	LatestQuoteTimestamp sql.NullTime
 }
 
+// Portfolios represent a collection of securities and other positions
 type Portfolio struct {
 	// ID is the primary identifier for a portfolio.
 	ID string
