@@ -9,6 +9,8 @@ sql:
         out: "persistence"
         emit_result_struct_pointers: true
         overrides:
+          - column: "accounts.type"
+            go_type: github.com/oxisto/money-gopher/portfolio/accounts.AccountType
           - column: "portfolio_events.type"
             go_type: github.com/oxisto/money-gopher/portfolio/events.PortfolioEventType
           - column: "portfolio_events.price"

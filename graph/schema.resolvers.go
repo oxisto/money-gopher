@@ -15,6 +15,11 @@ import (
 	"github.com/oxisto/money-gopher/persistence"
 )
 
+// ReferenceAccount is the resolver for the referenceAccount field.
+func (r *accountResolver) ReferenceAccount(ctx context.Context, obj *persistence.Account) (*persistence.BankAccount, error) {
+	panic(fmt.Errorf("not implemented: ReferenceAccount - referenceAccount"))
+}
+
 // Security is the resolver for the security field.
 func (r *listedSecurityResolver) Security(ctx context.Context, obj *persistence.ListedSecurity) (*persistence.Security, error) {
 	panic(fmt.Errorf("not implemented: Security - security"))
@@ -171,6 +176,16 @@ func (r *queryResolver) Portfolios(ctx context.Context) ([]*persistence.Portfoli
 	return r.DB.ListPortfolios(ctx)
 }
 
+// Account is the resolver for the account field.
+func (r *queryResolver) Account(ctx context.Context, id string) (*persistence.Account, error) {
+	panic(fmt.Errorf("not implemented: Account - account"))
+}
+
+// Accounts is the resolver for the accounts field.
+func (r *queryResolver) Accounts(ctx context.Context) ([]*persistence.Account, error) {
+	panic(fmt.Errorf("not implemented: Accounts - accounts"))
+}
+
 // QuoteProvider is the resolver for the quoteProvider field.
 func (r *securityResolver) QuoteProvider(ctx context.Context, obj *persistence.Security) (*string, error) {
 	if obj.QuoteProvider.Valid {
@@ -184,6 +199,9 @@ func (r *securityResolver) QuoteProvider(ctx context.Context, obj *persistence.S
 func (r *securityResolver) ListedAs(ctx context.Context, obj *persistence.Security) ([]*persistence.ListedSecurity, error) {
 	return obj.ListedAs(ctx, r.DB)
 }
+
+// Account returns AccountResolver implementation.
+func (r *Resolver) Account() AccountResolver { return &accountResolver{r} }
 
 // ListedSecurity returns ListedSecurityResolver implementation.
 func (r *Resolver) ListedSecurity() ListedSecurityResolver { return &listedSecurityResolver{r} }
@@ -203,6 +221,7 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 // Security returns SecurityResolver implementation.
 func (r *Resolver) Security() SecurityResolver { return &securityResolver{r} }
 
+type accountResolver struct{ *Resolver }
 type listedSecurityResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type portfolioResolver struct{ *Resolver }

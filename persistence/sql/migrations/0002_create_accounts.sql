@@ -34,13 +34,27 @@ CREATE TABLE
         -- account which comprise a portfolio.
         id TEXT PRIMARY KEY, -- ID is the primary identifier for a brokerage account.
         display_name TEXT NOT NULL, -- DisplayName is the human-readable name of the brokerage account.
-        type INTEGER NOT NULL -- Type is the type of the account.
+        type INTEGER NOT NULL, -- Type is the type of the account.
+        reference_account_id INTEGER -- ReferenceAccountID is the ID of the account that this account is related to. For example, if this is a brokerage account, the reference account could be a bank account.
+        FOREIGN KEY (reference_account_id) REFERENCES accounts (id) ON DELETE RESTRICT
+    );
+
+CREATE TABLE
+    IF NOT EXISTS portfolio_accounts (
+        -- PortfolioAccounts represents the relationship between portfolios and accounts.
+        portfolio_id TEXT NOT NULL,
+        account_id TEXT NOT NULL,
+        FOREIGN KEY (portfolio_id) REFERENCES portfolios (id) ON DELETE RESTRICT,
+        FOREIGN KEY (account_id) REFERENCES accounts (id) ON DELETE RESTRICT,
+        PRIMARY KEY (account_id, portfolio_id)
     );
 
 -- +goose Down
 DROP TABLE portfolios;
 
 DROP TABLE portfolio_events;
+
+DROP TABLE portfolio_accounts;
 
 DROP TABLE bank_accounts;
 

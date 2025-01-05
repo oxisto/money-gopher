@@ -121,6 +121,12 @@ type BankAccount {
   displayName: String!
 }
 
+type Account {
+  id: String!
+  displayName: String!
+  referenceAccount: BankAccount
+}
+
 input SecurityInput {
   id: String!
   displayName: String!
@@ -156,4 +162,7 @@ type Query {
 
   portfolio(id: String!): Portfolio
   portfolios: [Portfolio!]!
+
+  account(id: String!): Account
+  accounts: [Account!]!
 }

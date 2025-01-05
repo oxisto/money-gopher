@@ -9,6 +9,7 @@ import (
 	"time"
 
 	currency "github.com/oxisto/money-gopher/currency"
+	"github.com/oxisto/money-gopher/portfolio/accounts"
 	"github.com/oxisto/money-gopher/portfolio/events"
 )
 
@@ -19,7 +20,8 @@ type Account struct {
 	// DisplayName is the human-readable name of the brokerage account.
 	DisplayName string
 	// Type is the type of the account.
-	Type int64
+	Type               accounts.AccountType
+	ReferenceAccountID interface{}
 }
 
 type BankAccount struct {
@@ -51,6 +53,12 @@ type Portfolio struct {
 	DisplayName string
 	// BankAccountID is the ID of the bank account that holds the portfolio.
 	BankAccountID string
+}
+
+// PortfolioAccounts represents the relationship between portfolios and accounts.
+type PortfolioAccount struct {
+	PortfolioID string
+	AccountID   string
 }
 
 type PortfolioEvent struct {

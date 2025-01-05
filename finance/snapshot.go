@@ -7,7 +7,6 @@ import (
 	"slices"
 	"time"
 
-	"connectrpc.com/connect"
 	moneygopher "github.com/oxisto/money-gopher"
 	"github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/models"
@@ -73,9 +72,7 @@ func BuildSnapshot(
 	secs, err = provider.ListSecuritiesByIDs(context.Background(), ids)
 
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal,
-			fmt.Errorf("internal error while calling ListSecurities on securities service: %w", err),
-		)
+		return nil, fmt.Errorf("internal error while calling ListSecurities on securities service: %w", err)
 	}
 
 	// Make a map out of the securities list so we can access it easier
@@ -108,8 +105,8 @@ func BuildSnapshot(
 			Amount:        c.Amount,
 			PurchaseValue: c.NetValue(),
 			PurchasePrice: c.NetPrice(),
-			MarketValue:   currency.Times(marketPrice(secmap, name, c.NetPrice(), provider), c.Amount),
-			MarketPrice:   marketPrice(secmap, name, c.NetPrice(), provider),
+			MarketValue:   currency.Times(marketPrice(name, c.NetPrice(), provider), c.Amount),
+			MarketPrice:   marketPrice(name, c.NetPrice(), provider),
 		}
 
 		// Calculate loss and gains
@@ -152,6 +149,8 @@ func eventsBefore(events []*persistence.PortfolioEvent, t time.Time) (out []*per
 
 // groupByPortfolio groups the events by their security ID.
 func groupByPortfolio(events []*persistence.PortfolioEvent) (m map[string][]*persistence.PortfolioEvent) {
+	m = make(map[string][]*persistence.PortfolioEvent)
+
 	for _, event := range events {
 		name := event.SecurityID
 		if name != "" {
@@ -166,7 +165,6 @@ func groupByPortfolio(events []*persistence.PortfolioEvent) (m map[string][]*per
 }
 
 func marketPrice(
-	secmap map[string]*persistence.Security,
 	name string,
 	netPrice *currency.Currency,
 	provider SnapshotDataProvider,

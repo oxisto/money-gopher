@@ -21,10 +21,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 23
-      - name: Set up buf
-        uses: bufbuild/buf-setup-action@v1.48.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up tools
         run: |
           go install github.com/mfridman/tparse

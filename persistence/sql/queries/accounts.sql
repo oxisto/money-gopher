@@ -22,6 +22,22 @@ FROM
 WHERE
     portfolio_id = ?;
 
+-- name: ListAccounts :many
+SELECT
+    *
+FROM
+    accounts
+ORDER BY
+    id;
+
+-- name: GetAccount :one
+SELECT
+    *
+FROM
+    accounts
+WHERE
+    id = ?;
+
 -- name: GetBankAccount :one
 SELECT
     *
@@ -29,6 +45,12 @@ FROM
     bank_accounts
 WHERE
     id = ?;
+
+-- name: CreateAccount :one
+INSERT INTO
+    accounts (id, display_name, type, reference_account_id)
+VALUES
+    (?, ?, ?, ?) RETURNING *;
 
 -- name: CreateBankAccount :one
 INSERT INTO
