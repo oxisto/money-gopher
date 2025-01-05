@@ -47,7 +47,7 @@ func BuildSnapshot(
 	// Retrieve events
 	events, err = provider.ListPortfolioEventsByPortfolioID(ctx, portfolioID)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, err
 	}
 
 	// Set up the snapshot

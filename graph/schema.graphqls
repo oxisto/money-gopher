@@ -127,6 +127,11 @@ input SecurityInput {
   listedAs: [ListedSecurityInput!]
 }
 
+input PortfolioInput {
+  id: String!
+  displayName: String!
+}
+
 input ListedSecurityInput {
   ticker: String!
   currency: String!
@@ -135,6 +140,9 @@ input ListedSecurityInput {
 type Mutation {
   createSecurity(input: SecurityInput!): Security!
   updateSecurity(id: ID!, input: SecurityInput!): Security!
+
+  createPortfolio(input: PortfolioInput!): Portfolio!
+
   """
   Triggers a quote update for the given security IDs. If no security IDs are
   provided, all securities will be updated.

@@ -18,6 +18,7 @@ package commands
 
 import (
 	"context"
+	"fmt"
 
 	mcli "github.com/oxisto/money-gopher/cli"
 
@@ -271,16 +272,21 @@ func ImportTransactions(ctx context.Context, cmd *cli.Command) error {
 
 // PredictPortfolios predicts the portfolios for shell completion.
 func PredictPortfolios(ctx context.Context, cmd *cli.Command) {
-	/*s := mcli.FromContext(ctx)
-	res, err := s.PortfolioClient.ListPortfolios(
-		context.Background(),
-		connect.NewRequest(&portfoliov1.ListPortfoliosRequest{}),
-	)
+	s := mcli.FromContext(ctx)
+
+	var query struct {
+		Portfolios []struct {
+			ID          string `json:"id"`
+			DisplayName string `json:"displayName"`
+		} `json:"portfolios"`
+	}
+
+	err := s.GraphQL.Query(context.Background(), &query, nil)
 	if err != nil {
 		return
 	}
 
-	for _, p := range res.Msg.Portfolios {
-		fmt.Fprintf(cmd.Root().Writer, "%s:%s\n", p.Id, p.DisplayName)
-	}*/
+	for _, p := range query.Portfolios {
+		fmt.Fprintf(cmd.Writer, "%s:%s\n", p.ID, p.DisplayName)
+	}
 }

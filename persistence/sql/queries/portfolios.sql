@@ -35,3 +35,9 @@ INSERT INTO
     bank_accounts (id, display_name)
 VALUES
     (?, ?) RETURNING *;
+
+-- name: CreatePortfolio :one
+INSERT INTO
+    portfolios (id, display_name, bank_account_id)
+VALUES
+    (?, ?, ?) RETURNING *;

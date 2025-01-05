@@ -73,6 +73,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
+		CreatePortfolio    func(childComplexity int, input models.PortfolioInput) int
 		CreateSecurity     func(childComplexity int, input models.SecurityInput) int
 		TriggerQuoteUpdate func(childComplexity int, securityIDs []string) int
 		UpdateSecurity     func(childComplexity int, id string, input models.SecurityInput) int
@@ -139,6 +140,7 @@ type ListedSecurityResolver interface {
 type MutationResolver interface {
 	CreateSecurity(ctx context.Context, input models.SecurityInput) (*persistence.Security, error)
 	UpdateSecurity(ctx context.Context, id string, input models.SecurityInput) (*persistence.Security, error)
+	CreatePortfolio(ctx context.Context, input models.PortfolioInput) (*persistence.Portfolio, error)
 	TriggerQuoteUpdate(ctx context.Context, securityIDs []string) ([]*persistence.ListedSecurity, error)
 }
 type PortfolioResolver interface {
@@ -243,6 +245,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ListedSecurity.Ticker(childComplexity), true
+
+	case "Mutation.createPortfolio":
+		if e.complexity.Mutation.CreatePortfolio == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createPortfolio_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreatePortfolio(childComplexity, args["input"].(models.PortfolioInput)), true
 
 	case "Mutation.createSecurity":
 		if e.complexity.Mutation.CreateSecurity == nil {
@@ -542,6 +556,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputListedSecurityInput,
+		ec.unmarshalInputPortfolioInput,
 		ec.unmarshalInputSecurityInput,
 	)
 	first := true
@@ -658,6 +673,29 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_createPortfolio_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_createPortfolio_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_createPortfolio_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (models.PortfolioInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNPortfolioInput2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋmodelsᚐPortfolioInput(ctx, tmp)
+	}
+
+	var zeroVal models.PortfolioInput
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Mutation_createSecurity_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
@@ -1422,6 +1460,73 @@ func (ec *executionContext) fieldContext_Mutation_updateSecurity(ctx context.Con
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_updateSecurity_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_createPortfolio(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createPortfolio(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreatePortfolio(rctx, fc.Args["input"].(models.PortfolioInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*persistence.Portfolio)
+	fc.Result = res
+	return ec.marshalNPortfolio2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐPortfolio(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createPortfolio(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Portfolio_id(ctx, field)
+			case "displayName":
+				return ec.fieldContext_Portfolio_displayName(ctx, field)
+			case "bankAccount":
+				return ec.fieldContext_Portfolio_bankAccount(ctx, field)
+			case "snapshot":
+				return ec.fieldContext_Portfolio_snapshot(ctx, field)
+			case "events":
+				return ec.fieldContext_Portfolio_events(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Portfolio", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createPortfolio_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -5135,6 +5240,40 @@ func (ec *executionContext) unmarshalInputListedSecurityInput(ctx context.Contex
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputPortfolioInput(ctx context.Context, obj any) (models.PortfolioInput, error) {
+	var it models.PortfolioInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "displayName"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "displayName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayName"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayName = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputSecurityInput(ctx context.Context, obj any) (models.SecurityInput, error) {
 	var it models.SecurityInput
 	asMap := map[string]any{}
@@ -5416,6 +5555,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "updateSecurity":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_updateSecurity(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createPortfolio":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createPortfolio(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -6582,6 +6728,10 @@ func (ec *executionContext) unmarshalNListedSecurityInput2ᚖgithubᚗcomᚋoxis
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNPortfolio2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐPortfolio(ctx context.Context, sel ast.SelectionSet, v persistence.Portfolio) graphql.Marshaler {
+	return ec._Portfolio(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNPortfolio2ᚕᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐPortfolioᚄ(ctx context.Context, sel ast.SelectionSet, v []*persistence.Portfolio) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -6718,6 +6868,11 @@ var (
 		events.PortfolioEventTypeDividend: "DIVIDEND",
 	}
 )
+
+func (ec *executionContext) unmarshalNPortfolioInput2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋmodelsᚐPortfolioInput(ctx context.Context, v any) (models.PortfolioInput, error) {
+	res, err := ec.unmarshalInputPortfolioInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
 
 func (ec *executionContext) marshalNPortfolioPosition2ᚕᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋmodelsᚐPortfolioPositionᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.PortfolioPosition) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))

@@ -15,6 +15,11 @@ type ListedSecurityInput struct {
 type Mutation struct {
 }
 
+type PortfolioInput struct {
+	ID          string `json:"id"`
+	DisplayName string `json:"displayName"`
+}
+
 type PortfolioPosition struct {
 	Security *persistence.Security `json:"security"`
 	Amount   float64               `json:"amount"`

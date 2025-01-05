@@ -219,7 +219,20 @@ func TestImportTransactions(t *testing.T) {
 }
 
 func TestPredictPortfolios(t *testing.T) {
-	srv := servertest.NewServer(internal.NewTestDB(t))
+	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
+		_, err := db.Queries.CreateBankAccount(context.Background(), persistence.CreateBankAccountParams{
+			ID:          "mybank",
+			DisplayName: "My Bank",
+		})
+		assert.NoError(t, err)
+
+		_, err = db.Queries.CreatePortfolio(context.Background(), persistence.CreatePortfolioParams{
+			ID:            "mybank/myportfolio",
+			DisplayName:   "My Portfolio",
+			BankAccountID: "mybank",
+		})
+		assert.NoError(t, err)
+	}))
 	defer srv.Close()
 
 	type args struct {
@@ -238,7 +251,7 @@ func TestPredictPortfolios(t *testing.T) {
 				cmd: &cli.Command{},
 			},
 			wantRec: func(t *testing.T, r *clitest.CommandRecorder) bool {
-				return assert.Equals(t, "mybank-myportfolio:My Portfolio\n", r.String())
+				return assert.Equals(t, "mybank/myportfolio:My Portfolio\n", r.String())
 			},
 		},
 	}

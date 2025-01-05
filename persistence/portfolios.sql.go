@@ -28,6 +28,26 @@ func (q *Queries) CreateBankAccount(ctx context.Context, arg CreateBankAccountPa
 	return &i, err
 }
 
+const createPortfolio = `-- name: CreatePortfolio :one
+INSERT INTO
+    portfolios (id, display_name, bank_account_id)
+VALUES
+    (?, ?, ?) RETURNING id, display_name, bank_account_id
+`
+
+type CreatePortfolioParams struct {
+	ID            string
+	DisplayName   string
+	BankAccountID string
+}
+
+func (q *Queries) CreatePortfolio(ctx context.Context, arg CreatePortfolioParams) (*Portfolio, error) {
+	row := q.db.QueryRowContext(ctx, createPortfolio, arg.ID, arg.DisplayName, arg.BankAccountID)
+	var i Portfolio
+	err := row.Scan(&i.ID, &i.DisplayName, &i.BankAccountID)
+	return &i, err
+}
+
 const getBankAccount = `-- name: GetBankAccount :one
 SELECT
     id, display_name
