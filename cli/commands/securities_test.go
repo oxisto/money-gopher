@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/oxisto/money-gopher/currency"
-	"github.com/oxisto/money-gopher/internal"
 	"github.com/oxisto/money-gopher/internal/testdata"
 	"github.com/oxisto/money-gopher/internal/testing/clitest"
 	"github.com/oxisto/money-gopher/internal/testing/persistencetest"
@@ -97,7 +96,15 @@ func TestUpdateQuote(t *testing.T) {
 }
 
 func TestUpdateAllQuotes(t *testing.T) {
-	srv := servertest.NewServer(internal.NewTestDB(t))
+	srv := servertest.NewServer(persistencetest.NewTestDB(t, func(db *persistence.DB) {
+		_, err := db.CreateSecurity(context.Background(), testdata.TestCreateSecurityParams)
+		assert.NoError(t, err)
+
+		_, err = db.UpsertListedSecurity(context.Background(), testdata.TestUpsertListedSecurityParams)
+		assert.NoError(t, err)
+
+		quote.RegisterQuoteProvider(quotetest.QuoteProviderStatic, quotetest.NewStaticQuoteProvider(currency.Value(100)))
+	}))
 	defer srv.Close()
 
 	type args struct {
@@ -127,18 +134,8 @@ func TestUpdateAllQuotes(t *testing.T) {
 }
 
 func TestListSecurities(t *testing.T) {
-	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
-		_, err := db.CreateSecurity(context.Background(), persistence.CreateSecurityParams{
-			ID:          "1234",
-			DisplayName: "One Two Three Four",
-		})
-		assert.NoError(t, err)
-
-		_, err = db.UpsertListedSecurity(context.Background(), persistence.UpsertListedSecurityParams{
-			SecurityID: "1234",
-			Ticker:     "ONE",
-			Currency:   "USD",
-		})
+	srv := servertest.NewServer(persistencetest.NewTestDB(t, func(db *persistence.DB) {
+		_, err := db.CreateSecurity(context.Background(), testdata.TestCreateSecurityParams)
 		assert.NoError(t, err)
 	}))
 	defer srv.Close()
@@ -163,12 +160,8 @@ func TestListSecurities(t *testing.T) {
 				return assert.Equals(t, `{
   "securities": [
     {
-      "id": "1234",
-      "displayName": "One Two Three Four"
-    },
-    {
-      "id": "US0378331005",
-      "displayName": "Apple Inc."
+      "id": "DE1234567890",
+      "displayName": "My Security"
     }
   ]
 }
@@ -191,7 +184,15 @@ func TestListSecurities(t *testing.T) {
 }
 
 func TestShowSecurity(t *testing.T) {
-	srv := servertest.NewServer(internal.NewTestDB(t))
+	srv := servertest.NewServer(persistencetest.NewTestDB(t, func(db *persistence.DB) {
+		_, err := db.CreateSecurity(context.Background(), testdata.TestCreateSecurityParams)
+		assert.NoError(t, err)
+
+		_, err = db.UpsertListedSecurity(context.Background(), testdata.TestUpsertListedSecurityParams)
+		assert.NoError(t, err)
+
+		quote.RegisterQuoteProvider(quotetest.QuoteProviderStatic, quotetest.NewStaticQuoteProvider(currency.Value(100)))
+	}))
 	defer srv.Close()
 
 	type args struct {
@@ -208,19 +209,16 @@ func TestShowSecurity(t *testing.T) {
 			name: "happy path",
 			args: args{
 				ctx: clitest.NewSessionContext(t, srv),
-				cmd: clitest.MockCommand(t, SecuritiesCmd.Command("show").Flags, "--security-id", "US0378331005"),
+				cmd: clitest.MockCommand(t, SecuritiesCmd.Command("show").Flags, "--security-id", "DE1234567890"),
 			},
 			wantRec: func(t *testing.T, rec *clitest.CommandRecorder) bool {
 				return assert.Equals(t, `{
   "security": {
-    "id": "US0378331005",
-    "displayName": "Apple Inc.",
+    "id": "DE1234567890",
+    "displayName": "My Security",
     "listedAs": [
       {
-        "ticker": "AAPL"
-      },
-      {
-        "ticker": "APC.F"
+        "ticker": "TICK"
       }
     ]
   }
@@ -245,7 +243,10 @@ func TestShowSecurity(t *testing.T) {
 }
 
 func TestPredictSecurities(t *testing.T) {
-	srv := servertest.NewServer(internal.NewTestDB(t))
+	srv := servertest.NewServer(persistencetest.NewTestDB(t, func(db *persistence.DB) {
+		_, err := db.CreateSecurity(context.Background(), testdata.TestCreateSecurityParams)
+		assert.NoError(t, err)
+	}))
 	defer srv.Close()
 
 	type args struct {
@@ -264,7 +265,7 @@ func TestPredictSecurities(t *testing.T) {
 				cmd: &cli.Command{},
 			},
 			wantRec: func(t *testing.T, rec *clitest.CommandRecorder) bool {
-				return assert.Equals(t, "US0378331005:Apple Inc.\n", rec.String())
+				return assert.Equals(t, "DE1234567890:My Security\n", rec.String())
 			},
 		},
 	}

@@ -19,6 +19,7 @@ package commands
 
 import (
 	"context"
+	"fmt"
 
 	mcli "github.com/oxisto/money-gopher/cli"
 	"github.com/oxisto/money-gopher/currency"
@@ -143,7 +144,9 @@ func UpdateAllQuotes(ctx context.Context, cmd *cli.Command) (err error) {
 	s := mcli.FromContext(ctx)
 
 	var query struct {
-		TriggerQuoteUpdate bool `graphql:"triggerQuoteUpdate(securityIDs: $IDs)" json:"security"`
+		TriggerQuoteUpdate []struct {
+			LatestQuote *currency.Currency `json:"latestQuote"`
+		} `graphql:"triggerQuoteUpdate(securityIDs: $IDs)" json:"updated"`
 	}
 
 	err = s.GraphQL.Mutate(context.Background(), &query, map[string]interface{}{
@@ -158,16 +161,21 @@ func UpdateAllQuotes(ctx context.Context, cmd *cli.Command) (err error) {
 
 // PredictSecurities predicts the securities for shell completion.
 func PredictSecurities(ctx context.Context, cmd *cli.Command) {
-	/*s := mcli.FromContext(ctx)
-	res, err := s.SecuritiesClient.ListSecurities(
-		context.Background(),
-		connect.NewRequest(&portfoliov1.ListSecuritiesRequest{}),
-	)
+	s := mcli.FromContext(ctx)
+
+	var query struct {
+		Securities []struct {
+			ID          string `json:"id"`
+			DisplayName string `json:"displayName"`
+		} `json:"securities"`
+	}
+
+	err := s.GraphQL.Query(context.Background(), &query, nil)
 	if err != nil {
 		return
 	}
 
-	for _, p := range res.Msg.Securities {
-		fmt.Fprintf(cmd.Root().Writer, "%s:%s\n", p.Id, p.DisplayName)
-	}*/
+	for _, p := range query.Securities {
+		fmt.Fprintf(cmd.Writer, "%s:%s\n", p.ID, p.DisplayName)
+	}
 }
