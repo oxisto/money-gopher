@@ -1,9 +1,6 @@
 package accounts
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/oxisto/money-gopher/internal/enum"
 )
 
@@ -27,23 +24,18 @@ func (t *AccountType) Get() any {
 }
 
 // Set implements [flag.Value].
-func (t *AccountType) Set(v string) error {
-	return enum.Set(t, v, _AccountType_name, _AccountType_index[:])
+func (t AccountType) Set(v string) error {
+	return enum.Set(&t, v, _AccountType_name, _AccountType_index[:])
 }
 
 // MarshalJSON marshals the account type to JSON using the string
 // representation.
 func (t AccountType) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf(`"%s"`, t.String())), nil
+	return enum.MarshalJSON(t)
 }
 
 // UnmarshalJSON unmarshals the account type from JSON. It expects a string
 // representation.
-func (t *AccountType) UnmarshalJSON(data []byte) error {
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
-		return err
-	}
-
-	return t.Set(s)
+func (t AccountType) UnmarshalJSON(data []byte) error {
+	return enum.UnmarshalJSON(t, data)
 }
