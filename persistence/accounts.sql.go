@@ -82,6 +82,24 @@ func (q *Queries) CreatePortfolio(ctx context.Context, arg CreatePortfolioParams
 	return &i, err
 }
 
+const deleteAccount = `-- name: DeleteAccount :one
+DELETE FROM accounts
+WHERE
+    id = ? RETURNING id, display_name, type, reference_account_id
+`
+
+func (q *Queries) DeleteAccount(ctx context.Context, id string) (*Account, error) {
+	row := q.db.QueryRowContext(ctx, deleteAccount, id)
+	var i Account
+	err := row.Scan(
+		&i.ID,
+		&i.DisplayName,
+		&i.Type,
+		&i.ReferenceAccountID,
+	)
+	return &i, err
+}
+
 const getAccount = `-- name: GetAccount :one
 SELECT
     id, display_name, type, reference_account_id

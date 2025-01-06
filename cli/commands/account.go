@@ -18,12 +18,14 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	mcli "github.com/oxisto/money-gopher/cli"
 	"github.com/oxisto/money-gopher/models"
 	"github.com/oxisto/money-gopher/portfolio/accounts"
 
+	"github.com/shurcooL/graphql"
 	"github.com/urfave/cli/v3"
 )
 
@@ -50,6 +52,15 @@ var AccountCmd = &cli.Command{
 			Name:   "list",
 			Usage:  "Lists all accounts",
 			Action: ListAccounts,
+		},
+		{
+			Name:   "delete",
+			Usage:  "Deletes an account",
+			Action: DeleteAccount,
+			Flags: []cli.Flag{
+				&cli.StringFlag{Name: "id", Usage: "The unique ID for the account", Required: true},
+				&cli.BoolFlag{Name: "confirm", Usage: "Confirm account deletion", Required: true},
+			},
 		},
 	},
 }
@@ -102,6 +113,33 @@ func ListAccounts(ctx context.Context, cmd *cli.Command) (err error) {
 	}
 
 	s.WriteJSON(cmd.Writer, query)
+
+	return nil
+}
+
+// DeleteAccount deletes an account.
+func DeleteAccount(ctx context.Context, cmd *cli.Command) (err error) {
+	s := mcli.FromContext(ctx)
+
+	// Confirm deletion
+	if !cmd.Bool("confirm") {
+		return errors.New("please confirm delete with --confirm")
+	}
+
+	var query struct {
+		DeleteAccount struct {
+			ID string `json:"id"`
+		} `graphql:"deleteAccount(id: $id)" json:"account"`
+	}
+
+	err = s.GraphQL.Mutate(context.Background(), &query, map[string]interface{}{
+		"id": graphql.String(cmd.String("id")),
+	})
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintf(cmd.Writer, "Account %q deleted.\n", query.DeleteAccount.ID)
 
 	return nil
 }

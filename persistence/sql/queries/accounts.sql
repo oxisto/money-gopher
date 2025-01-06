@@ -52,6 +52,11 @@ INSERT INTO
 VALUES
     (?, ?, ?, ?) RETURNING *;
 
+-- name: DeleteAccount :one
+DELETE FROM accounts
+WHERE
+    id = ? RETURNING *;
+
 -- name: CreateBankAccount :one
 INSERT INTO
     bank_accounts (id, display_name)

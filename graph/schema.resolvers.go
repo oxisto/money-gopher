@@ -119,6 +119,11 @@ func (r *mutationResolver) CreateAccount(ctx context.Context, input models.Accou
 	})
 }
 
+// DeleteAccount is the resolver for the deleteAccount field.
+func (r *mutationResolver) DeleteAccount(ctx context.Context, id string) (*persistence.Account, error) {
+	return r.DB.DeleteAccount(ctx, id)
+}
+
 // TriggerQuoteUpdate is the resolver for the triggerQuoteUpdate field.
 func (r *mutationResolver) TriggerQuoteUpdate(ctx context.Context, securityIDs []string) (updated []*persistence.ListedSecurity, err error) {
 	updated, err = r.QuoteUpdater.UpdateQuotes(ctx, securityIDs)

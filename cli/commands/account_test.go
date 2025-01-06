@@ -115,3 +115,45 @@ func TestListAccounts(t *testing.T) {
 		})
 	}
 }
+
+func TestDeleteAccount(t *testing.T) {
+	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
+		_, err := db.Queries.CreateAccount(context.Background(), testdata.TestCreateBankAccountParams)
+		assert.NoError(t, err)
+	}))
+	defer srv.Close()
+
+	type args struct {
+		ctx context.Context
+		cmd *cli.Command
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+		wantRec assert.Want[*clitest.CommandRecorder]
+	}{
+		{
+			name: "happy path",
+			args: args{
+				ctx: clitest.NewSessionContext(t, srv),
+				cmd: clitest.MockCommand(t, AccountCmd.Command("delete").Flags, "--id", "myaccount", "--confirm"),
+			},
+			wantRec: func(t *testing.T, rec *clitest.CommandRecorder) bool {
+				return assert.Equals(t, "Account \"myaccount\" deleted.\n", rec.String())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := clitest.Record(tt.args.cmd)
+
+			if err := DeleteAccount(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
+				t.Errorf("DeleteAccount() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			tt.wantRec(t, rec)
+		})
+	}
+}

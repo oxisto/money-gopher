@@ -175,6 +175,7 @@ type Mutation {
   createPortfolio(input: PortfolioInput!): Portfolio!
 
   createAccount(input: AccountInput!): Account!
+  deleteAccount(id: String!): Account!
 
   """
   Triggers a quote update for the given security IDs. If no security IDs are
