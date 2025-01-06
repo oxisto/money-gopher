@@ -6,6 +6,7 @@ require (
 	github.com/99designs/gqlgen v0.17.61
 	github.com/mfridman/tparse v0.16.0
 	github.com/sqlc-dev/sqlc v1.27.0
+	golang.org/x/tools v0.24.0
 )
 
 require (
@@ -65,7 +66,6 @@ require (
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
-	golang.org/x/tools v0.24.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240528184218-531527333157 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
 	google.golang.org/grpc v1.65.0 // indirect
