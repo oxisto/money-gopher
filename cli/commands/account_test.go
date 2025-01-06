@@ -20,9 +20,12 @@ import (
 	"context"
 	"testing"
 
+	"github.com/oxisto/assert"
 	"github.com/oxisto/money-gopher/internal"
+	"github.com/oxisto/money-gopher/internal/testdata"
 	"github.com/oxisto/money-gopher/internal/testing/clitest"
 	"github.com/oxisto/money-gopher/internal/testing/servertest"
+	"github.com/oxisto/money-gopher/persistence"
 	"github.com/urfave/cli/v3"
 )
 
@@ -52,11 +55,63 @@ func TestCreateAccount(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := CreateAccount(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
 				t.Errorf("CreateAccount() error = %v, wantErr %v", err, tt.wantErr)
 			}
+		})
+	}
+}
+
+func TestListAccounts(t *testing.T) {
+	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
+		_, err := db.Queries.CreateAccount(context.Background(), testdata.TestCreateBankAccountParams)
+		assert.NoError(t, err)
+	}))
+	defer srv.Close()
+
+	type args struct {
+		ctx context.Context
+		cmd *cli.Command
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+		wantRec assert.Want[*clitest.CommandRecorder]
+	}{
+		{
+			name: "happy path",
+			args: args{
+				ctx: clitest.NewSessionContext(t, srv),
+				cmd: clitest.MockCommand(t, AccountCmd.Command("list").Flags),
+			},
+			wantRec: func(t *testing.T, rec *clitest.CommandRecorder) bool {
+				return assert.Equals(t, `{
+  "accounts": [
+    {
+      "id": "myaccount",
+      "displayName": "My Account",
+      "type": "BANK"
+    }
+  ]
+}
+`, rec.String())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := clitest.Record(tt.args.cmd)
+
+			if err := ListAccounts(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
+				t.Errorf("ListAccounts() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			tt.wantRec(t, rec)
 		})
 	}
 }

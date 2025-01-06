@@ -5,6 +5,7 @@ import (
 
 	"github.com/oxisto/money-gopher/internal/testing/quotetest"
 	"github.com/oxisto/money-gopher/persistence"
+	"github.com/oxisto/money-gopher/portfolio/accounts"
 )
 
 // TestSecurity is a test security.
@@ -34,4 +35,18 @@ var TestUpsertListedSecurityParams = persistence.UpsertListedSecurityParams{
 	SecurityID: TestSecurity.ID,
 	Ticker:     TestListedSecurity.Ticker,
 	Currency:   TestListedSecurity.Currency,
+}
+
+// TestBankAccount is a test bank account.
+var TestBankAccount = &persistence.Account{
+	ID:          "myaccount",
+	DisplayName: "My Account",
+	Type:        accounts.AccountTypeBank,
+}
+
+// TestCreateBankAccountParams is a test bank account creation parameter.
+var TestCreateBankAccountParams = persistence.CreateAccountParams{
+	ID:          TestBankAccount.ID,
+	DisplayName: TestBankAccount.DisplayName,
+	Type:        TestBankAccount.Type,
 }

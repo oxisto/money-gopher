@@ -46,6 +46,11 @@ var AccountCmd = &cli.Command{
 				}()},
 			},
 		},
+		{
+			Name:   "list",
+			Usage:  "Lists all accounts",
+			Action: ListAccounts,
+		},
 	},
 }
 
@@ -75,6 +80,28 @@ func CreateAccount(ctx context.Context, cmd *cli.Command) (err error) {
 	}
 
 	fmt.Fprintln(cmd.Writer, query.CreateAccount)
+
+	return nil
+}
+
+// ListAccounts lists all accounts.
+func ListAccounts(ctx context.Context, cmd *cli.Command) (err error) {
+	s := mcli.FromContext(ctx)
+
+	var query struct {
+		Accounts []struct {
+			ID          string               `json:"id"`
+			DisplayName string               `json:"displayName"`
+			Type        accounts.AccountType `json:"type"`
+		} `json:"accounts"`
+	}
+
+	err = s.GraphQL.Query(context.Background(), &query, nil)
+	if err != nil {
+		return err
+	}
+
+	s.WriteJSON(cmd.Writer, query)
 
 	return nil
 }

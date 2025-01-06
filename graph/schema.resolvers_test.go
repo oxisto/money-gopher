@@ -2,9 +2,11 @@ package graph
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/oxisto/assert"
+	"github.com/oxisto/money-gopher/internal/testdata"
 	"github.com/oxisto/money-gopher/internal/testing/persistencetest"
 	"github.com/oxisto/money-gopher/models"
 	"github.com/oxisto/money-gopher/persistence"
@@ -72,6 +74,56 @@ func Test_mutationResolver_CreateSecurity(t *testing.T) {
 			}
 			assert.Equals(t, tt.want, got)
 			tt.wantDB(t, tt.fields.Resolver.DB)
+		})
+	}
+}
+
+func Test_queryResolver_Accounts(t *testing.T) {
+	type fields struct {
+		Resolver *Resolver
+	}
+	type args struct {
+		ctx context.Context
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []*persistence.Account
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			fields: fields{
+				Resolver: &Resolver{
+					DB: persistencetest.NewTestDB(t, func(db *persistence.DB) {
+						_, err := db.Queries.CreateAccount(context.Background(), testdata.TestCreateBankAccountParams)
+						assert.NoError(t, err)
+					}),
+				},
+			},
+			args: args{
+				ctx: context.TODO(),
+			},
+			want: []*persistence.Account{
+				testdata.TestBankAccount,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &queryResolver{
+				Resolver: tt.fields.Resolver,
+			}
+			got, err := r.Accounts(tt.args.ctx)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("queryResolver.Accounts() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("queryResolver.Accounts() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
