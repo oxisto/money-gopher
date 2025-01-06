@@ -5,7 +5,14 @@ package models
 import (
 	"github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/persistence"
+	"github.com/oxisto/money-gopher/portfolio/accounts"
 )
+
+type AccountInput struct {
+	ID          string               `json:"id"`
+	DisplayName string               `json:"displayName"`
+	Type        accounts.AccountType `json:"type"`
+}
 
 type ListedSecurityInput struct {
 	Ticker   string `json:"ticker"`

@@ -20,8 +20,9 @@ type Account struct {
 	// DisplayName is the human-readable name of the brokerage account.
 	DisplayName string
 	// Type is the type of the account.
-	Type               accounts.AccountType
-	ReferenceAccountID interface{}
+	Type accounts.AccountType
+	// ReferenceAccountID is the ID of the account that this account is related to. For example, if this is a brokerage account, the reference account could be a bank account.
+	ReferenceAccountID sql.NullInt64
 }
 
 type BankAccount struct {

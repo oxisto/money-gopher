@@ -35,7 +35,7 @@ CREATE TABLE
         id TEXT PRIMARY KEY, -- ID is the primary identifier for a brokerage account.
         display_name TEXT NOT NULL, -- DisplayName is the human-readable name of the brokerage account.
         type INTEGER NOT NULL, -- Type is the type of the account.
-        reference_account_id INTEGER -- ReferenceAccountID is the ID of the account that this account is related to. For example, if this is a brokerage account, the reference account could be a bank account.
+        reference_account_id INTEGER, -- ReferenceAccountID is the ID of the account that this account is related to. For example, if this is a brokerage account, the reference account could be a bank account.
         FOREIGN KEY (reference_account_id) REFERENCES accounts (id) ON DELETE RESTRICT
     );
 

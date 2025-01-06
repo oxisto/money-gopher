@@ -53,6 +53,24 @@ enum PortfolioEventType
     )
 }
 
+enum AccountType
+  @goModel(
+    model: "github.com/oxisto/money-gopher/portfolio/accounts.AccountType"
+  ) {
+  BROKERAGE
+    @goEnum(
+      value: "github.com/oxisto/money-gopher/portfolio/accounts.AccountTypeBrokerage"
+    )
+  BANK
+    @goEnum(
+      value: "github.com/oxisto/money-gopher/portfolio/accounts.AccountTypeBank"
+    )
+  LOAN
+    @goEnum(
+      value: "github.com/oxisto/money-gopher/portfolio/accounts.AccountTypeLoan"
+    )
+}
+
 type PortfolioEvent {
   time: Date!
   type: PortfolioEventType!
@@ -124,6 +142,7 @@ type BankAccount {
 type Account {
   id: String!
   displayName: String!
+  type: AccountType!
   referenceAccount: BankAccount
 }
 
@@ -138,6 +157,12 @@ input PortfolioInput {
   displayName: String!
 }
 
+input AccountInput {
+  id: String!
+  displayName: String!
+  type: AccountType!
+}
+
 input ListedSecurityInput {
   ticker: String!
   currency: String!
@@ -148,6 +173,8 @@ type Mutation {
   updateSecurity(id: ID!, input: SecurityInput!): Security!
 
   createPortfolio(input: PortfolioInput!): Portfolio!
+
+  createAccount(input: AccountInput!): Account!
 
   """
   Triggers a quote update for the given security IDs. If no security IDs are

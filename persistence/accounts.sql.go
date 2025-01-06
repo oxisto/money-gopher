@@ -7,6 +7,7 @@ package persistence
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/oxisto/money-gopher/portfolio/accounts"
 )
@@ -22,7 +23,7 @@ type CreateAccountParams struct {
 	ID                 string
 	DisplayName        string
 	Type               accounts.AccountType
-	ReferenceAccountID interface{}
+	ReferenceAccountID sql.NullInt64
 }
 
 func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (*Account, error) {

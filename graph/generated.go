@@ -17,6 +17,7 @@ import (
 	"github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/models"
 	"github.com/oxisto/money-gopher/persistence"
+	"github.com/oxisto/money-gopher/portfolio/accounts"
 	"github.com/oxisto/money-gopher/portfolio/events"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -59,6 +60,7 @@ type ComplexityRoot struct {
 		DisplayName      func(childComplexity int) int
 		ID               func(childComplexity int) int
 		ReferenceAccount func(childComplexity int) int
+		Type             func(childComplexity int) int
 	}
 
 	BankAccount struct {
@@ -80,6 +82,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
+		CreateAccount      func(childComplexity int, input models.AccountInput) int
 		CreatePortfolio    func(childComplexity int, input models.PortfolioInput) int
 		CreateSecurity     func(childComplexity int, input models.SecurityInput) int
 		TriggerQuoteUpdate func(childComplexity int, securityIDs []string) int
@@ -153,6 +156,7 @@ type MutationResolver interface {
 	CreateSecurity(ctx context.Context, input models.SecurityInput) (*persistence.Security, error)
 	UpdateSecurity(ctx context.Context, id string, input models.SecurityInput) (*persistence.Security, error)
 	CreatePortfolio(ctx context.Context, input models.PortfolioInput) (*persistence.Portfolio, error)
+	CreateAccount(ctx context.Context, input models.AccountInput) (*persistence.Account, error)
 	TriggerQuoteUpdate(ctx context.Context, securityIDs []string) ([]*persistence.ListedSecurity, error)
 }
 type PortfolioResolver interface {
@@ -218,6 +222,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Account.ReferenceAccount(childComplexity), true
 
+	case "Account.type":
+		if e.complexity.Account.Type == nil {
+			break
+		}
+
+		return e.complexity.Account.Type(childComplexity), true
+
 	case "BankAccount.displayName":
 		if e.complexity.BankAccount.DisplayName == nil {
 			break
@@ -280,6 +291,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ListedSecurity.Ticker(childComplexity), true
+
+	case "Mutation.createAccount":
+		if e.complexity.Mutation.CreateAccount == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createAccount_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateAccount(childComplexity, args["input"].(models.AccountInput)), true
 
 	case "Mutation.createPortfolio":
 		if e.complexity.Mutation.CreatePortfolio == nil {
@@ -609,6 +632,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputAccountInput,
 		ec.unmarshalInputListedSecurityInput,
 		ec.unmarshalInputPortfolioInput,
 		ec.unmarshalInputSecurityInput,
@@ -727,6 +751,29 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_createAccount_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_createAccount_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_createAccount_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (models.AccountInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNAccountInput2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋmodelsᚐAccountInput(ctx, tmp)
+	}
+
+	var zeroVal models.AccountInput
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Mutation_createPortfolio_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
@@ -1090,6 +1137,50 @@ func (ec *executionContext) fieldContext_Account_displayName(_ context.Context, 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Account_type(ctx context.Context, field graphql.CollectedField, obj *persistence.Account) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Account_type(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Type, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(accounts.AccountType)
+	fc.Result = res
+	return ec.marshalNAccountType2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋportfolioᚋaccountsᚐAccountType(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Account_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Account",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type AccountType does not have child fields")
 		},
 	}
 	return fc, nil
@@ -1739,6 +1830,71 @@ func (ec *executionContext) fieldContext_Mutation_createPortfolio(ctx context.Co
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_createPortfolio_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_createAccount(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createAccount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateAccount(rctx, fc.Args["input"].(models.AccountInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*persistence.Account)
+	fc.Result = res
+	return ec.marshalNAccount2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐAccount(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createAccount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Account_id(ctx, field)
+			case "displayName":
+				return ec.fieldContext_Account_displayName(ctx, field)
+			case "type":
+				return ec.fieldContext_Account_type(ctx, field)
+			case "referenceAccount":
+				return ec.fieldContext_Account_referenceAccount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Account", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createAccount_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3374,6 +3530,8 @@ func (ec *executionContext) fieldContext_Query_account(ctx context.Context, fiel
 				return ec.fieldContext_Account_id(ctx, field)
 			case "displayName":
 				return ec.fieldContext_Account_displayName(ctx, field)
+			case "type":
+				return ec.fieldContext_Account_type(ctx, field)
 			case "referenceAccount":
 				return ec.fieldContext_Account_referenceAccount(ctx, field)
 			}
@@ -3437,6 +3595,8 @@ func (ec *executionContext) fieldContext_Query_accounts(_ context.Context, field
 				return ec.fieldContext_Account_id(ctx, field)
 			case "displayName":
 				return ec.fieldContext_Account_displayName(ctx, field)
+			case "type":
+				return ec.fieldContext_Account_type(ctx, field)
 			case "referenceAccount":
 				return ec.fieldContext_Account_referenceAccount(ctx, field)
 			}
@@ -5530,6 +5690,47 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(_ context.Context
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputAccountInput(ctx context.Context, obj any) (models.AccountInput, error) {
+	var it models.AccountInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "displayName", "type"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "displayName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayName"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayName = data
+		case "type":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+			data, err := ec.unmarshalNAccountType2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋportfolioᚋaccountsᚐAccountType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Type = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputListedSecurityInput(ctx context.Context, obj any) (models.ListedSecurityInput, error) {
 	var it models.ListedSecurityInput
 	asMap := map[string]any{}
@@ -5665,6 +5866,11 @@ func (ec *executionContext) _Account(ctx context.Context, sel ast.SelectionSet, 
 			}
 		case "displayName":
 			out.Values[i] = ec._Account_displayName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "type":
+			out.Values[i] = ec._Account_type(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -5963,6 +6169,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "createPortfolio":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createPortfolio(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createAccount":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createAccount(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -7018,6 +7231,10 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) marshalNAccount2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐAccount(ctx context.Context, sel ast.SelectionSet, v persistence.Account) graphql.Marshaler {
+	return ec._Account(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNAccount2ᚕᚖgithubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐAccountᚄ(ctx context.Context, sel ast.SelectionSet, v []*persistence.Account) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -7071,6 +7288,40 @@ func (ec *executionContext) marshalNAccount2ᚖgithubᚗcomᚋoxistoᚋmoneyᚑg
 	}
 	return ec._Account(ctx, sel, v)
 }
+
+func (ec *executionContext) unmarshalNAccountInput2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋmodelsᚐAccountInput(ctx context.Context, v any) (models.AccountInput, error) {
+	res, err := ec.unmarshalInputAccountInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNAccountType2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋportfolioᚋaccountsᚐAccountType(ctx context.Context, v any) (accounts.AccountType, error) {
+	tmp, err := graphql.UnmarshalString(v)
+	res := unmarshalNAccountType2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋportfolioᚋaccountsᚐAccountType[tmp]
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAccountType2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋportfolioᚋaccountsᚐAccountType(ctx context.Context, sel ast.SelectionSet, v accounts.AccountType) graphql.Marshaler {
+	res := graphql.MarshalString(marshalNAccountType2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋportfolioᚋaccountsᚐAccountType[v])
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+var (
+	unmarshalNAccountType2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋportfolioᚋaccountsᚐAccountType = map[string]accounts.AccountType{
+		"BROKERAGE": accounts.AccountTypeBrokerage,
+		"BANK":      accounts.AccountTypeBank,
+		"LOAN":      accounts.AccountTypeLoan,
+	}
+	marshalNAccountType2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋportfolioᚋaccountsᚐAccountType = map[accounts.AccountType]string{
+		accounts.AccountTypeBrokerage: "BROKERAGE",
+		accounts.AccountTypeBank:      "BANK",
+		accounts.AccountTypeLoan:      "LOAN",
+	}
+)
 
 func (ec *executionContext) marshalNBankAccount2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋpersistenceᚐBankAccount(ctx context.Context, sel ast.SelectionSet, v persistence.BankAccount) graphql.Marshaler {
 	return ec._BankAccount(ctx, sel, &v)

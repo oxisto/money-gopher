@@ -110,6 +110,15 @@ func (r *mutationResolver) CreatePortfolio(ctx context.Context, input models.Por
 	panic(fmt.Errorf("not implemented: CreatePortfolio - createPortfolio"))
 }
 
+// CreateAccount is the resolver for the createAccount field.
+func (r *mutationResolver) CreateAccount(ctx context.Context, input models.AccountInput) (*persistence.Account, error) {
+	return r.DB.CreateAccount(ctx, persistence.CreateAccountParams{
+		ID:          input.ID,
+		DisplayName: input.DisplayName,
+		Type:        input.Type,
+	})
+}
+
 // TriggerQuoteUpdate is the resolver for the triggerQuoteUpdate field.
 func (r *mutationResolver) TriggerQuoteUpdate(ctx context.Context, securityIDs []string) (updated []*persistence.ListedSecurity, err error) {
 	updated, err = r.QuoteUpdater.UpdateQuotes(ctx, securityIDs)
@@ -178,12 +187,12 @@ func (r *queryResolver) Portfolios(ctx context.Context) ([]*persistence.Portfoli
 
 // Account is the resolver for the account field.
 func (r *queryResolver) Account(ctx context.Context, id string) (*persistence.Account, error) {
-	panic(fmt.Errorf("not implemented: Account - account"))
+	return r.DB.GetAccount(ctx, id)
 }
 
 // Accounts is the resolver for the accounts field.
 func (r *queryResolver) Accounts(ctx context.Context) ([]*persistence.Account, error) {
-	panic(fmt.Errorf("not implemented: Accounts - accounts"))
+	return r.DB.ListAccounts(ctx)
 }
 
 // QuoteProvider is the resolver for the quoteProvider field.
