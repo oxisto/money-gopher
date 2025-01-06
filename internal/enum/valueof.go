@@ -9,7 +9,6 @@ import (
 // Enum is an interface for enum types that support [flag.Value].
 type Enum interface {
 	flag.Value
-	~int
 }
 
 // ValueOf returns the index of the value v in the name/index slice.
@@ -24,7 +23,7 @@ func ValueOf(v string, name string, index []uint8) int {
 }
 
 // Set sets the target enum to the value represented by v (using [ValueOf]).
-func Set[T Enum](enum *T, v string, name string, index []uint8) error {
+func Set[T ~int](enum *T, v string, name string, index []uint8) error {
 	i := ValueOf(v, name, index)
 	if i == -1 {
 		return fmt.Errorf("unknown value: %s", v)
@@ -35,7 +34,7 @@ func Set[T Enum](enum *T, v string, name string, index []uint8) error {
 }
 
 // MarshalJSON marshals the enum to JSON using the string representation.
-func MarshalJSON[T Enum](enum T) ([]byte, error) {
+func MarshalJSON[T fmt.Stringer](enum T) ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum.String())), nil
 }
 

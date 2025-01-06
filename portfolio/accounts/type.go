@@ -24,8 +24,8 @@ func (t *AccountType) Get() any {
 }
 
 // Set implements [flag.Value].
-func (t AccountType) Set(v string) error {
-	return enum.Set(&t, v, _AccountType_name, _AccountType_index[:])
+func (t *AccountType) Set(v string) error {
+	return enum.Set(t, v, _AccountType_name, _AccountType_index[:])
 }
 
 // MarshalJSON marshals the account type to JSON using the string
@@ -36,6 +36,6 @@ func (t AccountType) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshals the account type from JSON. It expects a string
 // representation.
-func (t AccountType) UnmarshalJSON(data []byte) error {
+func (t *AccountType) UnmarshalJSON(data []byte) error {
 	return enum.UnmarshalJSON(t, data)
 }
