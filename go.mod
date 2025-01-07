@@ -5,6 +5,7 @@ go 1.23.4
 require (
 	github.com/99designs/gqlgen v0.17.61
 	github.com/fatih/color v1.18.0
+	github.com/google/uuid v1.6.0
 	github.com/lmittmann/tint v1.0.6
 	github.com/mattn/go-colorable v0.1.13
 	github.com/mattn/go-isatty v0.0.20
@@ -24,7 +25,6 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/sosodev/duration v1.3.1 // indirect

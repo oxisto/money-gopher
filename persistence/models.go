@@ -83,3 +83,27 @@ type Security struct {
 	// QuoteProvider is the name of the provider that provides quotes for this security.
 	QuoteProvider sql.NullString
 }
+
+// Transactions represents a transaction in an account.
+type Transaction struct {
+	// ID is the primary identifier for a transaction.
+	ID string
+	// SourceAccountID is the ID of the account that the transaction originated from.
+	SourceAccountID sql.NullString
+	// DestinationAccountID is the ID of the account that the transaction is destined for.
+	DestinationAccountID sql.NullString
+	// Time is the time that the transaction occurred.
+	Time time.Time
+	// Type is the type of the transaction. Depending on the type, different fields (source, destination) will be used.
+	Type events.PortfolioEventType
+	// SecurityID is the ID of the security that the transaction is related to. Can be empty if the transaction is not related to a security.
+	SecurityID sql.NullString
+	// Amount is the amount of the transaction.
+	Amount float64
+	// Price is the price of the transaction.
+	Price *currency.Currency
+	// Fees is the fees of the transaction.
+	Fees *currency.Currency
+	// Taxes is the taxes of the transaction.
+	Taxes *currency.Currency
+}

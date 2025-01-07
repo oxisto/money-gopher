@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	mcli "github.com/oxisto/money-gopher/cli"
 	"github.com/oxisto/money-gopher/models"
@@ -60,6 +61,20 @@ var AccountCmd = &cli.Command{
 			Flags: []cli.Flag{
 				&cli.StringFlag{Name: "id", Usage: "The unique ID for the account", Required: true},
 				&cli.BoolFlag{Name: "confirm", Usage: "Confirm account deletion", Required: true},
+			},
+		},
+		{
+			Name:  "transactions",
+			Usage: "Subcommands supporting transactions within one portfolio",
+			Commands: []*cli.Command{
+				{
+					Name:   "list",
+					Usage:  "Lists all transactions for an account",
+					Action: ListTransactions,
+					Flags: []cli.Flag{
+						&cli.StringFlag{Name: "account-id", Usage: "The ID of the account the transaction is coming from or is destined to", Required: true},
+					},
+				},
 			},
 		},
 	},
@@ -140,6 +155,28 @@ func DeleteAccount(ctx context.Context, cmd *cli.Command) (err error) {
 	}
 
 	fmt.Fprintf(cmd.Writer, "Account %q deleted.\n", query.DeleteAccount.ID)
+
+	return nil
+}
+
+// ListTransactions lists all transactions for an account.
+func ListTransactions(ctx context.Context, cmd *cli.Command) (err error) {
+	s := mcli.FromContext(ctx)
+
+	var query struct {
+		Transactions []struct {
+			ID   string    `json:"id"`
+			Time time.Time `json:"time"`
+			Type string    `json:"type"`
+		} `json:"transactions"`
+	}
+
+	err = s.GraphQL.Query(context.Background(), &query, nil)
+	if err != nil {
+		return err
+	}
+
+	s.WriteJSON(cmd.Writer, query)
 
 	return nil
 }

@@ -127,3 +127,88 @@ func Test_queryResolver_Accounts(t *testing.T) {
 		})
 	}
 }
+
+func Test_queryResolver_Transactions(t *testing.T) {
+	type fields struct {
+		Resolver *Resolver
+	}
+	type args struct {
+		ctx       context.Context
+		accountID string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []*persistence.Transaction
+		wantErr bool
+	}{
+		{
+			name: "list brokerage transactions",
+			fields: fields{
+				Resolver: &Resolver{
+					DB: persistencetest.NewTestDB(t, func(db *persistence.DB) {
+						_, err := db.Queries.CreateAccount(context.Background(), testdata.TestCreateBankAccountParams)
+						assert.NoError(t, err)
+
+						_, err = db.Queries.CreateAccount(context.Background(), testdata.TestCreateBrokerageAccountParams)
+						assert.NoError(t, err)
+
+						_, err = db.Queries.CreateTransaction(context.Background(), testdata.TestCreateBuyTransactionParams)
+						assert.NoError(t, err)
+					}),
+				},
+			},
+			args: args{
+				ctx:       context.TODO(),
+				accountID: testdata.TestBrokerageAccount.ID,
+			},
+			want: []*persistence.Transaction{
+				testdata.TestBuyTransaction,
+			},
+		},
+		{
+			name: "list bank transactions",
+			fields: fields{
+				Resolver: &Resolver{
+					DB: persistencetest.NewTestDB(t, func(db *persistence.DB) {
+						_, err := db.Queries.CreateAccount(context.Background(), testdata.TestCreateBankAccountParams)
+						assert.NoError(t, err)
+
+						_, err = db.Queries.CreateAccount(context.Background(), testdata.TestCreateBrokerageAccountParams)
+						assert.NoError(t, err)
+
+						_, err = db.Queries.CreateTransaction(context.Background(), testdata.TestCreateBuyTransactionParams)
+						assert.NoError(t, err)
+
+						_, err = db.Queries.CreateTransaction(context.Background(), testdata.TestCreateDepositTransactionParams)
+						assert.NoError(t, err)
+					}),
+				},
+			},
+			args: args{
+				ctx:       context.TODO(),
+				accountID: testdata.TestBankAccount.ID,
+			},
+			want: []*persistence.Transaction{
+				testdata.TestBuyTransaction,
+				testdata.TestDepositTransaction,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &queryResolver{
+				Resolver: tt.fields.Resolver,
+			}
+			got, err := r.Transactions(tt.args.ctx, tt.args.accountID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("queryResolver.Transactions() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			assert.Equals(t, tt.want, got)
+		})
+	}
+}

@@ -40,6 +40,23 @@ CREATE TABLE
     );
 
 CREATE TABLE
+    IF NOT EXISTS transactions (
+        -- Transactions represents a transaction in an account.
+        id TEXT PRIMARY KEY, -- ID is the primary identifier for a transaction.
+        source_account_id TEXT, -- SourceAccountID is the ID of the account that the transaction originated from.
+        destination_account_id TEXT, -- DestinationAccountID is the ID of the account that the transaction is destined for.
+        time DATETIME NOT NULL, -- Time is the time that the transaction occurred.
+        type INTEGER NOT NULL, -- Type is the type of the transaction. Depending on the type, different fields (source, destination) will be used.
+        security_id TEXT, -- SecurityID is the ID of the security that the transaction is related to. Can be empty if the transaction is not related to a security.
+        amount REAL NOT NULL, -- Amount is the amount of the transaction.
+        price JSONB, -- Price is the price of the transaction.
+        fees JSONB, -- Fees is the fees of the transaction.
+        taxes JSONB, -- Taxes is the taxes of the transaction.
+        FOREIGN KEY (source_account_id) REFERENCES accounts (id) ON DELETE RESTRICT,
+        FOREIGN KEY (destination_account_id) REFERENCES accounts (id) ON DELETE RESTRICT
+    );
+
+CREATE TABLE
     IF NOT EXISTS portfolio_accounts (
         -- PortfolioAccounts represents the relationship between portfolios and accounts.
         portfolio_id TEXT NOT NULL,
@@ -59,3 +76,5 @@ DROP TABLE portfolio_accounts;
 DROP TABLE bank_accounts;
 
 DROP TABLE accounts;
+
+DROP TABLE transactions;

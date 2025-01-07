@@ -68,3 +68,29 @@ INSERT INTO
     portfolios (id, display_name, bank_account_id)
 VALUES
     (?, ?, ?) RETURNING *;
+
+-- name: CreateTransaction :one
+INSERT INTO
+    transactions (
+        id,
+        source_account_id,
+        destination_account_id,
+        time,
+        type,
+        security_id,
+        amount,
+        price,
+        fees,
+        taxes
+    )
+VALUES
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *;
+
+-- name: ListTransactionsByAccountID :many
+SELECT
+    *
+FROM
+    transactions
+WHERE
+    source_account_id = sqlc.arg ('account_id')
+    OR destination_account_id = sqlc.arg ('account_id');

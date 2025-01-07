@@ -27,6 +27,7 @@
 			"ISIN",
 			"jotaen",
 			"kongcompletion",
+			"linecomment",
 			"lmittmann",
 			"mapstructure",
 			"mattn",
@@ -60,6 +61,7 @@
 			"tailwindcss",
 			"timestamppb",
 			"tparse",
+			"unmarshals",
 			"urfave",
 			"vektah"
 		],

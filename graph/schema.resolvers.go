@@ -6,6 +6,7 @@ package graph
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"slices"
 	"time"
@@ -200,6 +201,11 @@ func (r *queryResolver) Accounts(ctx context.Context) ([]*persistence.Account, e
 	return r.DB.ListAccounts(ctx)
 }
 
+// Transactions is the resolver for the transactions field.
+func (r *queryResolver) Transactions(ctx context.Context, accountID string) ([]*persistence.Transaction, error) {
+	return r.DB.ListTransactionsByAccountID(ctx, sql.NullString{String: accountID, Valid: true})
+}
+
 // QuoteProvider is the resolver for the quoteProvider field.
 func (r *securityResolver) QuoteProvider(ctx context.Context, obj *persistence.Security) (*string, error) {
 	if obj.QuoteProvider.Valid {
@@ -212,6 +218,26 @@ func (r *securityResolver) QuoteProvider(ctx context.Context, obj *persistence.S
 // ListedAs is the resolver for the listedAs field.
 func (r *securityResolver) ListedAs(ctx context.Context, obj *persistence.Security) ([]*persistence.ListedSecurity, error) {
 	return obj.ListedAs(ctx, r.DB)
+}
+
+// Time is the resolver for the time field.
+func (r *transactionResolver) Time(ctx context.Context, obj *persistence.Transaction) (string, error) {
+	panic(fmt.Errorf("not implemented: Time - time"))
+}
+
+// SourceAccount is the resolver for the sourceAccount field.
+func (r *transactionResolver) SourceAccount(ctx context.Context, obj *persistence.Transaction) (*persistence.Account, error) {
+	panic(fmt.Errorf("not implemented: SourceAccount - sourceAccount"))
+}
+
+// DestinationAccount is the resolver for the destinationAccount field.
+func (r *transactionResolver) DestinationAccount(ctx context.Context, obj *persistence.Transaction) (*persistence.Account, error) {
+	panic(fmt.Errorf("not implemented: DestinationAccount - destinationAccount"))
+}
+
+// Security is the resolver for the security field.
+func (r *transactionResolver) Security(ctx context.Context, obj *persistence.Transaction) (*persistence.Security, error) {
+	panic(fmt.Errorf("not implemented: Security - security"))
 }
 
 // Account returns AccountResolver implementation.
@@ -235,6 +261,9 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 // Security returns SecurityResolver implementation.
 func (r *Resolver) Security() SecurityResolver { return &securityResolver{r} }
 
+// Transaction returns TransactionResolver implementation.
+func (r *Resolver) Transaction() TransactionResolver { return &transactionResolver{r} }
+
 type accountResolver struct{ *Resolver }
 type listedSecurityResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
@@ -242,3 +271,4 @@ type portfolioResolver struct{ *Resolver }
 type portfolioEventResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type securityResolver struct{ *Resolver }
+type transactionResolver struct{ *Resolver }

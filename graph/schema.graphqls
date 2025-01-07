@@ -77,6 +77,16 @@ type PortfolioEvent {
   security: Security
 }
 
+type Transaction {
+  time: Date!
+  sourceAccount: Account!
+  destinationAccount: Account!
+  security: Security!
+  amount: Float!
+  price: Currency!
+  fees: Currency!
+}
+
 type PortfolioSnapshot {
   time: Date!
   positions: [PortfolioPosition!]!
@@ -193,4 +203,6 @@ type Query {
 
   account(id: String!): Account
   accounts: [Account!]!
+
+  transactions(accountID: String!): [Transaction!]!
 }

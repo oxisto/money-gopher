@@ -157,3 +157,24 @@ func TestDeleteAccount(t *testing.T) {
 		})
 	}
 }
+
+func TestListTransactions(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		cmd *cli.Command
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := ListTransactions(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
+				t.Errorf("ListTransactions() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

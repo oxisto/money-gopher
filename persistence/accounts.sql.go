@@ -8,8 +8,11 @@ package persistence
 import (
 	"context"
 	"database/sql"
+	"time"
 
+	currency "github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/portfolio/accounts"
+	"github.com/oxisto/money-gopher/portfolio/events"
 )
 
 const createAccount = `-- name: CreateAccount :one
@@ -79,6 +82,66 @@ func (q *Queries) CreatePortfolio(ctx context.Context, arg CreatePortfolioParams
 	row := q.db.QueryRowContext(ctx, createPortfolio, arg.ID, arg.DisplayName, arg.BankAccountID)
 	var i Portfolio
 	err := row.Scan(&i.ID, &i.DisplayName, &i.BankAccountID)
+	return &i, err
+}
+
+const createTransaction = `-- name: CreateTransaction :one
+INSERT INTO
+    transactions (
+        id,
+        source_account_id,
+        destination_account_id,
+        time,
+        type,
+        security_id,
+        amount,
+        price,
+        fees,
+        taxes
+    )
+VALUES
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, source_account_id, destination_account_id, time, type, security_id, amount, price, fees, taxes
+`
+
+type CreateTransactionParams struct {
+	ID                   string
+	SourceAccountID      sql.NullString
+	DestinationAccountID sql.NullString
+	Time                 time.Time
+	Type                 events.PortfolioEventType
+	SecurityID           sql.NullString
+	Amount               float64
+	Price                *currency.Currency
+	Fees                 *currency.Currency
+	Taxes                *currency.Currency
+}
+
+func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionParams) (*Transaction, error) {
+	row := q.db.QueryRowContext(ctx, createTransaction,
+		arg.ID,
+		arg.SourceAccountID,
+		arg.DestinationAccountID,
+		arg.Time,
+		arg.Type,
+		arg.SecurityID,
+		arg.Amount,
+		arg.Price,
+		arg.Fees,
+		arg.Taxes,
+	)
+	var i Transaction
+	err := row.Scan(
+		&i.ID,
+		&i.SourceAccountID,
+		&i.DestinationAccountID,
+		&i.Time,
+		&i.Type,
+		&i.SecurityID,
+		&i.Amount,
+		&i.Price,
+		&i.Fees,
+		&i.Taxes,
+	)
 	return &i, err
 }
 
@@ -251,6 +314,50 @@ func (q *Queries) ListPortfolios(ctx context.Context) ([]*Portfolio, error) {
 	for rows.Next() {
 		var i Portfolio
 		if err := rows.Scan(&i.ID, &i.DisplayName, &i.BankAccountID); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTransactionsByAccountID = `-- name: ListTransactionsByAccountID :many
+SELECT
+    id, source_account_id, destination_account_id, time, type, security_id, amount, price, fees, taxes
+FROM
+    transactions
+WHERE
+    source_account_id = ?1
+    OR destination_account_id = ?1
+`
+
+func (q *Queries) ListTransactionsByAccountID(ctx context.Context, accountID sql.NullString) ([]*Transaction, error) {
+	rows, err := q.db.QueryContext(ctx, listTransactionsByAccountID, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.SourceAccountID,
+			&i.DestinationAccountID,
+			&i.Time,
+			&i.Type,
+			&i.SecurityID,
+			&i.Amount,
+			&i.Price,
+			&i.Fees,
+			&i.Taxes,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, &i)
