@@ -6,7 +6,6 @@ package graph
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"slices"
 	"time"
@@ -238,16 +237,7 @@ func (r *queryResolver) Accounts(ctx context.Context) ([]*persistence.Account, e
 
 // Transactions is the resolver for the transactions field.
 func (r *queryResolver) Transactions(ctx context.Context, accountID string) ([]*persistence.Transaction, error) {
-	return r.DB.ListTransactionsByAccountID(ctx, sql.NullString{String: accountID, Valid: true})
-}
-
-// QuoteProvider is the resolver for the quoteProvider field.
-func (r *securityResolver) QuoteProvider(ctx context.Context, obj *persistence.Security) (*string, error) {
-	if obj.QuoteProvider.Valid {
-		return &obj.QuoteProvider.String, nil
-	}
-
-	return nil, nil
+	return r.DB.ListTransactionsByAccountID(ctx, &accountID)
 }
 
 // ListedAs is the resolver for the listedAs field.
@@ -303,3 +293,19 @@ type portfolioResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type securityResolver struct{ *Resolver }
 type transactionResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *securityResolver) QuoteProvider(ctx context.Context, obj *persistence.Security) (*string, error) {
+	if obj.QuoteProvider.Valid {
+		return &obj.QuoteProvider.String, nil
+	}
+
+	return nil, nil
+}
+*/

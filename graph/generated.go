@@ -186,7 +186,6 @@ type QueryResolver interface {
 	Transactions(ctx context.Context, accountID string) ([]*persistence.Transaction, error)
 }
 type SecurityResolver interface {
-	QuoteProvider(ctx context.Context, obj *persistence.Security) (*string, error)
 	ListedAs(ctx context.Context, obj *persistence.Security) ([]*persistence.ListedSecurity, error)
 }
 type TransactionResolver interface {
@@ -4150,7 +4149,7 @@ func (ec *executionContext) _Security_quoteProvider(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Security().QuoteProvider(rctx, obj)
+		return obj.QuoteProvider, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4168,8 +4167,8 @@ func (ec *executionContext) fieldContext_Security_quoteProvider(_ context.Contex
 	fc = &graphql.FieldContext{
 		Object:     "Security",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -7505,38 +7504,7 @@ func (ec *executionContext) _Security(ctx context.Context, sel ast.SelectionSet,
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "quoteProvider":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Security_quoteProvider(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._Security_quoteProvider(ctx, field, obj)
 		case "listedAs":
 			field := field
 

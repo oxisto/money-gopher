@@ -7,8 +7,8 @@ package persistence
 
 import (
 	"context"
-	"database/sql"
 	"strings"
+	"time"
 
 	currency "github.com/oxisto/money-gopher/currency"
 )
@@ -23,7 +23,7 @@ VALUES
 type CreateSecurityParams struct {
 	ID            string
 	DisplayName   string
-	QuoteProvider sql.NullString
+	QuoteProvider *string
 }
 
 func (q *Queries) CreateSecurity(ctx context.Context, arg CreateSecurityParams) (*Security, error) {
@@ -201,7 +201,7 @@ WHERE
 
 type UpdateSecurityParams struct {
 	DisplayName   string
-	QuoteProvider sql.NullString
+	QuoteProvider *string
 	ID            string
 }
 
@@ -236,7 +236,7 @@ type UpsertListedSecurityParams struct {
 	Ticker               string
 	Currency             string
 	LatestQuote          *currency.Currency
-	LatestQuoteTimestamp sql.NullTime
+	LatestQuoteTimestamp *time.Time
 }
 
 func (q *Queries) UpsertListedSecurity(ctx context.Context, arg UpsertListedSecurityParams) (*ListedSecurity, error) {

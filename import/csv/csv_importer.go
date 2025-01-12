@@ -29,7 +29,6 @@
 package csv
 
 import (
-	"database/sql"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -156,13 +155,13 @@ func readLine(
 	if tx.Type == events.PortfolioEventTypeBuy ||
 		tx.Type == events.PortfolioEventTypeDeliveryInbound {
 		tx.Price = currency.Divide(currency.Minus(value, tx.Fees), tx.Amount)
-		tx.SourceAccountID = sql.NullString{String: bankAccountID, Valid: true}
-		tx.DestinationAccountID = sql.NullString{String: brokerageAccountID, Valid: true}
+		tx.SourceAccountID = &bankAccountID
+		tx.DestinationAccountID = &brokerageAccountID
 	} else if tx.Type == events.PortfolioEventTypeSell ||
 		tx.Type == events.PortfolioEventTypeDeliveryOutbound {
 		tx.Price = currency.Times(currency.Divide(currency.Minus(currency.Minus(value, tx.Fees), tx.Taxes), tx.Amount), -1)
-		tx.SourceAccountID = sql.NullString{String: brokerageAccountID, Valid: true}
-		tx.DestinationAccountID = sql.NullString{String: bankAccountID, Valid: true}
+		tx.SourceAccountID = &brokerageAccountID
+		tx.DestinationAccountID = &bankAccountID
 	}
 
 	sec = new(persistence.Security)
@@ -176,13 +175,15 @@ func readLine(
 	})
 
 	// Default to YF, but only if we have a ticker symbol, otherwise, let's try ING
+	var qp string
 	if len(ls) >= 0 && len(ls[0].Ticker) > 0 {
-		sec.QuoteProvider = sql.NullString{String: quote.QuoteProviderYF, Valid: true}
+		qp = quote.QuoteProviderYF
 	} else {
-		sec.QuoteProvider = sql.NullString{String: quote.QuoteProviderING, Valid: true}
+		qp = quote.QuoteProviderING
 	}
+	sec.QuoteProvider = &qp
 
-	tx.SecurityID = sql.NullString{String: sec.ID, Valid: true}
+	tx.SecurityID = &sec.ID
 	tx.MakeUniqueID()
 
 	return

@@ -8,6 +8,7 @@ sql:
         package: "persistence"
         out: "persistence"
         emit_result_struct_pointers: true
+        emit_pointers_for_null_types: true
         overrides:
           - column: "accounts.type"
             go_type: github.com/oxisto/money-gopher/portfolio/accounts.AccountType

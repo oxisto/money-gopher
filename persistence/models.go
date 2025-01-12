@@ -5,7 +5,6 @@
 package persistence
 
 import (
-	"database/sql"
 	"time"
 
 	currency "github.com/oxisto/money-gopher/currency"
@@ -22,7 +21,7 @@ type Account struct {
 	// Type is the type of the account.
 	Type accounts.AccountType
 	// ReferenceAccountID is the ID of the account that this account is related to. For example, if this is a brokerage account, the reference account could be a bank account.
-	ReferenceAccountID sql.NullInt64
+	ReferenceAccountID *int64
 }
 
 // ListedSecurity represents a security that is listed on a particular exchange.
@@ -36,7 +35,7 @@ type ListedSecurity struct {
 	// LatestQuote is the latest quote for the security as a [currency.Currency].
 	LatestQuote *currency.Currency
 	// LatestQuoteTimestamp is the timestamp of the latest quote.
-	LatestQuoteTimestamp sql.NullTime
+	LatestQuoteTimestamp *time.Time
 }
 
 // Portfolios represent a collection of securities and other positions.
@@ -60,7 +59,7 @@ type Security struct {
 	// DisplayName is the human-readable name of the security.
 	DisplayName string
 	// QuoteProvider is the name of the provider that provides quotes for this security.
-	QuoteProvider sql.NullString
+	QuoteProvider *string
 }
 
 // Transactions represents a transaction in an account.
@@ -68,15 +67,15 @@ type Transaction struct {
 	// ID is the primary identifier for a transaction.
 	ID string
 	// SourceAccountID is the ID of the account that the transaction originated from.
-	SourceAccountID sql.NullString
+	SourceAccountID *string
 	// DestinationAccountID is the ID of the account that the transaction is destined for.
-	DestinationAccountID sql.NullString
+	DestinationAccountID *string
 	// Time is the time that the transaction occurred.
 	Time time.Time
 	// Type is the type of the transaction. Depending on the type, different fields (source, destination) will be used.
 	Type events.PortfolioEventType
 	// SecurityID is the ID of the security that the transaction is related to. Can be empty if the transaction is not related to a security.
-	SecurityID sql.NullString
+	SecurityID *string
 	// Amount is the amount of the transaction.
 	Amount float64
 	// Price is the price of the transaction.

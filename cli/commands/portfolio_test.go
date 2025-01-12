@@ -20,12 +20,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/oxisto/assert"
 	"github.com/oxisto/money-gopher/internal"
 	"github.com/oxisto/money-gopher/internal/testdata"
 	"github.com/oxisto/money-gopher/internal/testing/clitest"
 	"github.com/oxisto/money-gopher/internal/testing/servertest"
 	"github.com/oxisto/money-gopher/persistence"
+
+	"github.com/oxisto/assert"
 	"github.com/urfave/cli/v3"
 )
 
@@ -40,7 +41,10 @@ func TestListPortfolio(t *testing.T) {
 		_, err = db.Queries.CreatePortfolio(context.Background(), testdata.TestCreatePortfolioParams)
 		assert.NoError(t, err)
 
-		db.Queries.AddAccountToPortfolio(context.Background(), testdata.TestAddAccountToPortfolioParams)
+		err = db.Queries.AddAccountToPortfolio(context.Background(), testdata.TestAddAccountToPortfolioParams)
+		assert.NoError(t, err)
+
+		_, err = db.Queries.CreateTransaction(context.Background(), testdata.TestCreateBuyTransactionParams)
 		assert.NoError(t, err)
 	}))
 	defer srv.Close()

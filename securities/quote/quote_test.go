@@ -2,10 +2,10 @@ package quote
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 
 	"github.com/oxisto/assert"
+	moneygopher "github.com/oxisto/money-gopher"
 	"github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/internal"
 	"github.com/oxisto/money-gopher/internal/testing/quotetest"
@@ -33,7 +33,7 @@ func Test_qu_updateQuote(t *testing.T) {
 				db: internal.NewTestDB(t, func(db *persistence.DB) {
 					_, err := db.CreateSecurity(context.Background(), persistence.CreateSecurityParams{
 						ID:            "My Security",
-						QuoteProvider: sql.NullString{String: quotetest.QuoteProviderStatic, Valid: true},
+						QuoteProvider: moneygopher.Ref(quotetest.QuoteProviderStatic),
 					})
 					assert.NoError(t, err)
 					_, err = db.UpsertListedSecurity(context.Background(), persistence.UpsertListedSecurityParams{

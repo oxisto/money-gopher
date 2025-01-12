@@ -21,7 +21,6 @@ package quote
 
 import (
 	"context"
-	"database/sql"
 	"log/slog"
 	"time"
 
@@ -71,14 +70,14 @@ func (qu *qu) UpdateQuotes(ctx context.Context, secIDs []string) (updated []*per
 	}
 
 	for _, sec := range secs {
-		if !sec.QuoteProvider.Valid {
+		if sec.QuoteProvider == nil {
 			slog.Warn("No quote provider configured for security", "security", sec.ID)
 			return
 		}
 
-		qp, ok = providers[sec.QuoteProvider.String]
+		qp, ok = providers[*sec.QuoteProvider]
 		if !ok {
-			slog.Error("Quote provider not found", "provider", sec.QuoteProvider.String)
+			slog.Error("Quote provider not found", "provider", *sec.QuoteProvider)
 			return
 		}
 
@@ -133,7 +132,7 @@ func (qu *qu) updateQuote(qp QuoteProvider, ls *persistence.ListedSecurity) (err
 	}
 
 	ls.LatestQuote = quote
-	ls.LatestQuoteTimestamp = sql.NullTime{Time: t, Valid: true}
+	ls.LatestQuoteTimestamp = &t
 
 	_, err = qu.db.UpsertListedSecurity(ctx, persistence.UpsertListedSecurityParams{
 		SecurityID: ls.SecurityID,

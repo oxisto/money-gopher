@@ -18,12 +18,12 @@ package csv
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/csv"
 	"io"
 	"testing"
 	"time"
 
+	moneygopher "github.com/oxisto/money-gopher"
 	"github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/internal/testdata"
 	"github.com/oxisto/money-gopher/persistence"
@@ -120,10 +120,10 @@ func Test_readLine(t *testing.T) {
 			},
 			wantTx: &persistence.Transaction{
 				ID:                   "670240c1f8373a3f",
-				SecurityID:           sql.NullString{String: "US0378331005", Valid: true},
+				SecurityID:           moneygopher.Ref("US0378331005"),
 				Type:                 events.PortfolioEventTypeBuy,
-				SourceAccountID:      sql.NullString{String: testdata.TestBankAccount.ID, Valid: true},
-				DestinationAccountID: sql.NullString{String: testdata.TestBrokerageAccount.ID, Valid: true},
+				SourceAccountID:      &testdata.TestBankAccount.ID,
+				DestinationAccountID: &testdata.TestBrokerageAccount.ID,
 				Time:                 time.Date(2020, 1, 1, 0, 0, 0, 0, time.Local),
 				Amount:               20,
 				Fees:                 currency.Value(1025),
@@ -133,7 +133,7 @@ func Test_readLine(t *testing.T) {
 			wantSec: &persistence.Security{
 				ID:            "US0378331005",
 				DisplayName:   "Apple Inc.",
-				QuoteProvider: sql.NullString{String: quote.QuoteProviderYF, Valid: true},
+				QuoteProvider: moneygopher.Ref(quote.QuoteProviderYF),
 			},
 			wantLs: []*persistence.ListedSecurity{
 				{
@@ -156,10 +156,10 @@ func Test_readLine(t *testing.T) {
 			},
 			wantTx: &persistence.Transaction{
 				ID:                   "dbddb1c7b1ce1375",
-				SecurityID:           sql.NullString{String: "US00827B1061", Valid: true},
+				SecurityID:           moneygopher.Ref("US00827B1061"),
 				Type:                 events.PortfolioEventTypeBuy,
-				SourceAccountID:      sql.NullString{String: testdata.TestBankAccount.ID, Valid: true},
-				DestinationAccountID: sql.NullString{String: testdata.TestBrokerageAccount.ID, Valid: true},
+				SourceAccountID:      &testdata.TestBankAccount.ID,
+				DestinationAccountID: &testdata.TestBrokerageAccount.ID,
 				Time:                 time.Date(2022, 1, 1, 9, 0, 0, 0, time.Local),
 				Amount:               20,
 				Price:                currency.Value(6040),
@@ -169,7 +169,7 @@ func Test_readLine(t *testing.T) {
 			wantSec: &persistence.Security{
 				ID:            "US00827B1061",
 				DisplayName:   "Affirm Holdings Inc.",
-				QuoteProvider: sql.NullString{String: quote.QuoteProviderYF, Valid: true},
+				QuoteProvider: moneygopher.Ref(quote.QuoteProviderYF),
 			},
 			wantLs: []*persistence.ListedSecurity{
 				{
@@ -192,9 +192,9 @@ func Test_readLine(t *testing.T) {
 			},
 			wantTx: &persistence.Transaction{
 				ID:                   "4201924709e1f078",
-				SecurityID:           sql.NullString{String: "DE0005557508", Valid: true},
-				SourceAccountID:      sql.NullString{String: testdata.TestBrokerageAccount.ID, Valid: true},
-				DestinationAccountID: sql.NullString{String: testdata.TestBankAccount.ID, Valid: true},
+				SecurityID:           moneygopher.Ref("DE0005557508"),
+				SourceAccountID:      &testdata.TestBrokerageAccount.ID,
+				DestinationAccountID: &testdata.TestBankAccount.ID,
 				Type:                 events.PortfolioEventTypeSell,
 				Time:                 time.Date(2022, 1, 1, 8, 0, 6, 0, time.Local),
 				Amount:               103,
@@ -205,7 +205,7 @@ func Test_readLine(t *testing.T) {
 			wantSec: &persistence.Security{
 				ID:            "DE0005557508",
 				DisplayName:   "Deutsche Telekom AG",
-				QuoteProvider: sql.NullString{String: quote.QuoteProviderYF, Valid: true},
+				QuoteProvider: moneygopher.Ref(quote.QuoteProviderYF),
 			},
 			wantLs: []*persistence.ListedSecurity{
 				{

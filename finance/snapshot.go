@@ -122,8 +122,12 @@ func BuildSnapshot(
 		snap.Positions = append(snap.Positions, pos)
 	}
 
-	// Calculate total gains
-	snap.TotalGains = float64(currency.Minus(snap.TotalMarketValue, snap.TotalPurchaseValue).Amount) / float64(snap.TotalPurchaseValue.Amount)
+	// Calculate total gains. We try to avoid division by zero.
+	if snap.TotalPurchaseValue.Amount == 0 {
+		snap.TotalGains = 0
+	} else {
+		snap.TotalGains = float64(currency.Minus(snap.TotalMarketValue, snap.TotalPurchaseValue).Amount) / float64(snap.TotalPurchaseValue.Amount)
+	}
 
 	// Calculate total portfolio value
 	snap.TotalPortfolioValue = snap.TotalMarketValue.Plus(snap.Cash)
@@ -153,8 +157,8 @@ func groupByPortfolio(events []*persistence.Transaction) (m map[string][]*persis
 
 	for _, event := range events {
 		name := event.SecurityID
-		if name.Valid {
-			m[name.String] = append(m[name.String], event)
+		if name != nil {
+			m[*name] = append(m[*name], event)
 		} else {
 			// a little bit of a hack
 			m["cash"] = append(m["cash"], event)

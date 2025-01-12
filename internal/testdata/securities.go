@@ -1,10 +1,10 @@
 package testdata
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
+	moneygopher "github.com/oxisto/money-gopher"
 	"github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/internal/testing/quotetest"
 	"github.com/oxisto/money-gopher/persistence"
@@ -16,7 +16,7 @@ import (
 var TestSecurity = &persistence.Security{
 	ID:            "DE1234567890",
 	DisplayName:   "My Security",
-	QuoteProvider: sql.NullString{String: quotetest.QuoteProviderStatic, Valid: true},
+	QuoteProvider: moneygopher.Ref(quotetest.QuoteProviderStatic),
 }
 
 // TestListedSecurity is a listed security for [TestSecurity] that has a ticker
@@ -76,12 +76,12 @@ var TestCreateBrokerageAccountParams = persistence.CreateAccountParams{
 // [TestBrokerageAccount].
 var TestBuyTransaction = &persistence.Transaction{
 	ID:                   uuid.NewString(),
-	SourceAccountID:      sql.NullString{String: TestBankAccount.ID, Valid: true},
-	DestinationAccountID: sql.NullString{String: TestBrokerageAccount.ID, Valid: true},
+	SourceAccountID:      &TestBankAccount.ID,
+	DestinationAccountID: &TestBrokerageAccount.ID,
 	Time:                 time.Now(),
 	Type:                 events.PortfolioEventTypeBuy,
 	Amount:               100,
-	SecurityID:           sql.NullString{String: TestSecurity.ID, Valid: true},
+	SecurityID:           &TestSecurity.ID,
 	Price:                currency.Value(100),
 }
 
@@ -102,7 +102,7 @@ var TestCreateBuyTransactionParams = persistence.CreateTransactionParams{
 // [TestBankAccount].
 var TestDepositTransaction = &persistence.Transaction{
 	ID:                   uuid.NewString(),
-	DestinationAccountID: sql.NullString{String: TestBankAccount.ID, Valid: true},
+	DestinationAccountID: &TestBankAccount.ID,
 	Time:                 time.Now(),
 	Type:                 events.PortfolioEventTypeBuy,
 	Amount:               1,

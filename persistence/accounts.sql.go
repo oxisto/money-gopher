@@ -7,7 +7,6 @@ package persistence
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
 	currency "github.com/oxisto/money-gopher/currency"
@@ -43,7 +42,7 @@ type CreateAccountParams struct {
 	ID                 string
 	DisplayName        string
 	Type               accounts.AccountType
-	ReferenceAccountID sql.NullInt64
+	ReferenceAccountID *int64
 }
 
 func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (*Account, error) {
@@ -102,11 +101,11 @@ VALUES
 
 type CreateTransactionParams struct {
 	ID                   string
-	SourceAccountID      sql.NullString
-	DestinationAccountID sql.NullString
+	SourceAccountID      *string
+	DestinationAccountID *string
 	Time                 time.Time
 	Type                 events.PortfolioEventType
-	SecurityID           sql.NullString
+	SecurityID           *string
 	Amount               float64
 	Price                *currency.Currency
 	Fees                 *currency.Currency
@@ -314,7 +313,7 @@ WHERE
     OR destination_account_id = ?1
 `
 
-func (q *Queries) ListTransactionsByAccountID(ctx context.Context, accountID sql.NullString) ([]*Transaction, error) {
+func (q *Queries) ListTransactionsByAccountID(ctx context.Context, accountID *string) ([]*Transaction, error) {
 	rows, err := q.db.QueryContext(ctx, listTransactionsByAccountID, accountID)
 	if err != nil {
 		return nil, err

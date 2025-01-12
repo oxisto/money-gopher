@@ -19,9 +19,12 @@ package commands
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	mcli "github.com/oxisto/money-gopher/cli"
 	"github.com/oxisto/money-gopher/models"
+	"github.com/oxisto/money-gopher/portfolio/events"
 
 	"github.com/fatih/color"
 	"github.com/urfave/cli/v3"
@@ -96,59 +99,44 @@ func ListPortfolio(ctx context.Context, cmd *cli.Command) (err error) {
 
 	var query struct {
 		Portfolios []struct {
-			ID          string `json:"id"`
-			DisplayName string `json:"displayName"`
+			ID          string                   `json:"id"`
+			DisplayName string                   `json:"displayName"`
+			Snapshot    models.PortfolioSnapshot `graphql:"snapshot(when: $when)" json:"snapshot"`
 		} `json:"portfolios"`
 	}
 
-	err = s.GraphQL.Query(context.Background(), &query, nil)
+	err = s.GraphQL.Query(context.Background(), &query, map[string]any{
+		"when": events.Date(time.Now().Format(time.RFC3339)),
+	})
 	if err != nil {
 		return err
 	}
 
-	s.WriteJSON(cmd.Writer, query)
-	/*
-	   	s := mcli.FromContext(ctx)
-	   	res, err := s.PortfolioClient.ListPortfolios(
-	   		context.Background(),
-	   		connect.NewRequest(&portfoliov1.ListPortfoliosRequest{}),
-	   	)
-	   	if err != nil {
-	   		return err
-	   	} else {
-	   		in := `This is a list of all portfolios.
-	   `
+	var in string
 
-	   		for _, portfolio := range res.Msg.Portfolios {
-	   			snapshot, _ := s.PortfolioClient.GetPortfolioSnapshot(
-	   				context.Background(),
-	   				connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
-	   					PortfolioId: portfolio.Id,
-	   				}),
-	   			)
+	for _, portfolio := range query.Portfolios {
+		snapshot := portfolio.Snapshot
 
-	   			in += fmt.Sprintf(`
-	   | %-*s |
-	   | %s | %s |
-	   | %-*s | %*s |
-	   | %-*s | %*s |
-	   `,
-	   				15+15+3, color.New(color.FgWhite, color.Bold).Sprint(portfolio.DisplayName),
-	   				strings.Repeat("-", 15),
-	   				strings.Repeat("-", 15),
-	   				15, "Market Value",
-	   				15, snapshot.Msg.TotalMarketValue.Pretty(),
-	   				15, "Performance",
-	   				15, fmt.Sprintf("%s € (%s %%)",
-	   					greenOrRed(float64(snapshot.Msg.TotalProfitOrLoss.Value/100)),
-	   					greenOrRed(snapshot.Msg.TotalGains*100),
-	   				),
-	   			)
-	   		}
+		in += fmt.Sprintf(`
+| %-*s |
+| %s | %s |
+| %-*s | %*s |
+| %-*s | %*s |
+`,
+			15+15+3, color.New(color.FgWhite, color.Bold).Sprint(portfolio.DisplayName),
+			strings.Repeat("-", 15),
+			strings.Repeat("-", 15),
+			15, "Market Value",
+			15, snapshot.TotalMarketValue.Pretty(),
+			15, "Performance",
+			15, fmt.Sprintf("%s € (%s %%)",
+				greenOrRed(float64(snapshot.TotalProfitOrLoss.Amount/100)),
+				greenOrRed(snapshot.TotalGains*100),
+			),
+		)
+	}
 
-	   		//out, _ := glamour.Render(in, "dark")
-	   		fmt.Println(in)
-	   	}*/
+	fmt.Fprintln(cmd.Writer, in)
 
 	return nil
 }
