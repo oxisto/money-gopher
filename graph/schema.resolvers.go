@@ -257,7 +257,7 @@ func (r *securityResolver) ListedAs(ctx context.Context, obj *persistence.Securi
 
 // Time is the resolver for the time field.
 func (r *transactionResolver) Time(ctx context.Context, obj *persistence.Transaction) (string, error) {
-	panic(fmt.Errorf("not implemented: Time - time"))
+	return obj.Time.Format(time.RFC3339), nil
 }
 
 // SourceAccount is the resolver for the sourceAccount field.

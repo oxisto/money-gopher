@@ -25,6 +25,7 @@ import (
 	mcli "github.com/oxisto/money-gopher/cli"
 	"github.com/oxisto/money-gopher/models"
 	"github.com/oxisto/money-gopher/portfolio/accounts"
+	"github.com/oxisto/money-gopher/portfolio/events"
 
 	"github.com/shurcooL/graphql"
 	"github.com/urfave/cli/v3"
@@ -163,13 +164,15 @@ func ListTransactions(ctx context.Context, cmd *cli.Command) (err error) {
 
 	var query struct {
 		Transactions []struct {
-			ID   string    `json:"id"`
-			Time time.Time `json:"time"`
-			Type string    `json:"type"`
-		} `json:"transactions"`
+			ID   string                    `json:"id"`
+			Time time.Time                 `json:"time"`
+			Type events.PortfolioEventType `json:"type"`
+		} `graphql:"transactions(accountID: $accountID)" json:"transactions"`
 	}
 
-	err = s.GraphQL.Query(context.Background(), &query, nil)
+	err = s.GraphQL.Query(context.Background(), &query, map[string]interface{}{
+		"accountID": graphql.String(cmd.String("account-id")),
+	})
 	if err != nil {
 		return err
 	}

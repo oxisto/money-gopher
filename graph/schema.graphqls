@@ -51,6 +51,22 @@ enum PortfolioEventType
     @goEnum(
       value: "github.com/oxisto/money-gopher/portfolio/events.PortfolioEventTypeDividend"
     )
+  DELIVERY_INBOUND
+    @goEnum(
+      value: "github.com/oxisto/money-gopher/portfolio/events.PortfolioEventTypeDeliveryInbound"
+    )
+  DELIVERY_OUTBOUND
+    @goEnum(
+      value: "github.com/oxisto/money-gopher/portfolio/events.PortfolioEventTypeDeliveryOutbound"
+    )
+  DEPOSIT_CASH
+    @goEnum(
+      value: "github.com/oxisto/money-gopher/portfolio/events.PortfolioEventTypeDepositCash"
+    )
+  WITHDRAW_CASH
+    @goEnum(
+      value: "github.com/oxisto/money-gopher/portfolio/events.PortfolioEventTypeWithdrawCash"
+    )
 }
 
 enum AccountType
@@ -78,6 +94,7 @@ type PortfolioEvent {
 }
 
 type Transaction {
+  id: String!
   time: Date!
   sourceAccount: Account!
   destinationAccount: Account!
@@ -85,6 +102,7 @@ type Transaction {
   amount: Float!
   price: Currency!
   fees: Currency!
+  type: PortfolioEventType!
 }
 
 type PortfolioSnapshot {

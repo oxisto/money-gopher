@@ -145,10 +145,12 @@ type ComplexityRoot struct {
 		Amount             func(childComplexity int) int
 		DestinationAccount func(childComplexity int) int
 		Fees               func(childComplexity int) int
+		ID                 func(childComplexity int) int
 		Price              func(childComplexity int) int
 		Security           func(childComplexity int) int
 		SourceAccount      func(childComplexity int) int
 		Time               func(childComplexity int) int
+		Type               func(childComplexity int) int
 	}
 }
 
@@ -679,6 +681,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Transaction.Fees(childComplexity), true
 
+	case "Transaction.id":
+		if e.complexity.Transaction.ID == nil {
+			break
+		}
+
+		return e.complexity.Transaction.ID(childComplexity), true
+
 	case "Transaction.price":
 		if e.complexity.Transaction.Price == nil {
 			break
@@ -706,6 +715,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Transaction.Time(childComplexity), true
+
+	case "Transaction.type":
+		if e.complexity.Transaction.Type == nil {
+			break
+		}
+
+		return e.complexity.Transaction.Type(childComplexity), true
 
 	}
 	return 0, false
@@ -3867,6 +3883,8 @@ func (ec *executionContext) fieldContext_Query_transactions(ctx context.Context,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "id":
+				return ec.fieldContext_Transaction_id(ctx, field)
 			case "time":
 				return ec.fieldContext_Transaction_time(ctx, field)
 			case "sourceAccount":
@@ -3881,6 +3899,8 @@ func (ec *executionContext) fieldContext_Query_transactions(ctx context.Context,
 				return ec.fieldContext_Transaction_price(ctx, field)
 			case "fees":
 				return ec.fieldContext_Transaction_fees(ctx, field)
+			case "type":
+				return ec.fieldContext_Transaction_type(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Transaction", field.Name)
 		},
@@ -4205,6 +4225,50 @@ func (ec *executionContext) fieldContext_Security_listedAs(_ context.Context, fi
 				return ec.fieldContext_ListedSecurity_latestQuoteTimestamp(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ListedSecurity", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Transaction_id(ctx context.Context, field graphql.CollectedField, obj *persistence.Transaction) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Transaction_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Transaction_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Transaction",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4555,6 +4619,50 @@ func (ec *executionContext) fieldContext_Transaction_fees(_ context.Context, fie
 				return ec.fieldContext_Currency_symbol(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Currency", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Transaction_type(ctx context.Context, field graphql.CollectedField, obj *persistence.Transaction) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Transaction_type(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Type, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(events.PortfolioEventType)
+	fc.Result = res
+	return ec.marshalNPortfolioEventType2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋportfolioᚋeventsᚐPortfolioEventType(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Transaction_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Transaction",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type PortfolioEventType does not have child fields")
 		},
 	}
 	return fc, nil
@@ -7496,6 +7604,11 @@ func (ec *executionContext) _Transaction(ctx context.Context, sel ast.SelectionS
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Transaction")
+		case "id":
+			out.Values[i] = ec._Transaction_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "time":
 			field := field
 
@@ -7652,6 +7765,11 @@ func (ec *executionContext) _Transaction(ctx context.Context, sel ast.SelectionS
 			}
 		case "fees":
 			out.Values[i] = ec._Transaction_fees(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "type":
+			out.Values[i] = ec._Transaction_type(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -8364,14 +8482,22 @@ func (ec *executionContext) marshalNPortfolioEventType2githubᚗcomᚋoxistoᚋm
 
 var (
 	unmarshalNPortfolioEventType2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋportfolioᚋeventsᚐPortfolioEventType = map[string]events.PortfolioEventType{
-		"BUY":      events.PortfolioEventTypeBuy,
-		"SELL":     events.PortfolioEventTypeSell,
-		"DIVIDEND": events.PortfolioEventTypeDividend,
+		"BUY":               events.PortfolioEventTypeBuy,
+		"SELL":              events.PortfolioEventTypeSell,
+		"DIVIDEND":          events.PortfolioEventTypeDividend,
+		"DELIVERY_INBOUND":  events.PortfolioEventTypeDeliveryInbound,
+		"DELIVERY_OUTBOUND": events.PortfolioEventTypeDeliveryOutbound,
+		"DEPOSIT_CASH":      events.PortfolioEventTypeDepositCash,
+		"WITHDRAW_CASH":     events.PortfolioEventTypeWithdrawCash,
 	}
 	marshalNPortfolioEventType2githubᚗcomᚋoxistoᚋmoneyᚑgopherᚋportfolioᚋeventsᚐPortfolioEventType = map[events.PortfolioEventType]string{
-		events.PortfolioEventTypeBuy:      "BUY",
-		events.PortfolioEventTypeSell:     "SELL",
-		events.PortfolioEventTypeDividend: "DIVIDEND",
+		events.PortfolioEventTypeBuy:              "BUY",
+		events.PortfolioEventTypeSell:             "SELL",
+		events.PortfolioEventTypeDividend:         "DIVIDEND",
+		events.PortfolioEventTypeDeliveryInbound:  "DELIVERY_INBOUND",
+		events.PortfolioEventTypeDeliveryOutbound: "DELIVERY_OUTBOUND",
+		events.PortfolioEventTypeDepositCash:      "DEPOSIT_CASH",
+		events.PortfolioEventTypeWithdrawCash:     "WITHDRAW_CASH",
 	}
 )
 

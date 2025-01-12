@@ -159,6 +159,18 @@ func TestDeleteAccount(t *testing.T) {
 }
 
 func TestListTransactions(t *testing.T) {
+	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
+		_, err := db.Queries.CreateAccount(context.Background(), testdata.TestCreateBankAccountParams)
+		assert.NoError(t, err)
+
+		_, err = db.Queries.CreateAccount(context.Background(), testdata.TestCreateBrokerageAccountParams)
+		assert.NoError(t, err)
+
+		_, err = db.Queries.CreateTransaction(context.Background(), testdata.TestCreateBuyTransactionParams)
+		assert.NoError(t, err)
+	}))
+	defer srv.Close()
+
 	type args struct {
 		ctx context.Context
 		cmd *cli.Command
@@ -168,8 +180,15 @@ func TestListTransactions(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "happy path",
+			args: args{
+				ctx: clitest.NewSessionContext(t, srv),
+				cmd: clitest.MockCommand(t, AccountCmd.Command("transactions").Command("list").Flags, "--account-id", testdata.TestBrokerageAccount.ID),
+			},
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := ListTransactions(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
