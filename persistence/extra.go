@@ -18,10 +18,11 @@ func (s *Security) ListedAs(ctx context.Context, db *DB) ([]*ListedSecurity, err
 //   - portfolio ID
 //   - date
 //   - amount
-func (tx *PortfolioEvent) MakeUniqueID() {
+func (tx *Transaction) MakeUniqueID() {
 	h := fnv.New64a()
-	h.Write([]byte(tx.SecurityID))
-	h.Write([]byte(tx.PortfolioID))
+	h.Write([]byte(tx.SecurityID.String))
+	h.Write([]byte(tx.SourceAccountID.String))
+	h.Write([]byte(tx.DestinationAccountID.String))
 	h.Write([]byte(tx.Time.Format(time.DateTime)))
 	h.Write([]byte(strconv.FormatInt(int64(tx.Type), 10)))
 	h.Write([]byte(strconv.FormatInt(int64(tx.Amount), 10)))

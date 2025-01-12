@@ -48,7 +48,7 @@ type calculation struct {
 }
 
 // NewCalculation creates a new calculation struct and applies all events
-func NewCalculation(events []*persistence.PortfolioEvent) *calculation {
+func NewCalculation(events []*persistence.Transaction) *calculation {
 	var c calculation
 	c.Fees = currency.Zero()
 	c.Taxes = currency.Zero()
@@ -61,7 +61,7 @@ func NewCalculation(events []*persistence.PortfolioEvent) *calculation {
 	return &c
 }
 
-func (c *calculation) Apply(tx *persistence.PortfolioEvent) {
+func (c *calculation) Apply(tx *persistence.Transaction) {
 	switch tx.Type {
 	case events.PortfolioEventTypeDeliveryInbound:
 		fallthrough

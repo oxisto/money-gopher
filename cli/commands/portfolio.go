@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	mcli "github.com/oxisto/money-gopher/cli"
+	"github.com/oxisto/money-gopher/models"
 
 	"github.com/fatih/color"
 	"github.com/urfave/cli/v3"
@@ -39,7 +40,7 @@ var PortfolioCmd = &cli.Command{
 			Flags: []cli.Flag{
 				&cli.StringFlag{Name: "id", Usage: "The identifier of the portfolio, e.g. mybank-myportfolio", Required: true},
 				&cli.StringFlag{Name: "display-name", Usage: "The display name of the portfolio"},
-				&cli.StringFlag{Name: "bank-account-id", Usage: "The bank account ID of the portfolio"},
+				&cli.StringSliceFlag{Name: "account-ids", Usage: "The account IDs that should be linked to the portfolio"},
 			},
 		},
 		{
@@ -90,7 +91,22 @@ var PortfolioCmd = &cli.Command{
 }
 
 // ListPortfolio lists all portfolios.
-func ListPortfolio(ctx context.Context, cmd *cli.Command) error {
+func ListPortfolio(ctx context.Context, cmd *cli.Command) (err error) {
+	s := mcli.FromContext(ctx)
+
+	var query struct {
+		Portfolios []struct {
+			ID          string `json:"id"`
+			DisplayName string `json:"displayName"`
+		} `json:"portfolios"`
+	}
+
+	err = s.GraphQL.Query(context.Background(), &query, nil)
+	if err != nil {
+		return err
+	}
+
+	s.WriteJSON(cmd.Writer, query)
 	/*
 	   	s := mcli.FromContext(ctx)
 	   	res, err := s.PortfolioClient.ListPortfolios(
@@ -138,23 +154,34 @@ func ListPortfolio(ctx context.Context, cmd *cli.Command) error {
 }
 
 // CreatePortfolio creates a new portfolio.
-func CreatePortfolio(ctx context.Context, cmd *cli.Command) error {
-	/*s := mcli.FromContext(ctx)
-	res, err := s.PortfolioClient.CreatePortfolio(
-		context.Background(),
-		connect.NewRequest(&portfoliov1.CreatePortfolioRequest{
-			Portfolio: &portfoliov1.Portfolio{
-				Id:            cmd.String("id"),
-				DisplayName:   cmd.String("display-name"),
-				BankAccountId: cmd.String("bank-account-id"),
-			},
-		}),
-	)
+func CreatePortfolio(ctx context.Context, cmd *cli.Command) (err error) {
+	s := mcli.FromContext(ctx)
+
+	var query struct {
+		CreatePortfolio struct {
+			ID          string `json:"id"`
+			DisplayName string `json:"displayName"`
+			Accounts    []struct {
+				ID          string `json:"id"`
+				DisplayName string `json:"displayName"`
+				Type        string `json:"type"`
+			} `json:"accounts"`
+		} `graphql:"createPortfolio(input: $input)" json:"account"`
+	}
+
+	err = s.GraphQL.Mutate(context.Background(), &query, map[string]interface{}{
+		"input": models.PortfolioInput{
+			ID:          cmd.String("id"),
+			DisplayName: cmd.String("display-name"),
+			AccountIds:  cmd.StringSlice("account-ids"),
+		},
+	})
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(res.Msg)*/
+	s.WriteJSON(cmd.Writer, query.CreatePortfolio)
+
 	return nil
 }
 

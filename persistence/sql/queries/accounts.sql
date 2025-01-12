@@ -14,14 +14,6 @@ FROM
 ORDER BY
     id;
 
--- name: ListPortfolioEventsByPortfolioID :many
-SELECT
-    *
-FROM
-    portfolio_events
-WHERE
-    portfolio_id = ?;
-
 -- name: ListAccounts :many
 SELECT
     *
@@ -38,14 +30,6 @@ FROM
 WHERE
     id = ?;
 
--- name: GetBankAccount :one
-SELECT
-    *
-FROM
-    bank_accounts
-WHERE
-    id = ?;
-
 -- name: CreateAccount :one
 INSERT INTO
     accounts (id, display_name, type, reference_account_id)
@@ -57,17 +41,24 @@ DELETE FROM accounts
 WHERE
     id = ? RETURNING *;
 
--- name: CreateBankAccount :one
+-- name: CreatePortfolio :one
 INSERT INTO
-    bank_accounts (id, display_name)
+    portfolios (id, display_name)
 VALUES
     (?, ?) RETURNING *;
 
--- name: CreatePortfolio :one
+-- name: UpdatePortfolio :one
+UPDATE portfolios
+SET
+    display_name = ?
+WHERE
+    id = ? RETURNING *;
+
+-- name: AddAccountToPortfolio :exec
 INSERT INTO
-    portfolios (id, display_name, bank_account_id)
+    portfolio_accounts (portfolio_id, account_id)
 VALUES
-    (?, ?, ?) RETURNING *;
+    (?, ?);
 
 -- name: CreateTransaction :one
 INSERT INTO
@@ -86,6 +77,15 @@ INSERT INTO
 VALUES
     (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *;
 
+-- name: ListAccountsByPortfolioID :many
+SELECT
+    accounts.*
+FROM
+    accounts
+    JOIN portfolio_accounts ON accounts.id = portfolio_accounts.account_id
+WHERE
+    portfolio_accounts.portfolio_id = ?;
+
 -- name: ListTransactionsByAccountID :many
 SELECT
     *
@@ -94,3 +94,26 @@ FROM
 WHERE
     source_account_id = sqlc.arg ('account_id')
     OR destination_account_id = sqlc.arg ('account_id');
+
+-- name: ListTransactionsByPortfolioID :many
+SELECT
+    *
+FROM
+    transactions
+WHERE
+    source_account_id IN (
+        SELECT
+            account_id
+        FROM
+            portfolio_accounts
+        WHERE
+            portfolio_accounts.portfolio_id = sqlc.arg ('portfolio_id')
+    )
+    OR destination_account_id IN (
+        SELECT
+            account_id
+        FROM
+            portfolio_accounts
+        WHERE
+            portfolio_accounts.portfolio_id = sqlc.arg ('portfolio_id')
+    );

@@ -18,7 +18,7 @@ import (
 // securities by their IDs.
 type SnapshotDataProvider interface {
 	ListListedSecuritiesBySecurityID(ctx context.Context, securityID string) ([]*persistence.ListedSecurity, error)
-	ListPortfolioEventsByPortfolioID(ctx context.Context, portfolioID string) ([]*persistence.PortfolioEvent, error)
+	ListTransactionsByPortfolioID(ctx context.Context, portfolioID string) ([]*persistence.Transaction, error)
 	ListSecuritiesByIDs(ctx context.Context, ids []string) ([]*persistence.Security, error)
 }
 
@@ -36,15 +36,15 @@ func BuildSnapshot(
 	provider SnapshotDataProvider,
 ) (snap *models.PortfolioSnapshot, err error) {
 	var (
-		events []*persistence.PortfolioEvent
-		m      map[string][]*persistence.PortfolioEvent
+		events []*persistence.Transaction
+		m      map[string][]*persistence.Transaction
 		ids    []string
 		secs   []*persistence.Security
 		secmap map[string]*persistence.Security
 	)
 
 	// Retrieve events
-	events, err = provider.ListPortfolioEventsByPortfolioID(ctx, portfolioID)
+	events, err = provider.ListTransactionsByPortfolioID(ctx, portfolioID)
 	if err != nil {
 		return nil, err
 	}
@@ -133,8 +133,8 @@ func BuildSnapshot(
 
 // eventsBefore returns all events that occurred before a given time.
 // TODO: move to SQL query
-func eventsBefore(events []*persistence.PortfolioEvent, t time.Time) (out []*persistence.PortfolioEvent) {
-	out = make([]*persistence.PortfolioEvent, 0, len(events))
+func eventsBefore(events []*persistence.Transaction, t time.Time) (out []*persistence.Transaction) {
+	out = make([]*persistence.Transaction, 0, len(events))
 
 	for _, event := range events {
 		if event.Time.After(t) {
@@ -148,13 +148,13 @@ func eventsBefore(events []*persistence.PortfolioEvent, t time.Time) (out []*per
 }
 
 // groupByPortfolio groups the events by their security ID.
-func groupByPortfolio(events []*persistence.PortfolioEvent) (m map[string][]*persistence.PortfolioEvent) {
-	m = make(map[string][]*persistence.PortfolioEvent)
+func groupByPortfolio(events []*persistence.Transaction) (m map[string][]*persistence.Transaction) {
+	m = make(map[string][]*persistence.Transaction)
 
 	for _, event := range events {
 		name := event.SecurityID
-		if name != "" {
-			m[name] = append(m[name], event)
+		if name.Valid {
+			m[name.String] = append(m[name.String], event)
 		} else {
 			// a little bit of a hack
 			m["cash"] = append(m["cash"], event)

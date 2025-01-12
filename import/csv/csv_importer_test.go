@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/oxisto/money-gopher/currency"
+	"github.com/oxisto/money-gopher/internal/testdata"
 	"github.com/oxisto/money-gopher/persistence"
 	"github.com/oxisto/money-gopher/portfolio/events"
 	"github.com/oxisto/money-gopher/securities/quote"
@@ -34,13 +35,14 @@ import (
 
 func TestImport(t *testing.T) {
 	type args struct {
-		r     io.Reader
-		pname string
+		r                  io.Reader
+		bankAccountID      string
+		brokerageAccountID string
 	}
 	tests := []struct {
 		name     string
 		args     args
-		wantTxs  assert.Want[[]*persistence.PortfolioEvent]
+		wantTxs  assert.Want[[]*persistence.Transaction]
 		wantSecs assert.Want[[]*persistence.Security]
 		wantLss  assert.Want[[]*persistence.ListedSecurity]
 	}{
@@ -51,8 +53,10 @@ func TestImport(t *testing.T) {
 2021-06-05T00:00;Buy;2.151,85;EUR;;;;10,25;0,00;20;US0378331005;865985;APC.F;Apple Inc.;
 2021-06-05T00:00;Sell;-2.151,85;EUR;;;;10,25;0,00;20;US0378331005;865985;APC.F;Apple Inc.;
 2021-06-18T00:00;Delivery (Inbound);912,66;EUR;;;;7,16;0,00;5;US09075V1026;A2PSR2;22UA.F;BioNTech SE;`)),
+				bankAccountID:      testdata.TestBankAccount.ID,
+				brokerageAccountID: testdata.TestBrokerageAccount.ID,
 			},
-			wantTxs: func(t *testing.T, txs []*persistence.PortfolioEvent) bool {
+			wantTxs: func(t *testing.T, txs []*persistence.Transaction) bool {
 				return assert.Equals(t, 3, len(txs))
 			},
 			wantSecs: func(t *testing.T, secs []*persistence.Security) bool {
@@ -68,7 +72,7 @@ func TestImport(t *testing.T) {
 				r: bytes.NewReader([]byte(`Date;Type;Value;Transaction Currency;Gross Amount;Currency Gross Amount;Exchange Rate;Fees;Taxes;Shares;ISIN;WKN;Ticker Symbol;Security Name;Note
 this;will;be;an;error`)),
 			},
-			wantTxs: func(t *testing.T, txs []*persistence.PortfolioEvent) bool {
+			wantTxs: func(t *testing.T, txs []*persistence.Transaction) bool {
 				return assert.Equals(t, 0, len(txs))
 			},
 			wantSecs: func(t *testing.T, secs []*persistence.Security) bool {
@@ -81,7 +85,7 @@ this;will;be;an;error`)),
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotTxs, gotSecs, gotLss := Import(tt.args.r, tt.args.pname)
+			gotTxs, gotSecs, gotLss := Import(tt.args.r, tt.args.bankAccountID, tt.args.brokerageAccountID)
 			tt.wantTxs(t, gotTxs)
 			tt.wantSecs(t, gotSecs)
 			tt.wantLss(t, gotLss)
@@ -91,13 +95,14 @@ this;will;be;an;error`)),
 
 func Test_readLine(t *testing.T) {
 	type args struct {
-		cr    *csv.Reader
-		pname string
+		cr                 *csv.Reader
+		bankAccountID      string
+		brokerageAccountID string
 	}
 	tests := []struct {
 		name    string
 		args    args
-		wantTx  *persistence.PortfolioEvent
+		wantTx  *persistence.Transaction
 		wantSec *persistence.Security
 		wantLs  []*persistence.ListedSecurity
 		wantErr assert.Want[error]
@@ -110,16 +115,20 @@ func Test_readLine(t *testing.T) {
 					cr.Comma = ';'
 					return cr
 				}(),
+				bankAccountID:      testdata.TestBankAccount.ID,
+				brokerageAccountID: testdata.TestBrokerageAccount.ID,
 			},
-			wantTx: &persistence.PortfolioEvent{
-				ID:         "9e7b470b7566beca",
-				SecurityID: "US0378331005",
-				Type:       events.PortfolioEventTypeBuy,
-				Time:       time.Date(2020, 1, 1, 0, 0, 0, 0, time.Local),
-				Amount:     20,
-				Fees:       currency.Value(1025),
-				Taxes:      currency.Zero(),
-				Price:      currency.Value(10708),
+			wantTx: &persistence.Transaction{
+				ID:                   "670240c1f8373a3f",
+				SecurityID:           sql.NullString{String: "US0378331005", Valid: true},
+				Type:                 events.PortfolioEventTypeBuy,
+				SourceAccountID:      sql.NullString{String: testdata.TestBankAccount.ID, Valid: true},
+				DestinationAccountID: sql.NullString{String: testdata.TestBrokerageAccount.ID, Valid: true},
+				Time:                 time.Date(2020, 1, 1, 0, 0, 0, 0, time.Local),
+				Amount:               20,
+				Fees:                 currency.Value(1025),
+				Taxes:                currency.Zero(),
+				Price:                currency.Value(10708),
 			},
 			wantSec: &persistence.Security{
 				ID:            "US0378331005",
@@ -142,16 +151,20 @@ func Test_readLine(t *testing.T) {
 					cr.Comma = ';'
 					return cr
 				}(),
+				bankAccountID:      testdata.TestBankAccount.ID,
+				brokerageAccountID: testdata.TestBrokerageAccount.ID,
 			},
-			wantTx: &persistence.PortfolioEvent{
-				ID:         "1070dafc882785a0",
-				SecurityID: "US00827B1061",
-				Type:       events.PortfolioEventTypeBuy,
-				Time:       time.Date(2022, 1, 1, 9, 0, 0, 0, time.Local),
-				Amount:     20,
-				Price:      currency.Value(6040),
-				Fees:       currency.Zero(),
-				Taxes:      currency.Zero(),
+			wantTx: &persistence.Transaction{
+				ID:                   "dbddb1c7b1ce1375",
+				SecurityID:           sql.NullString{String: "US00827B1061", Valid: true},
+				Type:                 events.PortfolioEventTypeBuy,
+				SourceAccountID:      sql.NullString{String: testdata.TestBankAccount.ID, Valid: true},
+				DestinationAccountID: sql.NullString{String: testdata.TestBrokerageAccount.ID, Valid: true},
+				Time:                 time.Date(2022, 1, 1, 9, 0, 0, 0, time.Local),
+				Amount:               20,
+				Price:                currency.Value(6040),
+				Fees:                 currency.Zero(),
+				Taxes:                currency.Zero(),
 			},
 			wantSec: &persistence.Security{
 				ID:            "US00827B1061",
@@ -174,16 +187,20 @@ func Test_readLine(t *testing.T) {
 					cr.Comma = ';'
 					return cr
 				}(),
+				bankAccountID:      testdata.TestBankAccount.ID,
+				brokerageAccountID: testdata.TestBrokerageAccount.ID,
 			},
-			wantTx: &persistence.PortfolioEvent{
-				ID:         "8bb43fed65b35685",
-				SecurityID: "DE0005557508",
-				Type:       events.PortfolioEventTypeSell,
-				Time:       time.Date(2022, 1, 1, 8, 0, 6, 0, time.Local),
-				Amount:     103,
-				Fees:       currency.Zero(),
-				Taxes:      currency.Value(1830),
-				Price:      currency.Value(1552),
+			wantTx: &persistence.Transaction{
+				ID:                   "4201924709e1f078",
+				SecurityID:           sql.NullString{String: "DE0005557508", Valid: true},
+				SourceAccountID:      sql.NullString{String: testdata.TestBrokerageAccount.ID, Valid: true},
+				DestinationAccountID: sql.NullString{String: testdata.TestBankAccount.ID, Valid: true},
+				Type:                 events.PortfolioEventTypeSell,
+				Time:                 time.Date(2022, 1, 1, 8, 0, 6, 0, time.Local),
+				Amount:               103,
+				Fees:                 currency.Zero(),
+				Taxes:                currency.Value(1830),
+				Price:                currency.Value(1552),
 			},
 			wantSec: &persistence.Security{
 				ID:            "DE0005557508",
@@ -279,7 +296,7 @@ func Test_readLine(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotTx, gotSec, gotLs, err := readLine(tt.args.cr, tt.args.pname)
+			gotTx, gotSec, gotLs, err := readLine(tt.args.cr, tt.args.bankAccountID, tt.args.brokerageAccountID)
 			if err != nil {
 				tt.wantErr(t, err)
 				return

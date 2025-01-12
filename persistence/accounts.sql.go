@@ -15,6 +15,23 @@ import (
 	"github.com/oxisto/money-gopher/portfolio/events"
 )
 
+const addAccountToPortfolio = `-- name: AddAccountToPortfolio :exec
+INSERT INTO
+    portfolio_accounts (portfolio_id, account_id)
+VALUES
+    (?, ?)
+`
+
+type AddAccountToPortfolioParams struct {
+	PortfolioID string
+	AccountID   string
+}
+
+func (q *Queries) AddAccountToPortfolio(ctx context.Context, arg AddAccountToPortfolioParams) error {
+	_, err := q.db.ExecContext(ctx, addAccountToPortfolio, arg.PortfolioID, arg.AccountID)
+	return err
+}
+
 const createAccount = `-- name: CreateAccount :one
 INSERT INTO
     accounts (id, display_name, type, reference_account_id)
@@ -46,42 +63,22 @@ func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (*
 	return &i, err
 }
 
-const createBankAccount = `-- name: CreateBankAccount :one
+const createPortfolio = `-- name: CreatePortfolio :one
 INSERT INTO
-    bank_accounts (id, display_name)
+    portfolios (id, display_name)
 VALUES
     (?, ?) RETURNING id, display_name
 `
 
-type CreateBankAccountParams struct {
+type CreatePortfolioParams struct {
 	ID          string
 	DisplayName string
 }
 
-func (q *Queries) CreateBankAccount(ctx context.Context, arg CreateBankAccountParams) (*BankAccount, error) {
-	row := q.db.QueryRowContext(ctx, createBankAccount, arg.ID, arg.DisplayName)
-	var i BankAccount
-	err := row.Scan(&i.ID, &i.DisplayName)
-	return &i, err
-}
-
-const createPortfolio = `-- name: CreatePortfolio :one
-INSERT INTO
-    portfolios (id, display_name, bank_account_id)
-VALUES
-    (?, ?, ?) RETURNING id, display_name, bank_account_id
-`
-
-type CreatePortfolioParams struct {
-	ID            string
-	DisplayName   string
-	BankAccountID string
-}
-
 func (q *Queries) CreatePortfolio(ctx context.Context, arg CreatePortfolioParams) (*Portfolio, error) {
-	row := q.db.QueryRowContext(ctx, createPortfolio, arg.ID, arg.DisplayName, arg.BankAccountID)
+	row := q.db.QueryRowContext(ctx, createPortfolio, arg.ID, arg.DisplayName)
 	var i Portfolio
-	err := row.Scan(&i.ID, &i.DisplayName, &i.BankAccountID)
+	err := row.Scan(&i.ID, &i.DisplayName)
 	return &i, err
 }
 
@@ -184,25 +181,9 @@ func (q *Queries) GetAccount(ctx context.Context, id string) (*Account, error) {
 	return &i, err
 }
 
-const getBankAccount = `-- name: GetBankAccount :one
-SELECT
-    id, display_name
-FROM
-    bank_accounts
-WHERE
-    id = ?
-`
-
-func (q *Queries) GetBankAccount(ctx context.Context, id string) (*BankAccount, error) {
-	row := q.db.QueryRowContext(ctx, getBankAccount, id)
-	var i BankAccount
-	err := row.Scan(&i.ID, &i.DisplayName)
-	return &i, err
-}
-
 const getPortfolio = `-- name: GetPortfolio :one
 SELECT
-    id, display_name, bank_account_id
+    id, display_name
 FROM
     portfolios
 WHERE
@@ -212,7 +193,7 @@ WHERE
 func (q *Queries) GetPortfolio(ctx context.Context, id string) (*Portfolio, error) {
 	row := q.db.QueryRowContext(ctx, getPortfolio, id)
 	var i Portfolio
-	err := row.Scan(&i.ID, &i.DisplayName, &i.BankAccountID)
+	err := row.Scan(&i.ID, &i.DisplayName)
 	return &i, err
 }
 
@@ -253,34 +234,30 @@ func (q *Queries) ListAccounts(ctx context.Context) ([]*Account, error) {
 	return items, nil
 }
 
-const listPortfolioEventsByPortfolioID = `-- name: ListPortfolioEventsByPortfolioID :many
+const listAccountsByPortfolioID = `-- name: ListAccountsByPortfolioID :many
 SELECT
-    id, type, time, portfolio_id, security_id, amount, price, fees, taxes
+    accounts.id, accounts.display_name, accounts.type, accounts.reference_account_id
 FROM
-    portfolio_events
+    accounts
+    JOIN portfolio_accounts ON accounts.id = portfolio_accounts.account_id
 WHERE
-    portfolio_id = ?
+    portfolio_accounts.portfolio_id = ?
 `
 
-func (q *Queries) ListPortfolioEventsByPortfolioID(ctx context.Context, portfolioID string) ([]*PortfolioEvent, error) {
-	rows, err := q.db.QueryContext(ctx, listPortfolioEventsByPortfolioID, portfolioID)
+func (q *Queries) ListAccountsByPortfolioID(ctx context.Context, portfolioID string) ([]*Account, error) {
+	rows, err := q.db.QueryContext(ctx, listAccountsByPortfolioID, portfolioID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []*PortfolioEvent
+	var items []*Account
 	for rows.Next() {
-		var i PortfolioEvent
+		var i Account
 		if err := rows.Scan(
 			&i.ID,
+			&i.DisplayName,
 			&i.Type,
-			&i.Time,
-			&i.PortfolioID,
-			&i.SecurityID,
-			&i.Amount,
-			&i.Price,
-			&i.Fees,
-			&i.Taxes,
+			&i.ReferenceAccountID,
 		); err != nil {
 			return nil, err
 		}
@@ -297,7 +274,7 @@ func (q *Queries) ListPortfolioEventsByPortfolioID(ctx context.Context, portfoli
 
 const listPortfolios = `-- name: ListPortfolios :many
 SELECT
-    id, display_name, bank_account_id
+    id, display_name
 FROM
     portfolios
 ORDER BY
@@ -313,7 +290,7 @@ func (q *Queries) ListPortfolios(ctx context.Context) ([]*Portfolio, error) {
 	var items []*Portfolio
 	for rows.Next() {
 		var i Portfolio
-		if err := rows.Scan(&i.ID, &i.DisplayName, &i.BankAccountID); err != nil {
+		if err := rows.Scan(&i.ID, &i.DisplayName); err != nil {
 			return nil, err
 		}
 		items = append(items, &i)
@@ -369,4 +346,82 @@ func (q *Queries) ListTransactionsByAccountID(ctx context.Context, accountID sql
 		return nil, err
 	}
 	return items, nil
+}
+
+const listTransactionsByPortfolioID = `-- name: ListTransactionsByPortfolioID :many
+SELECT
+    id, source_account_id, destination_account_id, time, type, security_id, amount, price, fees, taxes
+FROM
+    transactions
+WHERE
+    source_account_id IN (
+        SELECT
+            account_id
+        FROM
+            portfolio_accounts
+        WHERE
+            portfolio_accounts.portfolio_id = ?1
+    )
+    OR destination_account_id IN (
+        SELECT
+            account_id
+        FROM
+            portfolio_accounts
+        WHERE
+            portfolio_accounts.portfolio_id = ?1
+    )
+`
+
+func (q *Queries) ListTransactionsByPortfolioID(ctx context.Context, portfolioID string) ([]*Transaction, error) {
+	rows, err := q.db.QueryContext(ctx, listTransactionsByPortfolioID, portfolioID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.SourceAccountID,
+			&i.DestinationAccountID,
+			&i.Time,
+			&i.Type,
+			&i.SecurityID,
+			&i.Amount,
+			&i.Price,
+			&i.Fees,
+			&i.Taxes,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updatePortfolio = `-- name: UpdatePortfolio :one
+UPDATE portfolios
+SET
+    display_name = ?
+WHERE
+    id = ? RETURNING id, display_name
+`
+
+type UpdatePortfolioParams struct {
+	DisplayName string
+	ID          string
+}
+
+func (q *Queries) UpdatePortfolio(ctx context.Context, arg UpdatePortfolioParams) (*Portfolio, error) {
+	row := q.db.QueryRowContext(ctx, updatePortfolio, arg.DisplayName, arg.ID)
+	var i Portfolio
+	err := row.Scan(&i.ID, &i.DisplayName)
+	return &i, err
 }

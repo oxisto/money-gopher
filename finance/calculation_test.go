@@ -28,7 +28,7 @@ import (
 
 func TestNewCalculation(t *testing.T) {
 	type args struct {
-		txs []*persistence.PortfolioEvent
+		txs []*persistence.Transaction
 	}
 	tests := []struct {
 		name string
@@ -38,7 +38,7 @@ func TestNewCalculation(t *testing.T) {
 		{
 			name: "buy and sell",
 			args: args{
-				txs: []*persistence.PortfolioEvent{
+				txs: []*persistence.Transaction{
 					{
 						Type:  events.PortfolioEventTypeDepositCash,
 						Price: currency.Value(500000),

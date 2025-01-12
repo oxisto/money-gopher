@@ -119,3 +119,23 @@ var TestCreateDepositTransactionParams = persistence.CreateTransactionParams{
 	Amount:               TestDepositTransaction.Amount,
 	Price:                TestDepositTransaction.Price,
 }
+
+// TestPortfolio is a test portfolio.
+var TestPortfolio = &persistence.Portfolio{
+	ID:          "myportfolio",
+	DisplayName: "My Portfolio",
+}
+
+// TestCreatePortfolioParams is a test portfolio creation parameter for
+// [TestPortfolio].
+var TestCreatePortfolioParams = persistence.CreatePortfolioParams{
+	ID:          TestPortfolio.ID,
+	DisplayName: TestPortfolio.DisplayName,
+}
+
+// TestAddAccountToPortfolioParams is a test account addition parameter for
+// [TestBankAccount] to [TestPortfolio].
+var TestAddAccountToPortfolioParams = persistence.AddAccountToPortfolioParams{
+	PortfolioID: TestPortfolio.ID,
+	AccountID:   TestBankAccount.ID,
+}

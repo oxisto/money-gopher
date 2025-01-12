@@ -22,6 +22,7 @@ import (
 
 	"github.com/oxisto/assert"
 	"github.com/oxisto/money-gopher/internal"
+	"github.com/oxisto/money-gopher/internal/testdata"
 	"github.com/oxisto/money-gopher/internal/testing/clitest"
 	"github.com/oxisto/money-gopher/internal/testing/servertest"
 	"github.com/oxisto/money-gopher/persistence"
@@ -29,7 +30,19 @@ import (
 )
 
 func TestListPortfolio(t *testing.T) {
-	srv := servertest.NewServer(internal.NewTestDB(t))
+	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
+		_, err := db.Queries.CreateAccount(context.Background(), testdata.TestCreateBankAccountParams)
+		assert.NoError(t, err)
+
+		_, err = db.Queries.CreateAccount(context.Background(), testdata.TestCreateBrokerageAccountParams)
+		assert.NoError(t, err)
+
+		_, err = db.Queries.CreatePortfolio(context.Background(), testdata.TestCreatePortfolioParams)
+		assert.NoError(t, err)
+
+		db.Queries.AddAccountToPortfolio(context.Background(), testdata.TestAddAccountToPortfolioParams)
+		assert.NoError(t, err)
+	}))
 	defer srv.Close()
 
 	type args struct {
@@ -45,7 +58,9 @@ func TestListPortfolio(t *testing.T) {
 			name: "happy path",
 			args: args{
 				ctx: clitest.NewSessionContext(t, srv),
-				cmd: &cli.Command{},
+				cmd: clitest.MockCommand(t,
+					PortfolioCmd.Command("list").Flags,
+				),
 			},
 		},
 	}
@@ -61,10 +76,7 @@ func TestListPortfolio(t *testing.T) {
 
 func TestCreatePortfolio(t *testing.T) {
 	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
-		_, err := db.Queries.CreateBankAccount(context.Background(), persistence.CreateBankAccountParams{
-			ID:          "mybank",
-			DisplayName: "My Bank",
-		})
+		_, err := db.Queries.CreateAccount(context.Background(), testdata.TestCreateBankAccountParams)
 		assert.NoError(t, err)
 	}))
 	defer srv.Close()
@@ -84,9 +96,9 @@ func TestCreatePortfolio(t *testing.T) {
 				ctx: clitest.NewSessionContext(t, srv),
 				cmd: clitest.MockCommand(t,
 					PortfolioCmd.Command("create").Flags,
-					"--bank-account-id", "mybank",
 					"--id", "mynewportfolio",
 					"--display-name", "My New Portfolio",
+					"--account-ids", testdata.TestCreateBankAccountParams.ID,
 				),
 			},
 		},
@@ -220,16 +232,12 @@ func TestImportTransactions(t *testing.T) {
 
 func TestPredictPortfolios(t *testing.T) {
 	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
-		_, err := db.Queries.CreateBankAccount(context.Background(), persistence.CreateBankAccountParams{
-			ID:          "mybank",
-			DisplayName: "My Bank",
-		})
+		_, err := db.Queries.CreateAccount(context.Background(), testdata.TestCreateBankAccountParams)
 		assert.NoError(t, err)
 
 		_, err = db.Queries.CreatePortfolio(context.Background(), persistence.CreatePortfolioParams{
-			ID:            "mybank/myportfolio",
-			DisplayName:   "My Portfolio",
-			BankAccountID: "mybank",
+			ID:          "mybank/myportfolio",
+			DisplayName: "My Portfolio",
 		})
 		assert.NoError(t, err)
 	}))

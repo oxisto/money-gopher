@@ -6,6 +6,7 @@ import (
 	"github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/persistence"
 	"github.com/oxisto/money-gopher/portfolio/accounts"
+	"github.com/oxisto/money-gopher/portfolio/events"
 )
 
 type AccountInput struct {
@@ -22,9 +23,16 @@ type ListedSecurityInput struct {
 type Mutation struct {
 }
 
+type PortfolioEvent struct {
+	Time     string                    `json:"time"`
+	Type     events.PortfolioEventType `json:"type"`
+	Security *persistence.Security     `json:"security,omitempty"`
+}
+
 type PortfolioInput struct {
-	ID          string `json:"id"`
-	DisplayName string `json:"displayName"`
+	ID          string   `json:"id"`
+	DisplayName string   `json:"displayName"`
+	AccountIds  []string `json:"accountIds"`
 }
 
 type PortfolioPosition struct {

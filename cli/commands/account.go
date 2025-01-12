@@ -84,8 +84,6 @@ var AccountCmd = &cli.Command{
 func CreateAccount(ctx context.Context, cmd *cli.Command) (err error) {
 	s := mcli.FromContext(ctx)
 
-	fmt.Printf("%+v", cmd.Generic("type"))
-
 	var query struct {
 		CreateAccount struct {
 			ID          string               `json:"id"`
@@ -105,7 +103,7 @@ func CreateAccount(ctx context.Context, cmd *cli.Command) (err error) {
 		return err
 	}
 
-	fmt.Fprintln(cmd.Writer, query.CreateAccount)
+	s.WriteJSON(cmd.Writer, query.CreateAccount)
 
 	return nil
 }

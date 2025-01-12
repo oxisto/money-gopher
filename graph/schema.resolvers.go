@@ -17,7 +17,7 @@ import (
 )
 
 // ReferenceAccount is the resolver for the referenceAccount field.
-func (r *accountResolver) ReferenceAccount(ctx context.Context, obj *persistence.Account) (*persistence.BankAccount, error) {
+func (r *accountResolver) ReferenceAccount(ctx context.Context, obj *persistence.Account) (*persistence.Account, error) {
 	panic(fmt.Errorf("not implemented: ReferenceAccount - referenceAccount"))
 }
 
@@ -108,7 +108,52 @@ func (r *mutationResolver) UpdateSecurity(ctx context.Context, id string, input 
 
 // CreatePortfolio is the resolver for the createPortfolio field.
 func (r *mutationResolver) CreatePortfolio(ctx context.Context, input models.PortfolioInput) (*persistence.Portfolio, error) {
-	panic(fmt.Errorf("not implemented: CreatePortfolio - createPortfolio"))
+	return withTx(r.Resolver, func(qtx *persistence.Queries) (*persistence.Portfolio, error) {
+		sec, err := qtx.CreatePortfolio(ctx, persistence.CreatePortfolioParams{
+			ID:          input.ID,
+			DisplayName: input.DisplayName,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, accountID := range input.AccountIds {
+			err = qtx.AddAccountToPortfolio(ctx, persistence.AddAccountToPortfolioParams{
+				PortfolioID: input.ID,
+				AccountID:   accountID,
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		return sec, nil
+	})
+}
+
+// UpdatePortfolio is the resolver for the updatePortfolio field.
+func (r *mutationResolver) UpdatePortfolio(ctx context.Context, id string, input models.PortfolioInput) (*persistence.Portfolio, error) {
+	return withTx(r.Resolver, func(qtx *persistence.Queries) (*persistence.Portfolio, error) {
+		sec, err := qtx.UpdatePortfolio(ctx, persistence.UpdatePortfolioParams{
+			ID:          input.ID,
+			DisplayName: input.DisplayName,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, accountID := range input.AccountIds {
+			err = qtx.AddAccountToPortfolio(ctx, persistence.AddAccountToPortfolioParams{
+				PortfolioID: input.ID,
+				AccountID:   accountID,
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		return sec, nil
+	})
 }
 
 // CreateAccount is the resolver for the createAccount field.
@@ -135,9 +180,9 @@ func (r *mutationResolver) TriggerQuoteUpdate(ctx context.Context, securityIDs [
 	return
 }
 
-// BankAccount is the resolver for the bankAccount field.
-func (r *portfolioResolver) BankAccount(ctx context.Context, obj *persistence.Portfolio) (*persistence.BankAccount, error) {
-	return r.DB.GetBankAccount(ctx, obj.BankAccountID)
+// Accounts is the resolver for the accounts field.
+func (r *portfolioResolver) Accounts(ctx context.Context, obj *persistence.Portfolio) ([]*persistence.Account, error) {
+	return r.DB.ListAccountsByPortfolioID(ctx, obj.ID)
 }
 
 // Snapshot is the resolver for the snapshot field.
@@ -157,18 +202,8 @@ func (r *portfolioResolver) Snapshot(ctx context.Context, obj *persistence.Portf
 }
 
 // Events is the resolver for the events field.
-func (r *portfolioResolver) Events(ctx context.Context, obj *persistence.Portfolio) ([]*persistence.PortfolioEvent, error) {
+func (r *portfolioResolver) Events(ctx context.Context, obj *persistence.Portfolio) ([]*models.PortfolioEvent, error) {
 	panic(fmt.Errorf("not implemented: Events - events"))
-}
-
-// Time is the resolver for the time field.
-func (r *portfolioEventResolver) Time(ctx context.Context, obj *persistence.PortfolioEvent) (string, error) {
-	panic(fmt.Errorf("not implemented: Time - time"))
-}
-
-// Security is the resolver for the security field.
-func (r *portfolioEventResolver) Security(ctx context.Context, obj *persistence.PortfolioEvent) (*persistence.Security, error) {
-	panic(fmt.Errorf("not implemented: Security - security"))
 }
 
 // Security is the resolver for the security field.
@@ -252,9 +287,6 @@ func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 // Portfolio returns PortfolioResolver implementation.
 func (r *Resolver) Portfolio() PortfolioResolver { return &portfolioResolver{r} }
 
-// PortfolioEvent returns PortfolioEventResolver implementation.
-func (r *Resolver) PortfolioEvent() PortfolioEventResolver { return &portfolioEventResolver{r} }
-
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
@@ -268,7 +300,6 @@ type accountResolver struct{ *Resolver }
 type listedSecurityResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type portfolioResolver struct{ *Resolver }
-type portfolioEventResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type securityResolver struct{ *Resolver }
 type transactionResolver struct{ *Resolver }

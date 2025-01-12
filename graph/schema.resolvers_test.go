@@ -212,3 +212,69 @@ func Test_queryResolver_Transactions(t *testing.T) {
 		})
 	}
 }
+
+func Test_mutationResolver_CreatePortfolio(t *testing.T) {
+	type fields struct {
+		Resolver *Resolver
+	}
+	type args struct {
+		ctx   context.Context
+		input models.PortfolioInput
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *persistence.Portfolio
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			fields: fields{
+				Resolver: &Resolver{
+					DB: persistencetest.NewTestDB(t, func(db *persistence.DB) {
+						_, err := db.Queries.CreateAccount(context.Background(), testdata.TestCreateBankAccountParams)
+						assert.NoError(t, err)
+
+						_, err = db.Queries.CreateAccount(context.Background(), testdata.TestCreateBrokerageAccountParams)
+						assert.NoError(t, err)
+
+						_, err = db.Queries.CreateTransaction(context.Background(), testdata.TestCreateBuyTransactionParams)
+						assert.NoError(t, err)
+					}),
+				},
+			},
+			args: args{
+				ctx: context.TODO(),
+				input: models.PortfolioInput{
+					ID:          "mybank/myportfolio",
+					DisplayName: "My Portfolio",
+					AccountIds: []string{
+						testdata.TestCreateBankAccountParams.ID,
+						testdata.TestCreateBrokerageAccountParams.ID,
+					},
+				},
+			},
+			want: &persistence.Portfolio{
+				ID:          "mybank/myportfolio",
+				DisplayName: "My Portfolio",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &mutationResolver{
+				Resolver: tt.fields.Resolver,
+			}
+			got, err := r.CreatePortfolio(tt.args.ctx, tt.args.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("mutationResolver.CreatePortfolio() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("mutationResolver.CreatePortfolio() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

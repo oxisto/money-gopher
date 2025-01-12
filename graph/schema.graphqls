@@ -30,7 +30,7 @@ type ListedSecurity {
 type Portfolio {
   id: String!
   displayName: String!
-  bankAccount: BankAccount!
+  accounts: [Account!]!
   snapshot(when: Date!): PortfolioSnapshot
   events: [PortfolioEvent!]!
 }
@@ -144,16 +144,11 @@ type PortfolioPosition {
   gains: Float!
 }
 
-type BankAccount {
-  id: String!
-  displayName: String!
-}
-
 type Account {
   id: String!
   displayName: String!
   type: AccountType!
-  referenceAccount: BankAccount
+  referenceAccount: Account
 }
 
 input SecurityInput {
@@ -165,6 +160,7 @@ input SecurityInput {
 input PortfolioInput {
   id: String!
   displayName: String!
+  accountIds: [String!]!
 }
 
 input AccountInput {
@@ -183,6 +179,7 @@ type Mutation {
   updateSecurity(id: ID!, input: SecurityInput!): Security!
 
   createPortfolio(input: PortfolioInput!): Portfolio!
+  updatePortfolio(id: ID!, input: PortfolioInput!): Portfolio!
 
   createAccount(input: AccountInput!): Account!
   deleteAccount(id: String!): Account!

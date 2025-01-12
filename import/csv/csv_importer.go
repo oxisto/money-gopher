@@ -60,8 +60,12 @@ var (
 
 // Import imports CSV records from a [io.Reader] containing portfolio
 // transactions.
-func Import(r io.Reader, pname string) (
-	txs []*persistence.PortfolioEvent,
+func Import(
+	r io.Reader,
+	bankAccountID string,
+	brokerageAccountID string,
+) (
+	txs []*persistence.Transaction,
 	secs []*persistence.Security,
 	lss []*persistence.ListedSecurity,
 ) {
@@ -73,7 +77,7 @@ func Import(r io.Reader, pname string) (
 
 	// Read until EOF
 	for {
-		tx, sec, ls, err := readLine(cr, pname)
+		tx, sec, ls, err := readLine(cr, bankAccountID, brokerageAccountID)
 		if errors.Is(err, io.EOF) {
 			break
 		} else if err != nil {
@@ -98,8 +102,12 @@ func Import(r io.Reader, pname string) (
 	return
 }
 
-func readLine(cr *csv.Reader, pname string) (
-	tx *persistence.PortfolioEvent,
+func readLine(
+	cr *csv.Reader,
+	bankAccountID string,
+	brokerageAccountID string,
+) (
+	tx *persistence.Transaction,
 	sec *persistence.Security,
 	ls []*persistence.ListedSecurity,
 	err error) {
@@ -113,7 +121,7 @@ func readLine(cr *csv.Reader, pname string) (
 		return nil, nil, nil, fmt.Errorf("%w: %w", ErrReadingCSV, err)
 	}
 
-	tx = new(persistence.PortfolioEvent)
+	tx = new(persistence.Transaction)
 	tx.Time, err = txTime(record[0])
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("%w: %w", ErrParsingTime, err)
@@ -148,9 +156,13 @@ func readLine(cr *csv.Reader, pname string) (
 	if tx.Type == events.PortfolioEventTypeBuy ||
 		tx.Type == events.PortfolioEventTypeDeliveryInbound {
 		tx.Price = currency.Divide(currency.Minus(value, tx.Fees), tx.Amount)
+		tx.SourceAccountID = sql.NullString{String: bankAccountID, Valid: true}
+		tx.DestinationAccountID = sql.NullString{String: brokerageAccountID, Valid: true}
 	} else if tx.Type == events.PortfolioEventTypeSell ||
 		tx.Type == events.PortfolioEventTypeDeliveryOutbound {
 		tx.Price = currency.Times(currency.Divide(currency.Minus(currency.Minus(value, tx.Fees), tx.Taxes), tx.Amount), -1)
+		tx.SourceAccountID = sql.NullString{String: brokerageAccountID, Valid: true}
+		tx.DestinationAccountID = sql.NullString{String: bankAccountID, Valid: true}
 	}
 
 	sec = new(persistence.Security)
@@ -170,8 +182,7 @@ func readLine(cr *csv.Reader, pname string) (
 		sec.QuoteProvider = sql.NullString{String: quote.QuoteProviderING, Valid: true}
 	}
 
-	tx.PortfolioID = pname
-	tx.SecurityID = sec.ID
+	tx.SecurityID = sql.NullString{String: sec.ID, Valid: true}
 	tx.MakeUniqueID()
 
 	return
