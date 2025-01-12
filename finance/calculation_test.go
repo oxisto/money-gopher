@@ -20,14 +20,15 @@ package finance
 import (
 	"testing"
 
-	portfoliov1 "github.com/oxisto/money-gopher/gen"
-
 	"github.com/oxisto/assert"
+	"github.com/oxisto/money-gopher/currency"
+	"github.com/oxisto/money-gopher/persistence"
+	"github.com/oxisto/money-gopher/portfolio/events"
 )
 
 func TestNewCalculation(t *testing.T) {
 	type args struct {
-		txs []*portfoliov1.PortfolioEvent
+		txs []*persistence.Transaction
 	}
 	tests := []struct {
 		name string
@@ -37,67 +38,68 @@ func TestNewCalculation(t *testing.T) {
 		{
 			name: "buy and sell",
 			args: args{
-				txs: []*portfoliov1.PortfolioEvent{
+				txs: []*persistence.Transaction{
 					{
-						Type:  portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DEPOSIT_CASH,
-						Price: portfoliov1.Value(500000),
+						Type:  events.PortfolioEventTypeDepositCash,
+						Price: currency.Value(500000),
 					},
 					{
-						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+						Type:   events.PortfolioEventTypeBuy,
 						Amount: 5,
-						Price:  portfoliov1.Value(18110),
-						Fees:   portfoliov1.Value(716),
+						Price:  currency.Value(18110),
+						Fees:   currency.Value(716),
 					},
 					{
-						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
+						Type:   events.PortfolioEventTypeSell,
 						Amount: 2,
-						Price:  portfoliov1.Value(30430),
-						Fees:   portfoliov1.Value(642),
-						Taxes:  portfoliov1.Value(1632),
+						Price:  currency.Value(30430),
+						Fees:   currency.Value(642),
+						Taxes:  currency.Value(1632),
 					},
 					{
-						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+						Type:   events.PortfolioEventTypeBuy,
 						Amount: 5,
-						Price:  portfoliov1.Value(29000),
-						Fees:   portfoliov1.Value(853),
+						Price:  currency.Value(29000),
+						Fees:   currency.Value(853),
 					},
 					{
-						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
+						Type:   events.PortfolioEventTypeSell,
 						Amount: 3,
-						Price:  portfoliov1.Value(22000),
-						Fees:   portfoliov1.Value(845),
+						Price:  currency.Value(22000),
+						Fees:   currency.Value(845),
 					},
 					{
-						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+						Type:   events.PortfolioEventTypeBuy,
 						Amount: 5,
-						Price:  portfoliov1.Value(20330),
-						Fees:   portfoliov1.Value(744),
+						Price:  currency.Value(20330),
+						Fees:   currency.Value(744),
 					},
 					{
-						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+						Type:   events.PortfolioEventTypeBuy,
 						Amount: 5,
-						Price:  portfoliov1.Value(19645),
-						Fees:   portfoliov1.Value(736),
+						Price:  currency.Value(19645),
+						Fees:   currency.Value(736),
 					},
 					{
-						Type:   portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
+						Type:   events.PortfolioEventTypeBuy,
 						Amount: 10,
-						Price:  portfoliov1.Value(14655),
-						Fees:   portfoliov1.Value(856),
+						Price:  currency.Value(14655),
+						Fees:   currency.Value(856),
 					},
 				},
 			},
 			want: func(t *testing.T, c *calculation) bool {
 				return true &&
 					assert.Equals(t, 25, c.Amount) &&
-					assert.Equals(t, 491425, int(c.NetValue().Value)) &&
-					assert.Equals(t, 494614, int(c.GrossValue().Value)) &&
-					assert.Equals(t, 19657, int(c.NetPrice().Value)) &&
-					assert.Equals(t, 19785, int(c.GrossPrice().Value)) &&
-					assert.Equals(t, 44099, int(c.Cash.Value))
+					assert.Equals(t, 491425, int(c.NetValue().Amount)) &&
+					assert.Equals(t, 494614, int(c.GrossValue().Amount)) &&
+					assert.Equals(t, 19657, int(c.NetPrice().Amount)) &&
+					assert.Equals(t, 19785, int(c.GrossPrice().Amount)) &&
+					assert.Equals(t, 44099, int(c.Cash.Amount))
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := NewCalculation(tt.args.txs)

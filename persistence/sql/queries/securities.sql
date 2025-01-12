@@ -14,11 +14,21 @@ FROM
 ORDER BY
     id;
 
+-- name: ListSecuritiesByIDs :many
+SELECT
+    *
+FROM
+    securities
+WHERE
+    id IN (sqlc.slice ('ids'))
+ORDER BY
+    id;
+
 -- name: CreateSecurity :one
 INSERT INTO
-    securities (id, display_name)
+    securities (id, display_name, quote_provider)
 VALUES
-    (?, ?) RETURNING *;
+    (?, ?, ?) RETURNING *;
 
 -- name: UpdateSecurity :one
 UPDATE securities
@@ -36,13 +46,21 @@ WHERE
 
 -- name: UpsertListedSecurity :one
 INSERT INTO
-    listed_securities (security_id, ticker, currency)
+    listed_securities (
+        security_id,
+        ticker,
+        currency,
+        latest_quote,
+        latest_quote_timestamp
+    )
 VALUES
-    (?, ?, ?) ON CONFLICT (security_id, ticker) DO
+    (?, ?, ?, ?, ?) ON CONFLICT (security_id, ticker) DO
 UPDATE
 SET
     ticker = excluded.ticker,
-    currency = excluded.currency RETURNING *;
+    currency = excluded.currency,
+    latest_quote = excluded.latest_quote,
+    latest_quote_timestamp = excluded.latest_quote_timestamp RETURNING *;
 
 -- name: ListListedSecuritiesBySecurityID :many
 SELECT

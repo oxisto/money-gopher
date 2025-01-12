@@ -21,13 +21,14 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/oxisto/money-gopher/gen/portfoliov1connect"
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
+	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/oxisto/money-gopher/graph"
 	"github.com/oxisto/money-gopher/persistence"
-	"github.com/oxisto/money-gopher/service/portfolio"
-	"github.com/oxisto/money-gopher/service/securities"
+	"github.com/oxisto/money-gopher/securities/quote"
 
-	"connectrpc.com/connect"
-	"connectrpc.com/vanguard"
 	"github.com/lmittmann/tint"
 	oauth2 "github.com/oxisto/oauth2go"
 	"github.com/oxisto/oauth2go/login"
@@ -47,10 +48,9 @@ type Options struct {
 }
 
 // StartServer starts the server.
-func StartServer(pdb *persistence.DB, q *persistence.Queries, opts Options) (err error) {
+func StartServer(pdb *persistence.DB, opts Options) (err error) {
 	var (
-		authSrv    *oauth2.AuthorizationServer
-		transcoder *vanguard.Transcoder
+		authSrv *oauth2.AuthorizationServer
 	)
 
 	authSrv = oauth2.NewServer(
@@ -68,37 +68,12 @@ func StartServer(pdb *persistence.DB, q *persistence.Queries, opts Options) (err
 	)
 	go authSrv.ListenAndServe()
 
-	interceptors := connect.WithInterceptors(
-		NewSimpleLoggingInterceptor(),
-		NewAuthInterceptor(),
-	)
+	// Create a quote updater
+	qu := quote.NewQuoteUpdater(pdb)
 
-	portfolioService := vanguard.NewService(
-		portfoliov1connect.NewPortfolioServiceHandler(portfolio.NewService(
-			portfolio.Options{
-				DB:               pdb,
-				SecuritiesClient: portfoliov1connect.NewSecuritiesServiceClient(http.DefaultClient, portfolio.DefaultSecuritiesServiceURL),
-			},
-		), interceptors))
-	securitiesService := vanguard.NewService(
-		portfoliov1connect.NewSecuritiesServiceHandler(securities.NewService(pdb), interceptors),
-	)
-
-	transcoder, err = vanguard.NewTranscoder([]*vanguard.Service{
-		portfolioService,
-		securitiesService,
-	}, vanguard.WithCodec(func(tr vanguard.TypeResolver) vanguard.Codec {
-		codec := vanguard.NewJSONCodec(tr)
-		codec.MarshalOptions.EmitDefaultValues = true
-		return codec
-	}))
-	if err != nil {
-		slog.Error("transcoder failed", tint.Err(err))
-		return err
-	}
-
+	// Configure serve mux
 	mux := http.NewServeMux()
-	mux.Handle("/", transcoder)
+	ConfigureGraphQL(mux, pdb, qu)
 
 	err = http.ListenAndServe(
 		":8080",
@@ -106,5 +81,28 @@ func StartServer(pdb *persistence.DB, q *persistence.Queries, opts Options) (err
 	)
 
 	slog.Error("listen failed", tint.Err(err))
+	return err
+}
+
+// ConfigureGraphQL configures the GraphQL server for a [http.ServeMux].
+func ConfigureGraphQL(
+	mux *http.ServeMux,
+	db *persistence.DB,
+	qu quote.QuoteUpdater,
+) (err error) {
+	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
+		DB:           db,
+		QuoteUpdater: qu,
+	}}))
+
+	srv.AddTransport(transport.Options{})
+	srv.AddTransport(transport.GET{})
+	srv.AddTransport(transport.POST{})
+
+	srv.Use(extension.Introspection{})
+
+	mux.Handle("/graphql", playground.Handler("GraphQL playground", "/graphql/query"))
+	mux.Handle("/graphql/query", srv)
+
 	return err
 }

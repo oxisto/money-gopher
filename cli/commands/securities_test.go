@@ -19,27 +19,30 @@ package commands
 
 import (
 	"context"
-	"strings"
 	"testing"
 
-	moneygopher "github.com/oxisto/money-gopher"
-	portfoliov1 "github.com/oxisto/money-gopher/gen"
-	"github.com/oxisto/money-gopher/internal"
+	"github.com/oxisto/money-gopher/currency"
+	"github.com/oxisto/money-gopher/internal/testdata"
 	"github.com/oxisto/money-gopher/internal/testing/clitest"
+	"github.com/oxisto/money-gopher/internal/testing/persistencetest"
+	"github.com/oxisto/money-gopher/internal/testing/quotetest"
 	"github.com/oxisto/money-gopher/internal/testing/servertest"
 	"github.com/oxisto/money-gopher/persistence"
+	"github.com/oxisto/money-gopher/securities/quote"
 
 	"github.com/oxisto/assert"
 	"github.com/urfave/cli/v3"
 )
 
 func TestUpdateQuote(t *testing.T) {
-	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
-		ops := persistence.Ops[*portfoliov1.Security](db)
-		ops.Replace(&portfoliov1.Security{
-			Id:            "mysecurity",
-			QuoteProvider: moneygopher.Ref("mock"),
-		})
+	srv := servertest.NewServer(persistencetest.NewTestDB(t, func(db *persistence.DB) {
+		_, err := db.CreateSecurity(context.Background(), testdata.TestCreateSecurityParams)
+		assert.NoError(t, err)
+
+		_, err = db.UpsertListedSecurity(context.Background(), testdata.TestUpsertListedSecurityParams)
+		assert.NoError(t, err)
+
+		quote.RegisterQuoteProvider(quotetest.QuoteProviderStatic, quotetest.NewStaticQuoteProvider(currency.Value(100)))
 	}))
 	defer srv.Close()
 
@@ -51,6 +54,7 @@ func TestUpdateQuote(t *testing.T) {
 		name    string
 		args    args
 		wantErr bool
+		wantRec assert.Want[*clitest.CommandRecorder]
 	}{
 		{
 			name: "happy path",
@@ -58,27 +62,48 @@ func TestUpdateQuote(t *testing.T) {
 				ctx: clitest.NewSessionContext(t, srv),
 				cmd: clitest.MockCommand(t,
 					SecuritiesCmd.Command("update-quote").Flags,
-					"--security-ids", "mysecurity",
+					"--security-ids", testdata.TestCreateSecurityParams.ID,
 				),
+			},
+			wantRec: func(t *testing.T, rec *clitest.CommandRecorder) bool {
+				return assert.Equals(t, `{
+  "updated": [
+    {
+      "latestQuote": {
+        "value": 100,
+        "symbol": "EUR"
+      }
+    }
+  ]
+}
+`, rec.String(),
+				)
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			rec := clitest.Record(tt.args.cmd)
 			if err := UpdateQuote(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
 				t.Errorf("UpdateQuote() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantRec != nil {
+				tt.wantRec(t, rec)
 			}
 		})
 	}
 }
 
 func TestUpdateAllQuotes(t *testing.T) {
-	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
-		ops := persistence.Ops[*portfoliov1.Security](db)
-		ops.Replace(&portfoliov1.Security{
-			Id:            "mysecurity",
-			QuoteProvider: moneygopher.Ref("mock"),
-		})
+	srv := servertest.NewServer(persistencetest.NewTestDB(t, func(db *persistence.DB) {
+		_, err := db.CreateSecurity(context.Background(), testdata.TestCreateSecurityParams)
+		assert.NoError(t, err)
+
+		_, err = db.UpsertListedSecurity(context.Background(), testdata.TestUpsertListedSecurityParams)
+		assert.NoError(t, err)
+
+		quote.RegisterQuoteProvider(quotetest.QuoteProviderStatic, quotetest.NewStaticQuoteProvider(currency.Value(100)))
 	}))
 	defer srv.Close()
 
@@ -109,19 +134,8 @@ func TestUpdateAllQuotes(t *testing.T) {
 }
 
 func TestListSecurities(t *testing.T) {
-	srv := servertest.NewServer(internal.NewTestDB(t, func(db *persistence.DB) {
-		q := persistence.New(db)
-		_, err := q.CreateSecurity(context.Background(), persistence.CreateSecurityParams{
-			ID:          "1234",
-			DisplayName: "One Two Three Four",
-		})
-		assert.NoError(t, err)
-
-		_, err = q.UpsertListedSecurity(context.Background(), persistence.UpsertListedSecurityParams{
-			SecurityID: "1234",
-			Ticker:     "ONE",
-			Currency:   "USD",
-		})
+	srv := servertest.NewServer(persistencetest.NewTestDB(t, func(db *persistence.DB) {
+		_, err := db.CreateSecurity(context.Background(), testdata.TestCreateSecurityParams)
 		assert.NoError(t, err)
 	}))
 	defer srv.Close()
@@ -143,17 +157,82 @@ func TestListSecurities(t *testing.T) {
 				cmd: clitest.MockCommand(t, SecuritiesCmd.Command("list").Flags),
 			},
 			wantRec: func(t *testing.T, rec *clitest.CommandRecorder) bool {
-				return assert.Equals(t, true, strings.Contains(rec.String(), "1234"))
+				return assert.Equals(t, `{
+  "securities": [
+    {
+      "id": "DE1234567890",
+      "displayName": "My Security"
+    }
+  ]
+}
+`, rec.String())
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rec := clitest.NewCommandRecorder()
-			tt.args.cmd.Writer = rec
+			rec := clitest.Record(tt.args.cmd)
 			if err := ListSecurities(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
 				t.Errorf("ListSecurities() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantRec != nil {
+				tt.wantRec(t, rec)
+			}
+		})
+	}
+}
+
+func TestShowSecurity(t *testing.T) {
+	srv := servertest.NewServer(persistencetest.NewTestDB(t, func(db *persistence.DB) {
+		_, err := db.CreateSecurity(context.Background(), testdata.TestCreateSecurityParams)
+		assert.NoError(t, err)
+
+		_, err = db.UpsertListedSecurity(context.Background(), testdata.TestUpsertListedSecurityParams)
+		assert.NoError(t, err)
+
+		quote.RegisterQuoteProvider(quotetest.QuoteProviderStatic, quotetest.NewStaticQuoteProvider(currency.Value(100)))
+	}))
+	defer srv.Close()
+
+	type args struct {
+		ctx context.Context
+		cmd *cli.Command
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+		wantRec assert.Want[*clitest.CommandRecorder]
+	}{
+		{
+			name: "happy path",
+			args: args{
+				ctx: clitest.NewSessionContext(t, srv),
+				cmd: clitest.MockCommand(t, SecuritiesCmd.Command("show").Flags, "--security-id", "DE1234567890"),
+			},
+			wantRec: func(t *testing.T, rec *clitest.CommandRecorder) bool {
+				return assert.Equals(t, `{
+  "security": {
+    "id": "DE1234567890",
+    "displayName": "My Security",
+    "listedAs": [
+      {
+        "ticker": "TICK"
+      }
+    ]
+  }
+}
+`, rec.String())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := clitest.Record(tt.args.cmd)
+			if err := ShowSecurity(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
+				t.Errorf("ShowSecurity() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
 			if tt.wantRec != nil {
@@ -164,7 +243,10 @@ func TestListSecurities(t *testing.T) {
 }
 
 func TestPredictSecurities(t *testing.T) {
-	srv := servertest.NewServer(internal.NewTestDB(t))
+	srv := servertest.NewServer(persistencetest.NewTestDB(t, func(db *persistence.DB) {
+		_, err := db.CreateSecurity(context.Background(), testdata.TestCreateSecurityParams)
+		assert.NoError(t, err)
+	}))
 	defer srv.Close()
 
 	type args struct {
@@ -183,7 +265,7 @@ func TestPredictSecurities(t *testing.T) {
 				cmd: &cli.Command{},
 			},
 			wantRec: func(t *testing.T, rec *clitest.CommandRecorder) bool {
-				return assert.Equals(t, "US0378331005:Apple Inc.\n", rec.String())
+				return assert.Equals(t, "DE1234567890:My Security\n", rec.String())
 			},
 		},
 	}

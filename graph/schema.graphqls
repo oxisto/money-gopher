@@ -1,0 +1,223 @@
+directive @goModel(
+  model: String
+  models: [String!]
+) on OBJECT | INPUT_OBJECT | SCALAR | ENUM | INTERFACE | UNION
+
+directive @goEnum(value: String) on ENUM_VALUE
+
+scalar Date
+
+type Currency {
+  amount: Int!
+  symbol: String!
+}
+
+type Security {
+  id: String!
+  displayName: String!
+  quoteProvider: String
+  listedAs: [ListedSecurity!]
+}
+
+type ListedSecurity {
+  ticker: String!
+  currency: String!
+  security: Security!
+  latestQuote: Currency
+  latestQuoteTimestamp: Date
+}
+
+type Portfolio {
+  id: String!
+  displayName: String!
+  accounts: [Account!]!
+  snapshot(when: Date!): PortfolioSnapshot
+  events: [PortfolioEvent!]!
+}
+
+enum PortfolioEventType
+  @goModel(
+    model: "github.com/oxisto/money-gopher/portfolio/events.PortfolioEventType"
+  ) {
+  BUY
+    @goEnum(
+      value: "github.com/oxisto/money-gopher/portfolio/events.PortfolioEventTypeBuy"
+    )
+  SELL
+    @goEnum(
+      value: "github.com/oxisto/money-gopher/portfolio/events.PortfolioEventTypeSell"
+    )
+  DIVIDEND
+    @goEnum(
+      value: "github.com/oxisto/money-gopher/portfolio/events.PortfolioEventTypeDividend"
+    )
+  DELIVERY_INBOUND
+    @goEnum(
+      value: "github.com/oxisto/money-gopher/portfolio/events.PortfolioEventTypeDeliveryInbound"
+    )
+  DELIVERY_OUTBOUND
+    @goEnum(
+      value: "github.com/oxisto/money-gopher/portfolio/events.PortfolioEventTypeDeliveryOutbound"
+    )
+  DEPOSIT_CASH
+    @goEnum(
+      value: "github.com/oxisto/money-gopher/portfolio/events.PortfolioEventTypeDepositCash"
+    )
+  WITHDRAW_CASH
+    @goEnum(
+      value: "github.com/oxisto/money-gopher/portfolio/events.PortfolioEventTypeWithdrawCash"
+    )
+}
+
+enum AccountType
+  @goModel(
+    model: "github.com/oxisto/money-gopher/portfolio/accounts.AccountType"
+  ) {
+  BROKERAGE
+    @goEnum(
+      value: "github.com/oxisto/money-gopher/portfolio/accounts.AccountTypeBrokerage"
+    )
+  BANK
+    @goEnum(
+      value: "github.com/oxisto/money-gopher/portfolio/accounts.AccountTypeBank"
+    )
+  LOAN
+    @goEnum(
+      value: "github.com/oxisto/money-gopher/portfolio/accounts.AccountTypeLoan"
+    )
+}
+
+type PortfolioEvent {
+  time: Date!
+  type: PortfolioEventType!
+  security: Security
+}
+
+type Transaction {
+  id: String!
+  time: Date!
+  sourceAccount: Account!
+  destinationAccount: Account!
+  security: Security!
+  amount: Float!
+  price: Currency!
+  fees: Currency!
+  type: PortfolioEventType!
+}
+
+type PortfolioSnapshot {
+  time: Date!
+  positions: [PortfolioPosition!]!
+  firstTransactionTime: Date!
+  totalPurchaseValue: Currency!
+  totalMarketValue: Currency!
+  totalProfitOrLoss: Currency!
+  totalGains: Float!
+  totalPortfolioValue: Currency
+  cash: Currency!
+}
+
+type PortfolioPosition {
+  security: Security!
+  amount: Float!
+
+  """
+  PurchaseValue was the market value of this position when it was bought (net;
+  exclusive of any fees).
+  """
+  purchaseValue: Currency!
+
+  """
+  PurchasePrice was the market price of this position when it was bought (net;
+  exclusive of any fees).
+  """
+  purchasePrice: Currency!
+
+  """
+  MarketValue is the current market value of this position, as retrieved from
+  the securities service.
+  """
+  marketValue: Currency!
+
+  """
+  MarketPrice is the current market price of this position, as retrieved from
+  the securities service.
+  """
+  marketPrice: Currency!
+
+  """
+  TotalFees is the total amount of fees accumulating in this position through
+  various transactions.
+  """
+  totalFees: Currency!
+
+  """
+  ProfitOrLoss contains the absolute amount of profit or loss in this position.
+  """
+  profitOrLoss: Currency!
+
+  """
+  Gains contains the relative amount of profit or loss in this position.
+  """
+  gains: Float!
+}
+
+type Account {
+  id: String!
+  displayName: String!
+  type: AccountType!
+  referenceAccount: Account
+}
+
+input SecurityInput {
+  id: String!
+  displayName: String!
+  listedAs: [ListedSecurityInput!]
+}
+
+input PortfolioInput {
+  id: String!
+  displayName: String!
+  accountIds: [String!]!
+}
+
+input AccountInput {
+  id: String!
+  displayName: String!
+  type: AccountType!
+}
+
+input ListedSecurityInput {
+  ticker: String!
+  currency: String!
+}
+
+type Mutation {
+  createSecurity(input: SecurityInput!): Security!
+  updateSecurity(id: ID!, input: SecurityInput!): Security!
+
+  createPortfolio(input: PortfolioInput!): Portfolio!
+  updatePortfolio(id: ID!, input: PortfolioInput!): Portfolio!
+
+  createAccount(input: AccountInput!): Account!
+  deleteAccount(id: String!): Account!
+
+  """
+  Triggers a quote update for the given security IDs. If no security IDs are
+  provided, all securities will be updated.
+  """
+  triggerQuoteUpdate(securityIDs: [String!]): [ListedSecurity]!
+}
+
+type Query {
+  security(id: String!): Security
+  securities: [Security!]!
+
+  portfolio(id: String!): Portfolio
+  portfolios: [Portfolio!]!
+
+  account(id: String!): Account
+  accounts: [Account!]!
+
+  transactions(accountID: String!): [Transaction!]!
+}

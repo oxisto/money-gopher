@@ -18,15 +18,14 @@ package main
 
 import (
 	"context"
-	"log/slog"
+	"fmt"
 	"os"
 
-	"github.com/lmittmann/tint"
 	"github.com/oxisto/money-gopher/cli/commands"
 )
 
 func main() {
 	if err := commands.CLICmd.Run(context.Background(), os.Args); err != nil {
-		slog.Error("Error while running command", tint.Err(err))
+		fmt.Println(err)
 	}
 }

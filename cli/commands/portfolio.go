@@ -19,18 +19,15 @@ package commands
 import (
 	"context"
 	"fmt"
-	"io"
-	"os"
 	"strings"
 	"time"
 
 	mcli "github.com/oxisto/money-gopher/cli"
-	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"github.com/oxisto/money-gopher/models"
+	"github.com/oxisto/money-gopher/portfolio/events"
 
-	"connectrpc.com/connect"
 	"github.com/fatih/color"
 	"github.com/urfave/cli/v3"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // PortfolioCmd is the command for portfolio related commands.
@@ -46,6 +43,7 @@ var PortfolioCmd = &cli.Command{
 			Flags: []cli.Flag{
 				&cli.StringFlag{Name: "id", Usage: "The identifier of the portfolio, e.g. mybank-myportfolio", Required: true},
 				&cli.StringFlag{Name: "display-name", Usage: "The display name of the portfolio"},
+				&cli.StringSliceFlag{Name: "account-ids", Usage: "The account IDs that should be linked to the portfolio"},
 			},
 		},
 		{
@@ -96,75 +94,88 @@ var PortfolioCmd = &cli.Command{
 }
 
 // ListPortfolio lists all portfolios.
-func ListPortfolio(ctx context.Context, cmd *cli.Command) error {
+func ListPortfolio(ctx context.Context, cmd *cli.Command) (err error) {
 	s := mcli.FromContext(ctx)
-	res, err := s.PortfolioClient.ListPortfolios(
-		context.Background(),
-		connect.NewRequest(&portfoliov1.ListPortfoliosRequest{}),
-	)
+
+	var query struct {
+		Portfolios []struct {
+			ID          string                   `json:"id"`
+			DisplayName string                   `json:"displayName"`
+			Snapshot    models.PortfolioSnapshot `graphql:"snapshot(when: $when)" json:"snapshot"`
+		} `json:"portfolios"`
+	}
+
+	err = s.GraphQL.Query(context.Background(), &query, map[string]any{
+		"when": events.Date(time.Now().Format(time.RFC3339)),
+	})
 	if err != nil {
 		return err
-	} else {
-		in := `This is a list of all portfolios.
-`
+	}
 
-		for _, portfolio := range res.Msg.Portfolios {
-			snapshot, _ := s.PortfolioClient.GetPortfolioSnapshot(
-				context.Background(),
-				connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
-					PortfolioId: portfolio.Id,
-				}),
-			)
+	var in string
 
-			in += fmt.Sprintf(`
+	for _, portfolio := range query.Portfolios {
+		snapshot := portfolio.Snapshot
+
+		in += fmt.Sprintf(`
 | %-*s |
 | %s | %s |
 | %-*s | %*s |
 | %-*s | %*s |
 `,
-				15+15+3, color.New(color.FgWhite, color.Bold).Sprint(portfolio.DisplayName),
-				strings.Repeat("-", 15),
-				strings.Repeat("-", 15),
-				15, "Market Value",
-				15, snapshot.Msg.TotalMarketValue.Pretty(),
-				15, "Performance",
-				15, fmt.Sprintf("%s € (%s %%)",
-					greenOrRed(float64(snapshot.Msg.TotalProfitOrLoss.Value/100)),
-					greenOrRed(snapshot.Msg.TotalGains*100),
-				),
-			)
-		}
-
-		//out, _ := glamour.Render(in, "dark")
-		fmt.Println(in)
+			15+15+3, color.New(color.FgWhite, color.Bold).Sprint(portfolio.DisplayName),
+			strings.Repeat("-", 15),
+			strings.Repeat("-", 15),
+			15, "Market Value",
+			15, snapshot.TotalMarketValue.Pretty(),
+			15, "Performance",
+			15, fmt.Sprintf("%s € (%s %%)",
+				greenOrRed(float64(snapshot.TotalProfitOrLoss.Amount/100)),
+				greenOrRed(snapshot.TotalGains*100),
+			),
+		)
 	}
+
+	fmt.Fprintln(cmd.Writer, in)
 
 	return nil
 }
 
 // CreatePortfolio creates a new portfolio.
-func CreatePortfolio(ctx context.Context, cmd *cli.Command) error {
+func CreatePortfolio(ctx context.Context, cmd *cli.Command) (err error) {
 	s := mcli.FromContext(ctx)
-	res, err := s.PortfolioClient.CreatePortfolio(
-		context.Background(),
-		connect.NewRequest(&portfoliov1.CreatePortfolioRequest{
-			Portfolio: &portfoliov1.Portfolio{
-				Id:          cmd.String("id"),
-				DisplayName: cmd.String("display-name"),
-			},
-		}),
-	)
+
+	var query struct {
+		CreatePortfolio struct {
+			ID          string `json:"id"`
+			DisplayName string `json:"displayName"`
+			Accounts    []struct {
+				ID          string `json:"id"`
+				DisplayName string `json:"displayName"`
+				Type        string `json:"type"`
+			} `json:"accounts"`
+		} `graphql:"createPortfolio(input: $input)" json:"account"`
+	}
+
+	err = s.GraphQL.Mutate(context.Background(), &query, map[string]interface{}{
+		"input": models.PortfolioInput{
+			ID:          cmd.String("id"),
+			DisplayName: cmd.String("display-name"),
+			AccountIds:  cmd.StringSlice("account-ids"),
+		},
+	})
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(res.Msg)
+	s.WriteJSON(cmd.Writer, query.CreatePortfolio)
+
 	return nil
 }
 
 // ShowPortfolio shows details about a portfolio.
 func ShowPortfolio(ctx context.Context, cmd *cli.Command) error {
-	s := mcli.FromContext(ctx)
+	/*s := mcli.FromContext(ctx)
 	res, err := s.PortfolioClient.GetPortfolioSnapshot(
 		context.Background(),
 		connect.NewRequest(&portfoliov1.GetPortfolioSnapshotRequest{
@@ -176,7 +187,7 @@ func ShowPortfolio(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	fmt.Println(res.Msg)
+	fmt.Println(res.Msg)*/
 	return nil
 }
 
@@ -190,35 +201,38 @@ func greenOrRed(f float64) string {
 
 // CreateTransaction creates a transaction.
 func CreateTransaction(ctx context.Context, cmd *cli.Command) error {
-	s := mcli.FromContext(ctx)
-	var req = connect.NewRequest(&portfoliov1.CreatePortfolioTransactionRequest{
-		Transaction: &portfoliov1.PortfolioEvent{
-			PortfolioId: cmd.String("portfolio-id"),
-			SecurityId:  cmd.String("security-id"),
-			Type:        eventTypeFrom(cmd.String("type")),
-			Amount:      cmd.Float("amount"),
-			Time:        timeOrNow(cmd.Timestamp("time")),
-			Price:       portfoliov1.Value(int32(cmd.Float("price") * 100)),
-			Fees:        portfoliov1.Value(int32(cmd.Float("fees") * 100)),
-			Taxes:       portfoliov1.Value(int32(cmd.Float("taxes") * 100)),
-		},
-	})
+	/*
 
-	res, err := s.PortfolioClient.CreatePortfolioTransaction(context.Background(), req)
-	if err != nil {
-		return err
-	}
+		s := mcli.FromContext(ctx)
+		var req = connect.NewRequest(&portfoliov1.CreatePortfolioTransactionRequest{
+			Transaction: &portfoliov1.PortfolioEvent{
+				PortfolioId: cmd.String("portfolio-id"),
+				SecurityId:  cmd.String("security-id"),
+				Type:        eventTypeFrom(cmd.String("type")),
+				Amount:      cmd.Float("amount"),
+				Time:        timeOrNow(cmd.Timestamp("time")),
+				Price:       portfoliov1.Value(int32(cmd.Float("price") * 100)),
+				Fees:        portfoliov1.Value(int32(cmd.Float("fees") * 100)),
+				Taxes:       portfoliov1.Value(int32(cmd.Float("taxes") * 100)),
+			},
+		})
 
-	fmt.Printf("Successfully created a %s transaction (%s) for security %s in %s.\n",
-		color.CyanString(cmd.String("type")),
-		color.GreenString(res.Msg.Id),
-		color.CyanString(res.Msg.SecurityId),
-		color.CyanString(res.Msg.PortfolioId),
-	)
+		res, err := s.PortfolioClient.CreatePortfolioTransaction(context.Background(), req)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("Successfully created a %s transaction (%s) for security %s in %s.\n",
+			color.CyanString(cmd.String("type")),
+			color.GreenString(res.Msg.Id),
+			color.CyanString(res.Msg.SecurityId),
+			color.CyanString(res.Msg.PortfolioId),
+		)*/
 
 	return nil
 }
 
+/*
 func eventTypeFrom(typ string) portfoliov1.PortfolioEventType {
 	if typ == "buy" {
 		return portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY
@@ -239,11 +253,11 @@ func timeOrNow(t time.Time) *timestamppb.Timestamp {
 	}
 
 	return timestamppb.New(t)
-}
+}*/
 
 // ImportTransactions imports transactions from a CSV file
 func ImportTransactions(ctx context.Context, cmd *cli.Command) error {
-	s := mcli.FromContext(ctx)
+	/*s := mcli.FromContext(ctx)
 	// Read from args[1]
 	f, err := os.Open(cmd.String("csv-file"))
 	if err != nil {
@@ -267,22 +281,27 @@ func ImportTransactions(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	fmt.Println(res.Msg)
+	fmt.Println(res.Msg)*/
 	return nil
 }
 
 // PredictPortfolios predicts the portfolios for shell completion.
 func PredictPortfolios(ctx context.Context, cmd *cli.Command) {
 	s := mcli.FromContext(ctx)
-	res, err := s.PortfolioClient.ListPortfolios(
-		context.Background(),
-		connect.NewRequest(&portfoliov1.ListPortfoliosRequest{}),
-	)
+
+	var query struct {
+		Portfolios []struct {
+			ID          string `json:"id"`
+			DisplayName string `json:"displayName"`
+		} `json:"portfolios"`
+	}
+
+	err := s.GraphQL.Query(context.Background(), &query, nil)
 	if err != nil {
 		return
 	}
 
-	for _, p := range res.Msg.Portfolios {
-		fmt.Fprintf(cmd.Root().Writer, "%s:%s\n", p.Id, p.DisplayName)
+	for _, p := range query.Portfolios {
+		fmt.Fprintf(cmd.Writer, "%s:%s\n", p.ID, p.DisplayName)
 	}
 }

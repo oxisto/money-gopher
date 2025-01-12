@@ -20,49 +20,54 @@ package finance
 import (
 	"math"
 
-	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"github.com/oxisto/money-gopher/currency"
+	"github.com/oxisto/money-gopher/persistence"
+	"github.com/oxisto/money-gopher/portfolio/events"
 )
 
 // fifoTx is a helper struct to store transaction-related information in a FIFO
 // list. We basically need to copy the values from the original transaction,
 // since we need to modify it.
 type fifoTx struct {
-	amount float64               // amount of shares in this transaction
-	value  *portfoliov1.Currency // value contains the net value of this transaction, i.e., without taxes and fees
-	fees   *portfoliov1.Currency // fees contain any fees associated to this transaction
-	ppu    *portfoliov1.Currency // ppu is the price per unit (amount)
+	amount float64            // amount of shares in this transaction
+	value  *currency.Currency // value contains the net value of this transaction, i.e., without taxes and fees
+	fees   *currency.Currency // fees contain any fees associated to this transaction
+	ppu    *currency.Currency // ppu is the price per unit (amount)
 }
 
+// calculation is a helper struct to calculate the net and gross value of a
+// portfolio (snapshot).
 type calculation struct {
 	Amount float64
-	Fees   *portfoliov1.Currency
-	Taxes  *portfoliov1.Currency
+	Fees   *currency.Currency
+	Taxes  *currency.Currency
 
-	Cash *portfoliov1.Currency
+	Cash *currency.Currency
 
 	fifo []*fifoTx
 }
 
-func NewCalculation(txs []*portfoliov1.PortfolioEvent) *calculation {
+// NewCalculation creates a new calculation struct and applies all events
+func NewCalculation(events []*persistence.Transaction) *calculation {
 	var c calculation
-	c.Fees = portfoliov1.Zero()
-	c.Taxes = portfoliov1.Zero()
-	c.Cash = portfoliov1.Zero()
+	c.Fees = currency.Zero()
+	c.Taxes = currency.Zero()
+	c.Cash = currency.Zero()
 
-	for _, tx := range txs {
+	for _, tx := range events {
 		c.Apply(tx)
 	}
 
 	return &c
 }
 
-func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
+func (c *calculation) Apply(tx *persistence.Transaction) {
 	switch tx.Type {
-	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_INBOUND:
+	case events.PortfolioEventTypeDeliveryInbound:
 		fallthrough
-	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY:
+	case events.PortfolioEventTypeBuy:
 		var (
-			total *portfoliov1.Currency
+			total *currency.Currency
 		)
 
 		// Increase the amount of shares and the fees by the value stored in the
@@ -70,7 +75,7 @@ func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
 		c.Fees.PlusAssign(tx.Fees)
 		c.Amount += tx.Amount
 
-		total = portfoliov1.Times(tx.Price, tx.Amount).Plus(tx.Fees).Plus(tx.Taxes)
+		total = currency.Times(tx.Price, tx.Amount).Plus(tx.Fees).Plus(tx.Taxes)
 
 		// Decrease our cash
 		c.Cash.MinusAssign(total)
@@ -82,15 +87,15 @@ func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
 		c.fifo = append(c.fifo, &fifoTx{
 			amount: tx.Amount,
 			ppu:    tx.Price,
-			value:  portfoliov1.Times(tx.Price, tx.Amount),
+			value:  currency.Times(tx.Price, tx.Amount),
 			fees:   tx.Fees,
 		})
-	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_OUTBOUND:
+	case events.PortfolioEventTypeDeliveryOutbound:
 		fallthrough
-	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL:
+	case events.PortfolioEventTypeSell:
 		var (
 			sold  float64
-			total *portfoliov1.Currency
+			total *currency.Currency
 		)
 
 		// Increase the fees and taxes by the value stored in the
@@ -98,7 +103,7 @@ func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
 		c.Fees.PlusAssign(tx.Fees)
 		c.Taxes.PlusAssign(tx.Taxes)
 
-		total = portfoliov1.Times(tx.Price, tx.Amount).Plus(tx.Fees).Plus(tx.Taxes)
+		total = currency.Times(tx.Price, tx.Amount).Plus(tx.Fees).Plus(tx.Taxes)
 
 		// Increase our cash
 		c.Cash.PlusAssign(total)
@@ -135,28 +140,28 @@ func (c *calculation) Apply(tx *portfoliov1.PortfolioEvent) {
 			item.amount -= n
 
 			// Adjust the value with the new amount
-			item.value = portfoliov1.Times(item.ppu, item.amount)
+			item.value = currency.Times(item.ppu, item.amount)
 
 			// If no shares are left in this FIFO transaction, also remove the
 			// fees, because they are now associated to the sale and not part of
 			// the price calculation anymore.
 			if item.amount <= 0 {
-				item.fees = portfoliov1.Zero()
+				item.fees = currency.Zero()
 			}
 
 			sold -= n
 		}
-	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DEPOSIT_CASH:
+	case events.PortfolioEventTypeDepositCash:
 		// Add to the cash
 		c.Cash.PlusAssign(tx.Price)
-	case portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_WITHDRAW_CASH:
+	case events.PortfolioEventTypeWithdrawCash:
 		// Remove from the cash
 		c.Cash.MinusAssign(tx.Price)
 	}
 }
 
-func (c *calculation) NetValue() (f *portfoliov1.Currency) {
-	f = portfoliov1.Zero()
+func (c *calculation) NetValue() (f *currency.Currency) {
+	f = currency.Zero()
 
 	for _, item := range c.fifo {
 		f.PlusAssign(item.value)
@@ -165,20 +170,20 @@ func (c *calculation) NetValue() (f *portfoliov1.Currency) {
 	return
 }
 
-func (c *calculation) GrossValue() (f *portfoliov1.Currency) {
-	f = portfoliov1.Zero()
+func (c *calculation) GrossValue() (f *currency.Currency) {
+	f = currency.Zero()
 
 	for _, item := range c.fifo {
-		f.PlusAssign(portfoliov1.Plus(item.value, item.fees))
+		f.PlusAssign(currency.Plus(item.value, item.fees))
 	}
 
 	return
 }
 
-func (c *calculation) NetPrice() (f *portfoliov1.Currency) {
-	return portfoliov1.Divide(c.NetValue(), c.Amount)
+func (c *calculation) NetPrice() (f *currency.Currency) {
+	return currency.Divide(c.NetValue(), c.Amount)
 }
 
-func (c *calculation) GrossPrice() (f *portfoliov1.Currency) {
-	return portfoliov1.Divide(c.GrossValue(), c.Amount)
+func (c *calculation) GrossPrice() (f *currency.Currency) {
+	return currency.Divide(c.GrossValue(), c.Amount)
 }

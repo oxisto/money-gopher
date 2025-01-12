@@ -7,23 +7,27 @@ package persistence
 
 import (
 	"context"
-	"database/sql"
+	"strings"
+	"time"
+
+	currency "github.com/oxisto/money-gopher/currency"
 )
 
 const createSecurity = `-- name: CreateSecurity :one
 INSERT INTO
-    securities (id, display_name)
+    securities (id, display_name, quote_provider)
 VALUES
-    (?, ?) RETURNING id, display_name, quote_provider
+    (?, ?, ?) RETURNING id, display_name, quote_provider
 `
 
 type CreateSecurityParams struct {
-	ID          string
-	DisplayName string
+	ID            string
+	DisplayName   string
+	QuoteProvider *string
 }
 
 func (q *Queries) CreateSecurity(ctx context.Context, arg CreateSecurityParams) (*Security, error) {
-	row := q.db.QueryRowContext(ctx, createSecurity, arg.ID, arg.DisplayName)
+	row := q.db.QueryRowContext(ctx, createSecurity, arg.ID, arg.DisplayName, arg.QuoteProvider)
 	var i Security
 	err := row.Scan(&i.ID, &i.DisplayName, &i.QuoteProvider)
 	return &i, err
@@ -142,6 +146,50 @@ func (q *Queries) ListSecurities(ctx context.Context) ([]*Security, error) {
 	return items, nil
 }
 
+const listSecuritiesByIDs = `-- name: ListSecuritiesByIDs :many
+SELECT
+    id, display_name, quote_provider
+FROM
+    securities
+WHERE
+    id IN (/*SLICE:ids*/?)
+ORDER BY
+    id
+`
+
+func (q *Queries) ListSecuritiesByIDs(ctx context.Context, ids []string) ([]*Security, error) {
+	query := listSecuritiesByIDs
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*Security
+	for rows.Next() {
+		var i Security
+		if err := rows.Scan(&i.ID, &i.DisplayName, &i.QuoteProvider); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateSecurity = `-- name: UpdateSecurity :one
 UPDATE securities
 SET
@@ -153,7 +201,7 @@ WHERE
 
 type UpdateSecurityParams struct {
 	DisplayName   string
-	QuoteProvider sql.NullString
+	QuoteProvider *string
 	ID            string
 }
 
@@ -166,23 +214,39 @@ func (q *Queries) UpdateSecurity(ctx context.Context, arg UpdateSecurityParams) 
 
 const upsertListedSecurity = `-- name: UpsertListedSecurity :one
 INSERT INTO
-    listed_securities (security_id, ticker, currency)
+    listed_securities (
+        security_id,
+        ticker,
+        currency,
+        latest_quote,
+        latest_quote_timestamp
+    )
 VALUES
-    (?, ?, ?) ON CONFLICT (security_id, ticker) DO
+    (?, ?, ?, ?, ?) ON CONFLICT (security_id, ticker) DO
 UPDATE
 SET
     ticker = excluded.ticker,
-    currency = excluded.currency RETURNING security_id, ticker, currency, latest_quote, latest_quote_timestamp
+    currency = excluded.currency,
+    latest_quote = excluded.latest_quote,
+    latest_quote_timestamp = excluded.latest_quote_timestamp RETURNING security_id, ticker, currency, latest_quote, latest_quote_timestamp
 `
 
 type UpsertListedSecurityParams struct {
-	SecurityID string
-	Ticker     string
-	Currency   string
+	SecurityID           string
+	Ticker               string
+	Currency             string
+	LatestQuote          *currency.Currency
+	LatestQuoteTimestamp *time.Time
 }
 
 func (q *Queries) UpsertListedSecurity(ctx context.Context, arg UpsertListedSecurityParams) (*ListedSecurity, error) {
-	row := q.db.QueryRowContext(ctx, upsertListedSecurity, arg.SecurityID, arg.Ticker, arg.Currency)
+	row := q.db.QueryRowContext(ctx, upsertListedSecurity,
+		arg.SecurityID,
+		arg.Ticker,
+		arg.Currency,
+		arg.LatestQuote,
+		arg.LatestQuoteTimestamp,
+	)
 	var i ListedSecurity
 	err := row.Scan(
 		&i.SecurityID,

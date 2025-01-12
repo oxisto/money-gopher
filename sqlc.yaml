@@ -8,3 +8,53 @@ sql:
         package: "persistence"
         out: "persistence"
         emit_result_struct_pointers: true
+        emit_pointers_for_null_types: true
+        overrides:
+          - column: "accounts.type"
+            go_type: github.com/oxisto/money-gopher/portfolio/accounts.AccountType
+          - column: "portfolio_events.type"
+            go_type: github.com/oxisto/money-gopher/portfolio/events.PortfolioEventType
+          - column: "portfolio_events.price"
+            go_type:
+              import: "github.com/oxisto/money-gopher/currency"
+              package: "currency"
+              type: "Currency"
+              pointer: true
+          - column: "portfolio_events.fees"
+            go_type:
+              import: "github.com/oxisto/money-gopher/currency"
+              package: "currency"
+              type: "Currency"
+              pointer: true
+          - column: "portfolio_events.taxes"
+            go_type:
+              import: "github.com/oxisto/money-gopher/currency"
+              package: "currency"
+              type: "Currency"
+              pointer: true
+          - column: "transactions.type"
+            go_type: github.com/oxisto/money-gopher/portfolio/events.PortfolioEventType
+          - column: "transactions.price"
+            go_type:
+              import: "github.com/oxisto/money-gopher/currency"
+              package: "currency"
+              type: "Currency"
+              pointer: true
+          - column: "transactions.fees"
+            go_type:
+              import: "github.com/oxisto/money-gopher/currency"
+              package: "currency"
+              type: "Currency"
+              pointer: true
+          - column: "transactions.taxes"
+            go_type:
+              import: "github.com/oxisto/money-gopher/currency"
+              package: "currency"
+              type: "Currency"
+              pointer: true
+          - column: "listed_securities.latest_quote"
+            go_type:
+              import: "github.com/oxisto/money-gopher/currency"
+              package: "currency"
+              type: "Currency"
+              pointer: true

@@ -39,12 +39,12 @@ import (
 	"strings"
 	"time"
 
-	moneygopher "github.com/oxisto/money-gopher"
-	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"github.com/oxisto/money-gopher/currency"
+	"github.com/oxisto/money-gopher/persistence"
+	"github.com/oxisto/money-gopher/portfolio/events"
+	"github.com/oxisto/money-gopher/securities/quote"
 
 	"github.com/lmittmann/tint"
-	"github.com/oxisto/money-gopher/service/securities"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var (
@@ -59,7 +59,15 @@ var (
 
 // Import imports CSV records from a [io.Reader] containing portfolio
 // transactions.
-func Import(r io.Reader, pname string) (txs []*portfoliov1.PortfolioEvent, secs []*portfoliov1.Security) {
+func Import(
+	r io.Reader,
+	bankAccountID string,
+	brokerageAccountID string,
+) (
+	txs []*persistence.Transaction,
+	secs []*persistence.Security,
+	lss []*persistence.ListedSecurity,
+) {
 	cr := csv.NewReader(r)
 	cr.Comma = ';'
 
@@ -68,7 +76,7 @@ func Import(r io.Reader, pname string) (txs []*portfoliov1.PortfolioEvent, secs 
 
 	// Read until EOF
 	for {
-		tx, sec, err := readLine(cr, pname)
+		tx, sec, ls, err := readLine(cr, bankAccountID, brokerageAccountID)
 		if errors.Is(err, io.EOF) {
 			break
 		} else if err != nil {
@@ -79,122 +87,135 @@ func Import(r io.Reader, pname string) (txs []*portfoliov1.PortfolioEvent, secs 
 
 		txs = append(txs, tx)
 		secs = append(secs, sec)
+		lss = append(lss, ls...)
 	}
 
-	// Compact securities
-	secs = slices.CompactFunc(secs, func(a *portfoliov1.Security, b *portfoliov1.Security) bool {
-		return a.Id == b.Id
+	// Make (listed) securities unique
+	secs = slices.CompactFunc(secs, func(a *persistence.Security, b *persistence.Security) bool {
+		return a.ID == b.ID
+	})
+	lss = slices.CompactFunc(lss, func(a *persistence.ListedSecurity, b *persistence.ListedSecurity) bool {
+		return a.SecurityID == b.SecurityID && a.Ticker == b.Ticker
 	})
 
 	return
 }
 
-func readLine(cr *csv.Reader, pname string) (tx *portfoliov1.PortfolioEvent, sec *portfoliov1.Security, err error) {
+func readLine(
+	cr *csv.Reader,
+	bankAccountID string,
+	brokerageAccountID string,
+) (
+	tx *persistence.Transaction,
+	sec *persistence.Security,
+	ls []*persistence.ListedSecurity,
+	err error) {
 	var (
 		record []string
-		value  *portfoliov1.Currency
+		value  *currency.Currency
 	)
 
 	record, err = cr.Read()
 	if err != nil {
-		return nil, nil, fmt.Errorf("%w: %w", ErrReadingCSV, err)
+		return nil, nil, nil, fmt.Errorf("%w: %w", ErrReadingCSV, err)
 	}
 
-	tx = new(portfoliov1.PortfolioEvent)
+	tx = new(persistence.Transaction)
 	tx.Time, err = txTime(record[0])
 	if err != nil {
-		return nil, nil, fmt.Errorf("%w: %w", ErrParsingTime, err)
+		return nil, nil, nil, fmt.Errorf("%w: %w", ErrParsingTime, err)
 	}
 
 	tx.Type = txType(record[1])
-	if tx.Type == portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_UNSPECIFIED {
-		return nil, nil, ErrParsingType
+	if tx.Type == events.PortfolioEventTypeUnknown {
+		return nil, nil, nil, ErrParsingType
 	}
 
 	value, err = parseFloatCurrency(record[2])
 	if err != nil {
-		return nil, nil, fmt.Errorf("%w: %w", ErrParsingValue, err)
+		return nil, nil, nil, fmt.Errorf("%w: %w", ErrParsingValue, err)
 	}
 
 	tx.Fees, err = parseFloatCurrency(record[7])
 	if err != nil {
-		return nil, nil, fmt.Errorf("%w: %w", ErrParsingFees, err)
+		return nil, nil, nil, fmt.Errorf("%w: %w", ErrParsingFees, err)
 	}
 
 	tx.Taxes, err = parseFloatCurrency(record[8])
 	if err != nil {
-		return nil, nil, fmt.Errorf("%w: %w", ErrParsingTaxes, err)
+		return nil, nil, nil, fmt.Errorf("%w: %w", ErrParsingTaxes, err)
 	}
 
 	tx.Amount, err = parseFloat64(record[9])
 	if err != nil {
-		return nil, nil, fmt.Errorf("%w: %w", ErrParsingAmount, err)
+		return nil, nil, nil, fmt.Errorf("%w: %w", ErrParsingAmount, err)
 	}
 
 	// Calculate the price
-	if tx.Type == portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY ||
-		tx.Type == portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_INBOUND {
-		tx.Price = portfoliov1.Divide(portfoliov1.Minus(value, tx.Fees), tx.Amount)
-	} else if tx.Type == portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL ||
-		tx.Type == portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_OUTBOUND {
-		tx.Price = portfoliov1.Times(portfoliov1.Divide(portfoliov1.Minus(portfoliov1.Minus(value, tx.Fees), tx.Taxes), tx.Amount), -1)
+	if tx.Type == events.PortfolioEventTypeBuy ||
+		tx.Type == events.PortfolioEventTypeDeliveryInbound {
+		tx.Price = currency.Divide(currency.Minus(value, tx.Fees), tx.Amount)
+		tx.SourceAccountID = &bankAccountID
+		tx.DestinationAccountID = &brokerageAccountID
+	} else if tx.Type == events.PortfolioEventTypeSell ||
+		tx.Type == events.PortfolioEventTypeDeliveryOutbound {
+		tx.Price = currency.Times(currency.Divide(currency.Minus(currency.Minus(value, tx.Fees), tx.Taxes), tx.Amount), -1)
+		tx.SourceAccountID = &brokerageAccountID
+		tx.DestinationAccountID = &bankAccountID
 	}
 
-	sec = new(portfoliov1.Security)
-	sec.Id = record[10]
+	sec = new(persistence.Security)
+	sec.ID = record[10]
 	sec.DisplayName = record[13]
-	sec.ListedOn = []*portfoliov1.ListedSecurity{
-		{
-			SecurityId: sec.Id,
-			Ticker:     record[12],
-			Currency:   lsCurrency(record[3], record[5]),
-		},
-	}
+
+	ls = append(ls, &persistence.ListedSecurity{
+		SecurityID: sec.ID,
+		Ticker:     record[12],
+		Currency:   lsCurrency(record[3], record[5]),
+	})
 
 	// Default to YF, but only if we have a ticker symbol, otherwise, let's try ING
-	if len(sec.ListedOn) >= 0 && len(sec.ListedOn[0].Ticker) > 0 {
-		sec.QuoteProvider = moneygopher.Ref(securities.QuoteProviderYF)
+	var qp string
+	if len(ls) >= 0 && len(ls[0].Ticker) > 0 {
+		qp = quote.QuoteProviderYF
 	} else {
-		sec.QuoteProvider = moneygopher.Ref(securities.QuoteProviderING)
+		qp = quote.QuoteProviderING
 	}
+	sec.QuoteProvider = &qp
 
-	tx.PortfolioId = pname
-	tx.SecurityId = sec.Id
+	tx.SecurityID = &sec.ID
 	tx.MakeUniqueID()
 
 	return
 }
 
-func txType(typ string) portfoliov1.PortfolioEventType {
+func txType(typ string) events.PortfolioEventType {
 	switch typ {
 	case "Buy":
-		return portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY
+		return events.PortfolioEventTypeBuy
 	case "Sell":
-		return portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL
+		return events.PortfolioEventTypeSell
 	case "Delivery (Inbound)":
-		return portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_INBOUND
+		return events.PortfolioEventTypeDeliveryInbound
 	case "Delivery (Outbound)":
-		return portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_DELIVERY_OUTBOUND
+		return events.PortfolioEventTypeDeliveryOutbound
 	default:
-		return portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_UNSPECIFIED
+		return events.PortfolioEventTypeUnknown
 	}
 }
 
-func txTime(s string) (ts *timestamppb.Timestamp, err error) {
-	var (
-		t time.Time
-	)
+func txTime(s string) (t time.Time, err error) {
 	// First try without seconds
 	t, err = time.ParseInLocation("2006-01-02T15:04", s, time.Local)
 	if err != nil {
 		// Then with seconds
 		t, err = time.ParseInLocation("2006-01-02T15:04:05", s, time.Local)
 		if err != nil {
-			return nil, err
+			return time.Time{}, err
 		}
 	}
 
-	return timestamppb.New(t), nil
+	return t, nil
 }
 
 func parseFloat64(s string) (f float64, err error) {
@@ -211,17 +232,17 @@ func parseFloat64(s string) (f float64, err error) {
 	return
 }
 
-func parseFloatCurrency(s string) (c *portfoliov1.Currency, err error) {
+func parseFloatCurrency(s string) (c *currency.Currency, err error) {
 	// Get rid of all , and .
 	s = strings.ReplaceAll(s, ".", "")
 	s = strings.ReplaceAll(s, ",", "")
 
 	i, err := strconv.ParseInt(s, 10, 32)
 	if err != nil {
-		return portfoliov1.Zero(), err
+		return currency.Zero(), err
 	}
 
-	return portfoliov1.Value(int32(i)), nil
+	return currency.Value(int32(i)), nil
 }
 
 func lsCurrency(txCurrency string, tickerCurrency string) string {

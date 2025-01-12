@@ -13,7 +13,7 @@ CREATE TABLE
         security_id TEXT NOT NULL, -- SecurityID is the ID of the security.
         ticker TEXT NOT NULL, -- Ticker is the symbol used to identify the security on the exchange.
         currency TEXT NOT NULL, -- Currency is the currency in which the security is traded.
-        latest_quote INTEGER, -- LatestQuote is the latest quote for the security.
+        latest_quote JSONB, -- LatestQuote is the latest quote for the security as a [currency.Currency].
         latest_quote_timestamp DATETIME, -- LatestQuoteTimestamp is the timestamp of the latest quote.
         FOREIGN KEY (security_id) REFERENCES securities (id) ON DELETE RESTRICT,
         PRIMARY KEY (security_id, ticker)
@@ -21,4 +21,5 @@ CREATE TABLE
 
 -- +goose Down
 DROP TABLE securities;
+
 DROP TABLE listed_securities;

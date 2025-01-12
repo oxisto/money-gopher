@@ -24,24 +24,27 @@ import (
 	"time"
 
 	moneygopher "github.com/oxisto/money-gopher"
-	portfoliov1 "github.com/oxisto/money-gopher/gen"
+	"github.com/oxisto/money-gopher/currency"
+	"github.com/oxisto/money-gopher/internal/testdata"
+	"github.com/oxisto/money-gopher/persistence"
+	"github.com/oxisto/money-gopher/portfolio/events"
+	"github.com/oxisto/money-gopher/securities/quote"
 
 	"github.com/oxisto/assert"
-	"github.com/oxisto/money-gopher/service/securities"
-	"google.golang.org/protobuf/testing/protocmp"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestImport(t *testing.T) {
 	type args struct {
-		r     io.Reader
-		pname string
+		r                  io.Reader
+		bankAccountID      string
+		brokerageAccountID string
 	}
 	tests := []struct {
 		name     string
 		args     args
-		wantTxs  assert.Want[[]*portfoliov1.PortfolioEvent]
-		wantSecs assert.Want[[]*portfoliov1.Security]
+		wantTxs  assert.Want[[]*persistence.Transaction]
+		wantSecs assert.Want[[]*persistence.Security]
+		wantLss  assert.Want[[]*persistence.ListedSecurity]
 	}{
 		{
 			name: "happy path",
@@ -50,12 +53,17 @@ func TestImport(t *testing.T) {
 2021-06-05T00:00;Buy;2.151,85;EUR;;;;10,25;0,00;20;US0378331005;865985;APC.F;Apple Inc.;
 2021-06-05T00:00;Sell;-2.151,85;EUR;;;;10,25;0,00;20;US0378331005;865985;APC.F;Apple Inc.;
 2021-06-18T00:00;Delivery (Inbound);912,66;EUR;;;;7,16;0,00;5;US09075V1026;A2PSR2;22UA.F;BioNTech SE;`)),
+				bankAccountID:      testdata.TestBankAccount.ID,
+				brokerageAccountID: testdata.TestBrokerageAccount.ID,
 			},
-			wantTxs: func(t *testing.T, txs []*portfoliov1.PortfolioEvent) bool {
+			wantTxs: func(t *testing.T, txs []*persistence.Transaction) bool {
 				return assert.Equals(t, 3, len(txs))
 			},
-			wantSecs: func(t *testing.T, secs []*portfoliov1.Security) bool {
+			wantSecs: func(t *testing.T, secs []*persistence.Security) bool {
 				return assert.Equals(t, 2, len(secs))
+			},
+			wantLss: func(t *testing.T, lss []*persistence.ListedSecurity) bool {
+				return assert.Equals(t, 2, len(lss))
 			},
 		},
 		{
@@ -64,33 +72,39 @@ func TestImport(t *testing.T) {
 				r: bytes.NewReader([]byte(`Date;Type;Value;Transaction Currency;Gross Amount;Currency Gross Amount;Exchange Rate;Fees;Taxes;Shares;ISIN;WKN;Ticker Symbol;Security Name;Note
 this;will;be;an;error`)),
 			},
-			wantTxs: func(t *testing.T, txs []*portfoliov1.PortfolioEvent) bool {
+			wantTxs: func(t *testing.T, txs []*persistence.Transaction) bool {
 				return assert.Equals(t, 0, len(txs))
 			},
-			wantSecs: func(t *testing.T, secs []*portfoliov1.Security) bool {
+			wantSecs: func(t *testing.T, secs []*persistence.Security) bool {
 				return assert.Equals(t, 0, len(secs))
+			},
+			wantLss: func(t *testing.T, lss []*persistence.ListedSecurity) bool {
+				return assert.Equals(t, 0, len(lss))
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotTxs, gotSecs := Import(tt.args.r, tt.args.pname)
+			gotTxs, gotSecs, gotLss := Import(tt.args.r, tt.args.bankAccountID, tt.args.brokerageAccountID)
 			tt.wantTxs(t, gotTxs)
 			tt.wantSecs(t, gotSecs)
+			tt.wantLss(t, gotLss)
 		})
 	}
 }
 
 func Test_readLine(t *testing.T) {
 	type args struct {
-		cr    *csv.Reader
-		pname string
+		cr                 *csv.Reader
+		bankAccountID      string
+		brokerageAccountID string
 	}
 	tests := []struct {
 		name    string
 		args    args
-		wantTx  *portfoliov1.PortfolioEvent
-		wantSec *portfoliov1.Security
+		wantTx  *persistence.Transaction
+		wantSec *persistence.Security
+		wantLs  []*persistence.ListedSecurity
 		wantErr assert.Want[error]
 	}{
 		{
@@ -101,27 +115,31 @@ func Test_readLine(t *testing.T) {
 					cr.Comma = ';'
 					return cr
 				}(),
+				bankAccountID:      testdata.TestBankAccount.ID,
+				brokerageAccountID: testdata.TestBrokerageAccount.ID,
 			},
-			wantTx: &portfoliov1.PortfolioEvent{
-				Id:         "9e7b470b7566beca",
-				SecurityId: "US0378331005",
-				Type:       portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
-				Time:       timestamppb.New(time.Date(2020, 1, 1, 0, 0, 0, 0, time.Local)),
-				Amount:     20,
-				Fees:       portfoliov1.Value(1025),
-				Taxes:      portfoliov1.Zero(),
-				Price:      portfoliov1.Value(10708),
+			wantTx: &persistence.Transaction{
+				ID:                   "670240c1f8373a3f",
+				SecurityID:           moneygopher.Ref("US0378331005"),
+				Type:                 events.PortfolioEventTypeBuy,
+				SourceAccountID:      &testdata.TestBankAccount.ID,
+				DestinationAccountID: &testdata.TestBrokerageAccount.ID,
+				Time:                 time.Date(2020, 1, 1, 0, 0, 0, 0, time.Local),
+				Amount:               20,
+				Fees:                 currency.Value(1025),
+				Taxes:                currency.Zero(),
+				Price:                currency.Value(10708),
 			},
-			wantSec: &portfoliov1.Security{
-				Id:            "US0378331005",
+			wantSec: &persistence.Security{
+				ID:            "US0378331005",
 				DisplayName:   "Apple Inc.",
-				QuoteProvider: moneygopher.Ref(securities.QuoteProviderYF),
-				ListedOn: []*portfoliov1.ListedSecurity{
-					{
-						SecurityId: "US0378331005",
-						Ticker:     "APC.F",
-						Currency:   "EUR",
-					},
+				QuoteProvider: moneygopher.Ref(quote.QuoteProviderYF),
+			},
+			wantLs: []*persistence.ListedSecurity{
+				{
+					SecurityID: "US0378331005",
+					Ticker:     "APC.F",
+					Currency:   "EUR",
 				},
 			},
 		},
@@ -133,27 +151,31 @@ func Test_readLine(t *testing.T) {
 					cr.Comma = ';'
 					return cr
 				}(),
+				bankAccountID:      testdata.TestBankAccount.ID,
+				brokerageAccountID: testdata.TestBrokerageAccount.ID,
 			},
-			wantTx: &portfoliov1.PortfolioEvent{
-				Id:         "1070dafc882785a0",
-				SecurityId: "US00827B1061",
-				Type:       portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_BUY,
-				Time:       timestamppb.New(time.Date(2022, 1, 1, 9, 0, 0, 0, time.Local)),
-				Amount:     20,
-				Price:      portfoliov1.Value(6040),
-				Fees:       portfoliov1.Zero(),
-				Taxes:      portfoliov1.Zero(),
+			wantTx: &persistence.Transaction{
+				ID:                   "dbddb1c7b1ce1375",
+				SecurityID:           moneygopher.Ref("US00827B1061"),
+				Type:                 events.PortfolioEventTypeBuy,
+				SourceAccountID:      &testdata.TestBankAccount.ID,
+				DestinationAccountID: &testdata.TestBrokerageAccount.ID,
+				Time:                 time.Date(2022, 1, 1, 9, 0, 0, 0, time.Local),
+				Amount:               20,
+				Price:                currency.Value(6040),
+				Fees:                 currency.Zero(),
+				Taxes:                currency.Zero(),
 			},
-			wantSec: &portfoliov1.Security{
-				Id:            "US00827B1061",
+			wantSec: &persistence.Security{
+				ID:            "US00827B1061",
 				DisplayName:   "Affirm Holdings Inc.",
-				QuoteProvider: moneygopher.Ref(securities.QuoteProviderYF),
-				ListedOn: []*portfoliov1.ListedSecurity{
-					{
-						SecurityId: "US00827B1061",
-						Ticker:     "AFRM",
-						Currency:   "USD",
-					},
+				QuoteProvider: moneygopher.Ref(quote.QuoteProviderYF),
+			},
+			wantLs: []*persistence.ListedSecurity{
+				{
+					SecurityID: "US00827B1061",
+					Ticker:     "AFRM",
+					Currency:   "USD",
 				},
 			},
 		},
@@ -165,27 +187,31 @@ func Test_readLine(t *testing.T) {
 					cr.Comma = ';'
 					return cr
 				}(),
+				bankAccountID:      testdata.TestBankAccount.ID,
+				brokerageAccountID: testdata.TestBrokerageAccount.ID,
 			},
-			wantTx: &portfoliov1.PortfolioEvent{
-				Id:         "8bb43fed65b35685",
-				SecurityId: "DE0005557508",
-				Type:       portfoliov1.PortfolioEventType_PORTFOLIO_EVENT_TYPE_SELL,
-				Time:       timestamppb.New(time.Date(2022, 1, 1, 8, 0, 6, 0, time.Local)),
-				Amount:     103,
-				Fees:       portfoliov1.Zero(),
-				Taxes:      portfoliov1.Value(1830),
-				Price:      portfoliov1.Value(1552),
+			wantTx: &persistence.Transaction{
+				ID:                   "4201924709e1f078",
+				SecurityID:           moneygopher.Ref("DE0005557508"),
+				SourceAccountID:      &testdata.TestBrokerageAccount.ID,
+				DestinationAccountID: &testdata.TestBankAccount.ID,
+				Type:                 events.PortfolioEventTypeSell,
+				Time:                 time.Date(2022, 1, 1, 8, 0, 6, 0, time.Local),
+				Amount:               103,
+				Fees:                 currency.Zero(),
+				Taxes:                currency.Value(1830),
+				Price:                currency.Value(1552),
 			},
-			wantSec: &portfoliov1.Security{
-				Id:            "DE0005557508",
+			wantSec: &persistence.Security{
+				ID:            "DE0005557508",
 				DisplayName:   "Deutsche Telekom AG",
-				QuoteProvider: moneygopher.Ref(securities.QuoteProviderYF),
-				ListedOn: []*portfoliov1.ListedSecurity{
-					{
-						SecurityId: "DE0005557508",
-						Ticker:     "DTE.F",
-						Currency:   "EUR",
-					},
+				QuoteProvider: moneygopher.Ref(quote.QuoteProviderYF),
+			},
+			wantLs: []*persistence.ListedSecurity{
+				{
+					SecurityID: "DE0005557508",
+					Ticker:     "DTE.F",
+					Currency:   "EUR",
 				},
 			},
 		},
@@ -270,13 +296,14 @@ func Test_readLine(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotTx, gotSec, err := readLine(tt.args.cr, tt.args.pname)
+			gotTx, gotSec, gotLs, err := readLine(tt.args.cr, tt.args.bankAccountID, tt.args.brokerageAccountID)
 			if err != nil {
 				tt.wantErr(t, err)
 				return
 			}
-			assert.Equals(t, tt.wantTx, gotTx, protocmp.Transform())
-			assert.Equals(t, tt.wantSec, gotSec, protocmp.Transform())
+			assert.Equals(t, tt.wantTx, gotTx)
+			assert.Equals(t, tt.wantSec, gotSec)
+			assert.Equals(t, tt.wantLs, gotLs)
 		})
 	}
 }
