@@ -23,6 +23,7 @@ import (
 	"time"
 
 	mcli "github.com/oxisto/money-gopher/cli"
+	"github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/models"
 
 	"github.com/fatih/color"
@@ -83,9 +84,14 @@ func ListPortfolio(ctx context.Context, cmd *cli.Command) (err error) {
 
 	var query struct {
 		Portfolios []struct {
-			ID          string                   `json:"id"`
-			DisplayName string                   `json:"displayName"`
-			Snapshot    models.PortfolioSnapshot `graphql:"snapshot(when: $when)" json:"snapshot"`
+			ID          string `json:"id"`
+			DisplayName string `json:"displayName"`
+			//Snapshot    models.PortfolioSnapshot `graphql:"snapshot(when: $when)" json:"snapshot"`
+			Snapshot struct {
+				TotalMarketValue  currency.Currency `json:"totalMarketValue"`
+				TotalProfitOrLoss currency.Currency `json:"totalProfitOrLoss"`
+				TotalGains        float64           `json:"totalGains"`
+			} `graphql:"snapshot(when: $when)" json:"snapshot"`
 		} `json:"portfolios"`
 	}
 
@@ -102,11 +108,11 @@ func ListPortfolio(ctx context.Context, cmd *cli.Command) (err error) {
 		snapshot := portfolio.Snapshot
 
 		in += fmt.Sprintf(`
-| %-*s |
-| %s | %s |
-| %-*s | %*s |
-| %-*s | %*s |
-`,
+		| %-*s |
+		| %s | %s |
+		| %-*s | %*s |
+		| %-*s | %*s |
+		`,
 			15+15+3, color.New(color.FgWhite, color.Bold).Sprint(portfolio.DisplayName),
 			strings.Repeat("-", 15),
 			strings.Repeat("-", 15),
