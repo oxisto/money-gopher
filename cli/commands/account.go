@@ -76,6 +76,25 @@ var AccountCmd = &cli.Command{
 						&cli.StringFlag{Name: "account-id", Usage: "The ID of the account the transaction is coming from or is destined to", Required: true},
 					},
 				},
+				{
+					Name:   "create",
+					Usage:  "Creates a transaction. Defaults to a \"buy\" transaction",
+					Action: CreateTransaction,
+					Flags: []cli.Flag{
+						&cli.StringFlag{Name: "source-account-id", Usage: "The ID of the account the transaction is coming from", Required: true},
+						&cli.StringFlag{Name: "destination-account-id", Usage: "The ID of the account the transaction is destined to", Required: true},
+						&cli.StringFlag{Name: "security-id", Usage: "The ID of the security this transaction belongs to (its ISIN)", Required: true},
+						&cli.GenericFlag{Name: "type", Usage: "The type of the transaction", Required: true, DefaultText: "BUY", Value: func() *events.PortfolioEventType {
+							var typ events.PortfolioEventType = events.PortfolioEventTypeBuy
+							return &typ
+						}()},
+						&cli.FloatFlag{Name: "amount", Usage: "The amount of securities involved in the transaction", Required: true},
+						&cli.FloatFlag{Name: "price", Usage: "The price without fees or taxes", Required: true},
+						&cli.FloatFlag{Name: "fees", Usage: "Any fees that applied to the transaction"},
+						&cli.FloatFlag{Name: "taxes", Usage: "Any taxes that applied to the transaction"},
+						&cli.StringFlag{Name: "time", Usage: "The time of the transaction. Defaults to 'now'", DefaultText: "now"},
+					},
+				},
 			},
 		},
 	},
@@ -178,6 +197,64 @@ func ListTransactions(ctx context.Context, cmd *cli.Command) (err error) {
 	}
 
 	s.WriteJSON(cmd.Writer, query)
+
+	return nil
+}
+
+// CreateTransaction creates a transaction.
+func CreateTransaction(ctx context.Context, cmd *cli.Command) (err error) {
+	s := mcli.FromContext(ctx)
+
+	var query struct {
+		CreateTransaction struct {
+			ID   string `json:"id"`
+			Time string `json:"time"`
+		} `graphql:"createTransaction(input: $input)" json:"account"`
+	}
+
+	err = s.GraphQL.Mutate(context.Background(), &query, map[string]interface{}{
+		"input": models.TransactionInput{
+			Time:                 time.Now(),
+			SourceAccountID:      cmd.String("source-account-id"),
+			DestinationAccountID: cmd.String("destination-account-id"),
+			Type:                 *cmd.Generic("type").(*events.PortfolioEventType),
+			SecurityID:           cmd.String("security-id"),
+			Price:                &models.CurrencyInput{Amount: int(cmd.Float("price") * 100), Symbol: "EUR"},
+			Fees:                 &models.CurrencyInput{Amount: int(cmd.Float("fees") * 100), Symbol: "EUR"},
+			Taxes:                &models.CurrencyInput{Amount: int(cmd.Float("taxes") * 100), Symbol: "EUR"},
+			Amount:               cmd.Float("amount"),
+		},
+	})
+	if err != nil {
+		return err
+	}
+	/*
+
+		s := mcli.FromContext(ctx)
+		var req = connect.NewRequest(&portfoliov1.CreatePortfolioTransactionRequest{
+			Transaction: &portfoliov1.PortfolioEvent{
+				PortfolioId: cmd.String("portfolio-id"),
+				SecurityId:  cmd.String("security-id"),
+				Type:        eventTypeFrom(cmd.String("type")),
+				Amount:      cmd.Float("amount"),
+				Time:        timeOrNow(cmd.Timestamp("time")),
+				Price:       portfoliov1.Value(int32(cmd.Float("price") * 100)),
+				Fees:        portfoliov1.Value(int32(cmd.Float("fees") * 100)),
+				Taxes:       portfoliov1.Value(int32(cmd.Float("taxes") * 100)),
+			},
+		})
+
+		res, err := s.PortfolioClient.CreatePortfolioTransaction(context.Background(), req)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("Successfully created a %s transaction (%s) for security %s in %s.\n",
+			color.CyanString(cmd.String("type")),
+			color.GreenString(res.Msg.Id),
+			color.CyanString(res.Msg.SecurityId),
+			color.CyanString(res.Msg.PortfolioId),
+		)*/
 
 	return nil
 }

@@ -44,6 +44,9 @@ func TestListPortfolio(t *testing.T) {
 		err = db.Queries.AddAccountToPortfolio(context.Background(), testdata.TestAddAccountToPortfolioParams)
 		assert.NoError(t, err)
 
+		_, err = db.Queries.CreateTransaction(context.Background(), testdata.TestCreateDepositTransactionParams)
+		assert.NoError(t, err)
+
 		_, err = db.Queries.CreateTransaction(context.Background(), testdata.TestCreateBuyTransactionParams)
 		assert.NoError(t, err)
 	}))
@@ -153,47 +156,6 @@ func TestShowPortfolio(t *testing.T) {
 
 			if tt.wantRec != nil {
 				tt.wantRec(t, rec)
-			}
-		})
-	}
-}
-
-func TestCreateTransaction(t *testing.T) {
-	srv := servertest.NewServer(internal.NewTestDB(t))
-	defer srv.Close()
-
-	type args struct {
-		ctx context.Context
-		cmd *cli.Command
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "happy path",
-			args: args{
-				ctx: clitest.NewSessionContext(t, srv),
-				cmd: clitest.MockCommand(t,
-					PortfolioCmd.Commands[3].Commands[0].Flags,
-					"--portfolio-id", "myportfolio",
-					"--security-id", "mysecurity",
-					"--type", "buy",
-					"--amount", "10",
-					"--price", "10",
-					"--fees", "0",
-					"--taxes", "0",
-					"--time", "2023-01-01",
-				),
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := CreateTransaction(tt.args.ctx, tt.args.cmd); (err != nil) != tt.wantErr {
-				t.Errorf("CreateTransaction() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

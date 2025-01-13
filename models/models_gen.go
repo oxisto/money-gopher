@@ -3,6 +3,8 @@
 package models
 
 import (
+	"time"
+
 	"github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/persistence"
 	"github.com/oxisto/money-gopher/portfolio/accounts"
@@ -15,6 +17,11 @@ type AccountInput struct {
 	Type        accounts.AccountType `json:"type"`
 }
 
+type CurrencyInput struct {
+	Amount int    `json:"amount"`
+	Symbol string `json:"symbol"`
+}
+
 type ListedSecurityInput struct {
 	Ticker   string `json:"ticker"`
 	Currency string `json:"currency"`
@@ -24,7 +31,7 @@ type Mutation struct {
 }
 
 type PortfolioEvent struct {
-	Time     string                    `json:"time"`
+	Time     time.Time                 `json:"time"`
 	Type     events.PortfolioEventType `json:"type"`
 	Security *persistence.Security     `json:"security,omitempty"`
 }
@@ -60,9 +67,9 @@ type PortfolioPosition struct {
 }
 
 type PortfolioSnapshot struct {
-	Time                 string               `json:"time"`
+	Time                 time.Time            `json:"time"`
 	Positions            []*PortfolioPosition `json:"positions"`
-	FirstTransactionTime string               `json:"firstTransactionTime"`
+	FirstTransactionTime time.Time            `json:"firstTransactionTime"`
 	TotalPurchaseValue   *currency.Currency   `json:"totalPurchaseValue"`
 	TotalMarketValue     *currency.Currency   `json:"totalMarketValue"`
 	TotalProfitOrLoss    *currency.Currency   `json:"totalProfitOrLoss"`
@@ -78,4 +85,16 @@ type SecurityInput struct {
 	ID          string                 `json:"id"`
 	DisplayName string                 `json:"displayName"`
 	ListedAs    []*ListedSecurityInput `json:"listedAs,omitempty"`
+}
+
+type TransactionInput struct {
+	Time                 time.Time                 `json:"time"`
+	SourceAccountID      string                    `json:"sourceAccountID"`
+	DestinationAccountID string                    `json:"destinationAccountID"`
+	SecurityID           string                    `json:"securityID"`
+	Amount               float64                   `json:"amount"`
+	Price                *CurrencyInput            `json:"price"`
+	Fees                 *CurrencyInput            `json:"fees"`
+	Taxes                *CurrencyInput            `json:"taxes"`
+	Type                 events.PortfolioEventType `json:"type"`
 }

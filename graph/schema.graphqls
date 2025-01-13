@@ -5,7 +5,7 @@ directive @goModel(
 
 directive @goEnum(value: String) on ENUM_VALUE
 
-scalar Date
+scalar Time
 
 type Currency {
   amount: Int!
@@ -24,14 +24,14 @@ type ListedSecurity {
   currency: String!
   security: Security!
   latestQuote: Currency
-  latestQuoteTimestamp: Date
+  latestQuoteTimestamp: Time
 }
 
 type Portfolio {
   id: String!
   displayName: String!
   accounts: [Account!]!
-  snapshot(when: Date!): PortfolioSnapshot
+  snapshot(when: Time): PortfolioSnapshot
   events: [PortfolioEvent!]!
 }
 
@@ -88,14 +88,14 @@ enum AccountType
 }
 
 type PortfolioEvent {
-  time: Date!
+  time: Time!
   type: PortfolioEventType!
   security: Security
 }
 
 type Transaction {
   id: String!
-  time: Date!
+  time: Time!
   sourceAccount: Account!
   destinationAccount: Account!
   security: Security!
@@ -106,9 +106,9 @@ type Transaction {
 }
 
 type PortfolioSnapshot {
-  time: Date!
+  time: Time!
   positions: [PortfolioPosition!]!
-  firstTransactionTime: Date!
+  firstTransactionTime: Time!
   totalPurchaseValue: Currency!
   totalMarketValue: Currency!
   totalProfitOrLoss: Currency!
@@ -192,6 +192,23 @@ input ListedSecurityInput {
   currency: String!
 }
 
+input TransactionInput {
+  time: Time!
+  sourceAccountID: String!
+  destinationAccountID: String!
+  securityID: String!
+  amount: Float!
+  price: CurrencyInput!
+  fees: CurrencyInput!
+  taxes: CurrencyInput!
+  type: PortfolioEventType!
+}
+
+input CurrencyInput {
+  amount: Int!
+  symbol: String!
+}
+
 type Mutation {
   createSecurity(input: SecurityInput!): Security!
   updateSecurity(id: ID!, input: SecurityInput!): Security!
@@ -201,6 +218,9 @@ type Mutation {
 
   createAccount(input: AccountInput!): Account!
   deleteAccount(id: String!): Account!
+
+  createTransaction(input: TransactionInput!): Transaction!
+  updateTransaction(id: String!, input: TransactionInput!): Transaction!
 
   """
   Triggers a quote update for the given security IDs. If no security IDs are

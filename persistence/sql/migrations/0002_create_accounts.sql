@@ -2,7 +2,8 @@
 CREATE TABLE
     IF NOT EXISTS portfolios (
         -- Portfolios represent a collection of securities and other positions.
-        -- held by a user. It can be seen as view over multiple accounts.
+        -- held by a user. It can be seen as read-only view over multiple
+        -- accounts.
         id TEXT PRIMARY KEY, -- ID is the primary identifier for a portfolio.     
         display_name TEXT NOT NULL -- DisplayName is the human-readable name of the portfolio.
     );

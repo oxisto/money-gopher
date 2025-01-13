@@ -51,7 +51,7 @@ func BuildSnapshot(
 
 	// Set up the snapshot
 	snap = &models.PortfolioSnapshot{
-		Time:               timestamp.Format(time.RFC3339),
+		Time:               timestamp,
 		Positions:          make([]*models.PortfolioPosition, 0),
 		TotalPurchaseValue: currency.Zero(),
 		TotalMarketValue:   currency.Zero(),
@@ -61,7 +61,7 @@ func BuildSnapshot(
 
 	// Record the first transaction time
 	if len(events) > 0 {
-		snap.FirstTransactionTime = events[0].Time.Format(time.RFC3339)
+		snap.FirstTransactionTime = events[0].Time
 	}
 
 	// Retrieve the event map; a map of events indexed by their security ID

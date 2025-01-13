@@ -24,7 +24,6 @@ import (
 
 	mcli "github.com/oxisto/money-gopher/cli"
 	"github.com/oxisto/money-gopher/models"
-	"github.com/oxisto/money-gopher/portfolio/events"
 
 	"github.com/fatih/color"
 	"github.com/urfave/cli/v3"
@@ -65,21 +64,6 @@ var PortfolioCmd = &cli.Command{
 			Usage: "Subcommands supporting transactions within one portfolio",
 			Commands: []*cli.Command{
 				{
-					Name:   "create",
-					Usage:  "Creates a transaction. Defaults to a \"buy\" transaction",
-					Action: CreateTransaction,
-					Flags: []cli.Flag{
-						&cli.StringFlag{Name: "portfolio-id", Usage: "The name of the portfolio where the transaction will be created in", Required: true},
-						&cli.StringFlag{Name: "security-id", Usage: "The ID of the security this transaction belongs to (its ISIN)", Required: true},
-						&cli.StringFlag{Name: "type", Usage: "The type of the transaction", Required: true, DefaultText: "buy"},
-						&cli.FloatFlag{Name: "amount", Usage: "The amount of securities involved in the transaction", Required: true},
-						&cli.FloatFlag{Name: "price", Usage: "The price without fees or taxes", Required: true},
-						&cli.FloatFlag{Name: "fees", Usage: "Any fees that applied to the transaction"},
-						&cli.FloatFlag{Name: "taxes", Usage: "Any taxes that applied to the transaction"},
-						&cli.StringFlag{Name: "time", Usage: "The time of the transaction. Defaults to 'now'", DefaultText: "now"},
-					},
-				},
-				{
 					Name:   "import",
 					Usage:  "Imports transactions from CSV",
 					Action: ImportTransactions,
@@ -106,7 +90,7 @@ func ListPortfolio(ctx context.Context, cmd *cli.Command) (err error) {
 	}
 
 	err = s.GraphQL.Query(context.Background(), &query, map[string]any{
-		"when": events.Date(time.Now().Format(time.RFC3339)),
+		"when": time.Now(),
 	})
 	if err != nil {
 		return err
@@ -197,39 +181,6 @@ func greenOrRed(f float64) string {
 	} else {
 		return color.GreenString("%.02f", f)
 	}
-}
-
-// CreateTransaction creates a transaction.
-func CreateTransaction(ctx context.Context, cmd *cli.Command) error {
-	/*
-
-		s := mcli.FromContext(ctx)
-		var req = connect.NewRequest(&portfoliov1.CreatePortfolioTransactionRequest{
-			Transaction: &portfoliov1.PortfolioEvent{
-				PortfolioId: cmd.String("portfolio-id"),
-				SecurityId:  cmd.String("security-id"),
-				Type:        eventTypeFrom(cmd.String("type")),
-				Amount:      cmd.Float("amount"),
-				Time:        timeOrNow(cmd.Timestamp("time")),
-				Price:       portfoliov1.Value(int32(cmd.Float("price") * 100)),
-				Fees:        portfoliov1.Value(int32(cmd.Float("fees") * 100)),
-				Taxes:       portfoliov1.Value(int32(cmd.Float("taxes") * 100)),
-			},
-		})
-
-		res, err := s.PortfolioClient.CreatePortfolioTransaction(context.Background(), req)
-		if err != nil {
-			return err
-		}
-
-		fmt.Printf("Successfully created a %s transaction (%s) for security %s in %s.\n",
-			color.CyanString(cmd.String("type")),
-			color.GreenString(res.Msg.Id),
-			color.CyanString(res.Msg.SecurityId),
-			color.CyanString(res.Msg.PortfolioId),
-		)*/
-
-	return nil
 }
 
 /*

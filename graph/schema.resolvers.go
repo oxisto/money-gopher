@@ -10,6 +10,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/oxisto/money-gopher/currency"
 	"github.com/oxisto/money-gopher/finance"
 	"github.com/oxisto/money-gopher/models"
 	"github.com/oxisto/money-gopher/persistence"
@@ -23,11 +24,6 @@ func (r *accountResolver) ReferenceAccount(ctx context.Context, obj *persistence
 // Security is the resolver for the security field.
 func (r *listedSecurityResolver) Security(ctx context.Context, obj *persistence.ListedSecurity) (*persistence.Security, error) {
 	panic(fmt.Errorf("not implemented: Security - security"))
-}
-
-// LatestQuoteTimestamp is the resolver for the latestQuoteTimestamp field.
-func (r *listedSecurityResolver) LatestQuoteTimestamp(ctx context.Context, obj *persistence.ListedSecurity) (*string, error) {
-	panic(fmt.Errorf("not implemented: LatestQuoteTimestamp - latestQuoteTimestamp"))
 }
 
 // CreateSecurity is the resolver for the createSecurity field.
@@ -169,6 +165,27 @@ func (r *mutationResolver) DeleteAccount(ctx context.Context, id string) (*persi
 	return r.DB.DeleteAccount(ctx, id)
 }
 
+// CreateTransaction is the resolver for the createTransaction field.
+func (r *mutationResolver) CreateTransaction(ctx context.Context, input models.TransactionInput) (*persistence.Transaction, error) {
+	return r.DB.CreateTransaction(ctx, persistence.CreateTransactionParams{
+		ID:                   "newID",
+		Time:                 input.Time,
+		SourceAccountID:      &input.SourceAccountID,
+		DestinationAccountID: &input.DestinationAccountID,
+		SecurityID:           &input.SecurityID,
+		Type:                 input.Type,
+		Amount:               input.Amount,
+		Price:                &currency.Currency{Amount: int32(input.Price.Amount), Symbol: input.Price.Symbol},
+		Fees:                 &currency.Currency{Amount: int32(input.Fees.Amount), Symbol: input.Fees.Symbol},
+		Taxes:                &currency.Currency{Amount: int32(input.Taxes.Amount), Symbol: input.Taxes.Symbol},
+	})
+}
+
+// UpdateTransaction is the resolver for the updateTransaction field.
+func (r *mutationResolver) UpdateTransaction(ctx context.Context, id string, input models.TransactionInput) (*persistence.Transaction, error) {
+	panic(fmt.Errorf("not implemented: UpdateTransaction - updateTransaction"))
+}
+
 // TriggerQuoteUpdate is the resolver for the triggerQuoteUpdate field.
 func (r *mutationResolver) TriggerQuoteUpdate(ctx context.Context, securityIDs []string) (updated []*persistence.ListedSecurity, err error) {
 	updated, err = r.QuoteUpdater.UpdateQuotes(ctx, securityIDs)
@@ -185,16 +202,13 @@ func (r *portfolioResolver) Accounts(ctx context.Context, obj *persistence.Portf
 }
 
 // Snapshot is the resolver for the snapshot field.
-func (r *portfolioResolver) Snapshot(ctx context.Context, obj *persistence.Portfolio, when string) (snap *models.PortfolioSnapshot, err error) {
+func (r *portfolioResolver) Snapshot(ctx context.Context, obj *persistence.Portfolio, when *time.Time) (snap *models.PortfolioSnapshot, err error) {
 	var t time.Time
 
-	if when == "" {
+	if when == nil {
 		t = time.Now()
 	} else {
-		t, err = time.Parse(time.RFC3339, when)
-		if err != nil {
-			return nil, err
-		}
+		t = *when
 	}
 
 	return finance.BuildSnapshot(ctx, t, obj.ID, r.DB)
@@ -245,11 +259,6 @@ func (r *securityResolver) ListedAs(ctx context.Context, obj *persistence.Securi
 	return obj.ListedAs(ctx, r.DB)
 }
 
-// Time is the resolver for the time field.
-func (r *transactionResolver) Time(ctx context.Context, obj *persistence.Transaction) (string, error) {
-	return obj.Time.Format(time.RFC3339), nil
-}
-
 // SourceAccount is the resolver for the sourceAccount field.
 func (r *transactionResolver) SourceAccount(ctx context.Context, obj *persistence.Transaction) (*persistence.Account, error) {
 	panic(fmt.Errorf("not implemented: SourceAccount - sourceAccount"))
@@ -293,19 +302,3 @@ type portfolioResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type securityResolver struct{ *Resolver }
 type transactionResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *securityResolver) QuoteProvider(ctx context.Context, obj *persistence.Security) (*string, error) {
-	if obj.QuoteProvider.Valid {
-		return &obj.QuoteProvider.String, nil
-	}
-
-	return nil, nil
-}
-*/
