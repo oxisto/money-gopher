@@ -86,8 +86,7 @@ func ListPortfolio(ctx context.Context, cmd *cli.Command) (err error) {
 		Portfolios []struct {
 			ID          string `json:"id"`
 			DisplayName string `json:"displayName"`
-			//Snapshot    models.PortfolioSnapshot `graphql:"snapshot(when: $when)" json:"snapshot"`
-			Snapshot struct {
+			Snapshot    struct {
 				TotalMarketValue  currency.Currency `json:"totalMarketValue"`
 				TotalProfitOrLoss currency.Currency `json:"totalProfitOrLoss"`
 				TotalGains        float64           `json:"totalGains"`
