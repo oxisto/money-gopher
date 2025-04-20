@@ -1,0 +1,6 @@
+query ListAccounts {
+  accounts {
+    id
+    displayName
+  }
+}

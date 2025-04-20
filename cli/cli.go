@@ -75,9 +75,6 @@ func (opts *SessionOptions) MergeWith(other *SessionOptions) *SessionOptions {
 // DefaultBaseURL is the default base URL for all services.
 const DefaultBaseURL = "http://localhost:8080"
 
-// DefaultGraphURL is the default URL for the GraphQL service.
-const DefaultGraphURL = "http://localhost:9090/graphql"
-
 // NewSession creates a new session.
 func NewSession(opts *SessionOptions) (s *Session) {
 	def := &SessionOptions{
