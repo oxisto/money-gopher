@@ -14,7 +14,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.28
 	github.com/oxisto/assert v0.1.2
 	github.com/oxisto/oauth2go v0.14.0
-	github.com/pressly/goose/v3 v3.24.0
+	github.com/pressly/goose/v3 v3.24.3
 	github.com/urfave/cli/v3 v3.0.0-beta1
 	golang.org/x/net v0.33.0
 	golang.org/x/text v0.21.0
