@@ -18,7 +18,7 @@ require (
 	github.com/urfave/cli/v3 v3.0.0-beta1
 	golang.org/x/net v0.33.0
 	golang.org/x/text v0.21.0
-	google.golang.org/protobuf v1.36.6
+	google.golang.org/protobuf v1.36.7
 )
 
 require github.com/google/go-cmp v0.6.0 // indirect
