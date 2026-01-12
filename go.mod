@@ -13,7 +13,7 @@ require (
 	github.com/lmittmann/tint v1.0.7
 	github.com/mattn/go-colorable v0.1.14
 	github.com/mattn/go-isatty v0.0.20
-	github.com/mattn/go-sqlite3 v1.14.32
+	github.com/mattn/go-sqlite3 v1.14.33
 	github.com/oxisto/assert v0.1.2
 	github.com/oxisto/oauth2go v0.14.0
 	github.com/pressly/goose/v3 v3.26.0
