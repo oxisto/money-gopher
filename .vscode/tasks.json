@@ -46,6 +46,19 @@
 				"isDefault": true
 			},
 			"detail": "cd /Users/oxisto/Repositories/money-gopher; go generate ./..."
+		},
+		{
+			"type": "shell",
+			"label": "pdfdump: generate fixtures",
+			"command": "go",
+			"args": ["run", "./cmd/pdfdump", "-sanitize", "-out", "internal/testdata", "internal/testdata/*.pdf"],
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"panel": "shared"
+			},
+			"group": "none",
+			"problemMatcher": []
 		}
 	]
 }
