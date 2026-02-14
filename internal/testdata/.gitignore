@@ -1,0 +1,7 @@
+# Do NOT commit raw PDF fixtures — store sanitized/plaintext versions instead
+# Use `./cmd/pdfdump -sanitize -out internal/testdata <file.pdf>` to generate .txt fixtures
+*.pdf
+
+# Allow README and text fixtures
+!*.txt
+README.md
