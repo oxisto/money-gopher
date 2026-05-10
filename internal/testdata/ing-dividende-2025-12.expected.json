@@ -1,0 +1,12 @@
+{
+  "expected_tx_count": 1,
+  "expected_txs": [
+    {
+      "type": "DIVIDEND",
+      "isin": "US7561091049",
+      "amount": 160.0,
+      "price_eur": 27.10,
+      "valuta": "15.12.2025"
+    }
+  ]
+}

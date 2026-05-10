@@ -1,6 +1,6 @@
 module github.com/oxisto/money-gopher
 
-go 1.24.0
+go 1.24.1
 
 toolchain go1.24.11
 
@@ -23,7 +23,10 @@ require (
 	google.golang.org/protobuf v1.36.11
 )
 
-require github.com/google/go-cmp v0.7.0 // indirect
+require (
+	github.com/google/go-cmp v0.7.0 // indirect
+	github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728 // indirect
+)
 
 require (
 	github.com/MicahParks/jwkset v0.8.0 // indirect
