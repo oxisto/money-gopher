@@ -24,3 +24,7 @@ private.key
 session.json
 backup.db
 
+# Local sanitizer file for pdfdump (do NOT commit)
+.pdfdump.local
+.pdfdump.local.json
+

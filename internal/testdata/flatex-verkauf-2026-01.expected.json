@@ -1,0 +1,26 @@
+{
+  "expected_tx_count": 3,
+  "expected_txs": [
+    {
+      "type": "SELL",
+      "isin": "DE000JZ16PX9",
+      "amount": 700.0,
+      "price_eur": 0.3,
+      "valuta": "16.01.2026"
+    },
+    {
+      "type": "BUY",
+      "isin": "DE000HT5BQA2",
+      "amount": 260.0,
+      "price_eur": 2.02,
+      "valuta": "16.01.2026"
+    },
+    {
+      "type": "SELL",
+      "isin": "DE000MJ8NW75",
+      "amount": 390.0,
+      "price_eur": 2.64,
+      "valuta": "16.01.2026"
+    }
+  ]
+}

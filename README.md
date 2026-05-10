@@ -116,6 +116,35 @@ For a detailed list of all available commands see `mgo --help`. The CLI also
 supports (basic) shell completion. For details how to activate it, please see
 `mgo completion`.
 
+## PDF text extraction & sanitization (pdfdump) 🔧
+
+Extract plain text from broker/custodian PDFs and generate sanitized test
+fixtures with the `pdfdump` CLI (installed from `./cmd/pdfdump`). Use this to
+produce the `internal/testdata/*.txt` fixtures consumed by the PDF importer
+unit tests.
+
+- Install: `go install ./cmd/pdfdump`
+- Extract to stdout: `pdfdump path/to/statement.pdf`
+- Generate a sanitized fixture file: `pdfdump -sanitize -out internal/testdata path/to/statement.pdf`
+
+Behavior and local substitutions
+- `-sanitize` masks PII (emails, IBANs, phone numbers, obvious names) but
+  preserves structural tokens used by the parser (e.g. ISINs, dates, numeric
+  amounts).
+- Local substitutions: place a JSON map in `.pdfdump.local.json` (repo root or
+  `$HOME`) to replace private strings *before* sanitization. Example entry:
+  `{ "John Doe": "REDACTED" }`. A plain-text fallback file `.pdfdump.local`
+  with `from => to` lines is also supported.
+- `.pdfdump.local.json` is intentionally git-ignored (see
+  `.pdfdump.local.json.example`). Use it for private redactions while
+  regenerating fixtures locally.
+
+Testing / workflows
+- Sanitized `.txt` fixtures live in `internal/testdata/` and the importer tests
+  read those files directly.
+- You can regenerate fixtures with the VS Code task `pdfdump: generate fixtures`
+  or by running the `pdfdump -sanitize` command above.
+
 
 ## Using the UI
 
