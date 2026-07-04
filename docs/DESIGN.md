@@ -187,12 +187,12 @@ Deleted from v1: all buf/proto/Connect artifacts (`buf*.yaml`, `mgo.proto`, `gen
 
 ## Milestones
 
-1. **M0 — Teardown & scaffold.** Remove v1 code (keep `img/`, LICENSE, community files),
+1. ✅ **M0 — Teardown & scaffold.** Remove v1 code (keep `img/`, LICENSE, community files),
    new directory layout, Go module tidy, CI (build + test + sqlc/vet), README rewrite.
-2. **M1 — Core backend.** SQLite schema + migrations + sqlc (users, portfolios, bank
+2. ✅ **M1 — Core backend.** SQLite schema + migrations + sqlc (users, portfolios, cash
    accounts, securities, transactions). GraphQL schema v1 with portfolio/security/
-   transaction CRUD. Dev auth. `moneyd` serves `/graphql` with GraphiQL in dev.
-3. **M2 — Frontend scaffold.** SvelteKit SPA + Tailwind 4 + Houdini against the running
+   transaction CRUD. Dev auth. `moneyd` serves `/graphql` with GraphiQL at `/graphiql`.
+3. 🚧 **M2 — Frontend scaffold.** SvelteKit SPA + Tailwind 4 + Houdini against the running
    backend: portfolio list, portfolio detail, transaction entry.
 4. **M3 — Finance engine.** Port/redo snapshot & performance calculations (positions,
    market value, gains, time-weighted return). `snapshot(time:)` resolver + UI dashboard.
@@ -206,6 +206,49 @@ Deleted from v1: all buf/proto/Connect artifacts (`buf*.yaml`, `mgo.proto`, `gen
 8. **M7 — Ship it.** `go:embed` the built SPA, single-binary release (goreleaser),
    Dockerfile, docs. `mgo` CLI rebuilt on genqlient for the endpoints that matter.
 9. **M8 — LLM fallback extraction** (opt-in), more bank parsers as needed.
+
+## Status / handoff notes (updated 2026-07-04)
+
+Work happens on the `v2` branch. M0 and M1 are committed; M2 is mid-flight.
+
+**Where M2 stands:**
+
+- `ui/` scaffolded with `sv create` (SvelteKit 2, Svelte 5 runes mode, TS).
+  Note: SvelteKit config now lives inline in `ui/vite.config.ts`, not in a
+  `svelte.config.js`.
+- Tailwind 4 installed manually (`tailwindcss` + `@tailwindcss/vite` plugin +
+  `@import 'tailwindcss'` in `src/app.css`) — `sv add tailwindcss` failed at
+  an interactive prompt, don't bother with it.
+- SPA mode done: `adapter-static` with `fallback: 'index.html'`, `ssr = false`
+  in `src/routes/+layout.ts`, vite dev proxy `/graphql` → `localhost:8080`.
+- `npm run build` is green.
+
+**Next steps for M2 (not started):**
+
+1. Houdini setup — do it manually, not via `npx houdini init` (interactive):
+   `npm i houdini houdini-svelte`, then `houdini.config.js` with
+   `schemaPath: '../api/schema.graphql'`, plugin `houdini-svelte` with
+   `client: './src/client'`, scalar `Time` mapped to string/Date;
+   `src/client.ts` with `new HoudiniClient({ url: '/graphql' })`; add
+   `houdini/vite` plugin to `vite.config.ts` (before sveltekit); add
+   `$houdini` to `ui/.gitignore`; run `npx houdini generate`.
+2. Pages: layout with nav + gopher logo (copy `img/gopher.png` to
+   `ui/static/`), dashboard (portfolios + cash accounts + create forms),
+   portfolio detail (transactions table + entry form), securities
+   (list/create with ISIN + listing).
+3. CI: add a `ui` job to `.github/workflows/build.yml` (npm ci, npm run
+   build in `ui/`).
+
+**Gotchas learned so far:**
+
+- sqlc's SQLite engine silently drops `@name` params it cannot parse (e.g.
+  inside `IN (...)`) — always eyeball the generated SQL when using named
+  params. GetTransaction ownership is checked in Go for this reason.
+- SQLite `:memory:` + `database/sql` pooling: without
+  `conn.SetMaxOpenConns(1)` every pooled connection gets its own empty
+  database. Set in `persistence.OpenDB`.
+- Backend smoke test: `go run ./cmd/moneyd` then POST to
+  `localhost:8080/graphql`; GraphiQL at `/graphiql`.
 
 ## Open questions
 
