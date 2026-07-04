@@ -1,0 +1,11 @@
+# Money Gopher GraphQL schema. This file is the single source of truth for the
+# API; Go resolvers (internal/api), the frontend (Houdini), and the CLI
+# (genqlient) are all checked or generated against it.
+
+"Time is an RFC 3339 timestamp."
+scalar Time
+
+type Query {
+  "The version of the moneyd server."
+  version: String!
+}

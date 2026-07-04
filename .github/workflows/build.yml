@@ -2,13 +2,13 @@ name: Build
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "v2"]
   pull_request:
-    branches: ["main"]
   merge_group:
     branches: ["main"]
+
 jobs:
-  build:
+  backend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,32 +16,20 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Set up node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 23
-      - name: Set up buf
-        uses: bufbuild/buf-setup-action@v1.50.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build Backend
+      - name: Check generated code is up to date
         run: |
           go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
           go generate ./...
-          go build -v ./...
-      - name: Test Backend
-        run: |
-          go install github.com/mfridman/tparse@latest
-          go test -v -coverprofile=coverage.cov -coverpkg ./... -covermode=atomic ./...  -json | tee output.json | tparse -follow || true
-          tparse -format markdown -file output.json > $GITHUB_STEP_SUMMARY
+          git diff --exit-code
+      - name: Build
+        run: go build -v ./...
+      - name: Vet
+        run: go vet ./...
+      - name: Test
+        run: go test -coverprofile=coverage.cov -covermode=atomic ./...
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
           files: coverage.cov
           flags: unittests
           token: ${{ secrets.CODECOV_TOKEN }}
-      - name: Build UI
-        run: |
-          npm ci
-          npm run build
-        working-directory: ./ui

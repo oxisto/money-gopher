@@ -1,26 +1,22 @@
-# Binaries for programs and plugins
+# Binaries
+moneyd
+mgo
 *.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-
-# Test binary, built with `go test -c`
 *.test
 
-# Output of the go coverage tool, specifically when used with LiteIDE
+# Coverage
+coverage.cov
 *.out
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
-mgo
-coverage.cov
+# Local data
 money.db
-.DS_Store
-__debug*
-moneyd
-private.key
-session.json
-backup.db
+money.db-journal
+money.db-wal
+money.db-shm
 
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Debugging
+__debug*
