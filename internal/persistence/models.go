@@ -5,8 +5,67 @@
 package persistence
 
 import (
+	"database/sql"
 	"time"
 )
+
+type CashAccount struct {
+	ID          string
+	UserID      string
+	DisplayName string
+	Currency    string
+	CreatedAt   time.Time
+}
+
+type Listing struct {
+	ID            string
+	SecurityID    string
+	Exchange      sql.NullString
+	Ticker        string
+	Currency      string
+	QuoteProvider sql.NullString
+}
+
+type Portfolio struct {
+	ID          string
+	UserID      string
+	DisplayName string
+	CreatedAt   time.Time
+}
+
+type Quote struct {
+	ListingID string
+	Time      time.Time
+	Price     int64
+}
+
+type Security struct {
+	ID          string
+	DisplayName string
+}
+
+type SecurityIdentifier struct {
+	SecurityID string
+	Kind       string
+	Value      string
+}
+
+type Transaction struct {
+	ID            string
+	Type          string
+	Time          time.Time
+	PortfolioID   sql.NullString
+	SecurityID    sql.NullString
+	CashAccountID sql.NullString
+	Units         float64
+	Price         sql.NullInt64
+	Fees          int64
+	Taxes         int64
+	CashDelta     int64
+	Currency      string
+	Source        string
+	CreatedAt     time.Time
+}
 
 type User struct {
 	ID          string

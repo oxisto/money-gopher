@@ -10,14 +10,18 @@ import (
 	"github.com/graph-gophers/graphql-go/relay"
 
 	"github.com/oxisto/money-gopher/api"
+	"github.com/oxisto/money-gopher/internal/persistence"
 )
 
 // Version is the moneyd version reported by the API. Overridden at build time
 // via -ldflags "-X github.com/oxisto/money-gopher/internal/api.Version=...".
 var Version = "dev"
 
-// RootResolver is the root GraphQL resolver.
-type RootResolver struct{}
+// RootResolver is the root GraphQL resolver; all queries and mutations hang
+// off it.
+type RootResolver struct {
+	db *persistence.DB
+}
 
 // Version resolves Query.version.
 func (r *RootResolver) Version() string {
@@ -27,8 +31,8 @@ func (r *RootResolver) Version() string {
 // NewSchema parses the embedded schema and binds it to the root resolver. It
 // panics if the resolvers do not match the schema, which is exercised by
 // tests, so a mismatch cannot reach a release.
-func NewSchema() *graphql.Schema {
-	return graphql.MustParseSchema(api.Schema, &RootResolver{}, graphql.UseFieldResolvers())
+func NewSchema(db *persistence.DB) *graphql.Schema {
+	return graphql.MustParseSchema(api.Schema, &RootResolver{db: db}, graphql.UseFieldResolvers())
 }
 
 // NewHandler returns the HTTP handler serving the GraphQL API.

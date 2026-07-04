@@ -55,21 +55,40 @@ document processing (async job after upload, status queryable via GraphQL).
 
 ## Domain model
 
-Carried over from v1, extended for multi-user and imports:
+Redesigned from scratch (deliberately *not* v1's schema, which had known pain
+points: decorative bank accounts, per-field currency pairs, no quote history,
+ISIN as primary key). Core idea: **typed events with an explicit cash leg** —
+every transaction that moves money names the cash account it settles against
+and its signed effect on that account, so account balances are always
+derivable as `SUM(cash_delta)`.
 
-- **User** — OIDC subject, display name. Owns portfolios and bank accounts.
-- **Portfolio** — belongs to a user; may be shared (read) with other users later.
-- **BankAccount** — cash account, linked to portfolios for settlement.
-- **Security** — global (shared across users), identified by ISIN-style ID.
-- **ListedSecurity** — a security on a specific exchange: ticker, currency, latest quote.
-- **Transaction** (v1: `PortfolioEvent`) — buy/sell/dividend/deposit/withdrawal/fees/taxes,
-  with time, amounts, linked security. Provenance: manual, CSV, or a source **Document**.
-- **Document** — an uploaded file (PDF/CSV): raw bytes, extraction state, detected bank.
-- **Snapshot / Position** — computed, not stored: portfolio value, positions, performance
-  at a point in time (from `internal/finance`).
+- **User** — OIDC identity (issuer + subject), provisioned on first login.
+  Owns portfolios and cash accounts.
+- **CashAccount** — a real bank/cash account with a denomination currency.
+  Balance is derived, never stored.
+- **Portfolio** — a collection of security positions. Cash is deliberately
+  not part of a portfolio; transactions link the two.
+- **Security** — global (shared across users), opaque surrogate ID. External
+  identifiers (ISIN, WKN, tickers) live in **SecurityIdentifier** rows —
+  imports match on whatever the bank prints. ISIN/WKN are globally unique.
+- **Listing** — a security on an exchange: ticker, currency, quote provider.
+  The thing that has a price.
+- **Quote** — append-only price history per listing; "latest quote" is just
+  the newest row. First-class from day one for charts and snapshots.
+- **Transaction** — typed event (BUY, SELL, DELIVERY_IN/OUTBOUND, DIVIDEND,
+  INTEREST, DEPOSIT_CASH, WITHDRAW_CASH, ACCOUNT_FEES, TAX_REFUND) with
+  units, price, fees, taxes, and the cash leg (`cash_account_id` +
+  `cash_delta`). Single currency per transaction. The server derives the
+  cash delta for trades/dividends; pure cash events state it explicitly.
+  `source` records provenance (manual vs. import).
+- **Document** (M5) — an uploaded file (PDF/CSV): raw bytes, extraction
+  state, detected bank; staged transactions reference it.
+- **Snapshot / Position** — computed, not stored: portfolio value, positions,
+  performance at a point in time (from `internal/finance`, M3).
 
-Money is stored as integer minor units (cents) + ISO currency code — never floats.
-GraphQL exposes custom scalars `Money` and `Time`.
+Money is stored as integer minor units (cents) + ISO 4217 code — never
+floats. Share quantities are floats (fractional units exist). In GraphQL,
+money surfaces as a `Money { amount, currency }` type.
 
 ## GraphQL schema (sketch)
 

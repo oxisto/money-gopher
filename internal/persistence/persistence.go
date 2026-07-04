@@ -4,6 +4,7 @@
 package persistence
 
 import (
+	"context"
 	"database/sql"
 	"embed"
 	"fmt"
@@ -32,6 +33,11 @@ func OpenDB(path string) (*DB, error) {
 		return nil, fmt.Errorf("could not open database: %w", err)
 	}
 
+	// SQLite allows only one writer anyway, and a single connection keeps
+	// ":memory:" databases intact — every pooled connection would otherwise
+	// get its own empty database.
+	conn.SetMaxOpenConns(1)
+
 	goose.SetBaseFS(migrations)
 	goose.SetLogger(goose.NopLogger())
 
@@ -49,4 +55,20 @@ func OpenDB(path string) (*DB, error) {
 // Close closes the underlying database connection.
 func (db *DB) Close() error {
 	return db.conn.Close()
+}
+
+// Tx runs fn inside a database transaction, committing if fn returns nil and
+// rolling back otherwise.
+func (db *DB) Tx(ctx context.Context, fn func(q *Queries) error) error {
+	tx, err := db.conn.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	if err := fn(db.Queries.WithTx(tx)); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }

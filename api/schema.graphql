@@ -5,7 +5,245 @@
 "Time is an RFC 3339 timestamp."
 scalar Time
 
+"""
+Money is a monetary value: the amount in minor units (e.g. euro cents)
+together with its ISO 4217 currency code.
+"""
+type Money {
+  amount: Int!
+  currency: String!
+}
+
+"TransactionType is the kind of a transaction."
+enum TransactionType {
+  "A purchase of a security, settling against a cash account."
+  BUY
+  "A sale of a security, settling against a cash account."
+  SELL
+  "Securities transferred in from elsewhere; no cash movement."
+  DELIVERY_INBOUND
+  "Securities transferred out to elsewhere; no cash movement."
+  DELIVERY_OUTBOUND
+  "A dividend payout for a held security."
+  DIVIDEND
+  "Interest earned on a cash account."
+  INTEREST
+  "Cash paid into a cash account."
+  DEPOSIT_CASH
+  "Cash taken out of a cash account."
+  WITHDRAW_CASH
+  "Fees charged by the bank or broker."
+  ACCOUNT_FEES
+  "A refund of previously withheld taxes."
+  TAX_REFUND
+}
+
+"User is a person using money-gopher."
+type User {
+  id: ID!
+  displayName: String!
+}
+
+"""
+CashAccount is a real-world bank/cash account. Its balance is derived from
+the cash deltas of all transactions settling against it.
+"""
+type CashAccount {
+  id: ID!
+  displayName: String!
+  "The ISO 4217 code the account is denominated in."
+  currency: String!
+  balance: Money!
+  transactions: [Transaction!]!
+}
+
+"Portfolio is a collection of security positions belonging to one user."
+type Portfolio {
+  id: ID!
+  displayName: String!
+  transactions: [Transaction!]!
+}
+
+"""
+SecurityIdentifier maps an external identifier scheme (e.g. 'ISIN', 'WKN',
+'TICKER') to its value for one security.
+"""
+type SecurityIdentifier {
+  kind: String!
+  value: String!
+}
+
+"Quote is one price observation for a listing."
+type Quote {
+  time: Time!
+  price: Money!
+}
+
+"Listing is a security listed on a particular exchange."
+type Listing {
+  id: ID!
+  "The exchange the security is listed on, e.g. an MIC code."
+  exchange: String
+  ticker: String!
+  "The ISO 4217 code quotes are denominated in."
+  currency: String!
+  "The name of the provider that provides quotes for this listing."
+  quoteProvider: String
+  latestQuote: Quote
+}
+
+"Security is a tradable security, shared across all users."
+type Security {
+  id: ID!
+  displayName: String!
+  identifiers: [SecurityIdentifier!]!
+  listings: [Listing!]!
+}
+
+"""
+Transaction is a typed portfolio/cash event. Every transaction that moves
+money names the cash account it settles against and its signed effect on
+that account (cashDelta). All monetary values share one currency.
+"""
+type Transaction {
+  id: ID!
+  type: TransactionType!
+  time: Time!
+  "The affected portfolio; null for pure cash events."
+  portfolio: Portfolio
+  "The affected security; null for pure cash events."
+  security: Security
+  "The settling cash account; null if nothing settles (e.g. deliveries)."
+  cashAccount: CashAccount
+  "The number of shares involved."
+  units: Float!
+  "The price per unit."
+  price: Money
+  fees: Money!
+  taxes: Money!
+  "The signed change of the cash account balance."
+  cashDelta: Money!
+  "Provenance of this transaction, e.g. 'MANUAL' or an import kind."
+  source: String!
+}
+
 type Query {
   "The version of the moneyd server."
   version: String!
+  "The currently authenticated user."
+  me: User!
+  portfolios: [Portfolio!]!
+  portfolio(id: ID!): Portfolio
+  cashAccounts: [CashAccount!]!
+  cashAccount(id: ID!): CashAccount
+  securities: [Security!]!
+  security(id: ID!): Security
+  transaction(id: ID!): Transaction
+}
+
+input CreatePortfolioInput {
+  displayName: String!
+}
+
+input UpdatePortfolioInput {
+  displayName: String
+}
+
+input CreateCashAccountInput {
+  displayName: String!
+  "The ISO 4217 code the account is denominated in."
+  currency: String!
+}
+
+input UpdateCashAccountInput {
+  displayName: String
+}
+
+input SecurityIdentifierInput {
+  kind: String!
+  value: String!
+}
+
+input ListingInput {
+  exchange: String
+  ticker: String!
+  currency: String!
+  quoteProvider: String
+}
+
+input CreateSecurityInput {
+  displayName: String!
+  identifiers: [SecurityIdentifierInput!]
+  listings: [ListingInput!]
+}
+
+"""
+UpdateSecurityInput updates a security. When identifiers or listings are
+provided, they replace the existing set entirely.
+"""
+input UpdateSecurityInput {
+  displayName: String
+  identifiers: [SecurityIdentifierInput!]
+  listings: [ListingInput!]
+}
+
+"""
+CreateTransactionInput creates a transaction. Monetary values are minor
+units in `currency`. For trade and dividend types, cashDelta is derived
+from units, price, fees and taxes when omitted; for pure cash events
+(deposit, withdrawal, interest, fees, tax refund) it is required.
+"""
+input CreateTransactionInput {
+  type: TransactionType!
+  time: Time!
+  portfolioID: ID
+  securityID: ID
+  cashAccountID: ID
+  units: Float
+  "The price per unit in minor units."
+  price: Int
+  fees: Int
+  taxes: Int
+  "The signed change of the cash account balance in minor units."
+  cashDelta: Int
+  currency: String!
+}
+
+"""
+UpdateTransactionInput updates a transaction; only provided fields change.
+When trade fields (units, price, fees, taxes or type) change and cashDelta
+is not provided explicitly, it is re-derived for trade and dividend types.
+"""
+input UpdateTransactionInput {
+  type: TransactionType
+  time: Time
+  securityID: ID
+  cashAccountID: ID
+  units: Float
+  price: Int
+  fees: Int
+  taxes: Int
+  cashDelta: Int
+  currency: String
+}
+
+type Mutation {
+  createPortfolio(input: CreatePortfolioInput!): Portfolio!
+  updatePortfolio(id: ID!, input: UpdatePortfolioInput!): Portfolio!
+  "Deletes the portfolio and all its transactions. Returns the deleted ID."
+  deletePortfolio(id: ID!): ID!
+
+  createCashAccount(input: CreateCashAccountInput!): CashAccount!
+  updateCashAccount(id: ID!, input: UpdateCashAccountInput!): CashAccount!
+  "Deletes the cash account and all its transactions. Returns the deleted ID."
+  deleteCashAccount(id: ID!): ID!
+
+  createSecurity(input: CreateSecurityInput!): Security!
+  updateSecurity(id: ID!, input: UpdateSecurityInput!): Security!
+  "Deletes the security. Fails while transactions still reference it."
+  deleteSecurity(id: ID!): ID!
+
+  createTransaction(input: CreateTransactionInput!): Transaction!
+  updateTransaction(id: ID!, input: UpdateTransactionInput!): Transaction!
+  deleteTransaction(id: ID!): ID!
 }
