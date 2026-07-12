@@ -9,6 +9,7 @@ import (
 
 	"github.com/oxisto/money-gopher/internal/auth"
 	"github.com/oxisto/money-gopher/internal/persistence"
+	"github.com/oxisto/money-gopher/internal/quotes"
 )
 
 // newTestSchema returns a schema over a fresh in-memory database and a
@@ -28,7 +29,9 @@ func newTestSchema(t *testing.T) (*graphql.Schema, context.Context) {
 		t.Fatalf("EnsureDevUser() error = %v", err)
 	}
 
-	return NewSchema(db), auth.WithUser(context.Background(), user)
+	updater := &quotes.Updater{DB: db, Registry: quotes.NewRegistry()}
+
+	return NewSchema(db, updater), auth.WithUser(context.Background(), user)
 }
 
 // exec runs a GraphQL query and decodes the response data into a generic map,
@@ -72,9 +75,9 @@ func TestLifecycle(t *testing.T) {
 	}`, nil)
 	accountID := data["createCashAccount"].(map[string]any)["id"].(string)
 
-	data = exec(t, schema, ctx, `mutation {
-		createPortfolio(input: { displayName: "My Portfolio" }) { id }
-	}`, nil)
+	data = exec(t, schema, ctx, `mutation ($account: ID!) {
+		createPortfolio(input: { displayName: "My Portfolio", cashAccountID: $account }) { id }
+	}`, map[string]any{"account": accountID})
 	portfolioID := data["createPortfolio"].(map[string]any)["id"].(string)
 
 	data = exec(t, schema, ctx, `mutation {
@@ -174,8 +177,13 @@ func TestUserIsolation(t *testing.T) {
 	schema, ctx := newTestSchema(t)
 
 	data := exec(t, schema, ctx, `mutation {
-		createPortfolio(input: { displayName: "Mine" }) { id }
+		createCashAccount(input: { displayName: "Giro", currency: "EUR" }) { id }
 	}`, nil)
+	accountID := data["createCashAccount"].(map[string]any)["id"].(string)
+
+	data = exec(t, schema, ctx, `mutation ($account: ID!) {
+		createPortfolio(input: { displayName: "Mine", cashAccountID: $account }) { id }
+	}`, map[string]any{"account": accountID})
 	portfolioID := data["createPortfolio"].(map[string]any)["id"].(string)
 
 	// An unauthenticated request cannot see anything.

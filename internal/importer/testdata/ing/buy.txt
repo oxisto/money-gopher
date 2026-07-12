@@ -1,0 +1,44 @@
+                     ING-DiBa AG · 60628 Frankfurt am Main
+
+
+
+                                                                                                                       Depotinhaber:                        Max Mustermann
+                                                                                                                       Direkt-Depot Nr.:                    123456789
+                     Herrn
+                     Max Mustermann                                                                                     Datum:                               03.07.2024
+                     Musterstraße 1                                                                                     Seite:                               1 von 1
+                     12345 Musterstadt
+
+
+
+
+                     Wertpapierabrechnung                                           Kauf aus Sparplan
+                     Ordernummer                                                    345361721.001
+                     ISIN (WKN)                                                     US7170811035 (852009)
+                     Wertpapierbezeichnung                                          Pfizer Inc.
+                                                                                    Registered Shares DL -,05
+
+                     Nominale                                                       Stück                   13,15412
+                     Kurs                                                           EUR                         26,15
+                     Handelsplatz                                                   Xetra
+                     Ausführungstag / -zeit                                         01.07.2024 um 09:04:09 Uhr
+                     Kurswert                                                       EUR                                               343,98
+                     Provision                                                      EUR                                                 6,02
+                     Endbetrag zu Ihren Lasten                                      EUR                                              350,00
+
+                     Abrechnungs-IBAN                                               DE12 3456 7890 1234 5678 90
+                     Valuta                                                         03.07.2024
+                     Wertpapiere zugunsten Girosammelverwahrung.
+
+
+
+
+34WAAD123456789_T
+                     Bei Fragen besuchen Sie uns einfach unter www.ing.de/wertpapierwissen - da gibt es viele schnelle
+                     Antworten. Oder senden Sie uns eine E-Mail an info@ing.de .
+
+
+
+                     ING-DiBa AG · Theodor-Heuss-Allee 2 · 60486 Frankfurt am Main · Vorsitzende des Aufsichtsrates: Susanne Klöß-Braekler · Vorstand: Nick Jue (Vorsitzender),
+                     Michael Clijdesdale, Eddy Henning, Daniel Llano Manibardo, Dr. Ralph Müller, Nurten Spitzer-Erdogan · Sitz: Frankfurt am Main · AG Frankfurt am Main · HRB 7727
+                     Steuernummer: 047 220 2800 4 · USt-IdNr.: DE 114 103 475 · Internet: www.ing.de · E-Mail: info@ing.de · BIC: INGDDEFFXXX · Mitglied im Einlagensicherungsfonds

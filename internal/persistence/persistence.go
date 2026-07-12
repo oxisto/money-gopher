@@ -28,7 +28,11 @@ type DB struct {
 // OpenDB opens the SQLite database at path (created if missing) and applies
 // all pending migrations. Use ":memory:" for an ephemeral database in tests.
 func OpenDB(path string) (*DB, error) {
-	conn, err := sql.Open("sqlite", path+"?_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)")
+	// _time_format=sqlite makes the driver store time.Time values as
+	// "2006-01-02 15:04:05.999999999-07:00" instead of Go's default
+	// time.Time.String() — parseable by SQLite's datetime functions and,
+	// together with storing all times in UTC, lexicographically sortable.
+	conn, err := sql.Open("sqlite", path+"?_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)&_time_format=sqlite")
 	if err != nil {
 		return nil, fmt.Errorf("could not open database: %w", err)
 	}

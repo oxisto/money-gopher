@@ -1,0 +1,22 @@
+query Dashboard {
+	portfolios @list(name: "All_Portfolios") {
+		id
+		displayName
+		snapshot {
+			totalMarketValue {
+				amount
+				currency
+			}
+			totalGains
+		}
+	}
+	cashAccounts @list(name: "All_CashAccounts") {
+		id
+		displayName
+		currency
+		balance {
+			amount
+			currency
+		}
+	}
+}

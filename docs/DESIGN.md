@@ -192,11 +192,11 @@ Deleted from v1: all buf/proto/Connect artifacts (`buf*.yaml`, `mgo.proto`, `gen
 2. ✅ **M1 — Core backend.** SQLite schema + migrations + sqlc (users, portfolios, cash
    accounts, securities, transactions). GraphQL schema v1 with portfolio/security/
    transaction CRUD. Dev auth. `moneyd` serves `/graphql` with GraphiQL at `/graphiql`.
-3. 🚧 **M2 — Frontend scaffold.** SvelteKit SPA + Tailwind 4 + Houdini against the running
+3. ✅ **M2 — Frontend scaffold.** SvelteKit SPA + Tailwind 4 + Houdini against the running
    backend: portfolio list, portfolio detail, transaction entry.
-4. **M3 — Finance engine.** Port/redo snapshot & performance calculations (positions,
+4. ✅ **M3 — Finance engine.** Port/redo snapshot & performance calculations (positions,
    market value, gains, time-weighted return). `snapshot(time:)` resolver + UI dashboard.
-5. **M4 — Quotes.** QuoteProvider interface, first provider, background refresh,
+5. ✅ **M4 — Quotes.** QuoteProvider interface, first provider, background refresh,
    quote history table for charts.
 6. **M5 — PDF import.** `/upload`, document storage, pdftotext extraction, bank
    detection, first real bank parser (whichever bank's PDFs we have fixtures for),
@@ -209,38 +209,119 @@ Deleted from v1: all buf/proto/Connect artifacts (`buf*.yaml`, `mgo.proto`, `gen
 
 ## Status / handoff notes (updated 2026-07-04)
 
-Work happens on the `v2` branch. M0 and M1 are committed; M2 is mid-flight.
+Work happens on the `v2` branch. M0–M4 are done; M5 (PDF import) is next.
 
-**Where M2 stands:**
+**Where M4 landed:**
+
+- `internal/quotes`: `Provider` interface (`LatestQuote(ctx, Instrument)`,
+  where `Instrument` carries ticker/exchange/currency plus ISIN/WKN from the
+  identifiers), a `Registry`, and an `Updater` that fetches quotes for all
+  listings with a `quote_provider` and appends them to the history
+  (`ON CONFLICT` on listing+time makes re-fetching idempotent). `moneyd`
+  refreshes in the background (`-quote-interval`, default 1h, 0 disables).
+- Providers ported from v1: `yf` (Yahoo chart API, by ticker — use
+  Yahoo-style tickers like `EUNL.DE`; needs a User-Agent header) and `ing`
+  (by ISIN). **The v1 ING endpoint is dead** (404, retired API) — the
+  provider is kept for the interface's sake but needs a new endpoint or
+  removal; `yf` is verified working against production.
+- GraphQL: `triggerQuoteUpdate(securityIDs)` mutation returning
+  `QuoteUpdateResult { updatedListings, errors }` — per-listing failures go
+  into `errors` instead of failing the mutation. `Listing.quotes(from, to)`
+  exposes the history for future charts.
+- UI: securities page shows the latest quote per listing, the create form
+  has a quote-provider select, and an "Update quotes" button triggers the
+  mutation and refetches.
+- **Time-format bug found & fixed:** the modernc SQLite driver stores
+  `time.Time` as Go's `t.String()` by default (`2026-07-03 15:36:11 +0000
+  UTC`), which is not lexicographically sortable across offsets and broke
+  `ORDER BY time DESC` for quotes. `OpenDB` now sets `_time_format=sqlite`
+  in the DSN and all write paths normalize to UTC first; a regression test
+  (`TestQuoteTimeOrdering`) guards it. Databases written before this change
+  have mixed formats and should be recreated (or `replace(time, ' +0000
+  UTC', '+00:00')`).
+- UI pattern: route pages gate on `fetching && !data`, not `fetching` alone —
+  otherwise every refetch unmounts the page tree and wipes component state
+  (this ate the quote-update status message until fixed).
+
+**Where M3 landed:**
+
+- `internal/finance`: FIFO lot books per security (ported from v1's
+  `finance/calculation.go`, but on the new typed-transaction model),
+  `SnapshotAt(txs, time, quote)` for positions/market value/gains, and
+  `TimeWeightedReturn(txs, from, to, quote)` chaining sub-period returns at
+  external flows. Prices come through a `QuoteFunc`; without a quote a
+  position is valued at its purchase price (so returns are flat-but-honest
+  until M4 fills the quotes table).
+- Deliberate simplifications, revisit when they hurt: single currency per
+  portfolio (no FX), quotes come from a security's *first* listing, TWR
+  treats dividends as distributions (they add to return) and counts fees and
+  taxes on trades as cost (flows use the cash leg).
+- GraphQL: `Portfolio.snapshot(time:)` returning `PortfolioSnapshot` with
+  `positions`, totals, and `performance(period:)` (Period enum, ALL_TIME
+  uses the first transaction). New sqlc query `GetLatestQuoteBefore` for
+  historical snapshots. The quote lookup is per-security (n+1); fine at
+  personal-portfolio scale, batch it if it ever shows up in profiles.
+- UI: dashboard portfolio list shows market value + gain badge; the detail
+  page gained a snapshot summary (market value, P/L, all-time TWR) and a
+  positions table. New components: SnapshotSummary, PositionsTable,
+  ui/GainBadge; `formatPercent` in `src/lib/format.ts`.
+- Quotes can only be inserted directly into the database so far (no
+  mutation, no provider) — that is exactly M4.
+
+**Where M2 landed:**
 
 - `ui/` scaffolded with `sv create` (SvelteKit 2, Svelte 5 runes mode, TS).
-  Note: SvelteKit config now lives inline in `ui/vite.config.ts`, not in a
+  Note: SvelteKit config lives inline in `ui/vite.config.ts`, not in a
   `svelte.config.js`.
 - Tailwind 4 installed manually (`tailwindcss` + `@tailwindcss/vite` plugin +
   `@import 'tailwindcss'` in `src/app.css`) — `sv add tailwindcss` failed at
   an interactive prompt, don't bother with it.
-- SPA mode done: `adapter-static` with `fallback: 'index.html'`, `ssr = false`
+- SPA mode: `adapter-static` with `fallback: 'index.html'`, `ssr = false`
   in `src/routes/+layout.ts`, vite dev proxy `/graphql` → `localhost:8080`.
-- `npm run build` is green.
-
-**Next steps for M2 (not started):**
-
-1. Houdini setup — do it manually, not via `npx houdini init` (interactive):
-   `npm i houdini houdini-svelte`, then `houdini.config.js` with
-   `schemaPath: '../api/schema.graphql'`, plugin `houdini-svelte` with
-   `client: './src/client'`, scalar `Time` mapped to string/Date;
-   `src/client.ts` with `new HoudiniClient({ url: '/graphql' })`; add
-   `houdini/vite` plugin to `vite.config.ts` (before sveltekit); add
-   `$houdini` to `ui/.gitignore`; run `npx houdini generate`.
-2. Pages: layout with nav + gopher logo (copy `img/gopher.png` to
-   `ui/static/`), dashboard (portfolios + cash accounts + create forms),
-   portfolio detail (transactions table + entry form), securities
-   (list/create with ISIN + listing).
-3. CI: add a `ui` job to `.github/workflows/build.yml` (npm ci, npm run
-   build in `ui/`).
+- Houdini 2 + houdini-svelte 3 set up (see gotchas — several things moved
+  since Houdini 1.x). Query documents live in `.gql` files co-located with
+  their route; each route has a `+page.ts` calling the generated
+  `load_<Query>` helper. Mutations live inline (`graphql(...)`) in the
+  component that owns the form and use `@list` insert fragments
+  (`All_Portfolios`, `All_CashAccounts`, `All_Securities`) so lists update
+  without refetching; the transaction form refetches via an `oncreated`
+  callback instead.
+- UI is composed from small components: `src/lib/components/ui/` holds
+  primitives (Button, TextField, SelectField, Section, ErrorNote), feature
+  components (AppNav, PortfolioList, CashAccountList, TransactionTable,
+  TransactionForm, SecurityList, SecurityForm) sit next to them; pages only
+  compose. Money/date helpers in `src/lib/format.ts`.
+- Pages: dashboard (portfolios + cash accounts + create forms), portfolio
+  detail (transactions table + entry form), securities (list/create with
+  ISIN + one listing).
+- CI: `ui` job in `.github/workflows/build.yml` (npm ci, houdini generate,
+  svelte-check, build). `npm run build` and `npm run check` are green.
+- Verified end to end with headless Chromium against `moneyd`: pages render,
+  forms create data, list cache updates work, no console errors.
+- `cmd/moneyd` had never actually been committed in M1 (only a stale compiled
+  binary at the repo root) — recreated in M2: `/graphql` with dev auth,
+  GraphiQL page at `/graphiql`, flags `-addr` and `-db`.
 
 **Gotchas learned so far:**
 
+- Houdini 2 / houdini-svelte 3 differ from the 1.x docs:
+  - Codegen output goes to `.houdini/`, not `$houdini/` (gitignore
+    accordingly). The `$houdini` import alias must be added to the kit
+    `alias` config as *both* `$houdini` and `$houdini/*` — kit only emits
+    the wildcard tsconfig path if you spell it out, and without it
+    svelte-check can't resolve the generated stores' base classes.
+  - `new HoudiniClient({ url })` is gone; `url` ('/graphql') lives in
+    `houdini.config.js`. Set `watchSchema: null` there so dev mode doesn't
+    poll the endpoint for introspection (the schema comes from
+    `schemaPath: '../api/schema.graphql'`).
+  - There is no automatic per-route load generation from inline `graphql()`
+    queries anymore; use the generated `load_<Query>` helpers in `+page.ts`
+    (pass `event` and `variables`). Route-param → variable inference does
+    not happen either.
+  - Set `framework: 'kit'` and `forceRunesMode: true` in the houdini-svelte
+    plugin config — there is no `svelte.config.js` for it to detect kit.
+  - `houdini-svelte` ships platform binaries via optionalDependencies; the
+    (blockable) postinstall script is only a fallback downloader.
 - sqlc's SQLite engine silently drops `@name` params it cannot parse (e.g.
   inside `IN (...)`) — always eyeball the generated SQL when using named
   params. GetTransaction ownership is checked in Go for this reason.
@@ -248,7 +329,11 @@ Work happens on the `v2` branch. M0 and M1 are committed; M2 is mid-flight.
   `conn.SetMaxOpenConns(1)` every pooled connection gets its own empty
   database. Set in `persistence.OpenDB`.
 - Backend smoke test: `go run ./cmd/moneyd` then POST to
-  `localhost:8080/graphql`; GraphiQL at `/graphiql`.
+  `localhost:8080/graphql`; GraphiQL at `/graphiql`. Frontend:
+  `npm run dev` in `ui/`, which proxies `/graphql` to moneyd.
+- The `money.db` (+ `-shm`/`-wal`) and `moneyd`/`mgo` binaries at the repo
+  root are leftovers from the lost pre-M2 build and predate the current
+  migrations ("no such table: users") — delete them and start fresh.
 
 ## Open questions
 

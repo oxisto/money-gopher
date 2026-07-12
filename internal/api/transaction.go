@@ -197,8 +197,10 @@ func (r *RootResolver) CreateTransaction(ctx context.Context, args struct{ Input
 
 	in := args.Input
 	d := txData{
-		Type:          in.Type,
-		Time:          in.Time.Time,
+		Type: in.Type,
+		// Times are stored in UTC so that their string representation in
+		// SQLite always sorts chronologically.
+		Time:          in.Time.Time.UTC(),
 		PortfolioID:   idPtr(in.PortfolioID),
 		SecurityID:    idPtr(in.SecurityID),
 		CashAccountID: idPtr(in.CashAccountID),
@@ -304,7 +306,7 @@ func (r *RootResolver) UpdateTransaction(ctx context.Context, args struct {
 		d.Type = *in.Type
 	}
 	if in.Time != nil {
-		d.Time = in.Time.Time
+		d.Time = in.Time.Time.UTC()
 	}
 	if in.SecurityID != nil {
 		d.SecurityID = idPtr(in.SecurityID)

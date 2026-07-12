@@ -1,12 +1,18 @@
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
+import houdini from 'houdini/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
 	plugins: [
+		houdini(),
 		tailwindcss(),
 		sveltekit({
+			alias: {
+				$houdini: './.houdini',
+				'$houdini/*': './.houdini/*'
+			},
 			compilerOptions: {
 				// Force runes mode for the project, except for libraries. Can be removed in svelte 6.
 				runes: ({ filename }) =>

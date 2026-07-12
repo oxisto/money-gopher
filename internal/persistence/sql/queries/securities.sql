@@ -87,6 +87,17 @@ WHERE
 ORDER BY
     ticker;
 
+-- name: ListListingsWithProvider :many
+SELECT
+    *
+FROM
+    listings
+WHERE
+    quote_provider IS NOT NULL
+ORDER BY
+    security_id,
+    ticker;
+
 -- name: DeleteListings :exec
 DELETE FROM listings
 WHERE
@@ -108,6 +119,19 @@ FROM
     quotes
 WHERE
     listing_id = ?
+ORDER BY
+    time DESC
+LIMIT
+    1;
+
+-- name: GetLatestQuoteBefore :one
+SELECT
+    *
+FROM
+    quotes
+WHERE
+    listing_id = ?
+    AND time <= ?
 ORDER BY
     time DESC
 LIMIT

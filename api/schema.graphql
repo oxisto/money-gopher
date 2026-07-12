@@ -61,7 +61,70 @@ type CashAccount {
 type Portfolio {
   id: ID!
   displayName: String!
+  "The settlement cash account for all trades and dividends in this portfolio."
+  cashAccount: CashAccount!
   transactions: [Transaction!]!
+  "The computed state of the portfolio at the given time; defaults to now."
+  snapshot(time: Time): PortfolioSnapshot!
+}
+
+"Period is a time span for performance calculations, ending at the snapshot time."
+enum Period {
+  ONE_WEEK
+  ONE_MONTH
+  SIX_MONTHS
+  YEAR_TO_DATE
+  ONE_YEAR
+  "From the first transaction of the portfolio."
+  ALL_TIME
+}
+
+"Performance is the return of a portfolio over a period."
+type Performance {
+  period: Period!
+  "The start of the period."
+  from: Time!
+  "The end of the period, i.e. the snapshot time."
+  to: Time!
+  "The time-weighted return over the period as a fraction, e.g. 0.05 for +5 %."
+  timeWeightedReturn: Float!
+}
+
+"Position is the holding of one security in a portfolio snapshot."
+type Position {
+  security: Security!
+  units: Float!
+  "The FIFO cost basis of the held shares, without fees and taxes."
+  purchaseValue: Money!
+  "The average purchase price of one share."
+  purchasePrice: Money!
+  "The latest quote at the snapshot time, or the purchase price if none exists."
+  marketPrice: Money!
+  "The market price times the held units."
+  marketValue: Money!
+  "The absolute unrealized gain (or loss, if negative)."
+  profitOrLoss: Money!
+  "The relative unrealized gain, e.g. 0.05 for +5 %."
+  gains: Float!
+}
+
+"""
+PortfolioSnapshot is the computed state of a portfolio at a point in time:
+the positions held and their value. It is never stored; asking for a past
+time replays the transactions up to that point.
+"""
+type PortfolioSnapshot {
+  time: Time!
+  "The time of the earliest transaction; null for an empty portfolio."
+  firstTransactionTime: Time
+  "The held positions, sorted by security name."
+  positions: [Position!]!
+  totalPurchaseValue: Money!
+  totalMarketValue: Money!
+  totalProfitOrLoss: Money!
+  "The relative unrealized gain over all positions."
+  totalGains: Float!
+  performance(period: Period!): Performance!
 }
 
 """
@@ -90,6 +153,16 @@ type Listing {
   "The name of the provider that provides quotes for this listing."
   quoteProvider: String
   latestQuote: Quote
+  "The stored quote history, oldest first, optionally bounded."
+  quotes(from: Time, to: Time): [Quote!]!
+}
+
+"QuoteUpdateResult reports the outcome of a quote update."
+type QuoteUpdateResult {
+  "The number of listings that received a fresh quote."
+  updatedListings: Int!
+  "Error messages of listings whose update failed."
+  errors: [String!]!
 }
 
 "Security is a tradable security, shared across all users."
@@ -127,6 +200,55 @@ type Transaction {
   source: String!
 }
 
+"DocumentState is the processing state of an uploaded document."
+enum DocumentState {
+  "The document has been stored and is awaiting pipeline processing."
+  UPLOADED
+  "The document has been processed and staged transactions are ready to review."
+  PARSED
+  "The pipeline failed; the error field explains why."
+  FAILED
+  "All staged transactions have been committed as real transactions."
+  IMPORTED
+}
+
+"Document is an uploaded file (PDF, CSV) going through the import pipeline."
+type Document {
+  id: ID!
+  filename: String!
+  contentType: String!
+  state: DocumentState!
+  "The name of the bank parser that recognised this document."
+  detectedBank: String
+  "The error message if pipeline processing failed."
+  error: String
+  createdAt: Time!
+  "The staged transactions extracted from this document, sorted by time."
+  stagedTransactions: [StagedTransaction!]!
+}
+
+"""
+StagedTransaction is a transaction parsed from an uploaded document, awaiting
+user review. The security may already be linked when a matching ISIN was found.
+"""
+type StagedTransaction {
+  id: ID!
+  type: TransactionType!
+  time: Time!
+  units: Float!
+  price: Money
+  fees: Money!
+  taxes: Money!
+  cashDelta: Money!
+  currency: String!
+  "The security name as printed on the document."
+  securityHint: String
+  "The ISIN printed on the document."
+  isin: String
+  "The security matched by ISIN, if any."
+  security: Security
+}
+
 type Query {
   "The version of the moneyd server."
   version: String!
@@ -139,10 +261,14 @@ type Query {
   securities: [Security!]!
   security(id: ID!): Security
   transaction(id: ID!): Transaction
+  "All documents uploaded by the current user, optionally filtered by state."
+  documents(state: DocumentState): [Document!]!
 }
 
 input CreatePortfolioInput {
   displayName: String!
+  "The ID of the cash account that settles all trades and dividends."
+  cashAccountID: ID!
 }
 
 input UpdatePortfolioInput {
@@ -227,6 +353,35 @@ input UpdateTransactionInput {
   currency: String
 }
 
+"""
+ConfirmImportInput provides defaults applied to every staged transaction when
+it is committed as a real transaction. Per-transaction overrides take precedence.
+"""
+input ConfirmImportInput {
+  "Default portfolio for trades and deliveries (required for those types)."
+  portfolioID: ID
+  "Default cash account for trades, dividends and cash events."
+  cashAccountID: ID
+  "Per-staged-transaction overrides; only needed when defaults are insufficient."
+  transactions: [StagedTransactionConfirmInput!]!
+}
+
+"""
+StagedTransactionConfirmInput overrides fields for one staged transaction when
+it is committed. Fields not provided fall back to the ConfirmImportInput defaults.
+"""
+input StagedTransactionConfirmInput {
+  id: ID!
+  "Override the matched security."
+  securityID: ID
+  "Override the default portfolio."
+  portfolioID: ID
+  "Override the default cash account."
+  cashAccountID: ID
+  "Explicit cash delta in minor units (derived from units/price/fees/taxes otherwise)."
+  cashDelta: Int
+}
+
 type Mutation {
   createPortfolio(input: CreatePortfolioInput!): Portfolio!
   updatePortfolio(id: ID!, input: UpdatePortfolioInput!): Portfolio!
@@ -246,4 +401,19 @@ type Mutation {
   createTransaction(input: CreateTransactionInput!): Transaction!
   updateTransaction(id: ID!, input: UpdateTransactionInput!): Transaction!
   deleteTransaction(id: ID!): ID!
+
+  """
+  Fetches fresh quotes from the configured quote providers — for the given
+  securities, or for every listing with a provider when none are given.
+  """
+  triggerQuoteUpdate(securityIDs: [ID!]): QuoteUpdateResult!
+
+  "Delete an uploaded document and its staged transactions. Returns the deleted ID."
+  deleteDocument(id: ID!): ID!
+
+  """
+  Validate and commit all staged transactions from a document as real
+  transactions, then mark the document as IMPORTED.
+  """
+  confirmImport(documentID: ID!, input: ConfirmImportInput!): [Transaction!]!
 }

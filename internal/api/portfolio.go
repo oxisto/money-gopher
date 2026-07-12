@@ -61,7 +61,8 @@ func (r *RootResolver) Portfolio(ctx context.Context, args struct{ ID graphql.ID
 
 // CreatePortfolioInput is the input for Mutation.createPortfolio.
 type CreatePortfolioInput struct {
-	DisplayName string
+	DisplayName   string
+	CashAccountID graphql.ID
 }
 
 // CreatePortfolio resolves Mutation.createPortfolio.
@@ -71,10 +72,21 @@ func (r *RootResolver) CreatePortfolio(ctx context.Context, args struct{ Input C
 		return nil, err
 	}
 
+	// Verify the cash account belongs to this user.
+	if _, err = r.db.GetCashAccount(ctx, persistence.GetCashAccountParams{
+		ID:     string(args.Input.CashAccountID),
+		UserID: user.ID,
+	}); errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf("cash account %q not found", args.Input.CashAccountID)
+	} else if err != nil {
+		return nil, err
+	}
+
 	portfolio, err := r.db.CreatePortfolio(ctx, persistence.CreatePortfolioParams{
-		ID:          uuid.NewString(),
-		UserID:      user.ID,
-		DisplayName: args.Input.DisplayName,
+		ID:            uuid.NewString(),
+		UserID:        user.ID,
+		DisplayName:   args.Input.DisplayName,
+		CashAccountID: string(args.Input.CashAccountID),
 	})
 	if err != nil {
 		return nil, err
@@ -152,6 +164,24 @@ func (r *PortfolioResolver) ID() graphql.ID {
 
 func (r *PortfolioResolver) DisplayName() string {
 	return r.portfolio.DisplayName
+}
+
+// CashAccount resolves Portfolio.cashAccount.
+func (r *PortfolioResolver) CashAccount(ctx context.Context) (*CashAccountResolver, error) {
+	user, err := auth.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := r.db.GetCashAccount(ctx, persistence.GetCashAccountParams{
+		ID:     r.portfolio.CashAccountID,
+		UserID: user.ID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &CashAccountResolver{db: r.db, account: account}, nil
 }
 
 // Transactions resolves Portfolio.transactions, ordered by time.

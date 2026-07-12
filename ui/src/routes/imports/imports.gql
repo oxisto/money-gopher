@@ -1,0 +1,52 @@
+query Imports {
+	documents {
+		id
+		filename
+		state
+		detectedBank
+		error
+		createdAt
+		stagedTransactions {
+			id
+			type
+			time
+			units
+			price {
+				amount
+				currency
+			}
+			fees {
+				amount
+				currency
+			}
+			taxes {
+				amount
+				currency
+			}
+			cashDelta {
+				amount
+				currency
+			}
+			currency
+			securityHint
+			isin
+			security {
+				id
+				displayName
+			}
+		}
+	}
+	portfolios {
+		id
+		displayName
+	}
+	cashAccounts {
+		id
+		displayName
+		currency
+	}
+	securities {
+		id
+		displayName
+	}
+}

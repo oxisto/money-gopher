@@ -1,8 +1,8 @@
 -- name: CreatePortfolio :one
 INSERT INTO
-    portfolios (id, user_id, display_name)
+    portfolios (id, user_id, display_name, cash_account_id)
 VALUES
-    (?, ?, ?) RETURNING *;
+    (?, ?, ?, ?) RETURNING *;
 
 -- name: GetPortfolio :one
 SELECT
