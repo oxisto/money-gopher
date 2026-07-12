@@ -14,7 +14,7 @@
 <div class="min-h-screen bg-gray-50 text-gray-900">
 	<AppNav />
 
-	<main class="mx-auto max-w-5xl px-4 py-6">
+	<main class="mx-auto max-w-7xl px-4 py-6">
 		{@render children()}
 	</main>
 </div>

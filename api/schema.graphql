@@ -53,6 +53,8 @@ type CashAccount {
   displayName: String!
   "The ISO 4217 code the account is denominated in."
   currency: String!
+  "The IBAN of this bank account, used to auto-match imported documents."
+  iban: String
   balance: Money!
   transactions: [Transaction!]!
 }
@@ -208,6 +210,8 @@ enum DocumentState {
   PARSED
   "The pipeline failed; the error field explains why."
   FAILED
+  "The document was intentionally skipped (e.g. Vorabpauschale, Storno)."
+  SKIPPED
   "All staged transactions have been committed as real transactions."
   IMPORTED
 }
@@ -222,9 +226,16 @@ type Document {
   detectedBank: String
   "The error message if pipeline processing failed."
   error: String
+  "The date of the transaction(s) in the document, extracted during parsing."
+  transactionDate: Time
   createdAt: Time!
   "The staged transactions extracted from this document, sorted by time."
   stagedTransactions: [StagedTransaction!]!
+  """
+  The cash account whose IBAN matches the settlement IBAN printed on the
+  document. Nil when no match is found or the document has no IBAN.
+  """
+  suggestedCashAccount: CashAccount
 }
 
 """
@@ -279,6 +290,8 @@ input CreateCashAccountInput {
   displayName: String!
   "The ISO 4217 code the account is denominated in."
   currency: String!
+  "The IBAN of this bank account (optional but enables auto-matching of imported documents)."
+  iban: String
 }
 
 input UpdateCashAccountInput {

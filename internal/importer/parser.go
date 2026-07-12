@@ -26,6 +26,9 @@ type StagedTransaction struct {
 	SecurityHint string
 	// ISIN as printed on the document.
 	ISIN string
+	// SettlementIBAN is the bank account IBAN the settlement goes against.
+	// Used to auto-match the import to a portfolio's linked cash account.
+	SettlementIBAN string
 }
 
 // Parser understands one bank's (or format's) documents.

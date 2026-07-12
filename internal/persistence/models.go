@@ -15,21 +15,24 @@ type CashAccount struct {
 	UserID      string
 	DisplayName string
 	Currency    string
+	Iban        sql.NullString
 	CreatedAt   time.Time
 }
 
 // Document is an uploaded file going through the import pipeline.
 type Document struct {
-	ID            string
-	UserID        string
-	Filename      string
-	ContentType   string
-	Data          []byte
-	State         string
-	DetectedBank  sql.NullString
-	ExtractedText sql.NullString
-	Error         sql.NullString
-	CreatedAt     time.Time
+	ID              string
+	UserID          string
+	Filename        string
+	ContentType     string
+	Data            []byte
+	State           string
+	DetectedBank    sql.NullString
+	ExtractedText   sql.NullString
+	Error           sql.NullString
+	SettlementIban  sql.NullString
+	TransactionDate sql.NullTime
+	CreatedAt       time.Time
 }
 
 // Listing is a security listed on a particular exchange.

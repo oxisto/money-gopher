@@ -17,6 +17,7 @@
 
 	let name = $state('');
 	let currency = $state('EUR');
+	let iban = $state('');
 	let error = $state<string | null>(null);
 
 	async function submit(event: SubmitEvent) {
@@ -24,11 +25,16 @@
 		if (!name.trim()) return;
 
 		const result = await createCashAccount.mutate({
-			input: { displayName: name.trim(), currency: currency.toUpperCase() }
+			input: {
+				displayName: name.trim(),
+				currency: currency.toUpperCase(),
+				iban: iban.trim() || null
+			}
 		});
 		error = result.errors?.[0]?.message ?? null;
 		if (!error) {
 			name = '';
+			iban = '';
 		}
 	}
 </script>
@@ -46,13 +52,16 @@
 	</ul>
 {/if}
 
-<form onsubmit={submit} class="mt-4 flex items-start gap-2">
-	<div class="grow">
-		<TextField bind:value={name} placeholder="New account name" required />
+<form onsubmit={submit} class="mt-4 flex flex-col gap-2">
+	<div class="flex items-start gap-2">
+		<div class="grow">
+			<TextField bind:value={name} placeholder="Account name" required />
+		</div>
+		<div class="w-20">
+			<TextField bind:value={currency} placeholder="EUR" maxlength={3} required />
+		</div>
+		<Button type="submit">Create</Button>
 	</div>
-	<div class="w-20">
-		<TextField bind:value={currency} placeholder="EUR" maxlength={3} required />
-	</div>
-	<Button type="submit">Create</Button>
+	<TextField bind:value={iban} placeholder="IBAN (optional — for auto-matching imports)" />
 </form>
 <ErrorNote message={error} />

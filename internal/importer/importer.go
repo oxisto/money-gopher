@@ -21,8 +21,13 @@ const (
 	StateUploaded = "UPLOADED"
 	StateParsed   = "PARSED"
 	StateFailed   = "FAILED"
+	StateSkipped  = "SKIPPED"
 	StateImported = "IMPORTED"
 )
+
+// ErrSkipped is returned by parsers for documents that are intentionally not
+// imported (Vorabpauschale, Storno). The document is marked SKIPPED, not FAILED.
+var ErrSkipped = errors.New("skipped")
 
 // Service runs the import pipeline.
 type Service struct {
@@ -63,8 +68,12 @@ func (s *Service) Process(ctx context.Context, documentID string, userID string)
 
 	text, bank, staged, err := s.run(ctx, doc)
 	if err != nil {
+		state := StateFailed
+		if errors.Is(err, ErrSkipped) {
+			state = StateSkipped
+		}
 		_, uerr := s.DB.UpdateDocumentState(ctx, persistence.UpdateDocumentStateParams{
-			State:         StateFailed,
+			State:         state,
 			DetectedBank:  nullStr(bank),
 			ExtractedText: nullStr(text),
 			Error:         nullStr(err.Error()),
@@ -112,11 +121,21 @@ func (s *Service) Process(ctx context.Context, documentID string, userID string)
 		}
 	}
 
+	// Extract per-document fields from the first staged transaction.
+	var settlementIBAN string
+	var txDate sql.NullTime
+	if len(staged) > 0 {
+		settlementIBAN = staged[0].SettlementIBAN
+		txDate = sql.NullTime{Time: staged[0].Time, Valid: true}
+	}
+
 	_, err = s.DB.UpdateDocumentState(ctx, persistence.UpdateDocumentStateParams{
-		State:         StateParsed,
-		DetectedBank:  nullStr(bank),
-		ExtractedText: nullStr(text),
-		ID:            doc.ID,
+		State:           StateParsed,
+		DetectedBank:    nullStr(bank),
+		ExtractedText:   nullStr(text),
+		SettlementIban:  nullStr(settlementIBAN),
+		TransactionDate: txDate,
+		ID:              doc.ID,
 	})
 
 	return err

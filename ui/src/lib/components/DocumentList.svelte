@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { graphql } from '$houdini';
-	import { formatDate } from '$lib/format';
+	import { formatDate, formatMoney } from '$lib/format';
 	import DocumentReview from './DocumentReview.svelte';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
@@ -11,8 +11,9 @@
 		state: string;
 		detectedBank: string | null;
 		error: string | null;
-		createdAt: Date;
+		transactionDate: Date | null;
 		stagedTransactions: StagedTx[];
+		suggestedCashAccount: { id: string; displayName: string; currency: string } | null;
 	}
 	interface StagedTx {
 		id: string;
@@ -78,12 +79,14 @@
 		UPLOADED: 'bg-yellow-100 text-yellow-800',
 		PARSED: 'bg-blue-100 text-blue-800',
 		FAILED: 'bg-red-100 text-red-800',
+		SKIPPED: 'bg-gray-100 text-gray-500',
 		IMPORTED: 'bg-green-100 text-green-800'
 	};
 	const stateLabel: Record<string, string> = {
 		UPLOADED: 'Processing…',
 		PARSED: 'Ready to review',
 		FAILED: 'Failed',
+		SKIPPED: 'Skipped',
 		IMPORTED: 'Imported'
 	};
 </script>
@@ -97,7 +100,6 @@
 				<div class="flex items-start justify-between gap-4">
 					<div class="flex-1 min-w-0">
 						<div class="flex items-center gap-2 flex-wrap">
-							<span class="font-medium text-sm truncate">{doc.filename}</span>
 							<span class="rounded-full px-2 py-0.5 text-xs font-medium {stateBadge[doc.state] ?? 'bg-gray-100 text-gray-600'}">
 								{stateLabel[doc.state] ?? doc.state}
 							</span>
@@ -105,15 +107,32 @@
 								<span class="text-xs text-gray-400">{doc.detectedBank}</span>
 							{/if}
 						</div>
-						<p class="mt-0.5 text-xs text-gray-400">{formatDate(doc.createdAt)}</p>
-						{#if doc.state === 'FAILED' && doc.error}
-							<p class="mt-2 text-xs text-red-600">{doc.error}</p>
+
+						{#if doc.stagedTransactions.length > 0}
+							{@const tx = doc.stagedTransactions[0]}
+							<div class="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+								<span class="text-sm font-medium text-gray-800">{formatDate(tx.time)}</span>
+								<span class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-mono">{tx.type}</span>
+								{#if tx.security}
+									<span class="text-sm text-gray-700">{tx.security.displayName}</span>
+								{:else if tx.securityHint}
+									<span class="text-sm text-gray-500 italic">{tx.securityHint}</span>
+								{:else if tx.isin}
+									<span class="text-sm text-gray-500 font-mono">{tx.isin}</span>
+								{/if}
+								{#if tx.cashDelta.amount !== 0}
+									<span class="text-sm font-medium {tx.cashDelta.amount >= 0 ? 'text-green-700' : 'text-red-700'}">
+										{formatMoney(tx.cashDelta)}
+									</span>
+								{/if}
+							</div>
+						{:else if doc.state === 'FAILED' && doc.error}
+							<p class="mt-1 text-xs text-red-600">{doc.error}</p>
+						{:else if doc.transactionDate}
+							<p class="mt-1 text-sm text-gray-500">{formatDate(doc.transactionDate)}</p>
 						{/if}
-						{#if doc.state === 'PARSED'}
-							<p class="mt-0.5 text-xs text-gray-500">
-								{doc.stagedTransactions.length} transaction{doc.stagedTransactions.length !== 1 ? 's' : ''} ready to review
-							</p>
-						{/if}
+
+						<p class="mt-0.5 text-xs text-gray-400 truncate">{doc.filename}</p>
 					</div>
 					<div class="flex items-center gap-2 flex-shrink-0">
 						{#if doc.state === 'PARSED'}
@@ -138,6 +157,7 @@
 					<div class="mt-4 border-t border-gray-100 pt-4">
 						<DocumentReview
 							document={doc}
+							suggestedCashAccount={doc.suggestedCashAccount}
 							{portfolios}
 							{cashAccounts}
 							{securities}

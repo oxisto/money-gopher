@@ -63,6 +63,7 @@ func (r *RootResolver) CashAccount(ctx context.Context, args struct{ ID graphql.
 type CreateCashAccountInput struct {
 	DisplayName string
 	Currency    string
+	IBAN        *string
 }
 
 // CreateCashAccount resolves Mutation.createCashAccount.
@@ -77,6 +78,7 @@ func (r *RootResolver) CreateCashAccount(ctx context.Context, args struct{ Input
 		UserID:      user.ID,
 		DisplayName: args.Input.DisplayName,
 		Currency:    args.Input.Currency,
+		Iban:        nullString(args.Input.IBAN),
 	})
 	if err != nil {
 		return nil, err
@@ -148,16 +150,14 @@ func (r *RootResolver) DeleteCashAccount(ctx context.Context, args struct{ ID gr
 	return args.ID, nil
 }
 
-func (r *CashAccountResolver) ID() graphql.ID {
-	return graphql.ID(r.account.ID)
-}
-
-func (r *CashAccountResolver) DisplayName() string {
-	return r.account.DisplayName
-}
-
-func (r *CashAccountResolver) Currency() string {
-	return r.account.Currency
+func (r *CashAccountResolver) ID() graphql.ID      { return graphql.ID(r.account.ID) }
+func (r *CashAccountResolver) DisplayName() string { return r.account.DisplayName }
+func (r *CashAccountResolver) Currency() string    { return r.account.Currency }
+func (r *CashAccountResolver) IBAN() *string {
+	if r.account.Iban.Valid {
+		return &r.account.Iban.String
+	}
+	return nil
 }
 
 // Balance resolves CashAccount.balance as the sum of all cash deltas.

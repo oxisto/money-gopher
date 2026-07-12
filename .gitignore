@@ -9,10 +9,10 @@ coverage.cov
 *.out
 
 # Local data
-money.db
-money.db-journal
-money.db-wal
-money.db-shm
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
 
 # OS noise
 .DS_Store

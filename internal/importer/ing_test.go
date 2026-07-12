@@ -106,9 +106,9 @@ func TestING_ParseAll(t *testing.T) {
 				}
 			}
 
-			t.Logf("OK  %s  %s  %s  units=%.4f  cashDelta=%d  taxes=%d",
+			t.Logf("OK  %s  %s  %s  units=%.4f  cashDelta=%d  taxes=%d  iban=%s",
 				tx.Type, tx.ISIN, tx.Time.Format("2006-01-02"),
-				tx.Units, tx.CashDelta, tx.Taxes)
+				tx.Units, tx.CashDelta, tx.Taxes, tx.SettlementIBAN)
 		})
 	}
 }

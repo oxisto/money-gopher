@@ -1,8 +1,17 @@
 -- name: CreateCashAccount :one
 INSERT INTO
-    cash_accounts (id, user_id, display_name, currency)
+    cash_accounts (id, user_id, display_name, currency, iban)
 VALUES
-    (?, ?, ?, ?) RETURNING *;
+    (?, ?, ?, ?, ?) RETURNING *;
+
+-- name: GetCashAccountByIBAN :one
+SELECT
+    *
+FROM
+    cash_accounts
+WHERE
+    iban = ?
+    AND user_id = ?;
 
 -- name: GetCashAccount :one
 SELECT

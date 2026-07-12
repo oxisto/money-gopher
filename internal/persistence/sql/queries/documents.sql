@@ -21,7 +21,7 @@ FROM
 WHERE
     user_id = ?
 ORDER BY
-    created_at DESC;
+    transaction_date ASC NULLS LAST, created_at ASC;
 
 -- name: ListDocumentsByState :many
 SELECT
@@ -32,7 +32,7 @@ WHERE
     user_id = ?
     AND state = ?
 ORDER BY
-    created_at DESC;
+    transaction_date ASC NULLS LAST, created_at ASC;
 
 -- name: UpdateDocumentState :one
 UPDATE documents
@@ -40,7 +40,9 @@ SET
     state = ?,
     detected_bank = ?,
     extracted_text = ?,
-    error = ?
+    error = ?,
+    settlement_iban = ?,
+    transaction_date = ?
 WHERE
     id = ? RETURNING *;
 

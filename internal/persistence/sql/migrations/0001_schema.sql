@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS cash_accounts (
     user_id      TEXT     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     display_name TEXT     NOT NULL,
     currency     TEXT     NOT NULL,
+    iban         TEXT,
     created_at   DATETIME NOT NULL DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ'))
 );
 
@@ -100,18 +101,20 @@ CREATE INDEX IF NOT EXISTS idx_transactions_cash_account_time
 
 CREATE TABLE IF NOT EXISTS documents (
     -- Document is an uploaded file going through the import pipeline.
-    id             TEXT     PRIMARY KEY,
-    user_id        TEXT     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    filename       TEXT     NOT NULL,
-    content_type   TEXT     NOT NULL,
-    data           BLOB     NOT NULL,
-    state          TEXT     NOT NULL DEFAULT 'UPLOADED' CHECK (
-                       state IN ('UPLOADED','PARSED','FAILED','IMPORTED')
-                   ),
-    detected_bank  TEXT,
-    extracted_text TEXT,
-    error          TEXT,
-    created_at     DATETIME NOT NULL DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ'))
+    id              TEXT     PRIMARY KEY,
+    user_id         TEXT     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    filename        TEXT     NOT NULL,
+    content_type    TEXT     NOT NULL,
+    data            BLOB     NOT NULL,
+    state           TEXT     NOT NULL DEFAULT 'UPLOADED' CHECK (
+                        state IN ('UPLOADED','PARSED','FAILED','SKIPPED','IMPORTED')
+                    ),
+    detected_bank   TEXT,
+    extracted_text  TEXT,
+    error           TEXT,
+    settlement_iban TEXT,
+    transaction_date DATETIME,
+    created_at      DATETIME NOT NULL DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ'))
 );
 
 CREATE TABLE IF NOT EXISTS staged_transactions (

@@ -25,9 +25,12 @@ export default defineConfig({
 		})
 	],
 	server: {
-		// The dev server proxies GraphQL to a locally running moneyd.
+		// The dev server proxies API routes to a locally running moneyd.
 		proxy: {
-			'/graphql': 'http://localhost:8080'
+			'/graphql': 'http://localhost:8080',
+			'/upload': 'http://localhost:8080',
+			'/documents': 'http://localhost:8080',
+			'/auth': 'http://localhost:8080'
 		}
 	}
 });

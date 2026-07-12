@@ -26,7 +26,11 @@ func (ING) Matches(text string) bool {
 		(strings.Contains(text, "Wertpapierabrechnung") ||
 			strings.Contains(text, "Dividendengutschrift") ||
 			strings.Contains(text, "Zinsgutschrift") ||
-			strings.Contains(text, "Ertragsgutschrift"))
+			strings.Contains(text, "Ertragsgutschrift") ||
+			strings.Contains(text, "Ertragsthesaurierung") ||
+			strings.Contains(text, "Rückzahlung") ||
+			strings.Contains(text, "Wertpapier Eingang") ||
+			strings.Contains(text, "Vorabpauschale"))
 }
 
 // ING emits one document per transaction, so Parse always returns a single row.
@@ -40,11 +44,38 @@ func (ING) Parse(text string) ([]StagedTransaction, error) {
 	// "Neuabrechnung nach Storno" is a replacement document and must NOT be skipped.
 	if strings.Contains(page1, "Storno der Ordernummer") ||
 		strings.Contains(page1, "*** Storno ***") {
-		return nil, fmt.Errorf("Storno document: skipped")
+		return nil, fmt.Errorf("storno: %w", ErrSkipped)
+	}
+
+	// Pure Vorabpauschale documents (no trade or income header) are a German
+	// prepayment tax notice with zero cash flow — nothing to import.
+	if strings.Contains(page1, "Vorabpauschale") &&
+		!strings.Contains(page1, "Wertpapierabrechnung") &&
+		!strings.Contains(page1, "Dividendengutschrift") &&
+		!strings.Contains(page1, "Zinsgutschrift") &&
+		!strings.Contains(page1, "Ertragsgutschrift") &&
+		!strings.Contains(page1, "Ertragsthesaurierung") {
+		return nil, fmt.Errorf("vorabpauschale: %w", ErrSkipped)
 	}
 
 	if strings.Contains(page1, "Wertpapierabrechnung") {
 		tx, err := ingParseTrade(page1)
+		if err != nil {
+			return nil, err
+		}
+		return []StagedTransaction{tx}, nil
+	}
+
+	if strings.Contains(page1, "Rückzahlung") {
+		tx, err := ingParseRepayment(page1)
+		if err != nil {
+			return nil, err
+		}
+		return []StagedTransaction{tx}, nil
+	}
+
+	if strings.Contains(page1, "Wertpapier Eingang") {
+		tx, err := ingParseDelivery(page1)
 		if err != nil {
 			return nil, err
 		}
@@ -62,6 +93,7 @@ func (ING) Parse(text string) ([]StagedTransaction, error) {
 
 var (
 	ingISIN     = regexp.MustCompile(`ISIN \(WKN\)\s+([A-Z]{2}[A-Z0-9]{10})`)
+	ingIBAN     = regexp.MustCompile(`Abrechnungs-IBAN\s+([A-Z]{2}\d{2}[\d ]+)`)
 	ingName     = regexp.MustCompile(`Wertpapierbezeichnung\s+(\S.+)`)
 	ingValuta   = regexp.MustCompile(`Valuta\s+(\d{2}\.\d{2}\.\d{4})`)
 	ingUnitsStk = regexp.MustCompile(`Nominale\s+Stück\s+([\d,]+)`)          // equity buy: "Nominale Stück 13,15412"
@@ -183,17 +215,21 @@ func ingParseTrade(text string) (StagedTransaction, error) {
 		}
 	}
 
+	iban, _ := ingFind(ingIBAN, text, "")
+	iban = strings.ReplaceAll(iban, " ", "")
+
 	return StagedTransaction{
-		Type:         txType,
-		Time:         t,
-		Units:        units,
-		Price:        price,
-		Fees:         fees,
-		Taxes:        taxes,
-		CashDelta:    cashDelta,
-		Currency:     currency,
-		SecurityHint: strings.TrimSpace(name),
-		ISIN:         isin,
+		Type:           txType,
+		Time:           t,
+		Units:          units,
+		Price:          price,
+		Fees:           fees,
+		Taxes:          taxes,
+		CashDelta:      cashDelta,
+		Currency:       currency,
+		SecurityHint:   strings.TrimSpace(name),
+		ISIN:           isin,
+		SettlementIBAN: iban,
 	}, nil
 }
 
@@ -242,7 +278,7 @@ func ingParseIncome(text string) (StagedTransaction, error) {
 		// "Gesamtbetrag   0,00" without the "zu Ihren Gunsten" suffix when the
 		// amount is zero. Skip them — no cash changed hands.
 		if strings.Contains(text, "Vorabpauschale") {
-			return StagedTransaction{}, fmt.Errorf("Vorabpauschale with zero cash flow: skipped")
+			return StagedTransaction{}, fmt.Errorf("vorabpauschale: %w", ErrSkipped)
 		}
 		return StagedTransaction{}, fmt.Errorf("Gesamtbetrag zu Ihren Gunsten: %w", findErr)
 	}
@@ -253,13 +289,133 @@ func ingParseIncome(text string) (StagedTransaction, error) {
 
 	taxes := ingTaxSum(text)
 
+	iban, _ := ingFind(ingIBAN, text, "")
+	iban = strings.ReplaceAll(iban, " ", "")
+
 	return StagedTransaction{
-		Type:         "DIVIDEND",
+		Type:           "DIVIDEND",
+		Time:           t,
+		Units:          units,
+		CashDelta:      cashDelta,
+		Taxes:          taxes,
+		Currency:       currency,
+		SecurityHint:   strings.TrimSpace(name),
+		ISIN:           isin,
+		SettlementIBAN: iban,
+	}, nil
+}
+
+// ── repayment (Rückzahlung) ───────────────────────────────────────────────────
+
+// ingParseRepayment handles "Rückzahlung" documents — a bond or warrant that
+// was redeemed at maturity. It maps to a SELL (the issuer buys it back).
+// The Endbetrag line gives the total cash received; Nominale is in Stück.
+var ingEndbetrag = regexp.MustCompile(`Endbetrag\s+([A-Z]{3})\s`)
+
+func ingParseRepayment(text string) (StagedTransaction, error) {
+	isin, err := ingFind(ingISIN, text, "ISIN")
+	if err != nil {
+		return StagedTransaction{}, err
+	}
+	name, _ := ingFind(ingName, text, "")
+
+	unitsStr, err := ingFind(ingUnitsStk, text, "")
+	if err != nil {
+		// Some Rückzahlungen use "Nominale 150,00 Stück" order.
+		unitsStr, err = ingFind(ingUnitsNom, text, "Nominale")
+		if err != nil {
+			return StagedTransaction{}, err
+		}
+	}
+	units, err := ingFloat(unitsStr)
+	if err != nil {
+		return StagedTransaction{}, fmt.Errorf("units: %w", err)
+	}
+
+	dateStr, err := ingFind(ingValuta, text, "Valuta")
+	if err != nil {
+		return StagedTransaction{}, err
+	}
+	t, err := ingDate(dateStr)
+	if err != nil {
+		return StagedTransaction{}, err
+	}
+
+	currency := "EUR"
+	if c, cerr := ingFind(ingEndbetrag, text, ""); cerr == nil {
+		currency = c
+	}
+
+	cashStr, err := ingFindLineAmount(text, "Endbetrag", "")
+	if err != nil {
+		return StagedTransaction{}, err
+	}
+	cashDelta, err := ingMinor(cashStr)
+	if err != nil {
+		return StagedTransaction{}, fmt.Errorf("cash delta: %w", err)
+	}
+
+	iban, _ := ingFind(ingIBAN, text, "")
+	iban = strings.ReplaceAll(iban, " ", "")
+
+	return StagedTransaction{
+		Type:           "SELL",
+		Time:           t,
+		Units:          units,
+		CashDelta:      cashDelta,
+		Currency:       currency,
+		SecurityHint:   strings.TrimSpace(name),
+		ISIN:           isin,
+		SettlementIBAN: iban,
+	}, nil
+}
+
+// ── delivery (Wertpapier Eingang / Bestandsveränderung) ───────────────────────
+
+// ingParseDelivery handles "Wertpapier Eingang" documents — spin-off or
+// corporate-action deliveries where units arrive with no cash involved.
+// The layout is a multi-column table; ISIN appears as "ISIN (WKN): <value>".
+var (
+	ingDeliveryISIN  = regexp.MustCompile(`ISIN \(WKN\):\s+([A-Z]{2}[A-Z0-9]{10})`)
+	ingDeliveryUnits = regexp.MustCompile(`([\d.,]+)\s+Stück`)
+	ingDeliveryName  = regexp.MustCompile(`Stück\s+(\S[^\n]+?)\s{2,}`)
+	ingDeliveryDate  = regexp.MustCompile(`(\d{2}\.\d{2}\.\d{4})\s+\d{10}`)
+)
+
+func ingParseDelivery(text string) (StagedTransaction, error) {
+	isin, err := ingFind(ingDeliveryISIN, text, "ISIN")
+	if err != nil {
+		return StagedTransaction{}, err
+	}
+
+	unitsStr, err := ingFind(ingDeliveryUnits, text, "Stück")
+	if err != nil {
+		return StagedTransaction{}, err
+	}
+	units, err := ingFloat(unitsStr)
+	if err != nil {
+		return StagedTransaction{}, fmt.Errorf("units: %w", err)
+	}
+
+	// Security name sits on the same line as the units, after the units value.
+	name, _ := ingFind(ingDeliveryName, text, "")
+
+	// Date appears in the table as "DD.MM.YYYY   <order-number>".
+	dateStr, err := ingFind(ingDeliveryDate, text, "date")
+	if err != nil {
+		return StagedTransaction{}, err
+	}
+	t, err := ingDate(dateStr)
+	if err != nil {
+		return StagedTransaction{}, err
+	}
+
+	return StagedTransaction{
+		Type:         "DELIVERY_INBOUND",
 		Time:         t,
 		Units:        units,
-		CashDelta:    cashDelta,
-		Taxes:        taxes,
-		Currency:     currency,
+		CashDelta:    0,
+		Currency:     "EUR",
 		SecurityHint: strings.TrimSpace(name),
 		ISIN:         isin,
 	}, nil

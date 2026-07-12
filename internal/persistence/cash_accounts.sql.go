@@ -12,9 +12,9 @@ import (
 
 const createCashAccount = `-- name: CreateCashAccount :one
 INSERT INTO
-    cash_accounts (id, user_id, display_name, currency)
+    cash_accounts (id, user_id, display_name, currency, iban)
 VALUES
-    (?, ?, ?, ?) RETURNING id, user_id, display_name, currency, created_at
+    (?, ?, ?, ?, ?) RETURNING id, user_id, display_name, currency, iban, created_at
 `
 
 type CreateCashAccountParams struct {
@@ -22,6 +22,7 @@ type CreateCashAccountParams struct {
 	UserID      string
 	DisplayName string
 	Currency    string
+	Iban        sql.NullString
 }
 
 func (q *Queries) CreateCashAccount(ctx context.Context, arg CreateCashAccountParams) (*CashAccount, error) {
@@ -30,6 +31,7 @@ func (q *Queries) CreateCashAccount(ctx context.Context, arg CreateCashAccountPa
 		arg.UserID,
 		arg.DisplayName,
 		arg.Currency,
+		arg.Iban,
 	)
 	var i CashAccount
 	err := row.Scan(
@@ -37,6 +39,7 @@ func (q *Queries) CreateCashAccount(ctx context.Context, arg CreateCashAccountPa
 		&i.UserID,
 		&i.DisplayName,
 		&i.Currency,
+		&i.Iban,
 		&i.CreatedAt,
 	)
 	return &i, err
@@ -64,7 +67,7 @@ func (q *Queries) DeleteCashAccount(ctx context.Context, arg DeleteCashAccountPa
 
 const getCashAccount = `-- name: GetCashAccount :one
 SELECT
-    id, user_id, display_name, currency, created_at
+    id, user_id, display_name, currency, iban, created_at
 FROM
     cash_accounts
 WHERE
@@ -85,6 +88,7 @@ func (q *Queries) GetCashAccount(ctx context.Context, arg GetCashAccountParams) 
 		&i.UserID,
 		&i.DisplayName,
 		&i.Currency,
+		&i.Iban,
 		&i.CreatedAt,
 	)
 	return &i, err
@@ -106,9 +110,38 @@ func (q *Queries) GetCashAccountBalance(ctx context.Context, cashAccountID sql.N
 	return balance, err
 }
 
+const getCashAccountByIBAN = `-- name: GetCashAccountByIBAN :one
+SELECT
+    id, user_id, display_name, currency, iban, created_at
+FROM
+    cash_accounts
+WHERE
+    iban = ?
+    AND user_id = ?
+`
+
+type GetCashAccountByIBANParams struct {
+	Iban   sql.NullString
+	UserID string
+}
+
+func (q *Queries) GetCashAccountByIBAN(ctx context.Context, arg GetCashAccountByIBANParams) (*CashAccount, error) {
+	row := q.db.QueryRowContext(ctx, getCashAccountByIBAN, arg.Iban, arg.UserID)
+	var i CashAccount
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.DisplayName,
+		&i.Currency,
+		&i.Iban,
+		&i.CreatedAt,
+	)
+	return &i, err
+}
+
 const listCashAccounts = `-- name: ListCashAccounts :many
 SELECT
-    id, user_id, display_name, currency, created_at
+    id, user_id, display_name, currency, iban, created_at
 FROM
     cash_accounts
 WHERE
@@ -131,6 +164,7 @@ func (q *Queries) ListCashAccounts(ctx context.Context, userID string) ([]*CashA
 			&i.UserID,
 			&i.DisplayName,
 			&i.Currency,
+			&i.Iban,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -152,7 +186,7 @@ SET
     display_name = ?
 WHERE
     id = ?
-    AND user_id = ? RETURNING id, user_id, display_name, currency, created_at
+    AND user_id = ? RETURNING id, user_id, display_name, currency, iban, created_at
 `
 
 type UpdateCashAccountParams struct {
@@ -169,6 +203,7 @@ func (q *Queries) UpdateCashAccount(ctx context.Context, arg UpdateCashAccountPa
 		&i.UserID,
 		&i.DisplayName,
 		&i.Currency,
+		&i.Iban,
 		&i.CreatedAt,
 	)
 	return &i, err

@@ -156,6 +156,17 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 			d.SecurityID = &s
 		} else if stx.SecurityID.Valid {
 			d.SecurityID = &stx.SecurityID.String
+		} else if stx.Isin.Valid && stx.Isin.String != "" {
+			// Live ISIN lookup for documents processed before the security existed.
+			sec, err := r.db.FindSecurityByIdentifier(ctx, persistence.FindSecurityByIdentifierParams{
+				Kind:  "ISIN",
+				Value: stx.Isin.String,
+			})
+			if err == nil {
+				d.SecurityID = &sec.ID
+			} else if !errors.Is(err, sql.ErrNoRows) {
+				return nil, err
+			}
 		}
 
 		// Derive cashDelta when not staged and not overridden.
@@ -194,10 +205,12 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 	}
 
 	if _, err := r.db.UpdateDocumentState(ctx, persistence.UpdateDocumentStateParams{
-		State:         "IMPORTED",
-		DetectedBank:  doc.DetectedBank,
-		ExtractedText: doc.ExtractedText,
-		ID:            doc.ID,
+		State:           "IMPORTED",
+		DetectedBank:    doc.DetectedBank,
+		ExtractedText:   doc.ExtractedText,
+		SettlementIban:  doc.SettlementIban,
+		TransactionDate: doc.TransactionDate,
+		ID:              doc.ID,
 	}); err != nil {
 		return nil, err
 	}
@@ -251,6 +264,13 @@ func (r *DocumentResolver) CreatedAt() graphql.Time {
 	return graphql.Time{Time: r.doc.CreatedAt}
 }
 
+func (r *DocumentResolver) TransactionDate() *graphql.Time {
+	if !r.doc.TransactionDate.Valid {
+		return nil
+	}
+	return &graphql.Time{Time: r.doc.TransactionDate.Time}
+}
+
 func (r *DocumentResolver) StagedTransactions(ctx context.Context) ([]*StagedTransactionResolver, error) {
 	txs, err := r.db.ListStagedTransactions(ctx, r.doc.ID)
 	if err != nil {
@@ -261,6 +281,30 @@ func (r *DocumentResolver) StagedTransactions(ctx context.Context) ([]*StagedTra
 		resolvers[i] = &StagedTransactionResolver{db: r.db, tx: tx}
 	}
 	return resolvers, nil
+}
+
+// SuggestedCashAccount resolves Document.suggestedCashAccount by looking up
+// the settlement IBAN extracted from the document against all cash accounts
+// belonging to the current user.
+func (r *DocumentResolver) SuggestedCashAccount(ctx context.Context) (*CashAccountResolver, error) {
+	if !r.doc.SettlementIban.Valid || r.doc.SettlementIban.String == "" {
+		return nil, nil
+	}
+	user, err := auth.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	account, err := r.db.GetCashAccountByIBAN(ctx, persistence.GetCashAccountByIBANParams{
+		Iban:   sql.NullString{String: r.doc.SettlementIban.String, Valid: true},
+		UserID: user.ID,
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &CashAccountResolver{db: r.db, account: account}, nil
 }
 
 // StagedTransaction field resolvers.
@@ -311,10 +355,25 @@ func (r *StagedTransactionResolver) Isin() *string {
 }
 
 func (r *StagedTransactionResolver) Security(ctx context.Context) (*SecurityResolver, error) {
-	if !r.tx.SecurityID.Valid {
+	if r.tx.SecurityID.Valid {
+		security, err := r.db.GetSecurity(ctx, r.tx.SecurityID.String)
+		if err != nil {
+			return nil, err
+		}
+		return &SecurityResolver{db: r.db, security: security}, nil
+	}
+	// Fall back to a live ISIN lookup so that securities created after this
+	// document was processed are still matched.
+	if !r.tx.Isin.Valid || r.tx.Isin.String == "" {
 		return nil, nil
 	}
-	security, err := r.db.GetSecurity(ctx, r.tx.SecurityID.String)
+	security, err := r.db.FindSecurityByIdentifier(ctx, persistence.FindSecurityByIdentifierParams{
+		Kind:  "ISIN",
+		Value: r.tx.Isin.String,
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}

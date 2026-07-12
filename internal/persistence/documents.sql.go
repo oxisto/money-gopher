@@ -15,7 +15,7 @@ const createDocument = `-- name: CreateDocument :one
 INSERT INTO
     documents (id, user_id, filename, content_type, data)
 VALUES
-    (?, ?, ?, ?, ?) RETURNING id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, created_at
+    (?, ?, ?, ?, ?) RETURNING id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at
 `
 
 type CreateDocumentParams struct {
@@ -45,6 +45,8 @@ func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) 
 		&i.DetectedBank,
 		&i.ExtractedText,
 		&i.Error,
+		&i.SettlementIban,
+		&i.TransactionDate,
 		&i.CreatedAt,
 	)
 	return &i, err
@@ -156,7 +158,7 @@ func (q *Queries) DeleteStagedTransactions(ctx context.Context, documentID strin
 
 const getDocument = `-- name: GetDocument :one
 SELECT
-    id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, created_at
+    id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at
 FROM
     documents
 WHERE
@@ -182,6 +184,8 @@ func (q *Queries) GetDocument(ctx context.Context, arg GetDocumentParams) (*Docu
 		&i.DetectedBank,
 		&i.ExtractedText,
 		&i.Error,
+		&i.SettlementIban,
+		&i.TransactionDate,
 		&i.CreatedAt,
 	)
 	return &i, err
@@ -220,13 +224,13 @@ func (q *Queries) GetStagedTransaction(ctx context.Context, id string) (*StagedT
 
 const listDocuments = `-- name: ListDocuments :many
 SELECT
-    id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, created_at
+    id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at
 FROM
     documents
 WHERE
     user_id = ?
 ORDER BY
-    created_at DESC
+    transaction_date ASC NULLS LAST, created_at ASC
 `
 
 func (q *Queries) ListDocuments(ctx context.Context, userID string) ([]*Document, error) {
@@ -248,6 +252,8 @@ func (q *Queries) ListDocuments(ctx context.Context, userID string) ([]*Document
 			&i.DetectedBank,
 			&i.ExtractedText,
 			&i.Error,
+			&i.SettlementIban,
+			&i.TransactionDate,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -265,14 +271,14 @@ func (q *Queries) ListDocuments(ctx context.Context, userID string) ([]*Document
 
 const listDocumentsByState = `-- name: ListDocumentsByState :many
 SELECT
-    id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, created_at
+    id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at
 FROM
     documents
 WHERE
     user_id = ?
     AND state = ?
 ORDER BY
-    created_at DESC
+    transaction_date ASC NULLS LAST, created_at ASC
 `
 
 type ListDocumentsByStateParams struct {
@@ -299,6 +305,8 @@ func (q *Queries) ListDocumentsByState(ctx context.Context, arg ListDocumentsByS
 			&i.DetectedBank,
 			&i.ExtractedText,
 			&i.Error,
+			&i.SettlementIban,
+			&i.TransactionDate,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -369,17 +377,21 @@ SET
     state = ?,
     detected_bank = ?,
     extracted_text = ?,
-    error = ?
+    error = ?,
+    settlement_iban = ?,
+    transaction_date = ?
 WHERE
-    id = ? RETURNING id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, created_at
+    id = ? RETURNING id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at
 `
 
 type UpdateDocumentStateParams struct {
-	State         string
-	DetectedBank  sql.NullString
-	ExtractedText sql.NullString
-	Error         sql.NullString
-	ID            string
+	State           string
+	DetectedBank    sql.NullString
+	ExtractedText   sql.NullString
+	Error           sql.NullString
+	SettlementIban  sql.NullString
+	TransactionDate sql.NullTime
+	ID              string
 }
 
 func (q *Queries) UpdateDocumentState(ctx context.Context, arg UpdateDocumentStateParams) (*Document, error) {
@@ -388,6 +400,8 @@ func (q *Queries) UpdateDocumentState(ctx context.Context, arg UpdateDocumentSta
 		arg.DetectedBank,
 		arg.ExtractedText,
 		arg.Error,
+		arg.SettlementIban,
+		arg.TransactionDate,
 		arg.ID,
 	)
 	var i Document
@@ -401,6 +415,8 @@ func (q *Queries) UpdateDocumentState(ctx context.Context, arg UpdateDocumentSta
 		&i.DetectedBank,
 		&i.ExtractedText,
 		&i.Error,
+		&i.SettlementIban,
+		&i.TransactionDate,
 		&i.CreatedAt,
 	)
 	return &i, err

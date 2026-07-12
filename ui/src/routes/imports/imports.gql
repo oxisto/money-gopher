@@ -5,7 +5,12 @@ query Imports {
 		state
 		detectedBank
 		error
-		createdAt
+		transactionDate
+		suggestedCashAccount {
+			id
+			displayName
+			currency
+		}
 		stagedTransactions {
 			id
 			type
@@ -44,6 +49,7 @@ query Imports {
 		id
 		displayName
 		currency
+		iban
 	}
 	securities {
 		id
