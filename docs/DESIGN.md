@@ -198,14 +198,72 @@ Deleted from v1: all buf/proto/Connect artifacts (`buf*.yaml`, `mgo.proto`, `gen
    market value, gains, time-weighted return). `snapshot(time:)` resolver + UI dashboard.
 5. ✅ **M4 — Quotes.** QuoteProvider interface, first provider, background refresh,
    quote history table for charts.
-6. **M5 — PDF import.** `/upload`, document storage, pdftotext extraction, bank
+6. ✅ **M5 — PDF import.** `/upload`, document storage, pdftotext extraction, bank
    detection, first real bank parser (whichever bank's PDFs we have fixtures for),
-   staging + review UI, `confirmImport`. CSV import rides the same staging pipeline.
-7. **M6 — Real auth.** OIDC against a real provider, user provisioning, ownership
+   staging + review UI, `confirmImport`. CSV import is out of scope — PDF covers
+   the real import path.
+7. ✅ **M6 — Real auth.** OIDC against a real provider, user provisioning, ownership
    enforcement tests.
 8. **M7 — Ship it.** `go:embed` the built SPA, single-binary release (goreleaser),
    Dockerfile, docs. `mgo` CLI rebuilt on genqlient for the endpoints that matter.
 9. **M8 — LLM fallback extraction** (opt-in), more bank parsers as needed.
+
+**Where M5 landed:**
+
+- `internal/importer/`: extraction via `pdftotext -layout` behind an `Extractor`
+  interface (`PlainText` for text files, `PDFToText` wrapping the binary). Bank
+  detection via `Matches()` fingerprint methods; registry in `DefaultParsers()`.
+- ING-DiBa parser (`ing.go`): handles Kauf/Verkauf (BUY/SELL), Dividende/Ertrag
+  (DIVIDEND), Zinsen (INTEREST), Rückzahlung (bond maturity → SELL),
+  Wertpapier Eingang (spin-off → DELIVERY_INBOUND). Vorabpauschale and Storno
+  return `ErrSkipped` → document state `SKIPPED` (not FAILED).
+- `SKIPPED` added to `DocumentState` enum and `documents.state` CHECK constraint.
+- `transaction_date` column on `documents`: extracted from first staged transaction
+  during processing; used to sort the import list chronologically (`NULLS LAST`
+  for FAILED/SKIPPED).
+- `iban` on `cash_accounts`; `settlement_iban` on `documents`. After parsing,
+  settlement IBAN is stored on the document; `suggestedCashAccount` resolver
+  performs a live IBAN lookup so the review UI can auto-select the right account.
+- `StagedTransaction.Security` resolver and `ConfirmImport` both do a live ISIN
+  lookup when `security_id` is NULL — securities created after a document was
+  processed are matched without reprocessing.
+- Review UI (`DocumentReview.svelte`): split-pane PDF + form; portfolio and cash
+  account selectors; inline "Create security" modal pre-filled with name + ISIN.
+- Document list (`DocumentList.svelte`): cards show transaction date, type,
+  security name, and cash delta; filename demoted to secondary line.
+- `cmd/reprocess/`: CLI tool for bulk re-uploading all PDFs in a directory tree
+  (used to populate a fresh DB from a folder of bank statements).
+- CSV import is out of scope — PDF pipeline covers the real import path.
+- Integration test `TestImportPipeline` in `internal/api/import_test.go` covers
+  the full path: upload → process → IBAN match → confirm → balance.
+
+**Where M6 landed:**
+
+- `internal/auth/oidc.go`: `OIDCHandler` with `LoginHandler` (generates state+nonce
+  cookies, redirects to IdP), `CallbackHandler` (verifies state/nonce, exchanges code,
+  provisions user via `provisionUser`, creates session, redirects to `/`), and
+  `LogoutHandler` (clears session, redirects to `/login`).
+- `internal/auth/session.go`: `CreateSession`/`ClearSession` helpers and
+  `SessionMiddleware` — resolves the `mg_session` cookie to a user on every request;
+  returns 401 if missing or expired. Sessions are stored in the `sessions` table (goose
+  migration `0004_sessions.sql`), TTL 30 days.
+- `cmd/moneyd/main.go`: three auth modes via `--auth` flag:
+  - `dev` (default): fixed dev user, no credentials needed.
+  - `builtin`: embedded `oauth2go` authorization server starts on `--builtin-auth-addr`
+    (default `:8081`) with `--auth-user` / `--auth-password`. The OIDC client points at
+    it as the issuer — no external IdP required for self-hosting.
+  - `oidc`: external provider via `--oidc-issuer`, `--oidc-client-id`,
+    `--oidc-client-secret`.
+  All protected routes are wrapped with `SessionMiddleware`; OIDC routes
+  (`/auth/login`, `/auth/callback`, `/auth/logout`) are registered for both
+  `builtin` and `oidc`.
+- `ui/src/client.ts`: monkey-patches `window.fetch` to redirect to `/login` on any
+  401 — catches session expiry for all GraphQL and REST calls without per-call
+  error handling.
+- `ui/src/routes/login/+page.svelte`: standalone sign-in card (no AppNav), links to
+  `/auth/login` to start the authorization-code flow.
+- AppNav: "Sign out" link to `/auth/logout` always visible; in dev mode it just
+  calls the logout handler which clears the dev session cookie (harmless).
 
 ## Status / handoff notes (updated 2026-07-04)
 

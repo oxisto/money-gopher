@@ -1,6 +1,6 @@
 # Binaries
-moneyd
-mgo
+/moneyd
+/mgo
 *.exe
 *.test
 
