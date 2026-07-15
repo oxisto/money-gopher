@@ -1,6 +1,6 @@
 -- name: CreateDocument :one
 INSERT INTO
-    documents (id, user_id, filename, content_type, data)
+    documents (id, person_id, filename, content_type, data)
 VALUES
     (?, ?, ?, ?, ?) RETURNING *;
 
@@ -11,7 +11,7 @@ FROM
     documents
 WHERE
     id = ?
-    AND user_id = ?;
+    AND person_id = ?;
 
 -- name: ListDocuments :many
 SELECT
@@ -19,7 +19,7 @@ SELECT
 FROM
     documents
 WHERE
-    user_id = ?
+    person_id = ?
 ORDER BY
     transaction_date ASC NULLS LAST, created_at ASC;
 
@@ -29,7 +29,7 @@ SELECT
 FROM
     documents
 WHERE
-    user_id = ?
+    person_id = ?
     AND state = ?
 ORDER BY
     transaction_date ASC NULLS LAST, created_at ASC;
@@ -50,7 +50,7 @@ WHERE
 DELETE FROM documents
 WHERE
     id = ?
-    AND user_id = ?;
+    AND person_id = ?;
 
 -- name: CreateStagedTransaction :one
 INSERT INTO

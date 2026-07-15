@@ -1,6 +1,6 @@
 -- name: CreateCashAccount :one
 INSERT INTO
-    cash_accounts (id, user_id, display_name, currency, iban)
+    cash_accounts (id, person_id, display_name, currency, iban)
 VALUES
     (?, ?, ?, ?, ?) RETURNING *;
 
@@ -11,7 +11,7 @@ FROM
     cash_accounts
 WHERE
     iban = ?
-    AND user_id = ?;
+    AND person_id = ?;
 
 -- name: GetCashAccount :one
 SELECT
@@ -20,7 +20,7 @@ FROM
     cash_accounts
 WHERE
     id = ?
-    AND user_id = ?;
+    AND person_id = ?;
 
 -- name: ListCashAccounts :many
 SELECT
@@ -28,7 +28,7 @@ SELECT
 FROM
     cash_accounts
 WHERE
-    user_id = ?
+    person_id = ?
 ORDER BY
     display_name;
 
@@ -38,13 +38,13 @@ SET
     display_name = ?
 WHERE
     id = ?
-    AND user_id = ? RETURNING *;
+    AND person_id = ? RETURNING *;
 
 -- name: DeleteCashAccount :execrows
 DELETE FROM cash_accounts
 WHERE
     id = ?
-    AND user_id = ?;
+    AND person_id = ?;
 
 -- name: GetCashAccountBalance :one
 SELECT

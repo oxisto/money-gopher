@@ -21,12 +21,12 @@ type PortfolioResolver struct {
 
 // Portfolios resolves Query.portfolios.
 func (r *RootResolver) Portfolios(ctx context.Context) ([]*PortfolioResolver, error) {
-	user, err := auth.UserFromContext(ctx)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	portfolios, err := r.db.ListPortfolios(ctx, user.ID)
+	portfolios, err := r.db.ListPortfolios(ctx, person.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -41,14 +41,14 @@ func (r *RootResolver) Portfolios(ctx context.Context) ([]*PortfolioResolver, er
 
 // Portfolio resolves Query.portfolio.
 func (r *RootResolver) Portfolio(ctx context.Context, args struct{ ID graphql.ID }) (*PortfolioResolver, error) {
-	user, err := auth.UserFromContext(ctx)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	portfolio, err := r.db.GetPortfolio(ctx, persistence.GetPortfolioParams{
 		ID:     string(args.ID),
-		UserID: user.ID,
+		PersonID: person.ID,
 	})
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
@@ -67,7 +67,7 @@ type CreatePortfolioInput struct {
 
 // CreatePortfolio resolves Mutation.createPortfolio.
 func (r *RootResolver) CreatePortfolio(ctx context.Context, args struct{ Input CreatePortfolioInput }) (*PortfolioResolver, error) {
-	user, err := auth.UserFromContext(ctx)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func (r *RootResolver) CreatePortfolio(ctx context.Context, args struct{ Input C
 	// Verify the cash account belongs to this user.
 	if _, err = r.db.GetCashAccount(ctx, persistence.GetCashAccountParams{
 		ID:     string(args.Input.CashAccountID),
-		UserID: user.ID,
+		PersonID: person.ID,
 	}); errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("cash account %q not found", args.Input.CashAccountID)
 	} else if err != nil {
@@ -84,7 +84,7 @@ func (r *RootResolver) CreatePortfolio(ctx context.Context, args struct{ Input C
 
 	portfolio, err := r.db.CreatePortfolio(ctx, persistence.CreatePortfolioParams{
 		ID:            uuid.NewString(),
-		UserID:        user.ID,
+		PersonID:      person.ID,
 		DisplayName:   args.Input.DisplayName,
 		CashAccountID: string(args.Input.CashAccountID),
 	})
@@ -105,14 +105,14 @@ func (r *RootResolver) UpdatePortfolio(ctx context.Context, args struct {
 	ID    graphql.ID
 	Input UpdatePortfolioInput
 }) (*PortfolioResolver, error) {
-	user, err := auth.UserFromContext(ctx)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	current, err := r.db.GetPortfolio(ctx, persistence.GetPortfolioParams{
 		ID:     string(args.ID),
-		UserID: user.ID,
+		PersonID: person.ID,
 	})
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("portfolio %q not found", args.ID)
@@ -128,7 +128,7 @@ func (r *RootResolver) UpdatePortfolio(ctx context.Context, args struct {
 	portfolio, err := r.db.UpdatePortfolio(ctx, persistence.UpdatePortfolioParams{
 		DisplayName: displayName,
 		ID:          string(args.ID),
-		UserID:      user.ID,
+		PersonID:    person.ID,
 	})
 	if err != nil {
 		return nil, err
@@ -139,14 +139,14 @@ func (r *RootResolver) UpdatePortfolio(ctx context.Context, args struct {
 
 // DeletePortfolio resolves Mutation.deletePortfolio.
 func (r *RootResolver) DeletePortfolio(ctx context.Context, args struct{ ID graphql.ID }) (graphql.ID, error) {
-	user, err := auth.UserFromContext(ctx)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return "", err
 	}
 
 	rows, err := r.db.DeletePortfolio(ctx, persistence.DeletePortfolioParams{
 		ID:     string(args.ID),
-		UserID: user.ID,
+		PersonID: person.ID,
 	})
 	if err != nil {
 		return "", err
@@ -168,14 +168,14 @@ func (r *PortfolioResolver) DisplayName() string {
 
 // CashAccount resolves Portfolio.cashAccount.
 func (r *PortfolioResolver) CashAccount(ctx context.Context) (*CashAccountResolver, error) {
-	user, err := auth.UserFromContext(ctx)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	account, err := r.db.GetCashAccount(ctx, persistence.GetCashAccountParams{
 		ID:     r.portfolio.CashAccountID,
-		UserID: user.ID,
+		PersonID: person.ID,
 	})
 	if err != nil {
 		return nil, err

@@ -18,13 +18,13 @@ func TestSnapshot(t *testing.T) {
 	}
 	t.Cleanup(func() { db.Close() })
 
-	user, err := auth.EnsureDevUser(context.Background(), db)
+	user, person, err := auth.EnsureDevUser(context.Background(), db)
 	if err != nil {
 		t.Fatalf("EnsureDevUser() error = %v", err)
 	}
 
 	updater := &quotes.Updater{DB: db, Registry: quotes.NewRegistry()}
-	schema, ctx := NewSchema(db, updater), auth.WithUser(context.Background(), user)
+	schema, ctx := NewSchema(db, updater), auth.WithPerson(auth.WithUser(context.Background(), user), person)
 
 	// A portfolio with one security: 10 shares bought at 100.00 EUR.
 	// The cash account must be created first so its ID can be passed to createPortfolio.

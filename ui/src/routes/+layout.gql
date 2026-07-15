@@ -1,0 +1,14 @@
+query Layout {
+	me {
+		id
+		displayName
+		activePerson {
+			id
+			displayName
+		}
+		persons {
+			id
+			displayName
+		}
+	}
+}

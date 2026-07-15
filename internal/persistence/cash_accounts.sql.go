@@ -12,14 +12,14 @@ import (
 
 const createCashAccount = `-- name: CreateCashAccount :one
 INSERT INTO
-    cash_accounts (id, user_id, display_name, currency, iban)
+    cash_accounts (id, person_id, display_name, currency, iban)
 VALUES
-    (?, ?, ?, ?, ?) RETURNING id, user_id, display_name, currency, iban, created_at
+    (?, ?, ?, ?, ?) RETURNING id, person_id, display_name, currency, iban, created_at
 `
 
 type CreateCashAccountParams struct {
 	ID          string
-	UserID      string
+	PersonID    string
 	DisplayName string
 	Currency    string
 	Iban        sql.NullString
@@ -28,7 +28,7 @@ type CreateCashAccountParams struct {
 func (q *Queries) CreateCashAccount(ctx context.Context, arg CreateCashAccountParams) (*CashAccount, error) {
 	row := q.db.QueryRowContext(ctx, createCashAccount,
 		arg.ID,
-		arg.UserID,
+		arg.PersonID,
 		arg.DisplayName,
 		arg.Currency,
 		arg.Iban,
@@ -36,7 +36,7 @@ func (q *Queries) CreateCashAccount(ctx context.Context, arg CreateCashAccountPa
 	var i CashAccount
 	err := row.Scan(
 		&i.ID,
-		&i.UserID,
+		&i.PersonID,
 		&i.DisplayName,
 		&i.Currency,
 		&i.Iban,
@@ -49,16 +49,16 @@ const deleteCashAccount = `-- name: DeleteCashAccount :execrows
 DELETE FROM cash_accounts
 WHERE
     id = ?
-    AND user_id = ?
+    AND person_id = ?
 `
 
 type DeleteCashAccountParams struct {
-	ID     string
-	UserID string
+	ID       string
+	PersonID string
 }
 
 func (q *Queries) DeleteCashAccount(ctx context.Context, arg DeleteCashAccountParams) (int64, error) {
-	result, err := q.db.ExecContext(ctx, deleteCashAccount, arg.ID, arg.UserID)
+	result, err := q.db.ExecContext(ctx, deleteCashAccount, arg.ID, arg.PersonID)
 	if err != nil {
 		return 0, err
 	}
@@ -67,25 +67,25 @@ func (q *Queries) DeleteCashAccount(ctx context.Context, arg DeleteCashAccountPa
 
 const getCashAccount = `-- name: GetCashAccount :one
 SELECT
-    id, user_id, display_name, currency, iban, created_at
+    id, person_id, display_name, currency, iban, created_at
 FROM
     cash_accounts
 WHERE
     id = ?
-    AND user_id = ?
+    AND person_id = ?
 `
 
 type GetCashAccountParams struct {
-	ID     string
-	UserID string
+	ID       string
+	PersonID string
 }
 
 func (q *Queries) GetCashAccount(ctx context.Context, arg GetCashAccountParams) (*CashAccount, error) {
-	row := q.db.QueryRowContext(ctx, getCashAccount, arg.ID, arg.UserID)
+	row := q.db.QueryRowContext(ctx, getCashAccount, arg.ID, arg.PersonID)
 	var i CashAccount
 	err := row.Scan(
 		&i.ID,
-		&i.UserID,
+		&i.PersonID,
 		&i.DisplayName,
 		&i.Currency,
 		&i.Iban,
@@ -112,25 +112,25 @@ func (q *Queries) GetCashAccountBalance(ctx context.Context, cashAccountID sql.N
 
 const getCashAccountByIBAN = `-- name: GetCashAccountByIBAN :one
 SELECT
-    id, user_id, display_name, currency, iban, created_at
+    id, person_id, display_name, currency, iban, created_at
 FROM
     cash_accounts
 WHERE
     iban = ?
-    AND user_id = ?
+    AND person_id = ?
 `
 
 type GetCashAccountByIBANParams struct {
-	Iban   sql.NullString
-	UserID string
+	Iban     sql.NullString
+	PersonID string
 }
 
 func (q *Queries) GetCashAccountByIBAN(ctx context.Context, arg GetCashAccountByIBANParams) (*CashAccount, error) {
-	row := q.db.QueryRowContext(ctx, getCashAccountByIBAN, arg.Iban, arg.UserID)
+	row := q.db.QueryRowContext(ctx, getCashAccountByIBAN, arg.Iban, arg.PersonID)
 	var i CashAccount
 	err := row.Scan(
 		&i.ID,
-		&i.UserID,
+		&i.PersonID,
 		&i.DisplayName,
 		&i.Currency,
 		&i.Iban,
@@ -141,17 +141,17 @@ func (q *Queries) GetCashAccountByIBAN(ctx context.Context, arg GetCashAccountBy
 
 const listCashAccounts = `-- name: ListCashAccounts :many
 SELECT
-    id, user_id, display_name, currency, iban, created_at
+    id, person_id, display_name, currency, iban, created_at
 FROM
     cash_accounts
 WHERE
-    user_id = ?
+    person_id = ?
 ORDER BY
     display_name
 `
 
-func (q *Queries) ListCashAccounts(ctx context.Context, userID string) ([]*CashAccount, error) {
-	rows, err := q.db.QueryContext(ctx, listCashAccounts, userID)
+func (q *Queries) ListCashAccounts(ctx context.Context, personID string) ([]*CashAccount, error) {
+	rows, err := q.db.QueryContext(ctx, listCashAccounts, personID)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +161,7 @@ func (q *Queries) ListCashAccounts(ctx context.Context, userID string) ([]*CashA
 		var i CashAccount
 		if err := rows.Scan(
 			&i.ID,
-			&i.UserID,
+			&i.PersonID,
 			&i.DisplayName,
 			&i.Currency,
 			&i.Iban,
@@ -186,21 +186,21 @@ SET
     display_name = ?
 WHERE
     id = ?
-    AND user_id = ? RETURNING id, user_id, display_name, currency, iban, created_at
+    AND person_id = ? RETURNING id, person_id, display_name, currency, iban, created_at
 `
 
 type UpdateCashAccountParams struct {
 	DisplayName string
 	ID          string
-	UserID      string
+	PersonID    string
 }
 
 func (q *Queries) UpdateCashAccount(ctx context.Context, arg UpdateCashAccountParams) (*CashAccount, error) {
-	row := q.db.QueryRowContext(ctx, updateCashAccount, arg.DisplayName, arg.ID, arg.UserID)
+	row := q.db.QueryRowContext(ctx, updateCashAccount, arg.DisplayName, arg.ID, arg.PersonID)
 	var i CashAccount
 	err := row.Scan(
 		&i.ID,
-		&i.UserID,
+		&i.PersonID,
 		&i.DisplayName,
 		&i.Currency,
 		&i.Iban,

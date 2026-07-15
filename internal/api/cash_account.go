@@ -21,12 +21,12 @@ type CashAccountResolver struct {
 
 // CashAccounts resolves Query.cashAccounts.
 func (r *RootResolver) CashAccounts(ctx context.Context) ([]*CashAccountResolver, error) {
-	user, err := auth.UserFromContext(ctx)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	accounts, err := r.db.ListCashAccounts(ctx, user.ID)
+	accounts, err := r.db.ListCashAccounts(ctx, person.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -41,14 +41,14 @@ func (r *RootResolver) CashAccounts(ctx context.Context) ([]*CashAccountResolver
 
 // CashAccount resolves Query.cashAccount.
 func (r *RootResolver) CashAccount(ctx context.Context, args struct{ ID graphql.ID }) (*CashAccountResolver, error) {
-	user, err := auth.UserFromContext(ctx)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	account, err := r.db.GetCashAccount(ctx, persistence.GetCashAccountParams{
 		ID:     string(args.ID),
-		UserID: user.ID,
+		PersonID: person.ID,
 	})
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
@@ -68,14 +68,14 @@ type CreateCashAccountInput struct {
 
 // CreateCashAccount resolves Mutation.createCashAccount.
 func (r *RootResolver) CreateCashAccount(ctx context.Context, args struct{ Input CreateCashAccountInput }) (*CashAccountResolver, error) {
-	user, err := auth.UserFromContext(ctx)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	account, err := r.db.CreateCashAccount(ctx, persistence.CreateCashAccountParams{
 		ID:          uuid.NewString(),
-		UserID:      user.ID,
+		PersonID:    person.ID,
 		DisplayName: args.Input.DisplayName,
 		Currency:    args.Input.Currency,
 		Iban:        nullString(args.Input.IBAN),
@@ -97,14 +97,14 @@ func (r *RootResolver) UpdateCashAccount(ctx context.Context, args struct {
 	ID    graphql.ID
 	Input UpdateCashAccountInput
 }) (*CashAccountResolver, error) {
-	user, err := auth.UserFromContext(ctx)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	current, err := r.db.GetCashAccount(ctx, persistence.GetCashAccountParams{
 		ID:     string(args.ID),
-		UserID: user.ID,
+		PersonID: person.ID,
 	})
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("cash account %q not found", args.ID)
@@ -120,7 +120,7 @@ func (r *RootResolver) UpdateCashAccount(ctx context.Context, args struct {
 	account, err := r.db.UpdateCashAccount(ctx, persistence.UpdateCashAccountParams{
 		DisplayName: displayName,
 		ID:          string(args.ID),
-		UserID:      user.ID,
+		PersonID:    person.ID,
 	})
 	if err != nil {
 		return nil, err
@@ -131,14 +131,14 @@ func (r *RootResolver) UpdateCashAccount(ctx context.Context, args struct {
 
 // DeleteCashAccount resolves Mutation.deleteCashAccount.
 func (r *RootResolver) DeleteCashAccount(ctx context.Context, args struct{ ID graphql.ID }) (graphql.ID, error) {
-	user, err := auth.UserFromContext(ctx)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return "", err
 	}
 
 	rows, err := r.db.DeleteCashAccount(ctx, persistence.DeleteCashAccountParams{
 		ID:     string(args.ID),
-		UserID: user.ID,
+		PersonID: person.ID,
 	})
 	if err != nil {
 		return "", err

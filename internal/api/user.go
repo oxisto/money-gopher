@@ -11,6 +11,7 @@ import (
 
 // UserResolver resolves the User GraphQL type.
 type UserResolver struct {
+	db   *persistence.DB
 	user *persistence.User
 }
 
@@ -21,13 +22,30 @@ func (r *RootResolver) Me(ctx context.Context) (*UserResolver, error) {
 		return nil, err
 	}
 
-	return &UserResolver{user: user}, nil
+	return &UserResolver{db: r.db, user: user}, nil
 }
 
-func (r *UserResolver) ID() graphql.ID {
-	return graphql.ID(r.user.ID)
+func (r *UserResolver) ID() graphql.ID      { return graphql.ID(r.user.ID) }
+func (r *UserResolver) DisplayName() string { return r.user.DisplayName }
+
+// Persons resolves User.persons — all persons this user has access to.
+func (r *UserResolver) Persons(ctx context.Context) ([]*PersonResolver, error) {
+	persons, err := r.db.ListPersonsForUser(ctx, r.user.ID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*PersonResolver, len(persons))
+	for i, p := range persons {
+		out[i] = &PersonResolver{db: r.db, person: p}
+	}
+	return out, nil
 }
 
-func (r *UserResolver) DisplayName() string {
-	return r.user.DisplayName
+// ActivePerson resolves User.activePerson from the session-bound context value.
+func (r *UserResolver) ActivePerson(ctx context.Context) (*PersonResolver, error) {
+	person, err := auth.PersonFromContext(ctx)
+	if err != nil {
+		return nil, nil
+	}
+	return &PersonResolver{db: r.db, person: person}, nil
 }

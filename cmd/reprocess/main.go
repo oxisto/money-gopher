@@ -38,7 +38,7 @@ func run(dbPath, dir string) error {
 
 	ctx := context.Background()
 
-	user, err := auth.EnsureDevUser(ctx, db)
+	_, person, err := auth.EnsureDevUser(ctx, db)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func run(dbPath, dir string) error {
 				return nil
 			}
 			ct := http.DetectContentType(data)
-			if _, err := svc.Upload(ctx, user.ID, d.Name(), ct, data); err != nil {
+			if _, err := svc.Upload(ctx, person.ID, d.Name(), ct, data); err != nil {
 				slog.Warn("upload failed", "file", d.Name(), "err", err)
 				return nil
 			}
@@ -71,7 +71,7 @@ func run(dbPath, dir string) error {
 		slog.Info("uploaded", "count", uploaded, "dir", dir)
 	}
 
-	docs, err := db.ListDocuments(ctx, user.ID)
+	docs, err := db.ListDocuments(ctx, person.ID)
 	if err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func run(dbPath, dir string) error {
 			already++
 			continue
 		}
-		if err := svc.Process(ctx, doc.ID, user.ID); err != nil {
+		if err := svc.Process(ctx, doc.ID, person.ID); err != nil {
 			slog.Warn("skipped", "file", doc.Filename, "err", err)
 			failed++
 		} else {

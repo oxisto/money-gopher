@@ -9,20 +9,18 @@ import (
 	"time"
 )
 
-// CashAccount is a real-world bank/cash account. Its balance is derived
 type CashAccount struct {
 	ID          string
-	UserID      string
+	PersonID    string
 	DisplayName string
 	Currency    string
 	Iban        sql.NullString
 	CreatedAt   time.Time
 }
 
-// Document is an uploaded file going through the import pipeline.
 type Document struct {
 	ID              string
-	UserID          string
+	PersonID        string
 	Filename        string
 	ContentType     string
 	Data            []byte
@@ -45,10 +43,15 @@ type Listing struct {
 	QuoteProvider sql.NullString
 }
 
-// Portfolio is a collection of security positions belonging to one user.
+type Person struct {
+	ID          string
+	DisplayName string
+	CreatedAt   time.Time
+}
+
 type Portfolio struct {
 	ID            string
-	UserID        string
+	PersonID      string
 	DisplayName   string
 	CashAccountID string
 	CreatedAt     time.Time
@@ -79,6 +82,7 @@ type Session struct {
 	UserID    string
 	CreatedAt time.Time
 	ExpiresAt time.Time
+	PersonID  sql.NullString
 }
 
 // StagedTransaction is a parsed transaction awaiting user review.
@@ -124,4 +128,9 @@ type User struct {
 	Subject     string
 	DisplayName string
 	CreatedAt   time.Time
+}
+
+type UserPersonAccess struct {
+	UserID   string
+	PersonID string
 }

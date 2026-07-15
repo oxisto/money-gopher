@@ -128,13 +128,17 @@ func run(addr string, dbPath string, quoteInterval time.Duration) error {
 		slog.Info("OIDC auth enabled", "issuer", *oidcIssuer)
 
 	default: // "dev"
-		user, err := auth.EnsureDevUser(context.Background(), db)
+		user, person, err := auth.EnsureDevUser(context.Background(), db)
 		if err != nil {
 			return err
 		}
 		protect = func(h http.Handler) http.Handler {
-			return auth.DevMiddleware(user, h)
+			return auth.DevMiddleware(user, person, h)
 		}
+		// Stub auth routes so the UI's "Sign out" link doesn't 404 in dev mode.
+		mux.HandleFunc("/auth/logout", func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, "/", http.StatusFound)
+		})
 		slog.Info("dev auth enabled; all requests pinned to dev user")
 	}
 
@@ -161,7 +165,7 @@ func uploadHandler(svc *importer.Service) http.Handler {
 			return
 		}
 
-		user, err := auth.UserFromContext(r.Context())
+		person, err := auth.PersonFromContext(r.Context())
 		if err != nil {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
@@ -190,7 +194,7 @@ func uploadHandler(svc *importer.Service) http.Handler {
 			contentType = "application/octet-stream"
 		}
 
-		doc, err := svc.Upload(r.Context(), user.ID, header.Filename, contentType, data)
+		doc, err := svc.Upload(r.Context(), person.ID, header.Filename, contentType, data)
 		if err != nil {
 			http.Error(w, "upload failed: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -198,7 +202,7 @@ func uploadHandler(svc *importer.Service) http.Handler {
 
 		// Process asynchronously so the response returns immediately.
 		go func() {
-			if err := svc.Process(context.Background(), doc.ID, user.ID); err != nil {
+			if err := svc.Process(context.Background(), doc.ID, person.ID); err != nil {
 				slog.Error("import pipeline failed", "doc", doc.ID, "err", err)
 			}
 		}()
@@ -218,7 +222,7 @@ func documentHandler(db *persistence.DB) http.Handler {
 			return
 		}
 
-		user, err := auth.UserFromContext(r.Context())
+		person, err := auth.PersonFromContext(r.Context())
 		if err != nil {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
@@ -232,8 +236,8 @@ func documentHandler(db *persistence.DB) http.Handler {
 		}
 
 		doc, err := db.GetDocument(r.Context(), persistence.GetDocumentParams{
-			ID:     id,
-			UserID: user.ID,
+			ID:       id,
+			PersonID: person.ID,
 		})
 		if err != nil {
 			http.Error(w, "not found", http.StatusNotFound)

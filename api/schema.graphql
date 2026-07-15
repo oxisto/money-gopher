@@ -42,6 +42,20 @@ enum TransactionType {
 type User {
   id: ID!
   displayName: String!
+  "All persons this user has access to."
+  persons: [Person!]!
+  "The person currently active in this session."
+  activePerson: Person
+}
+
+"""
+Person is a financial entity (e.g. an individual or household) whose data is
+owned inside Money Gopher. A user can access multiple persons; a person can be
+accessed by multiple users (delegation).
+"""
+type Person {
+  id: ID!
+  displayName: String!
 }
 
 """
@@ -420,6 +434,15 @@ type Mutation {
   securities, or for every listing with a provider when none are given.
   """
   triggerQuoteUpdate(securityIDs: [ID!]): QuoteUpdateResult!
+
+  "Create a new person (financial entity) accessible by the current user."
+  createPerson(displayName: String!): Person!
+
+  """
+  Switch the active person for the current session. Returns the new active person.
+  Fails if the current user does not have access to the requested person.
+  """
+  switchPerson(personID: ID!): Person!
 
   "Delete an uploaded document and its staged transactions. Returns the deleted ID."
   deleteDocument(id: ID!): ID!

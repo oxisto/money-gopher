@@ -7,13 +7,14 @@ package persistence
 
 import (
 	"context"
+	"database/sql"
 	"time"
 )
 
 const createSession = `-- name: CreateSession :one
 INSERT INTO sessions (id, user_id, expires_at)
 VALUES (?, ?, ?)
-RETURNING id, user_id, created_at, expires_at
+RETURNING id, user_id, created_at, expires_at, person_id
 `
 
 type CreateSessionParams struct {
@@ -30,6 +31,7 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (*
 		&i.UserID,
 		&i.CreatedAt,
 		&i.ExpiresAt,
+		&i.PersonID,
 	)
 	return &i, err
 }
@@ -55,7 +57,7 @@ func (q *Queries) DeleteSession(ctx context.Context, id string) error {
 }
 
 const getSession = `-- name: GetSession :one
-SELECT id, user_id, created_at, expires_at
+SELECT id, user_id, created_at, expires_at, person_id
 FROM sessions
 WHERE id = ? AND expires_at > CURRENT_TIMESTAMP
 `
@@ -68,6 +70,21 @@ func (q *Queries) GetSession(ctx context.Context, id string) (*Session, error) {
 		&i.UserID,
 		&i.CreatedAt,
 		&i.ExpiresAt,
+		&i.PersonID,
 	)
 	return &i, err
+}
+
+const updateSessionPerson = `-- name: UpdateSessionPerson :exec
+UPDATE sessions SET person_id = ? WHERE id = ?
+`
+
+type UpdateSessionPersonParams struct {
+	PersonID sql.NullString
+	ID       string
+}
+
+func (q *Queries) UpdateSessionPerson(ctx context.Context, arg UpdateSessionPersonParams) error {
+	_, err := q.db.ExecContext(ctx, updateSessionPerson, arg.PersonID, arg.ID)
+	return err
 }

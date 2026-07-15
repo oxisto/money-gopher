@@ -24,14 +24,15 @@ func newTestSchema(t *testing.T) (*graphql.Schema, context.Context) {
 	}
 	t.Cleanup(func() { db.Close() })
 
-	user, err := auth.EnsureDevUser(context.Background(), db)
+	user, person, err := auth.EnsureDevUser(context.Background(), db)
 	if err != nil {
 		t.Fatalf("EnsureDevUser() error = %v", err)
 	}
 
 	updater := &quotes.Updater{DB: db, Registry: quotes.NewRegistry()}
 
-	return NewSchema(db, updater), auth.WithUser(context.Background(), user)
+	ctx := auth.WithPerson(auth.WithUser(context.Background(), user), person)
+	return NewSchema(db, updater), ctx
 }
 
 // exec runs a GraphQL query and decodes the response data into a generic map,
@@ -189,8 +190,11 @@ func TestUserIsolation(t *testing.T) {
 	// An unauthenticated request cannot see anything.
 	execExpectError(t, schema, context.Background(), `{ portfolios { id } }`, nil)
 
-	// Another user sees an empty list and cannot touch the portfolio.
-	other := auth.WithUser(context.Background(), &persistence.User{ID: "other"})
+	// Another person sees an empty list and cannot touch the portfolio.
+	other := auth.WithPerson(
+		auth.WithUser(context.Background(), &persistence.User{ID: "other"}),
+		&persistence.Person{ID: "other"},
+	)
 	if got := len(exec(t, schema, other, `{ portfolios { id } }`, nil)["portfolios"].([]any)); got != 0 {
 		t.Errorf("other user portfolios = %v, want 0", got)
 	}

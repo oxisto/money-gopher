@@ -11,14 +11,14 @@ import (
 
 const createPortfolio = `-- name: CreatePortfolio :one
 INSERT INTO
-    portfolios (id, user_id, display_name, cash_account_id)
+    portfolios (id, person_id, display_name, cash_account_id)
 VALUES
-    (?, ?, ?, ?) RETURNING id, user_id, display_name, cash_account_id, created_at
+    (?, ?, ?, ?) RETURNING id, person_id, display_name, cash_account_id, created_at
 `
 
 type CreatePortfolioParams struct {
 	ID            string
-	UserID        string
+	PersonID      string
 	DisplayName   string
 	CashAccountID string
 }
@@ -26,14 +26,14 @@ type CreatePortfolioParams struct {
 func (q *Queries) CreatePortfolio(ctx context.Context, arg CreatePortfolioParams) (*Portfolio, error) {
 	row := q.db.QueryRowContext(ctx, createPortfolio,
 		arg.ID,
-		arg.UserID,
+		arg.PersonID,
 		arg.DisplayName,
 		arg.CashAccountID,
 	)
 	var i Portfolio
 	err := row.Scan(
 		&i.ID,
-		&i.UserID,
+		&i.PersonID,
 		&i.DisplayName,
 		&i.CashAccountID,
 		&i.CreatedAt,
@@ -45,16 +45,16 @@ const deletePortfolio = `-- name: DeletePortfolio :execrows
 DELETE FROM portfolios
 WHERE
     id = ?
-    AND user_id = ?
+    AND person_id = ?
 `
 
 type DeletePortfolioParams struct {
-	ID     string
-	UserID string
+	ID       string
+	PersonID string
 }
 
 func (q *Queries) DeletePortfolio(ctx context.Context, arg DeletePortfolioParams) (int64, error) {
-	result, err := q.db.ExecContext(ctx, deletePortfolio, arg.ID, arg.UserID)
+	result, err := q.db.ExecContext(ctx, deletePortfolio, arg.ID, arg.PersonID)
 	if err != nil {
 		return 0, err
 	}
@@ -63,25 +63,25 @@ func (q *Queries) DeletePortfolio(ctx context.Context, arg DeletePortfolioParams
 
 const getPortfolio = `-- name: GetPortfolio :one
 SELECT
-    id, user_id, display_name, cash_account_id, created_at
+    id, person_id, display_name, cash_account_id, created_at
 FROM
     portfolios
 WHERE
     id = ?
-    AND user_id = ?
+    AND person_id = ?
 `
 
 type GetPortfolioParams struct {
-	ID     string
-	UserID string
+	ID       string
+	PersonID string
 }
 
 func (q *Queries) GetPortfolio(ctx context.Context, arg GetPortfolioParams) (*Portfolio, error) {
-	row := q.db.QueryRowContext(ctx, getPortfolio, arg.ID, arg.UserID)
+	row := q.db.QueryRowContext(ctx, getPortfolio, arg.ID, arg.PersonID)
 	var i Portfolio
 	err := row.Scan(
 		&i.ID,
-		&i.UserID,
+		&i.PersonID,
 		&i.DisplayName,
 		&i.CashAccountID,
 		&i.CreatedAt,
@@ -91,17 +91,17 @@ func (q *Queries) GetPortfolio(ctx context.Context, arg GetPortfolioParams) (*Po
 
 const listPortfolios = `-- name: ListPortfolios :many
 SELECT
-    id, user_id, display_name, cash_account_id, created_at
+    id, person_id, display_name, cash_account_id, created_at
 FROM
     portfolios
 WHERE
-    user_id = ?
+    person_id = ?
 ORDER BY
     display_name
 `
 
-func (q *Queries) ListPortfolios(ctx context.Context, userID string) ([]*Portfolio, error) {
-	rows, err := q.db.QueryContext(ctx, listPortfolios, userID)
+func (q *Queries) ListPortfolios(ctx context.Context, personID string) ([]*Portfolio, error) {
+	rows, err := q.db.QueryContext(ctx, listPortfolios, personID)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func (q *Queries) ListPortfolios(ctx context.Context, userID string) ([]*Portfol
 		var i Portfolio
 		if err := rows.Scan(
 			&i.ID,
-			&i.UserID,
+			&i.PersonID,
 			&i.DisplayName,
 			&i.CashAccountID,
 			&i.CreatedAt,
@@ -135,21 +135,21 @@ SET
     display_name = ?
 WHERE
     id = ?
-    AND user_id = ? RETURNING id, user_id, display_name, cash_account_id, created_at
+    AND person_id = ? RETURNING id, person_id, display_name, cash_account_id, created_at
 `
 
 type UpdatePortfolioParams struct {
 	DisplayName string
 	ID          string
-	UserID      string
+	PersonID    string
 }
 
 func (q *Queries) UpdatePortfolio(ctx context.Context, arg UpdatePortfolioParams) (*Portfolio, error) {
-	row := q.db.QueryRowContext(ctx, updatePortfolio, arg.DisplayName, arg.ID, arg.UserID)
+	row := q.db.QueryRowContext(ctx, updatePortfolio, arg.DisplayName, arg.ID, arg.PersonID)
 	var i Portfolio
 	err := row.Scan(
 		&i.ID,
-		&i.UserID,
+		&i.PersonID,
 		&i.DisplayName,
 		&i.CashAccountID,
 		&i.CreatedAt,

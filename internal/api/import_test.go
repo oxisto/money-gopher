@@ -41,11 +41,11 @@ func TestImportPipeline(t *testing.T) {
 	}
 	t.Cleanup(func() { db.Close() })
 
-	user, err := auth.EnsureDevUser(context.Background(), db)
+	user, person, err := auth.EnsureDevUser(context.Background(), db)
 	if err != nil {
 		t.Fatalf("EnsureDevUser: %v", err)
 	}
-	ctx := auth.WithUser(context.Background(), user)
+	ctx := auth.WithPerson(auth.WithUser(context.Background(), user), person)
 	updater := &quotes.Updater{DB: db, Registry: quotes.NewRegistry()}
 	schema := NewSchema(db, updater)
 
@@ -80,12 +80,12 @@ func TestImportPipeline(t *testing.T) {
 
 	// 3. Upload and process the document using the importer service.
 	svc := importer.NewService(db)
-	doc, err := svc.Upload(ctx, user.ID, "buy.txt", "text/plain", []byte(ingBuyText))
+	doc, err := svc.Upload(ctx, person.ID, "buy.txt", "text/plain", []byte(ingBuyText))
 	if err != nil {
 		t.Fatalf("Upload: %v", err)
 	}
 
-	if err := svc.Process(ctx, doc.ID, user.ID); err != nil {
+	if err := svc.Process(ctx, doc.ID, person.ID); err != nil {
 		t.Fatalf("Process: %v", err)
 	}
 
@@ -166,11 +166,11 @@ func TestImportNoIBANMatch(t *testing.T) {
 	}
 	t.Cleanup(func() { db.Close() })
 
-	user, err := auth.EnsureDevUser(context.Background(), db)
+	user, person, err := auth.EnsureDevUser(context.Background(), db)
 	if err != nil {
 		t.Fatalf("EnsureDevUser: %v", err)
 	}
-	ctx := auth.WithUser(context.Background(), user)
+	ctx := auth.WithPerson(auth.WithUser(context.Background(), user), person)
 	updater := &quotes.Updater{DB: db, Registry: quotes.NewRegistry()}
 	schema := NewSchema(db, updater)
 
@@ -184,11 +184,11 @@ func TestImportNoIBANMatch(t *testing.T) {
 	}`, nil)
 
 	svc := importer.NewService(db)
-	doc, err := svc.Upload(ctx, user.ID, "buy.txt", "text/plain", []byte(ingBuyText))
+	doc, err := svc.Upload(ctx, person.ID, "buy.txt", "text/plain", []byte(ingBuyText))
 	if err != nil {
 		t.Fatalf("Upload: %v", err)
 	}
-	if err := svc.Process(ctx, doc.ID, user.ID); err != nil {
+	if err := svc.Process(ctx, doc.ID, person.ID); err != nil {
 		t.Fatalf("Process: %v", err)
 	}
 

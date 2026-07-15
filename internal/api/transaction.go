@@ -61,7 +61,7 @@ func deriveCashDelta(d *txData) (int64, bool) {
 
 // validate checks the internal consistency of a transaction and that all
 // referenced entities exist and belong to the user.
-func (d *txData) validate(ctx context.Context, db *persistence.DB, user *persistence.User) error {
+func (d *txData) validate(ctx context.Context, db *persistence.DB, person *persistence.Person) error {
 	switch d.Type {
 	case "BUY", "SELL", "DIVIDEND":
 		if d.PortfolioID == nil || d.SecurityID == nil {
@@ -101,7 +101,7 @@ func (d *txData) validate(ctx context.Context, db *persistence.DB, user *persist
 	}
 
 	if d.PortfolioID != nil {
-		_, err := db.GetPortfolio(ctx, persistence.GetPortfolioParams{ID: *d.PortfolioID, UserID: user.ID})
+		_, err := db.GetPortfolio(ctx, persistence.GetPortfolioParams{ID: *d.PortfolioID, PersonID: person.ID})
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("portfolio %q not found", *d.PortfolioID)
 		} else if err != nil {
@@ -109,7 +109,7 @@ func (d *txData) validate(ctx context.Context, db *persistence.DB, user *persist
 		}
 	}
 	if d.CashAccountID != nil {
-		_, err := db.GetCashAccount(ctx, persistence.GetCashAccountParams{ID: *d.CashAccountID, UserID: user.ID})
+		_, err := db.GetCashAccount(ctx, persistence.GetCashAccountParams{ID: *d.CashAccountID, PersonID: person.ID})
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("cash account %q not found", *d.CashAccountID)
 		} else if err != nil {
@@ -132,7 +132,7 @@ func (d *txData) validate(ctx context.Context, db *persistence.DB, user *persist
 // the user via its portfolio or cash account. It returns sql.ErrNoRows for
 // both a missing and a foreign transaction, so callers cannot tell the two
 // apart.
-func (r *RootResolver) getOwnedTransaction(ctx context.Context, user *persistence.User, id string) (*persistence.Transaction, error) {
+func (r *RootResolver) getOwnedTransaction(ctx context.Context, person *persistence.Person, id string) (*persistence.Transaction, error) {
 	transaction, err := r.db.GetTransaction(ctx, id)
 	if err != nil {
 		return nil, err
@@ -140,13 +140,13 @@ func (r *RootResolver) getOwnedTransaction(ctx context.Context, user *persistenc
 
 	if transaction.PortfolioID.Valid {
 		_, err = r.db.GetPortfolio(ctx, persistence.GetPortfolioParams{
-			ID:     transaction.PortfolioID.String,
-			UserID: user.ID,
+			ID:       transaction.PortfolioID.String,
+			PersonID: person.ID,
 		})
 	} else {
 		_, err = r.db.GetCashAccount(ctx, persistence.GetCashAccountParams{
-			ID:     transaction.CashAccountID.String,
-			UserID: user.ID,
+			ID:       transaction.CashAccountID.String,
+			PersonID: person.ID,
 		})
 	}
 	if err != nil {
@@ -158,12 +158,12 @@ func (r *RootResolver) getOwnedTransaction(ctx context.Context, user *persistenc
 
 // Transaction resolves Query.transaction.
 func (r *RootResolver) Transaction(ctx context.Context, args struct{ ID graphql.ID }) (*TransactionResolver, error) {
-	user, err := auth.UserFromContext(ctx)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	transaction, err := r.getOwnedTransaction(ctx, user, string(args.ID))
+	transaction, err := r.getOwnedTransaction(ctx, person, string(args.ID))
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	} else if err != nil {
@@ -190,7 +190,7 @@ type CreateTransactionInput struct {
 
 // CreateTransaction resolves Mutation.createTransaction.
 func (r *RootResolver) CreateTransaction(ctx context.Context, args struct{ Input CreateTransactionInput }) (*TransactionResolver, error) {
-	user, err := auth.UserFromContext(ctx)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +226,7 @@ func (r *RootResolver) CreateTransaction(ctx context.Context, args struct{ Input
 		d.CashDelta = delta
 	}
 
-	if err := d.validate(ctx, r.db, user); err != nil {
+	if err := d.validate(ctx, r.db, person); err != nil {
 		return nil, err
 	}
 
@@ -271,12 +271,12 @@ func (r *RootResolver) UpdateTransaction(ctx context.Context, args struct {
 	ID    graphql.ID
 	Input UpdateTransactionInput
 }) (*TransactionResolver, error) {
-	user, err := auth.UserFromContext(ctx)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	current, err := r.getOwnedTransaction(ctx, user, string(args.ID))
+	current, err := r.getOwnedTransaction(ctx, person, string(args.ID))
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("transaction %q not found", args.ID)
 	} else if err != nil {
@@ -341,7 +341,7 @@ func (r *RootResolver) UpdateTransaction(ctx context.Context, args struct {
 		}
 	}
 
-	if err := d.validate(ctx, r.db, user); err != nil {
+	if err := d.validate(ctx, r.db, person); err != nil {
 		return nil, err
 	}
 
@@ -368,13 +368,13 @@ func (r *RootResolver) UpdateTransaction(ctx context.Context, args struct {
 
 // DeleteTransaction resolves Mutation.deleteTransaction.
 func (r *RootResolver) DeleteTransaction(ctx context.Context, args struct{ ID graphql.ID }) (graphql.ID, error) {
-	user, err := auth.UserFromContext(ctx)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return "", err
 	}
 
 	// The ownership check guards the unscoped delete.
-	_, err = r.getOwnedTransaction(ctx, user, string(args.ID))
+	_, err = r.getOwnedTransaction(ctx, person, string(args.ID))
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", fmt.Errorf("transaction %q not found", args.ID)
 	} else if err != nil {
@@ -406,14 +406,14 @@ func (r *TransactionResolver) Portfolio(ctx context.Context) (*PortfolioResolver
 		return nil, nil
 	}
 
-	user, err := auth.UserFromContext(ctx)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	portfolio, err := r.db.GetPortfolio(ctx, persistence.GetPortfolioParams{
-		ID:     r.transaction.PortfolioID.String,
-		UserID: user.ID,
+		ID:       r.transaction.PortfolioID.String,
+		PersonID: person.ID,
 	})
 	if err != nil {
 		return nil, err
@@ -442,14 +442,14 @@ func (r *TransactionResolver) CashAccount(ctx context.Context) (*CashAccountReso
 		return nil, nil
 	}
 
-	user, err := auth.UserFromContext(ctx)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	account, err := r.db.GetCashAccount(ctx, persistence.GetCashAccountParams{
-		ID:     r.transaction.CashAccountID.String,
-		UserID: user.ID,
+		ID:       r.transaction.CashAccountID.String,
+		PersonID: person.ID,
 	})
 	if err != nil {
 		return nil, err

@@ -56,8 +56,8 @@ func ClearSession(ctx context.Context, db *persistence.DB, w http.ResponseWriter
 	})
 }
 
-// SessionMiddleware resolves the session cookie to a user on each request.
-// Requests without a valid session receive 401.
+// SessionMiddleware resolves the session cookie to a user and active person
+// on each request. Requests without a valid session receive 401.
 func SessionMiddleware(db *persistence.DB, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(sessionCookieName)
@@ -78,6 +78,27 @@ func SessionMiddleware(db *persistence.DB, next http.Handler) http.Handler {
 			return
 		}
 
-		next.ServeHTTP(w, r.WithContext(WithUser(r.Context(), user)))
+		// Resolve the active person: use the session's stored person if set,
+		// otherwise default to the first person the user can access.
+		var person *persistence.Person
+		if session.PersonID.Valid {
+			person, err = db.GetPerson(r.Context(), session.PersonID.String)
+		}
+		if person == nil {
+			persons, lerr := db.ListPersonsForUser(r.Context(), user.ID)
+			if lerr == nil && len(persons) > 0 {
+				person = persons[0]
+				err = nil
+			}
+		}
+		if err != nil || person == nil {
+			http.Error(w, "no accessible person found", http.StatusUnauthorized)
+			return
+		}
+
+		ctx := WithUser(r.Context(), user)
+		ctx = WithPerson(ctx, person)
+		ctx = WithSessionID(ctx, session.ID)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

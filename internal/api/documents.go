@@ -27,7 +27,7 @@ type StagedTransactionResolver struct {
 
 // Documents resolves Query.documents.
 func (r *RootResolver) Documents(ctx context.Context, args struct{ State *string }) ([]*DocumentResolver, error) {
-	user, err := auth.UserFromContext(ctx)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -35,11 +35,11 @@ func (r *RootResolver) Documents(ctx context.Context, args struct{ State *string
 	var docs []*persistence.Document
 	if args.State != nil {
 		docs, err = r.db.ListDocumentsByState(ctx, persistence.ListDocumentsByStateParams{
-			UserID: user.ID,
+			PersonID: person.ID,
 			State:  *args.State,
 		})
 	} else {
-		docs, err = r.db.ListDocuments(ctx, user.ID)
+		docs, err = r.db.ListDocuments(ctx, person.ID)
 	}
 	if err != nil {
 		return nil, err
@@ -54,12 +54,12 @@ func (r *RootResolver) Documents(ctx context.Context, args struct{ State *string
 
 // DeleteDocument resolves Mutation.deleteDocument.
 func (r *RootResolver) DeleteDocument(ctx context.Context, args struct{ ID graphql.ID }) (graphql.ID, error) {
-	user, err := auth.UserFromContext(ctx)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	n, err := r.db.DeleteDocument(ctx, persistence.DeleteDocumentParams{ID: string(args.ID), UserID: user.ID})
+	n, err := r.db.DeleteDocument(ctx, persistence.DeleteDocumentParams{ID: string(args.ID), PersonID: person.ID})
 	if err != nil {
 		return "", err
 	}
@@ -94,14 +94,14 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 	DocumentID graphql.ID
 	Input      ConfirmImportInput
 }) ([]*TransactionResolver, error) {
-	user, err := auth.UserFromContext(ctx)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	doc, err := r.db.GetDocument(ctx, persistence.GetDocumentParams{
 		ID:     string(args.DocumentID),
-		UserID: user.ID,
+		PersonID: person.ID,
 	})
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("document %q not found", args.DocumentID)
@@ -178,7 +178,7 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 			}
 		}
 
-		if err := d.validate(ctx, r.db, user); err != nil {
+		if err := d.validate(ctx, r.db, person); err != nil {
 			return nil, fmt.Errorf("staged transaction %q: %w", stx.ID, err)
 		}
 
@@ -290,13 +290,13 @@ func (r *DocumentResolver) SuggestedCashAccount(ctx context.Context) (*CashAccou
 	if !r.doc.SettlementIban.Valid || r.doc.SettlementIban.String == "" {
 		return nil, nil
 	}
-	user, err := auth.UserFromContext(ctx)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	account, err := r.db.GetCashAccountByIBAN(ctx, persistence.GetCashAccountByIBANParams{
 		Iban:   sql.NullString{String: r.doc.SettlementIban.String, Valid: true},
-		UserID: user.ID,
+		PersonID: person.ID,
 	})
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil

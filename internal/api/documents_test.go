@@ -12,9 +12,9 @@ import (
 	"github.com/oxisto/money-gopher/internal/quotes"
 )
 
-// newTestEnv is like newTestSchema but also returns the db and user so tests
-// can set up fixture data directly without going through GraphQL.
-func newTestEnv(t *testing.T) (*graphql.Schema, context.Context, *persistence.DB, *persistence.User) {
+// newTestEnv is like newTestSchema but also returns the db and active person so
+// tests can set up fixture data directly without going through GraphQL.
+func newTestEnv(t *testing.T) (*graphql.Schema, context.Context, *persistence.DB, *persistence.Person) {
 	t.Helper()
 
 	db, err := persistence.OpenDB(":memory:")
@@ -23,22 +23,22 @@ func newTestEnv(t *testing.T) (*graphql.Schema, context.Context, *persistence.DB
 	}
 	t.Cleanup(func() { db.Close() })
 
-	user, err := auth.EnsureDevUser(context.Background(), db)
+	user, person, err := auth.EnsureDevUser(context.Background(), db)
 	if err != nil {
 		t.Fatalf("EnsureDevUser() error = %v", err)
 	}
 
 	updater := &quotes.Updater{DB: db, Registry: quotes.NewRegistry()}
 	schema := NewSchema(db, updater)
-	ctx := auth.WithUser(context.Background(), user)
+	ctx := auth.WithPerson(auth.WithUser(context.Background(), user), person)
 
-	return schema, ctx, db, user
+	return schema, ctx, db, person
 }
 
 // TestDocumentsLifecycle exercises the full import flow through GraphQL:
 // upload (via importer.Service), list, confirm, delete.
 func TestDocumentsLifecycle(t *testing.T) {
-	schema, ctx, db, user := newTestEnv(t)
+	schema, ctx, db, person := newTestEnv(t)
 
 	// Seed entities.
 	data := exec(t, schema, ctx, `mutation {
@@ -64,11 +64,11 @@ func TestDocumentsLifecycle(t *testing.T) {
 		"2026-01-04,DEPOSIT_CASH,,,,,0,0,200.00,EUR\n"
 
 	svc := importer.NewService(db)
-	doc, err := svc.Upload(ctx, user.ID, "test.csv", "text/csv", []byte(sampleCSV))
+	doc, err := svc.Upload(ctx, person.ID, "test.csv", "text/csv", []byte(sampleCSV))
 	if err != nil {
 		t.Fatalf("Upload() error = %v", err)
 	}
-	if err := svc.Process(ctx, doc.ID, user.ID); err != nil {
+	if err := svc.Process(ctx, doc.ID, person.ID); err != nil {
 		t.Fatalf("Process() error = %v", err)
 	}
 

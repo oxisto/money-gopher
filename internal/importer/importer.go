@@ -47,10 +47,10 @@ func NewService(db *persistence.DB) *Service {
 
 // Upload stores a new document and returns it; call Process afterwards
 // (typically asynchronously) to run the pipeline.
-func (s *Service) Upload(ctx context.Context, userID, filename, contentType string, data []byte) (*persistence.Document, error) {
+func (s *Service) Upload(ctx context.Context, personID, filename, contentType string, data []byte) (*persistence.Document, error) {
 	return s.DB.CreateDocument(ctx, persistence.CreateDocumentParams{
 		ID:          uuid.NewString(),
-		UserID:      userID,
+		PersonID:    personID,
 		Filename:    filename,
 		ContentType: contentType,
 		Data:        data,
@@ -60,8 +60,8 @@ func (s *Service) Upload(ctx context.Context, userID, filename, contentType stri
 // Process runs extraction, detection and parsing for a document and stores
 // the staged transactions. Failures are recorded on the document itself, so
 // the UI can surface them; the returned error mirrors that.
-func (s *Service) Process(ctx context.Context, documentID string, userID string) error {
-	doc, err := s.DB.GetDocument(ctx, persistence.GetDocumentParams{ID: documentID, UserID: userID})
+func (s *Service) Process(ctx context.Context, documentID string, personID string) error {
+	doc, err := s.DB.GetDocument(ctx, persistence.GetDocumentParams{ID: documentID, PersonID: personID})
 	if err != nil {
 		return err
 	}

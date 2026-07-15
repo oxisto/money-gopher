@@ -24,12 +24,12 @@ func newTestService(t *testing.T) (*Service, string, context.Context) {
 	}
 	t.Cleanup(func() { db.Close() })
 
-	user, err := auth.EnsureDevUser(context.Background(), db)
+	_, person, err := auth.EnsureDevUser(context.Background(), db)
 	if err != nil {
 		t.Fatalf("EnsureDevUser() error = %v", err)
 	}
 
-	return NewService(db), user.ID, context.Background()
+	return NewService(db), person.ID, context.Background()
 }
 
 func TestCSV_Parse(t *testing.T) {
@@ -97,7 +97,7 @@ func TestService_Process(t *testing.T) {
 		t.Fatalf("Process() error = %v", err)
 	}
 
-	processed, err := svc.DB.GetDocument(ctx, persistence.GetDocumentParams{ID: doc.ID, UserID: userID})
+	processed, err := svc.DB.GetDocument(ctx, persistence.GetDocumentParams{ID: doc.ID, PersonID: userID})
 	if err != nil {
 		t.Fatalf("GetDocument() error = %v", err)
 	}
@@ -142,7 +142,7 @@ func TestService_ProcessFailure(t *testing.T) {
 		t.Fatal("Process() succeeded for garbage input")
 	}
 
-	processed, _ := svc.DB.GetDocument(ctx, persistence.GetDocumentParams{ID: doc.ID, UserID: userID})
+	processed, _ := svc.DB.GetDocument(ctx, persistence.GetDocumentParams{ID: doc.ID, PersonID: userID})
 	if processed.State != StateFailed {
 		t.Errorf("state = %q, want %q", processed.State, StateFailed)
 	}

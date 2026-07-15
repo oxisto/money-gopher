@@ -1,6 +1,6 @@
 -- name: CreatePortfolio :one
 INSERT INTO
-    portfolios (id, user_id, display_name, cash_account_id)
+    portfolios (id, person_id, display_name, cash_account_id)
 VALUES
     (?, ?, ?, ?) RETURNING *;
 
@@ -11,7 +11,7 @@ FROM
     portfolios
 WHERE
     id = ?
-    AND user_id = ?;
+    AND person_id = ?;
 
 -- name: ListPortfolios :many
 SELECT
@@ -19,7 +19,7 @@ SELECT
 FROM
     portfolios
 WHERE
-    user_id = ?
+    person_id = ?
 ORDER BY
     display_name;
 
@@ -29,10 +29,10 @@ SET
     display_name = ?
 WHERE
     id = ?
-    AND user_id = ? RETURNING *;
+    AND person_id = ? RETURNING *;
 
 -- name: DeletePortfolio :execrows
 DELETE FROM portfolios
 WHERE
     id = ?
-    AND user_id = ?;
+    AND person_id = ?;

@@ -29,13 +29,13 @@ func TestTriggerQuoteUpdate(t *testing.T) {
 	}
 	t.Cleanup(func() { db.Close() })
 
-	user, err := auth.EnsureDevUser(context.Background(), db)
+	user, person, err := auth.EnsureDevUser(context.Background(), db)
 	if err != nil {
 		t.Fatalf("EnsureDevUser() error = %v", err)
 	}
 
 	updater := &quotes.Updater{DB: db, Registry: quotes.NewRegistry(fakeProvider{})}
-	schema, ctx := NewSchema(db, updater), auth.WithUser(context.Background(), user)
+	schema, ctx := NewSchema(db, updater), auth.WithPerson(auth.WithUser(context.Background(), user), person)
 
 	exec(t, schema, ctx, `mutation {
 		createSecurity(input: {
