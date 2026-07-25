@@ -1,4 +1,8 @@
+-- +goose NO TRANSACTION
 -- +goose Up
+
+-- This migration must run outside a transaction: PRAGMA foreign_keys is a
+-- no-op inside one, and the table recreation below depends on it being OFF.
 
 CREATE TABLE persons (
     id           TEXT     PRIMARY KEY,
