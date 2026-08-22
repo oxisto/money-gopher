@@ -5,12 +5,14 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"flag"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	oauth2go "github.com/oxisto/oauth2go"
@@ -21,12 +23,15 @@ import (
 	"github.com/oxisto/money-gopher/internal/importer"
 	"github.com/oxisto/money-gopher/internal/persistence"
 	"github.com/oxisto/money-gopher/internal/quotes"
+
+	_ "modernc.org/sqlite"
 )
 
 var (
 	addr             = flag.String("addr", ":8080", "the address to listen on")
 	publicURL        = flag.String("public-url", "http://localhost:8080", "public base URL of moneyd (used to build OIDC redirect URLs)")
-	dbPath           = flag.String("db", "moneyd.db", "the path to the SQLite database")
+	dbPath           = flag.String("db", "moneyd-data", "path to the lightsql data directory (created if missing)")
+	importSQLite     = flag.String("import-sqlite", "", "path to a pre-lightsql SQLite database to copy into -db at startup; a one-time cutover, since lightsql now persists to disk (re-running it against an already-migrated -db fails on the first duplicate primary key)")
 	quoteInterval    = flag.Duration("quote-interval", time.Hour, "how often to refresh quotes; 0 disables the background refresh")
 	authMode         = flag.String("auth", "dev", `authentication mode: "dev" (fixed dev user), "builtin" (embedded auth server), or "oidc"`)
 	builtinAuthAddr  = flag.String("builtin-auth-addr", ":8081", "address for the embedded auth server (--auth=builtin)")
@@ -52,6 +57,14 @@ func run(addr string, dbPath string, quoteInterval time.Duration) error {
 		return err
 	}
 	defer db.Close()
+
+	if *importSQLite != "" {
+		n, err := importSQLiteData(context.Background(), *importSQLite, dbPath)
+		if err != nil {
+			return fmt.Errorf("import from %q: %w", *importSQLite, err)
+		}
+		slog.Info("imported data from SQLite", "source", *importSQLite, "rows", n)
+	}
 
 	updater := &quotes.Updater{DB: db, Registry: quotes.DefaultRegistry()}
 	if quoteInterval > 0 {
@@ -84,19 +97,17 @@ func run(addr string, dbPath string, quoteInterval time.Duration) error {
 			}
 		}()
 
-		oidcHandler, err := auth.NewOIDCHandler(context.Background(), db, auth.OIDCConfig{
+		builtinHandler := auth.NewBuiltinHandler(db, auth.BuiltinConfig{
 			Issuer:       builtinIssuer,
 			ClientID:     "moneyd",
 			ClientSecret: clientSecret,
 			RedirectURL:  redirectURL,
+			PublicKeys:   authServer.PublicKeys,
 		})
-		if err != nil {
-			return err
-		}
 
-		mux.HandleFunc("/auth/login", oidcHandler.LoginHandler)
-		mux.HandleFunc("/auth/callback", oidcHandler.CallbackHandler)
-		mux.HandleFunc("/auth/logout", oidcHandler.LogoutHandler)
+		mux.HandleFunc("/auth/login", builtinHandler.LoginHandler)
+		mux.HandleFunc("/auth/callback", builtinHandler.CallbackHandler)
+		mux.HandleFunc("/auth/logout", builtinHandler.LogoutHandler)
 
 		protect = func(h http.Handler) http.Handler {
 			return auth.SessionMiddleware(db, h)
@@ -278,3 +289,99 @@ var graphiql = []byte(`<!doctype html>
 	</body>
 </html>
 `)
+
+// tablesInFKOrder lists tables in an order safe to INSERT into: every table
+// appears after every table its foreign keys reference. sessions is
+// intentionally excluded — session tokens are short-lived and tied to a
+// specific server process, so users just log in again after importing.
+var tablesInFKOrder = []string{
+	"users",
+	"persons",
+	"user_person_access",
+	"securities",
+	"security_identifiers",
+	"listings",
+	"cash_accounts",
+	"portfolios",
+	"quotes",
+	"transactions",
+	"documents",
+	"staged_transactions",
+}
+
+// importSQLiteData copies every row from a pre-lightsql SQLite database at
+// sqlitePath into the lightsql database at dbPath, which must already exist
+// (migrations applied) in this same process — lightsql instances are
+// process-local, so this cannot be done from a separate tool. Meant as a
+// one-time cutover: lightsql persists to disk now, so re-running this
+// against an already-migrated directory fails loudly on the first duplicate
+// primary key rather than silently re-seeding.
+func importSQLiteData(ctx context.Context, sqlitePath, dbPath string) (int, error) {
+	src, err := sql.Open("sqlite", sqlitePath)
+	if err != nil {
+		return 0, fmt.Errorf("open sqlite database: %w", err)
+	}
+	defer src.Close()
+
+	// Reaches the same engine persistence.OpenDB already opened: lightsql's
+	// instance registry is keyed by resolved directory path, and pooled
+	// connections to one instance are the expected way to use it.
+	dst, err := sql.Open("lightsql", "file:"+dbPath)
+	if err != nil {
+		return 0, fmt.Errorf("open lightsql database: %w", err)
+	}
+	defer dst.Close()
+
+	total := 0
+	for _, table := range tablesInFKOrder {
+		n, err := copySQLiteTable(ctx, src, dst, table)
+		if err != nil {
+			return total, fmt.Errorf("copy table %q: %w", table, err)
+		}
+		total += n
+	}
+
+	return total, nil
+}
+
+// copySQLiteTable reads every row of table from src and inserts it into dst,
+// column-for-column by name — the source and destination schemas are
+// identical, so no per-table mapping is needed.
+func copySQLiteTable(ctx context.Context, src, dst *sql.DB, table string) (int, error) {
+	rows, err := src.QueryContext(ctx, "SELECT * FROM "+table)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	cols, err := rows.Columns()
+	if err != nil {
+		return 0, err
+	}
+
+	placeholders := make([]string, len(cols))
+	for i := range placeholders {
+		placeholders[i] = "?"
+	}
+	insert := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
+		table, strings.Join(cols, ", "), strings.Join(placeholders, ", "))
+
+	n := 0
+	for rows.Next() {
+		values := make([]any, len(cols))
+		ptrs := make([]any, len(cols))
+		for i := range values {
+			ptrs[i] = &values[i]
+		}
+		if err := rows.Scan(ptrs...); err != nil {
+			return n, fmt.Errorf("scan row %d: %w", n, err)
+		}
+
+		if _, err := dst.ExecContext(ctx, insert, values...); err != nil {
+			return n, fmt.Errorf("insert row %d: %w", n, err)
+		}
+		n++
+	}
+
+	return n, rows.Err()
+}

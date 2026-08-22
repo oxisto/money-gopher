@@ -15,7 +15,7 @@ const createDocument = `-- name: CreateDocument :one
 INSERT INTO
     documents (id, person_id, filename, content_type, data)
 VALUES
-    (?, ?, ?, ?, ?) RETURNING id, person_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at
+    (?, ?, ?, ?, ?) RETURNING id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at, person_id
 `
 
 type CreateDocumentParams struct {
@@ -37,7 +37,7 @@ func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) 
 	var i Document
 	err := row.Scan(
 		&i.ID,
-		&i.PersonID,
+		&i.UserID,
 		&i.Filename,
 		&i.ContentType,
 		&i.Data,
@@ -48,6 +48,7 @@ func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) 
 		&i.SettlementIban,
 		&i.TransactionDate,
 		&i.CreatedAt,
+		&i.PersonID,
 	)
 	return &i, err
 }
@@ -158,7 +159,7 @@ func (q *Queries) DeleteStagedTransactions(ctx context.Context, documentID strin
 
 const getDocument = `-- name: GetDocument :one
 SELECT
-    id, person_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at
+    id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at, person_id
 FROM
     documents
 WHERE
@@ -176,7 +177,7 @@ func (q *Queries) GetDocument(ctx context.Context, arg GetDocumentParams) (*Docu
 	var i Document
 	err := row.Scan(
 		&i.ID,
-		&i.PersonID,
+		&i.UserID,
 		&i.Filename,
 		&i.ContentType,
 		&i.Data,
@@ -187,6 +188,7 @@ func (q *Queries) GetDocument(ctx context.Context, arg GetDocumentParams) (*Docu
 		&i.SettlementIban,
 		&i.TransactionDate,
 		&i.CreatedAt,
+		&i.PersonID,
 	)
 	return &i, err
 }
@@ -224,7 +226,7 @@ func (q *Queries) GetStagedTransaction(ctx context.Context, id string) (*StagedT
 
 const listDocuments = `-- name: ListDocuments :many
 SELECT
-    id, person_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at
+    id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at, person_id
 FROM
     documents
 WHERE
@@ -244,7 +246,7 @@ func (q *Queries) ListDocuments(ctx context.Context, personID string) ([]*Docume
 		var i Document
 		if err := rows.Scan(
 			&i.ID,
-			&i.PersonID,
+			&i.UserID,
 			&i.Filename,
 			&i.ContentType,
 			&i.Data,
@@ -255,6 +257,7 @@ func (q *Queries) ListDocuments(ctx context.Context, personID string) ([]*Docume
 			&i.SettlementIban,
 			&i.TransactionDate,
 			&i.CreatedAt,
+			&i.PersonID,
 		); err != nil {
 			return nil, err
 		}
@@ -271,7 +274,7 @@ func (q *Queries) ListDocuments(ctx context.Context, personID string) ([]*Docume
 
 const listDocumentsByState = `-- name: ListDocumentsByState :many
 SELECT
-    id, person_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at
+    id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at, person_id
 FROM
     documents
 WHERE
@@ -297,7 +300,7 @@ func (q *Queries) ListDocumentsByState(ctx context.Context, arg ListDocumentsByS
 		var i Document
 		if err := rows.Scan(
 			&i.ID,
-			&i.PersonID,
+			&i.UserID,
 			&i.Filename,
 			&i.ContentType,
 			&i.Data,
@@ -308,6 +311,7 @@ func (q *Queries) ListDocumentsByState(ctx context.Context, arg ListDocumentsByS
 			&i.SettlementIban,
 			&i.TransactionDate,
 			&i.CreatedAt,
+			&i.PersonID,
 		); err != nil {
 			return nil, err
 		}
@@ -381,7 +385,7 @@ SET
     settlement_iban = ?,
     transaction_date = ?
 WHERE
-    id = ? RETURNING id, person_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at
+    id = ? RETURNING id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at, person_id
 `
 
 type UpdateDocumentStateParams struct {
@@ -407,7 +411,7 @@ func (q *Queries) UpdateDocumentState(ctx context.Context, arg UpdateDocumentSta
 	var i Document
 	err := row.Scan(
 		&i.ID,
-		&i.PersonID,
+		&i.UserID,
 		&i.Filename,
 		&i.ContentType,
 		&i.Data,
@@ -418,6 +422,7 @@ func (q *Queries) UpdateDocumentState(ctx context.Context, arg UpdateDocumentSta
 		&i.SettlementIban,
 		&i.TransactionDate,
 		&i.CreatedAt,
+		&i.PersonID,
 	)
 	return &i, err
 }

@@ -1,0 +1,14 @@
+query People {
+	persons @list(name: "All_Persons") {
+		id
+		displayName
+		users {
+			id
+			displayName
+		}
+	}
+	users {
+		id
+		displayName
+	}
+}

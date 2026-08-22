@@ -56,6 +56,8 @@ accessed by multiple users (delegation).
 type Person {
   id: ID!
   displayName: String!
+  "All users who have access to this person's data."
+  users: [User!]!
 }
 
 """
@@ -279,6 +281,10 @@ type Query {
   version: String!
   "The currently authenticated user."
   me: User!
+  "All users known to this instance."
+  users: [User!]!
+  "All persons known to this instance."
+  persons: [Person!]!
   portfolios: [Portfolio!]!
   portfolio(id: ID!): Portfolio
   cashAccounts: [CashAccount!]!
@@ -437,6 +443,18 @@ type Mutation {
 
   "Create a new person (financial entity) accessible by the current user."
   createPerson(displayName: String!): Person!
+
+  "Rename a person."
+  updatePerson(id: ID!, displayName: String!): Person!
+
+  "Grant a user access to a person."
+  grantPersonAccess(personID: ID!, userID: ID!): Person!
+
+  """
+  Revoke a user's access to a person. Fails if this would leave the person
+  with no accessible users.
+  """
+  revokePersonAccess(personID: ID!, userID: ID!): Person!
 
   """
   Switch the active person for the current session. Returns the new active person.

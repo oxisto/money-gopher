@@ -38,7 +38,7 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (*
 
 const deleteExpiredSessions = `-- name: DeleteExpiredSessions :exec
 DELETE FROM sessions
-WHERE expires_at <= CURRENT_TIMESTAMP
+WHERE expires_at <= now()
 `
 
 func (q *Queries) DeleteExpiredSessions(ctx context.Context) error {
@@ -59,7 +59,7 @@ func (q *Queries) DeleteSession(ctx context.Context, id string) error {
 const getSession = `-- name: GetSession :one
 SELECT id, user_id, created_at, expires_at, person_id
 FROM sessions
-WHERE id = ? AND expires_at > CURRENT_TIMESTAMP
+WHERE id = ? AND expires_at > now()
 `
 
 func (q *Queries) GetSession(ctx context.Context, id string) (*Session, error) {

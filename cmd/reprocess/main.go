@@ -19,7 +19,7 @@ import (
 )
 
 func main() {
-	dbPath := flag.String("db", "moneyd.db", "path to the SQLite database")
+	dbPath := flag.String("db", "moneyd-data", "path to the lightsql data directory (must match moneyd's -db; moneyd must not be running, lightsql has no multi-process locking yet)")
 	dir := flag.String("dir", "", "directory of PDFs to upload before reprocessing")
 	flag.Parse()
 

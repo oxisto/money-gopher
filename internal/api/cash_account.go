@@ -47,7 +47,7 @@ func (r *RootResolver) CashAccount(ctx context.Context, args struct{ ID graphql.
 	}
 
 	account, err := r.db.GetCashAccount(ctx, persistence.GetCashAccountParams{
-		ID:     string(args.ID),
+		ID:       string(args.ID),
 		PersonID: person.ID,
 	})
 	if errors.Is(err, sql.ErrNoRows) {
@@ -103,7 +103,7 @@ func (r *RootResolver) UpdateCashAccount(ctx context.Context, args struct {
 	}
 
 	current, err := r.db.GetCashAccount(ctx, persistence.GetCashAccountParams{
-		ID:     string(args.ID),
+		ID:       string(args.ID),
 		PersonID: person.ID,
 	})
 	if errors.Is(err, sql.ErrNoRows) {
@@ -137,7 +137,7 @@ func (r *RootResolver) DeleteCashAccount(ctx context.Context, args struct{ ID gr
 	}
 
 	rows, err := r.db.DeleteCashAccount(ctx, persistence.DeleteCashAccountParams{
-		ID:     string(args.ID),
+		ID:       string(args.ID),
 		PersonID: person.ID,
 	})
 	if err != nil {

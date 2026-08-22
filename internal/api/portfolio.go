@@ -47,7 +47,7 @@ func (r *RootResolver) Portfolio(ctx context.Context, args struct{ ID graphql.ID
 	}
 
 	portfolio, err := r.db.GetPortfolio(ctx, persistence.GetPortfolioParams{
-		ID:     string(args.ID),
+		ID:       string(args.ID),
 		PersonID: person.ID,
 	})
 	if errors.Is(err, sql.ErrNoRows) {
@@ -74,7 +74,7 @@ func (r *RootResolver) CreatePortfolio(ctx context.Context, args struct{ Input C
 
 	// Verify the cash account belongs to this user.
 	if _, err = r.db.GetCashAccount(ctx, persistence.GetCashAccountParams{
-		ID:     string(args.Input.CashAccountID),
+		ID:       string(args.Input.CashAccountID),
 		PersonID: person.ID,
 	}); errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("cash account %q not found", args.Input.CashAccountID)
@@ -111,7 +111,7 @@ func (r *RootResolver) UpdatePortfolio(ctx context.Context, args struct {
 	}
 
 	current, err := r.db.GetPortfolio(ctx, persistence.GetPortfolioParams{
-		ID:     string(args.ID),
+		ID:       string(args.ID),
 		PersonID: person.ID,
 	})
 	if errors.Is(err, sql.ErrNoRows) {
@@ -145,7 +145,7 @@ func (r *RootResolver) DeletePortfolio(ctx context.Context, args struct{ ID grap
 	}
 
 	rows, err := r.db.DeletePortfolio(ctx, persistence.DeletePortfolioParams{
-		ID:     string(args.ID),
+		ID:       string(args.ID),
 		PersonID: person.ID,
 	})
 	if err != nil {
@@ -174,7 +174,7 @@ func (r *PortfolioResolver) CashAccount(ctx context.Context) (*CashAccountResolv
 	}
 
 	account, err := r.db.GetCashAccount(ctx, persistence.GetCashAccountParams{
-		ID:     r.portfolio.CashAccountID,
+		ID:       r.portfolio.CashAccountID,
 		PersonID: person.ID,
 	})
 	if err != nil {

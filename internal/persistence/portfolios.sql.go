@@ -13,7 +13,7 @@ const createPortfolio = `-- name: CreatePortfolio :one
 INSERT INTO
     portfolios (id, person_id, display_name, cash_account_id)
 VALUES
-    (?, ?, ?, ?) RETURNING id, person_id, display_name, cash_account_id, created_at
+    (?, ?, ?, ?) RETURNING id, user_id, display_name, cash_account_id, created_at, person_id
 `
 
 type CreatePortfolioParams struct {
@@ -33,10 +33,11 @@ func (q *Queries) CreatePortfolio(ctx context.Context, arg CreatePortfolioParams
 	var i Portfolio
 	err := row.Scan(
 		&i.ID,
-		&i.PersonID,
+		&i.UserID,
 		&i.DisplayName,
 		&i.CashAccountID,
 		&i.CreatedAt,
+		&i.PersonID,
 	)
 	return &i, err
 }
@@ -63,7 +64,7 @@ func (q *Queries) DeletePortfolio(ctx context.Context, arg DeletePortfolioParams
 
 const getPortfolio = `-- name: GetPortfolio :one
 SELECT
-    id, person_id, display_name, cash_account_id, created_at
+    id, user_id, display_name, cash_account_id, created_at, person_id
 FROM
     portfolios
 WHERE
@@ -81,17 +82,18 @@ func (q *Queries) GetPortfolio(ctx context.Context, arg GetPortfolioParams) (*Po
 	var i Portfolio
 	err := row.Scan(
 		&i.ID,
-		&i.PersonID,
+		&i.UserID,
 		&i.DisplayName,
 		&i.CashAccountID,
 		&i.CreatedAt,
+		&i.PersonID,
 	)
 	return &i, err
 }
 
 const listPortfolios = `-- name: ListPortfolios :many
 SELECT
-    id, person_id, display_name, cash_account_id, created_at
+    id, user_id, display_name, cash_account_id, created_at, person_id
 FROM
     portfolios
 WHERE
@@ -111,10 +113,11 @@ func (q *Queries) ListPortfolios(ctx context.Context, personID string) ([]*Portf
 		var i Portfolio
 		if err := rows.Scan(
 			&i.ID,
-			&i.PersonID,
+			&i.UserID,
 			&i.DisplayName,
 			&i.CashAccountID,
 			&i.CreatedAt,
+			&i.PersonID,
 		); err != nil {
 			return nil, err
 		}
@@ -135,7 +138,7 @@ SET
     display_name = ?
 WHERE
     id = ?
-    AND person_id = ? RETURNING id, person_id, display_name, cash_account_id, created_at
+    AND person_id = ? RETURNING id, user_id, display_name, cash_account_id, created_at, person_id
 `
 
 type UpdatePortfolioParams struct {
@@ -149,10 +152,11 @@ func (q *Queries) UpdatePortfolio(ctx context.Context, arg UpdatePortfolioParams
 	var i Portfolio
 	err := row.Scan(
 		&i.ID,
-		&i.PersonID,
+		&i.UserID,
 		&i.DisplayName,
 		&i.CashAccountID,
 		&i.CreatedAt,
+		&i.PersonID,
 	)
 	return &i, err
 }

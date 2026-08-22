@@ -14,7 +14,7 @@ const createCashAccount = `-- name: CreateCashAccount :one
 INSERT INTO
     cash_accounts (id, person_id, display_name, currency, iban)
 VALUES
-    (?, ?, ?, ?, ?) RETURNING id, person_id, display_name, currency, iban, created_at
+    (?, ?, ?, ?, ?) RETURNING id, user_id, display_name, currency, iban, created_at, person_id
 `
 
 type CreateCashAccountParams struct {
@@ -36,11 +36,12 @@ func (q *Queries) CreateCashAccount(ctx context.Context, arg CreateCashAccountPa
 	var i CashAccount
 	err := row.Scan(
 		&i.ID,
-		&i.PersonID,
+		&i.UserID,
 		&i.DisplayName,
 		&i.Currency,
 		&i.Iban,
 		&i.CreatedAt,
+		&i.PersonID,
 	)
 	return &i, err
 }
@@ -67,7 +68,7 @@ func (q *Queries) DeleteCashAccount(ctx context.Context, arg DeleteCashAccountPa
 
 const getCashAccount = `-- name: GetCashAccount :one
 SELECT
-    id, person_id, display_name, currency, iban, created_at
+    id, user_id, display_name, currency, iban, created_at, person_id
 FROM
     cash_accounts
 WHERE
@@ -85,11 +86,12 @@ func (q *Queries) GetCashAccount(ctx context.Context, arg GetCashAccountParams) 
 	var i CashAccount
 	err := row.Scan(
 		&i.ID,
-		&i.PersonID,
+		&i.UserID,
 		&i.DisplayName,
 		&i.Currency,
 		&i.Iban,
 		&i.CreatedAt,
+		&i.PersonID,
 	)
 	return &i, err
 }
@@ -112,7 +114,7 @@ func (q *Queries) GetCashAccountBalance(ctx context.Context, cashAccountID sql.N
 
 const getCashAccountByIBAN = `-- name: GetCashAccountByIBAN :one
 SELECT
-    id, person_id, display_name, currency, iban, created_at
+    id, user_id, display_name, currency, iban, created_at, person_id
 FROM
     cash_accounts
 WHERE
@@ -130,18 +132,19 @@ func (q *Queries) GetCashAccountByIBAN(ctx context.Context, arg GetCashAccountBy
 	var i CashAccount
 	err := row.Scan(
 		&i.ID,
-		&i.PersonID,
+		&i.UserID,
 		&i.DisplayName,
 		&i.Currency,
 		&i.Iban,
 		&i.CreatedAt,
+		&i.PersonID,
 	)
 	return &i, err
 }
 
 const listCashAccounts = `-- name: ListCashAccounts :many
 SELECT
-    id, person_id, display_name, currency, iban, created_at
+    id, user_id, display_name, currency, iban, created_at, person_id
 FROM
     cash_accounts
 WHERE
@@ -161,11 +164,12 @@ func (q *Queries) ListCashAccounts(ctx context.Context, personID string) ([]*Cas
 		var i CashAccount
 		if err := rows.Scan(
 			&i.ID,
-			&i.PersonID,
+			&i.UserID,
 			&i.DisplayName,
 			&i.Currency,
 			&i.Iban,
 			&i.CreatedAt,
+			&i.PersonID,
 		); err != nil {
 			return nil, err
 		}
@@ -186,7 +190,7 @@ SET
     display_name = ?
 WHERE
     id = ?
-    AND person_id = ? RETURNING id, person_id, display_name, currency, iban, created_at
+    AND person_id = ? RETURNING id, user_id, display_name, currency, iban, created_at, person_id
 `
 
 type UpdateCashAccountParams struct {
@@ -200,11 +204,12 @@ func (q *Queries) UpdateCashAccount(ctx context.Context, arg UpdateCashAccountPa
 	var i CashAccount
 	err := row.Scan(
 		&i.ID,
-		&i.PersonID,
+		&i.UserID,
 		&i.DisplayName,
 		&i.Currency,
 		&i.Iban,
 		&i.CreatedAt,
+		&i.PersonID,
 	)
 	return &i, err
 }

@@ -25,6 +25,19 @@ func (r *RootResolver) Me(ctx context.Context) (*UserResolver, error) {
 	return &UserResolver{db: r.db, user: user}, nil
 }
 
+// Users resolves Query.users — all users known to this instance.
+func (r *RootResolver) Users(ctx context.Context) ([]*UserResolver, error) {
+	users, err := r.db.ListAllUsers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*UserResolver, len(users))
+	for i, u := range users {
+		out[i] = &UserResolver{db: r.db, user: u}
+	}
+	return out, nil
+}
+
 func (r *UserResolver) ID() graphql.ID      { return graphql.ID(r.user.ID) }
 func (r *UserResolver) DisplayName() string { return r.user.DisplayName }
 

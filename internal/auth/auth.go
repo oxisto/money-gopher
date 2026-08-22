@@ -6,6 +6,8 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/google/uuid"
+
 	"github.com/oxisto/money-gopher/internal/persistence"
 )
 
@@ -112,6 +114,33 @@ func EnsureDevUser(ctx context.Context, db *persistence.DB) (*persistence.User, 
 	}
 
 	return user, person, nil
+}
+
+// EnsurePersonForUser returns a person the user can access, creating a
+// default one (named after the user) on their first authenticated request.
+func EnsurePersonForUser(ctx context.Context, db *persistence.DB, user *persistence.User) (*persistence.Person, error) {
+	persons, err := db.ListPersonsForUser(ctx, user.ID)
+	if err != nil {
+		return nil, err
+	}
+	if len(persons) > 0 {
+		return persons[0], nil
+	}
+
+	person, err := db.CreatePerson(ctx, persistence.CreatePersonParams{
+		ID:          uuid.NewString(),
+		DisplayName: user.DisplayName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if err := db.GrantPersonAccess(ctx, persistence.GrantPersonAccessParams{
+		UserID:   user.ID,
+		PersonID: person.ID,
+	}); err != nil {
+		return nil, err
+	}
+	return person, nil
 }
 
 // DevMiddleware pins every request to the development user and their default person.

@@ -26,6 +26,18 @@ func (q *Queries) CheckPersonAccess(ctx context.Context, arg CheckPersonAccessPa
 	return count, err
 }
 
+const countPersonAccess = `-- name: CountPersonAccess :one
+SELECT COUNT(*) FROM user_person_access
+WHERE person_id = ?
+`
+
+func (q *Queries) CountPersonAccess(ctx context.Context, personID string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countPersonAccess, personID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createPerson = `-- name: CreatePerson :one
 INSERT INTO persons (id, display_name)
 VALUES (?, ?)
@@ -71,6 +83,66 @@ func (q *Queries) GrantPersonAccess(ctx context.Context, arg GrantPersonAccessPa
 	return err
 }
 
+const listAllPersons = `-- name: ListAllPersons :many
+SELECT id, display_name, created_at FROM persons ORDER BY display_name
+`
+
+func (q *Queries) ListAllPersons(ctx context.Context) ([]*Person, error) {
+	rows, err := q.db.QueryContext(ctx, listAllPersons)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*Person
+	for rows.Next() {
+		var i Person
+		if err := rows.Scan(&i.ID, &i.DisplayName, &i.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllUsers = `-- name: ListAllUsers :many
+SELECT id, issuer, subject, display_name, created_at FROM users ORDER BY display_name
+`
+
+func (q *Queries) ListAllUsers(ctx context.Context) ([]*User, error) {
+	rows, err := q.db.QueryContext(ctx, listAllUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Issuer,
+			&i.Subject,
+			&i.DisplayName,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPersonsForUser = `-- name: ListPersonsForUser :many
 SELECT p.id, p.display_name, p.created_at
 FROM persons p
@@ -100,4 +172,73 @@ func (q *Queries) ListPersonsForUser(ctx context.Context, userID string) ([]*Per
 		return nil, err
 	}
 	return items, nil
+}
+
+const listUsersForPerson = `-- name: ListUsersForPerson :many
+SELECT u.id, u.issuer, u.subject, u.display_name, u.created_at
+FROM users u
+JOIN user_person_access upa ON upa.user_id = u.id
+WHERE upa.person_id = ?
+ORDER BY u.display_name
+`
+
+func (q *Queries) ListUsersForPerson(ctx context.Context, personID string) ([]*User, error) {
+	rows, err := q.db.QueryContext(ctx, listUsersForPerson, personID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Issuer,
+			&i.Subject,
+			&i.DisplayName,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const revokePersonAccess = `-- name: RevokePersonAccess :exec
+DELETE FROM user_person_access
+WHERE user_id = ? AND person_id = ?
+`
+
+type RevokePersonAccessParams struct {
+	UserID   string
+	PersonID string
+}
+
+func (q *Queries) RevokePersonAccess(ctx context.Context, arg RevokePersonAccessParams) error {
+	_, err := q.db.ExecContext(ctx, revokePersonAccess, arg.UserID, arg.PersonID)
+	return err
+}
+
+const updatePersonDisplayName = `-- name: UpdatePersonDisplayName :one
+UPDATE persons SET display_name = ? WHERE id = ?
+RETURNING id, display_name, created_at
+`
+
+type UpdatePersonDisplayNameParams struct {
+	DisplayName string
+	ID          string
+}
+
+func (q *Queries) UpdatePersonDisplayName(ctx context.Context, arg UpdatePersonDisplayNameParams) (*Person, error) {
+	row := q.db.QueryRowContext(ctx, updatePersonDisplayName, arg.DisplayName, arg.ID)
+	var i Person
+	err := row.Scan(&i.ID, &i.DisplayName, &i.CreatedAt)
+	return &i, err
 }

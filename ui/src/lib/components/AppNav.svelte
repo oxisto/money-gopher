@@ -18,7 +18,8 @@
 	const nav = [
 		{ href: '/', label: 'Dashboard' },
 		{ href: '/securities', label: 'Securities' },
-		{ href: '/imports', label: 'Imports' }
+		{ href: '/imports', label: 'Imports' },
+		{ href: '/settings/people', label: 'People' }
 	];
 
 	function isActive(href: string): boolean {

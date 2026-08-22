@@ -21,3 +21,28 @@ ON CONFLICT DO NOTHING;
 -- name: CheckPersonAccess :one
 SELECT COUNT(*) FROM user_person_access
 WHERE user_id = ? AND person_id = ?;
+
+-- name: RevokePersonAccess :exec
+DELETE FROM user_person_access
+WHERE user_id = ? AND person_id = ?;
+
+-- name: CountPersonAccess :one
+SELECT COUNT(*) FROM user_person_access
+WHERE person_id = ?;
+
+-- name: UpdatePersonDisplayName :one
+UPDATE persons SET display_name = ? WHERE id = ?
+RETURNING *;
+
+-- name: ListAllPersons :many
+SELECT * FROM persons ORDER BY display_name;
+
+-- name: ListAllUsers :many
+SELECT * FROM users ORDER BY display_name;
+
+-- name: ListUsersForPerson :many
+SELECT u.*
+FROM users u
+JOIN user_person_access upa ON upa.user_id = u.id
+WHERE upa.person_id = ?
+ORDER BY u.display_name;

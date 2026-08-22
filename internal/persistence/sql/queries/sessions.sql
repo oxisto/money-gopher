@@ -6,7 +6,7 @@ RETURNING *;
 -- name: GetSession :one
 SELECT *
 FROM sessions
-WHERE id = ? AND expires_at > CURRENT_TIMESTAMP;
+WHERE id = ? AND expires_at > now();
 
 -- name: UpdateSessionPerson :exec
 UPDATE sessions SET person_id = ? WHERE id = ?;
@@ -17,4 +17,4 @@ WHERE id = ?;
 
 -- name: DeleteExpiredSessions :exec
 DELETE FROM sessions
-WHERE expires_at <= CURRENT_TIMESTAMP;
+WHERE expires_at <= now();

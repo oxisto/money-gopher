@@ -10,17 +10,20 @@ import (
 )
 
 type CashAccount struct {
+	// Superseded by person_id. Kept only because lightsql cannot DROP
 	ID          string
-	PersonID    string
+	UserID      sql.NullString
 	DisplayName string
 	Currency    string
 	Iban        sql.NullString
 	CreatedAt   time.Time
+	PersonID    string
 }
 
 type Document struct {
+	// Superseded by person_id. Kept only because lightsql cannot DROP
 	ID              string
-	PersonID        string
+	UserID          sql.NullString
 	Filename        string
 	ContentType     string
 	Data            []byte
@@ -31,9 +34,9 @@ type Document struct {
 	SettlementIban  sql.NullString
 	TransactionDate sql.NullTime
 	CreatedAt       time.Time
+	PersonID        string
 }
 
-// Listing is a security listed on a particular exchange.
 type Listing struct {
 	ID            string
 	SecurityID    string
@@ -50,27 +53,26 @@ type Person struct {
 }
 
 type Portfolio struct {
+	// Superseded by person_id. Kept only because lightsql cannot DROP
 	ID            string
-	PersonID      string
+	UserID        sql.NullString
 	DisplayName   string
 	CashAccountID string
 	CreatedAt     time.Time
+	PersonID      string
 }
 
-// Quote is one price observation for a listing.
 type Quote struct {
 	ListingID string
 	Time      time.Time
 	Price     int64
 }
 
-// Security is a tradable security, shared across all users.
 type Security struct {
 	ID          string
 	DisplayName string
 }
 
-// SecurityIdentifier maps an external identifier (ISIN, WKN, …) to a security.
 type SecurityIdentifier struct {
 	SecurityID string
 	Kind       string
@@ -85,7 +87,6 @@ type Session struct {
 	PersonID  sql.NullString
 }
 
-// StagedTransaction is a parsed transaction awaiting user review.
 type StagedTransaction struct {
 	ID           string
 	DocumentID   string
@@ -103,7 +104,6 @@ type StagedTransaction struct {
 	CreatedAt    time.Time
 }
 
-// Transaction is a typed portfolio/cash event.
 type Transaction struct {
 	ID            string
 	Type          string
@@ -121,7 +121,6 @@ type Transaction struct {
 	CreatedAt     time.Time
 }
 
-// User is a person using money-gopher, provisioned on first OIDC login.
 type User struct {
 	ID          string
 	Issuer      string

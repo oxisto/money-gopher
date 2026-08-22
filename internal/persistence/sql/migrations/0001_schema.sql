@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
     issuer       TEXT     NOT NULL,
     subject      TEXT     NOT NULL,
     display_name TEXT     NOT NULL,
-    created_at   DATETIME NOT NULL DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ')),
+    created_at   TIMESTAMP NOT NULL DEFAULT (now()),
     UNIQUE (issuer, subject)
 );
 
@@ -14,11 +14,13 @@ CREATE TABLE IF NOT EXISTS cash_accounts (
     -- CashAccount is a real-world bank/cash account. Its balance is derived
     -- as the sum of all transaction cash_deltas settling against it.
     id           TEXT     PRIMARY KEY,
-    user_id      TEXT     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    -- Superseded by person_id, added in migration 0002. Kept only because
+    -- lightsql cannot DROP COLUMN; never populated by new rows.
+    user_id      TEXT     REFERENCES users(id) ON DELETE CASCADE,
     display_name TEXT     NOT NULL,
     currency     TEXT     NOT NULL,
     iban         TEXT,
-    created_at   DATETIME NOT NULL DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ'))
+    created_at   TIMESTAMP NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE IF NOT EXISTS portfolios (
@@ -26,10 +28,12 @@ CREATE TABLE IF NOT EXISTS portfolios (
     -- Every portfolio settles trades and dividends against exactly one cash
     -- account; the relationship is mandatory.
     id                TEXT     PRIMARY KEY,
-    user_id           TEXT     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    -- Superseded by person_id, added in migration 0002. Kept only because
+    -- lightsql cannot DROP COLUMN; never populated by new rows.
+    user_id           TEXT     REFERENCES users(id) ON DELETE CASCADE,
     display_name      TEXT     NOT NULL,
     cash_account_id   TEXT     NOT NULL REFERENCES cash_accounts(id) ON DELETE RESTRICT,
-    created_at        DATETIME NOT NULL DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ'))
+    created_at        TIMESTAMP NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE IF NOT EXISTS securities (
@@ -65,7 +69,7 @@ CREATE TABLE IF NOT EXISTS listings (
 CREATE TABLE IF NOT EXISTS quotes (
     -- Quote is one price observation for a listing.
     listing_id TEXT    NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
-    time       DATETIME NOT NULL,
+    time       TIMESTAMP NOT NULL,
     price      INTEGER  NOT NULL,
     PRIMARY KEY (listing_id, time)
 );
@@ -78,7 +82,7 @@ CREATE TABLE IF NOT EXISTS transactions (
                         'DIVIDEND','INTEREST','DEPOSIT_CASH','WITHDRAW_CASH',
                         'ACCOUNT_FEES','TAX_REFUND'
                     )),
-    time            DATETIME NOT NULL,
+    time            TIMESTAMP NOT NULL,
     portfolio_id    TEXT     REFERENCES portfolios(id)    ON DELETE CASCADE,
     security_id     TEXT     REFERENCES securities(id)    ON DELETE RESTRICT,
     cash_account_id TEXT     REFERENCES cash_accounts(id) ON DELETE CASCADE,
@@ -89,7 +93,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     cash_delta      INTEGER  NOT NULL DEFAULT 0,
     currency        TEXT     NOT NULL,
     source          TEXT     NOT NULL DEFAULT 'MANUAL',
-    created_at      DATETIME NOT NULL DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ')),
+    created_at      TIMESTAMP NOT NULL DEFAULT (now()),
     CHECK (portfolio_id IS NOT NULL OR cash_account_id IS NOT NULL)
 );
 
@@ -102,10 +106,12 @@ CREATE INDEX IF NOT EXISTS idx_transactions_cash_account_time
 CREATE TABLE IF NOT EXISTS documents (
     -- Document is an uploaded file going through the import pipeline.
     id              TEXT     PRIMARY KEY,
-    user_id         TEXT     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    -- Superseded by person_id, added in migration 0002. Kept only because
+    -- lightsql cannot DROP COLUMN; never populated by new rows.
+    user_id         TEXT     REFERENCES users(id) ON DELETE CASCADE,
     filename        TEXT     NOT NULL,
     content_type    TEXT     NOT NULL,
-    data            BLOB     NOT NULL,
+    data            BYTEA    NOT NULL,
     state           TEXT     NOT NULL DEFAULT 'UPLOADED' CHECK (
                         state IN ('UPLOADED','PARSED','FAILED','SKIPPED','IMPORTED')
                     ),
@@ -113,8 +119,8 @@ CREATE TABLE IF NOT EXISTS documents (
     extracted_text  TEXT,
     error           TEXT,
     settlement_iban TEXT,
-    transaction_date DATETIME,
-    created_at      DATETIME NOT NULL DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ'))
+    transaction_date TIMESTAMP,
+    created_at      TIMESTAMP NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE IF NOT EXISTS staged_transactions (
@@ -126,7 +132,7 @@ CREATE TABLE IF NOT EXISTS staged_transactions (
                       'DIVIDEND','INTEREST','DEPOSIT_CASH','WITHDRAW_CASH',
                       'ACCOUNT_FEES','TAX_REFUND'
                   )),
-    time          DATETIME NOT NULL,
+    time          TIMESTAMP NOT NULL,
     units         REAL     NOT NULL DEFAULT 0,
     price         INTEGER,
     fees          INTEGER  NOT NULL DEFAULT 0,
@@ -136,7 +142,7 @@ CREATE TABLE IF NOT EXISTS staged_transactions (
     security_hint TEXT,
     isin          TEXT,
     security_id   TEXT     REFERENCES securities(id) ON DELETE SET NULL,
-    created_at    DATETIME NOT NULL DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ'))
+    created_at    TIMESTAMP NOT NULL DEFAULT (now())
 );
 
 CREATE INDEX IF NOT EXISTS idx_staged_transactions_document
@@ -145,8 +151,8 @@ CREATE INDEX IF NOT EXISTS idx_staged_transactions_document
 CREATE TABLE IF NOT EXISTS sessions (
     id         TEXT     PRIMARY KEY,
     user_id    TEXT     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    expires_at DATETIME NOT NULL
+    created_at TIMESTAMP NOT NULL DEFAULT (now()),
+    expires_at TIMESTAMP NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS sessions_user_id ON sessions(user_id);

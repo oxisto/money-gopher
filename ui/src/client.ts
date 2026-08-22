@@ -6,7 +6,10 @@ import { HoudiniClient } from '$houdini';
 const _fetch = window.fetch.bind(window);
 window.fetch = async function (input, init) {
 	const res = await _fetch(input, init);
-	if (res.status === 401) {
+	// The root layout queries `me` on every route, including /login itself
+	// (which has no session yet) — without this guard that 401 redirects
+	// back to /login, re-running the same query and looping forever.
+	if (res.status === 401 && window.location.pathname !== '/login') {
 		window.location.href = '/login';
 	}
 	return res;

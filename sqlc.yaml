@@ -2,12 +2,16 @@ version: "2"
 sql:
   - engine: "sqlite"
     queries: "internal/persistence/sql/queries"
-    schema: "internal/persistence/sql/migrations"
+    schema: "internal/persistence/sql/schema"
     gen:
       go:
         package: "persistence"
         out: "internal/persistence"
         emit_result_struct_pointers: true
         overrides:
-          - db_type: "datetime"
+          - db_type: "TIMESTAMP"
             go_type: "time.Time"
+          - db_type: "BYTEA"
+            go_type:
+              type: "byte"
+              slice: true

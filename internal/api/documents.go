@@ -36,7 +36,7 @@ func (r *RootResolver) Documents(ctx context.Context, args struct{ State *string
 	if args.State != nil {
 		docs, err = r.db.ListDocumentsByState(ctx, persistence.ListDocumentsByStateParams{
 			PersonID: person.ID,
-			State:  *args.State,
+			State:    *args.State,
 		})
 	} else {
 		docs, err = r.db.ListDocuments(ctx, person.ID)
@@ -100,7 +100,7 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 	}
 
 	doc, err := r.db.GetDocument(ctx, persistence.GetDocumentParams{
-		ID:     string(args.DocumentID),
+		ID:       string(args.DocumentID),
 		PersonID: person.ID,
 	})
 	if errors.Is(err, sql.ErrNoRows) {
@@ -241,10 +241,10 @@ func isCashOnlyType(typ string) bool {
 
 // Document field resolvers.
 
-func (r *DocumentResolver) ID() graphql.ID { return graphql.ID(r.doc.ID) }
-func (r *DocumentResolver) Filename() string { return r.doc.Filename }
+func (r *DocumentResolver) ID() graphql.ID      { return graphql.ID(r.doc.ID) }
+func (r *DocumentResolver) Filename() string    { return r.doc.Filename }
 func (r *DocumentResolver) ContentType() string { return r.doc.ContentType }
-func (r *DocumentResolver) State() string { return r.doc.State }
+func (r *DocumentResolver) State() string       { return r.doc.State }
 
 func (r *DocumentResolver) DetectedBank() *string {
 	if !r.doc.DetectedBank.Valid {
@@ -295,7 +295,7 @@ func (r *DocumentResolver) SuggestedCashAccount(ctx context.Context) (*CashAccou
 		return nil, err
 	}
 	account, err := r.db.GetCashAccountByIBAN(ctx, persistence.GetCashAccountByIBANParams{
-		Iban:   sql.NullString{String: r.doc.SettlementIban.String, Valid: true},
+		Iban:     sql.NullString{String: r.doc.SettlementIban.String, Valid: true},
 		PersonID: person.ID,
 	})
 	if errors.Is(err, sql.ErrNoRows) {
