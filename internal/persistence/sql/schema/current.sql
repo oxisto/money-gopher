@@ -79,7 +79,7 @@ CREATE TABLE listings (
 CREATE TABLE quotes (
     listing_id TEXT    NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
     time       TIMESTAMP NOT NULL,
-    price      INTEGER  NOT NULL,
+    price      DECIMAL(19,4) NOT NULL,
     PRIMARY KEY (listing_id, time)
 );
 
@@ -91,7 +91,7 @@ CREATE TABLE transactions (
     security_id     TEXT     REFERENCES securities(id)    ON DELETE RESTRICT,
     cash_account_id TEXT     REFERENCES cash_accounts(id) ON DELETE CASCADE,
     units           REAL     NOT NULL,
-    price           INTEGER,
+    price           DECIMAL(19,4),
     fees            INTEGER  NOT NULL,
     taxes           INTEGER  NOT NULL,
     cash_delta      INTEGER  NOT NULL,
@@ -124,7 +124,7 @@ CREATE TABLE staged_transactions (
     type          TEXT     NOT NULL,
     time          TIMESTAMP NOT NULL,
     units         REAL     NOT NULL,
-    price         INTEGER,
+    price         DECIMAL(19,4),
     fees          INTEGER  NOT NULL,
     taxes         INTEGER  NOT NULL,
     cash_delta    INTEGER  NOT NULL,

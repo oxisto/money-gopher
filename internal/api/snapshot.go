@@ -54,10 +54,10 @@ func (r *PortfolioResolver) Snapshot(ctx context.Context, args struct{ Time *gra
 // time. Securities without listings or quotes report ok == false, making
 // calculations fall back to the purchase price.
 func latestQuote(ctx context.Context, db *persistence.DB) finance.QuoteFunc {
-	return func(securityID string, at time.Time) (int64, bool) {
+	return func(securityID string, at time.Time) (persistence.Decimal, bool) {
 		listings, err := db.ListListings(ctx, securityID)
 		if err != nil || len(listings) == 0 {
-			return 0, false
+			return persistence.Decimal{}, false
 		}
 
 		quote, err := db.GetLatestQuoteBefore(ctx, persistence.GetLatestQuoteBeforeParams{
@@ -65,7 +65,7 @@ func latestQuote(ctx context.Context, db *persistence.DB) finance.QuoteFunc {
 			Time:      at,
 		})
 		if err != nil {
-			return 0, false
+			return persistence.Decimal{}, false
 		}
 
 		return quote.Price, true
@@ -178,12 +178,12 @@ func (r *PositionResolver) PurchaseValue() Money {
 	return money(r.position.PurchaseValue, r.position.Currency)
 }
 
-func (r *PositionResolver) PurchasePrice() Money {
-	return money(r.position.PurchasePrice(), r.position.Currency)
+func (r *PositionResolver) PurchasePrice() Price {
+	return price(r.position.PurchasePrice(), r.position.Currency)
 }
 
-func (r *PositionResolver) MarketPrice() Money {
-	return money(r.position.MarketPrice, r.position.Currency)
+func (r *PositionResolver) MarketPrice() Price {
+	return price(r.position.MarketPrice, r.position.Currency)
 }
 
 func (r *PositionResolver) MarketValue() Money {

@@ -137,10 +137,7 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 			CashDelta: stx.CashDelta,
 			Currency:  stx.Currency,
 		}
-		if stx.Price.Valid {
-			price := stx.Price.Int64
-			d.Price = &price
-		}
+		d.Price = stx.Price
 
 		// Apply portfolio default only for types that use a portfolio; pure cash
 		// events (DEPOSIT_CASH, WITHDRAW_CASH, INTEREST, etc.) must not have one.
@@ -190,7 +187,7 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 			SecurityID:    nullString(d.SecurityID),
 			CashAccountID: nullString(d.CashAccountID),
 			Units:         d.Units,
-			Price:         nullInt64(d.Price),
+			Price:         d.Price,
 			Fees:          d.Fees,
 			Taxes:         d.Taxes,
 			CashDelta:     d.CashDelta,
@@ -318,12 +315,12 @@ func (r *StagedTransactionResolver) Time() graphql.Time {
 
 func (r *StagedTransactionResolver) Units() float64 { return r.tx.Units }
 
-func (r *StagedTransactionResolver) Price() *Money {
+func (r *StagedTransactionResolver) Price() *Price {
 	if !r.tx.Price.Valid {
 		return nil
 	}
-	m := money(r.tx.Price.Int64, r.tx.Currency)
-	return &m
+	p := price(r.tx.Price, r.tx.Currency)
+	return &p
 }
 
 func (r *StagedTransactionResolver) Fees() Money {

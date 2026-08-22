@@ -102,7 +102,7 @@ func TestLifecycle(t *testing.T) {
 		createTransaction(input: {
 			type: BUY, time: "2026-01-03T10:00:00Z", currency: "EUR"
 			portfolioID: $portfolio, securityID: $security, cashAccountID: $account
-			units: 10, price: 9500, fees: 150
+			units: 10, price: "95.00", fees: 150
 		}) { id cashDelta { amount currency } }
 	}`, map[string]any{"portfolio": portfolioID, "security": securityID, "account": accountID})
 	buy := data["createTransaction"].(map[string]any)
@@ -145,7 +145,7 @@ func TestLifecycle(t *testing.T) {
 		createTransaction(input: {
 			type: BUY, time: "2026-01-03T10:00:00Z", currency: "EUR"
 			portfolioID: $portfolio, securityID: $security
-			units: 10, price: 9500
+			units: 10, price: "95.00"
 		}) { id }
 	}`, map[string]any{"portfolio": portfolioID, "security": securityID})
 

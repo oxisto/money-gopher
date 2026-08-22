@@ -1,7 +1,6 @@
 package finance
 
 import (
-	"math"
 	"sort"
 	"time"
 
@@ -44,9 +43,10 @@ func TimeWeightedReturn(txs []*persistence.Transaction, from, to time.Time, quot
 			// portfolio's flow is the negation.
 			f = -tx.CashDelta
 		case "DELIVERY_INBOUND":
-			f = int64(math.Round(float64(tx.Price.Int64) * tx.Units))
+			// tx.Price is major units; f is minor units (cents), like CashDelta.
+			f = tx.Price.MulFloat(tx.Units).MulInt(100).RoundToInt64()
 		case "DELIVERY_OUTBOUND":
-			f = -int64(math.Round(float64(tx.Price.Int64) * tx.Units))
+			f = -tx.Price.MulFloat(tx.Units).MulInt(100).RoundToInt64()
 		default:
 			continue
 		}

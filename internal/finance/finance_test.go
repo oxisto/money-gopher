@@ -9,6 +9,14 @@ import (
 	"github.com/oxisto/money-gopher/internal/persistence"
 )
 
+// decimalCents converts minor units (e.g. 10000 = "100.00") to a Decimal, so
+// test tables can keep using plain integers while Transaction.Price and
+// QuoteFunc are exact major-unit Decimals. Exact integer division — no
+// float64 involved.
+func decimalCents(minorUnits int64) persistence.Decimal {
+	return persistence.NewDecimalFromInt64(minorUnits).DivInt(100)
+}
+
 var (
 	t0 = time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	t1 = time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
@@ -23,28 +31,28 @@ func tx(typ string, at time.Time, security string, units float64, price int64, c
 		Time:       at,
 		SecurityID: sql.NullString{String: security, Valid: security != ""},
 		Units:      units,
-		Price:      sql.NullInt64{Int64: price, Valid: price != 0},
+		Price:      decimalCents(price),
 		CashDelta:  cashDelta,
 		Currency:   "EUR",
 	}
 }
 
 // quotes returns a QuoteFunc serving fixed prices per security, each valid
-// from its given time on.
+// from its given time on. price is minor units, like tx's.
 func quotes(m map[string][]struct {
 	at    time.Time
 	price int64
 }) QuoteFunc {
-	return func(securityID string, at time.Time) (int64, bool) {
+	return func(securityID string, at time.Time) (persistence.Decimal, bool) {
 		var (
-			price int64
+			price persistence.Decimal
 			ok    bool
 		)
 		for _, q := range m[securityID] {
 			if q.at.After(at) {
 				break
 			}
-			price, ok = q.price, true
+			price, ok = decimalCents(q.price), true
 		}
 		return price, ok
 	}
@@ -72,13 +80,15 @@ func TestSnapshotAt_FIFO(t *testing.T) {
 	if pos.PurchaseValue != 170000 {
 		t.Errorf("purchase value = %d, want 170000", pos.PurchaseValue)
 	}
-	if want := int64(math.Round(170000.0 / 15)); pos.PurchasePrice() != want {
-		t.Errorf("purchase price = %d, want %d", pos.PurchasePrice(), want)
+	// 170000 / 15 / 100 = 113.333... repeating.
+	if want := "113.33"; pos.PurchasePrice().StringPrec(2) != want {
+		t.Errorf("purchase price = %s, want %s", pos.PurchasePrice().StringPrec(2), want)
 	}
-	// Without quotes, the market value equals the purchase value (modulo
-	// per-unit rounding).
-	if pos.MarketValue != int64(math.Round(float64(pos.PurchasePrice())*15)) {
-		t.Errorf("market value = %d, want purchase-price based", pos.MarketValue)
+	// Without quotes, the market value equals the purchase value exactly:
+	// MarketPrice is PurchasePrice, and multiplying it back by units*100
+	// exactly undoes the division that computed it.
+	if pos.MarketValue != pos.PurchaseValue {
+		t.Errorf("market value = %d, want purchase value %d", pos.MarketValue, pos.PurchaseValue)
 	}
 	if snap.Currency != "EUR" {
 		t.Errorf("currency = %q, want EUR", snap.Currency)
@@ -102,8 +112,8 @@ func TestSnapshotAt_WithQuotes(t *testing.T) {
 	snap := SnapshotAt(txs, t3, q)
 
 	pos := snap.Positions[0]
-	if pos.MarketPrice != 13000 {
-		t.Errorf("market price = %d, want 13000", pos.MarketPrice)
+	if pos.MarketPrice.StringPrec(2) != "130.00" {
+		t.Errorf("market price = %s, want 130.00", pos.MarketPrice.StringPrec(2))
 	}
 	if pos.MarketValue != 130000 {
 		t.Errorf("market value = %d, want 130000", pos.MarketValue)
@@ -123,8 +133,8 @@ func TestSnapshotAt_WithQuotes(t *testing.T) {
 	}
 
 	// A snapshot before the quote falls back to the purchase price.
-	if snap := SnapshotAt(txs, t1, q); snap.Positions[0].MarketPrice != 10000 {
-		t.Errorf("market price before quote = %d, want 10000", snap.Positions[0].MarketPrice)
+	if snap := SnapshotAt(txs, t1, q); snap.Positions[0].MarketPrice.StringPrec(2) != "100.00" {
+		t.Errorf("market price before quote = %s, want 100.00", snap.Positions[0].MarketPrice.StringPrec(2))
 	}
 }
 

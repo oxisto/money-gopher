@@ -68,7 +68,7 @@ SET
 type CreateQuoteParams struct {
 	ListingID string
 	Time      time.Time
-	Price     int64
+	Price     Decimal
 }
 
 func (q *Queries) CreateQuote(ctx context.Context, arg CreateQuoteParams) error {

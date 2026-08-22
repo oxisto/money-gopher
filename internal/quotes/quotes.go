@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	"github.com/oxisto/money-gopher/internal/persistence"
 )
 
 // ErrEmptyResult is returned when a provider responded, but without a quote.
@@ -27,8 +29,12 @@ type Instrument struct {
 
 // Quote is one price observation returned by a provider.
 type Quote struct {
-	// Price in minor units of the listing currency.
-	Price int64
+	// Price in major units of the listing currency, e.g. "192.53". An exact
+	// Decimal, converted directly from the provider's float64 via
+	// persistence.DecimalFromFloat — see that function for why: it's the
+	// single, unavoidable float64 boundary, done once, with no further
+	// arithmetic (like a *100 minor-units conversion) folded into it.
+	Price persistence.Decimal
 	// Time is when the price was observed, as reported by the provider.
 	Time time.Time
 }

@@ -16,8 +16,9 @@ type fakeProvider struct{}
 func (fakeProvider) Name() string { return "fake" }
 
 func (fakeProvider) LatestQuote(context.Context, quotes.Instrument) (quotes.Quote, error) {
+	price, _ := persistence.NewDecimal("111.11")
 	return quotes.Quote{
-		Price: 11111,
+		Price: price,
 		Time:  time.Date(2026, 7, 3, 0, 0, 0, 0, time.UTC),
 	}, nil
 }
@@ -66,8 +67,8 @@ func TestTriggerQuoteUpdate(t *testing.T) {
 	}`, nil)
 	listing := data["securities"].([]any)[0].(map[string]any)["listings"].([]any)[0].(map[string]any)
 	latest := listing["latestQuote"].(map[string]any)
-	if got := latest["price"].(map[string]any)["amount"].(float64); got != 11111 {
-		t.Errorf("latest quote = %v, want 11111", got)
+	if got := latest["price"].(map[string]any)["amount"].(string); got != "111.1100" {
+		t.Errorf("latest quote = %v, want 111.1100", got)
 	}
 	if got := len(listing["quotes"].([]any)); got != 1 {
 		t.Errorf("quote history length = %v, want 1", got)

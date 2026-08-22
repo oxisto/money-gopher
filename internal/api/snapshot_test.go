@@ -49,7 +49,7 @@ func TestSnapshot(t *testing.T) {
 		createTransaction(input: {
 			type: BUY, time: "2026-01-03T10:00:00Z", currency: "EUR"
 			portfolioID: $portfolio, securityID: $security, cashAccountID: $account
-			units: 10, price: 10000
+			units: 10, price: "100.00"
 		}) { id }
 	}`, map[string]any{"portfolio": portfolioID, "security": securityID, "account": accountID})
 
@@ -102,10 +102,14 @@ func TestSnapshot(t *testing.T) {
 	}
 
 	// Insert a quote: 110.00 EUR as of Feb 1.
+	quotePrice, err := persistence.NewDecimal("110.00")
+	if err != nil {
+		t.Fatalf("NewDecimal() error = %v", err)
+	}
 	err = db.CreateQuote(ctx, persistence.CreateQuoteParams{
 		ListingID: listingID,
 		Time:      time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC),
-		Price:     11000,
+		Price:     quotePrice,
 	})
 	if err != nil {
 		t.Fatalf("CreateQuote() error = %v", err)

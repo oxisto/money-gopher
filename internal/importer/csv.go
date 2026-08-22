@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/oxisto/money-gopher/internal/persistence"
 )
 
 // csvHeader is the fingerprint and column order of the generic CSV format.
@@ -71,11 +73,10 @@ func (CSV) Parse(text string) ([]StagedTransaction, error) {
 		}
 
 		if price := strings.TrimSpace(rec[5]); price != "" {
-			p, err := parseDecimal(price)
+			tx.Price, err = persistence.NewDecimal(price)
 			if err != nil {
-				return nil, fmt.Errorf("line %d: %w", line, err)
+				return nil, fmt.Errorf("line %d: invalid price %q", line, price)
 			}
-			tx.Price = &p
 		}
 
 		for _, f := range []struct {

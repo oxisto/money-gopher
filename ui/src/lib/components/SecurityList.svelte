@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Securities$result } from '$houdini';
-	import { formatDate, formatMoney } from '$lib/format';
+	import { formatDate, formatPrice } from '$lib/format';
 
 	let { securities }: { securities: Securities$result['securities'] } = $props();
 </script>
@@ -33,7 +33,7 @@
 								</span>
 								{#if listing.latestQuote}
 									<span class="tabular-nums">
-										{formatMoney(listing.latestQuote.price)}
+										{formatPrice(listing.latestQuote.price)}
 										<span class="text-gray-400">({formatDate(listing.latestQuote.time)})</span>
 									</span>
 								{:else}

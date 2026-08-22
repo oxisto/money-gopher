@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { graphql } from '$houdini';
-	import { formatMoney, formatDate } from '$lib/format';
+	import { formatMoney, formatPrice, formatDate } from '$lib/format';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import SelectField from './ui/SelectField.svelte';
@@ -10,7 +10,7 @@
 		type: string;
 		time: Date;
 		units: number;
-		price: { amount: number; currency: string } | null;
+		price: { amount: string; currency: string } | null;
 		fees: { amount: number; currency: string };
 		taxes: { amount: number; currency: string };
 		cashDelta: { amount: number; currency: string };
@@ -163,7 +163,7 @@
 <!-- Split-pane: PDF on the left, review form on the right -->
 <div class="flex flex-col gap-4">
 	<!-- PDF toggle (visible on narrow screens; on wide screens pane is always shown) -->
-	<div class="flex items-center justify-between lg:hidden">
+	<div class="flex items-center justify-between xl:hidden">
 		<span class="text-xs text-gray-500">Source document</span>
 		<button
 			onclick={() => (showPDF = !showPDF)}
@@ -173,11 +173,11 @@
 		</button>
 	</div>
 
-	<div class="flex flex-col gap-6 lg:flex-row lg:gap-4 lg:h-[min(65vh,820px)]">
+	<div class="flex flex-col gap-6 xl:flex-row xl:gap-4 xl:h-[min(65vh,820px)]">
 		<!-- PDF pane -->
 		{#if showPDF}
-			<div class="flex-1 min-w-0 lg:flex-none lg:w-[540px] lg:flex lg:flex-col">
-				<div class="hidden lg:flex items-center justify-between mb-1">
+			<div class="flex-1 min-w-0 xl:flex-none xl:w-[540px] xl:flex xl:flex-col">
+				<div class="hidden xl:flex items-center justify-between mb-1">
 					<span class="text-xs text-gray-500">Source document</span>
 					<a href={pdfURL} target="_blank" class="text-xs text-blue-600 hover:underline">Open in new tab ↗</a>
 				</div>
@@ -187,12 +187,12 @@
 					class="w-full flex-1 rounded-md border border-gray-200"
 					style="height: min(65vh, 820px);"
 				/>
-				<a href={pdfURL} target="_blank" class="mt-1 block text-xs text-blue-600 hover:underline lg:hidden">Open in new tab ↗</a>
+				<a href={pdfURL} target="_blank" class="mt-1 block text-xs text-blue-600 hover:underline xl:hidden">Open in new tab ↗</a>
 			</div>
 		{/if}
 
 		<!-- Review form -->
-		<div class="flex-1 min-w-0 flex flex-col gap-4 lg:overflow-y-auto">
+		<div class="flex-1 min-w-0 flex flex-col gap-4 xl:overflow-y-auto">
 			<!-- Global account selectors -->
 			<div class="flex flex-wrap gap-4">
 				{#if portfolioRequired}
@@ -236,6 +236,7 @@
 							<th class="px-2 py-1.5 text-right font-medium">Units</th>
 							<th class="px-2 py-1.5 text-right font-medium">Price</th>
 							<th class="px-2 py-1.5 text-right font-medium">Fees</th>
+							<th class="px-2 py-1.5 text-right font-medium">Taxes</th>
 							<th class="px-2 py-1.5 text-right font-medium">Cash Δ</th>
 						</tr>
 					</thead>
@@ -285,10 +286,13 @@
 									{tx.units > 0 ? tx.units.toLocaleString() : '—'}
 								</td>
 								<td class="px-2 py-1.5 text-right tabular-nums text-gray-700">
-									{tx.price ? formatMoney(tx.price) : '—'}
+									{tx.price ? formatPrice(tx.price) : '—'}
 								</td>
 								<td class="px-2 py-1.5 text-right tabular-nums text-gray-700">
 									{tx.fees.amount !== 0 ? formatMoney(tx.fees) : '—'}
+								</td>
+								<td class="px-2 py-1.5 text-right tabular-nums text-gray-700">
+									{tx.taxes.amount !== 0 ? formatMoney(tx.taxes) : '—'}
 								</td>
 								<td class="px-2 py-1.5 text-right tabular-nums {tx.cashDelta.amount >= 0 ? 'text-green-700' : 'text-red-700'}">
 									{tx.cashDelta.amount !== 0 ? formatMoney(tx.cashDelta) : '—'}

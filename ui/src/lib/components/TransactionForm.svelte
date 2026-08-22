@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { graphql, TransactionType, type PortfolioDetail$result } from '$houdini';
 	import type { TransactionType$options } from '$houdini';
-	import { parseAmount } from '$lib/format';
+	import { parseAmount, parsePrice } from '$lib/format';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import SelectField from './ui/SelectField.svelte';
@@ -60,7 +60,7 @@
 				securityID: securityID || undefined,
 				cashAccountID: cashAccountID || undefined,
 				units: units ? parseFloat(units) : undefined,
-				price: parseAmount(price) ?? undefined,
+				price: parsePrice(price) ?? undefined,
 				fees: parseAmount(fees) ?? undefined,
 				taxes: parseAmount(taxes) ?? undefined,
 				cashDelta: parseAmount(cashDelta) ?? undefined

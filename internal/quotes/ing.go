@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"net/http"
 	"time"
+
+	"github.com/oxisto/money-gopher/internal/persistence"
 )
 
 // ProviderING is the name of the ING provider.
@@ -70,7 +71,7 @@ func (i *ING) LatestQuote(ctx context.Context, ins Instrument) (Quote, error) {
 
 	// Prefer the bid when the instrument trades with bid/ask.
 	if h.HasBidAsk {
-		return Quote{Price: int64(math.Round(h.Bid * 100)), Time: h.BidDate.UTC()}, nil
+		return Quote{Price: persistence.DecimalFromFloat(h.Bid), Time: h.BidDate.UTC()}, nil
 	}
-	return Quote{Price: int64(math.Round(h.Price * 100)), Time: h.PriceChangedDate.UTC()}, nil
+	return Quote{Price: persistence.DecimalFromFloat(h.Price), Time: h.PriceChangedDate.UTC()}, nil
 }

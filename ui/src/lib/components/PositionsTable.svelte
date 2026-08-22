@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PortfolioDetail$result } from '$houdini';
-	import { formatMoney } from '$lib/format';
+	import { formatMoney, formatPrice } from '$lib/format';
 	import GainBadge from './ui/GainBadge.svelte';
 
 	type Positions = NonNullable<PortfolioDetail$result['portfolio']>['snapshot']['positions'];
@@ -29,10 +29,10 @@
 						<td class="px-4 py-2 font-medium">{position.security.displayName}</td>
 						<td class="px-4 py-2 text-right tabular-nums">{position.units}</td>
 						<td class="px-4 py-2 text-right tabular-nums">
-							{formatMoney(position.purchasePrice)}
+							{formatPrice(position.purchasePrice)}
 						</td>
 						<td class="px-4 py-2 text-right tabular-nums">
-							{formatMoney(position.marketPrice)}
+							{formatPrice(position.marketPrice)}
 						</td>
 						<td class="px-4 py-2 text-right tabular-nums">
 							{formatMoney(position.marketValue)}

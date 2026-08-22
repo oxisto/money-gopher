@@ -308,8 +308,8 @@ func (r *QuoteResolver) Time() graphql.Time {
 	return graphql.Time{Time: r.quote.Time}
 }
 
-func (r *QuoteResolver) Price() Money {
-	return money(r.quote.Price, r.currency)
+func (r *QuoteResolver) Price() Price {
+	return price(r.quote.Price, r.currency)
 }
 
 func nullString(s *string) sql.NullString {

@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"net/http"
 	"time"
+
+	"github.com/oxisto/money-gopher/internal/persistence"
 )
 
 // ProviderYahoo is the name of the Yahoo Finance provider.
@@ -73,7 +74,7 @@ func (y *Yahoo) LatestQuote(ctx context.Context, ins Instrument) (Quote, error) 
 
 	meta := ch.Chart.Result[0].Meta
 	return Quote{
-		Price: int64(math.Round(meta.RegularMarketPrice * 100)),
+		Price: persistence.DecimalFromFloat(meta.RegularMarketPrice),
 		Time:  time.Unix(meta.RegularMarketTime, 0).UTC(),
 	}, nil
 }

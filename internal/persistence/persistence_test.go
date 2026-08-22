@@ -65,9 +65,13 @@ func TestQuoteTimeOrdering(t *testing.T) {
 
 	for i, q := range []struct {
 		at    time.Time
-		price int64
-	}{{older, 100}, {newer, 200}} {
-		err = db.CreateQuote(ctx, CreateQuoteParams{ListingID: listing.ID, Time: q.at.UTC(), Price: q.price})
+		price string
+	}{{older, "100"}, {newer, "200"}} {
+		price, err := NewDecimal(q.price)
+		if err != nil {
+			t.Fatalf("NewDecimal(%d) error = %v", i, err)
+		}
+		err = db.CreateQuote(ctx, CreateQuoteParams{ListingID: listing.ID, Time: q.at.UTC(), Price: price})
 		if err != nil {
 			t.Fatalf("CreateQuote(%d) error = %v", i, err)
 		}
@@ -77,8 +81,8 @@ func TestQuoteTimeOrdering(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetLatestQuote() error = %v", err)
 	}
-	if latest.Price != 200 {
-		t.Errorf("latest price = %d, want 200 (time ordering is broken)", latest.Price)
+	if latest.Price.StringPrec(0) != "200" {
+		t.Errorf("latest price = %s, want 200 (time ordering is broken)", latest.Price.StringPrec(0))
 	}
 
 	before, err := db.GetLatestQuoteBefore(ctx, GetLatestQuoteBeforeParams{
@@ -88,7 +92,7 @@ func TestQuoteTimeOrdering(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetLatestQuoteBefore() error = %v", err)
 	}
-	if before.Price != 100 {
-		t.Errorf("quote before = %d, want 100", before.Price)
+	if before.Price.StringPrec(0) != "100" {
+		t.Errorf("quote before = %s, want 100", before.Price.StringPrec(0))
 	}
 }

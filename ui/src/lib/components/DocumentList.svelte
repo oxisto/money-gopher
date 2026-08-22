@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { graphql } from '$houdini';
-	import { formatDate, formatMoney } from '$lib/format';
+	import { formatDate, formatMoney, formatPrice } from '$lib/format';
 	import DocumentReview from './DocumentReview.svelte';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
@@ -20,7 +20,7 @@
 		type: string;
 		time: Date;
 		units: number;
-		price: { amount: number; currency: string } | null;
+		price: { amount: string; currency: string } | null;
 		fees: { amount: number; currency: string };
 		taxes: { amount: number; currency: string };
 		cashDelta: { amount: number; currency: string };
@@ -63,13 +63,72 @@
 		}
 	`);
 
+	const confirmImport = graphql(`
+		mutation ConfirmImportQuick($documentID: ID!, $input: ConfirmImportInput!) {
+			confirmImport(documentID: $documentID, input: $input) {
+				id
+				type
+			}
+		}
+	`);
+
 	let reviewDocID = $state<string | null>(null);
 	let deleteError = $state<Record<string, string>>({});
+	let quickImporting = $state<Record<string, boolean>>({});
+	let quickImportError = $state<Record<string, string>>({});
+	let hideImported = $state(true);
+
+	const visibleDocuments = $derived(
+		hideImported ? documents.filter((d) => d.state !== 'IMPORTED') : documents
+	);
 
 	async function del(id: string) {
 		const result = await deleteDocument.mutate({ id });
 		if (result.errors?.length) {
 			deleteError = { ...deleteError, [id]: result.errors[0].message };
+		} else {
+			onchanged();
+		}
+	}
+
+	function needsPortfolio(type: string): boolean {
+		return ['BUY', 'SELL', 'DELIVERY_INBOUND', 'DELIVERY_OUTBOUND', 'DIVIDEND'].includes(type);
+	}
+
+	// A document can skip manual review only when every decision the review
+	// form would otherwise ask for already has an unambiguous answer: the
+	// cash account (IBAN match, or there's only one to begin with), the
+	// portfolio (only one exists, since portfolios are never auto-matched),
+	// and every transaction's security (already resolved from its ISIN).
+	function autoMatch(doc: Document): { cashAccountID: string; portfolioID: string | null } | null {
+		if (doc.stagedTransactions.length === 0) return null;
+
+		const cashAccountID = doc.suggestedCashAccount?.id ?? (cashAccounts.length === 1 ? cashAccounts[0].id : null);
+		if (!cashAccountID) return null;
+
+		const portfolioRequired = doc.stagedTransactions.some((tx) => needsPortfolio(tx.type));
+		const portfolioID = portfolioRequired ? (portfolios.length === 1 ? portfolios[0].id : null) : null;
+		if (portfolioRequired && !portfolioID) return null;
+
+		for (const tx of doc.stagedTransactions) {
+			if (!tx.security && (tx.isin || tx.securityHint)) return null;
+		}
+
+		return { cashAccountID, portfolioID };
+	}
+
+	async function quickImport(doc: Document, match: { cashAccountID: string; portfolioID: string | null }) {
+		quickImporting = { ...quickImporting, [doc.id]: true };
+		quickImportError = { ...quickImportError, [doc.id]: '' };
+
+		const result = await confirmImport.mutate({
+			documentID: doc.id,
+			input: { portfolioID: match.portfolioID, cashAccountID: match.cashAccountID, transactions: [] }
+		});
+
+		quickImporting = { ...quickImporting, [doc.id]: false };
+		if (result.errors?.length) {
+			quickImportError = { ...quickImportError, [doc.id]: result.errors[0].message };
 		} else {
 			onchanged();
 		}
@@ -94,8 +153,22 @@
 {#if documents.length === 0}
 	<p class="text-sm text-gray-400">No documents yet. Upload a bank statement or CSV to get started.</p>
 {:else}
+	<label class="mb-3 flex w-fit items-center gap-2 text-sm text-gray-600">
+		<input type="checkbox" bind:checked={hideImported} class="rounded border-gray-300" />
+		Hide imported
+	</label>
+
+	{#if visibleDocuments.length === 0}
+		<p class="text-sm text-gray-400">
+			All documents are imported.
+			<button class="text-blue-600 hover:underline" onclick={() => (hideImported = false)}>
+				Show them
+			</button>
+		</p>
+	{/if}
+
 	<div class="flex flex-col gap-4">
-		{#each documents as doc (doc.id)}
+		{#each visibleDocuments as doc (doc.id)}
 			<div class="rounded-md border border-gray-200 bg-white p-4">
 				<div class="flex items-start justify-between gap-4">
 					<div class="flex-1 min-w-0">
@@ -120,6 +193,15 @@
 								{:else if tx.isin}
 									<span class="text-sm text-gray-500 font-mono">{tx.isin}</span>
 								{/if}
+								{#if tx.units > 0}
+									<span class="text-sm text-gray-600 tabular-nums">{tx.units.toLocaleString()} units</span>
+								{/if}
+								{#if tx.price}
+									<span class="text-sm text-gray-600 tabular-nums">@ {formatPrice(tx.price)}</span>
+								{/if}
+								{#if tx.taxes.amount !== 0}
+									<span class="text-xs text-gray-500 tabular-nums">tax {formatMoney(tx.taxes)}</span>
+								{/if}
 								{#if tx.cashDelta.amount !== 0}
 									<span class="text-sm font-medium {tx.cashDelta.amount >= 0 ? 'text-green-700' : 'text-red-700'}">
 										{formatMoney(tx.cashDelta)}
@@ -136,6 +218,17 @@
 					</div>
 					<div class="flex items-center gap-2 flex-shrink-0">
 						{#if doc.state === 'PARSED'}
+							{@const match = autoMatch(doc)}
+							{#if match}
+								<button
+									onclick={() => quickImport(doc, match)}
+									disabled={quickImporting[doc.id]}
+									class="rounded-md border border-green-200 bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700 hover:bg-green-100 disabled:opacity-50"
+									title="Every field on this document was auto-matched — import without reviewing"
+								>
+									{quickImporting[doc.id] ? 'Importing…' : '✓ Quick import'}
+								</button>
+							{/if}
 							<Button onclick={() => (reviewDocID = reviewDocID === doc.id ? null : doc.id)}>
 								{reviewDocID === doc.id ? 'Close' : 'Review'}
 							</Button>
@@ -151,6 +244,9 @@
 
 				{#if deleteError[doc.id]}
 					<ErrorNote message={deleteError[doc.id]} />
+				{/if}
+				{#if quickImportError[doc.id]}
+					<ErrorNote message={quickImportError[doc.id]} />
 				{/if}
 
 				{#if reviewDocID === doc.id}

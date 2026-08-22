@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS quotes (
     -- Quote is one price observation for a listing.
     listing_id TEXT    NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
     time       TIMESTAMP NOT NULL,
-    price      INTEGER  NOT NULL,
+    price      DECIMAL(19,4) NOT NULL,
     PRIMARY KEY (listing_id, time)
 );
 
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     security_id     TEXT     REFERENCES securities(id)    ON DELETE RESTRICT,
     cash_account_id TEXT     REFERENCES cash_accounts(id) ON DELETE CASCADE,
     units           REAL     NOT NULL DEFAULT 0,
-    price           INTEGER,
+    price           DECIMAL(19,4),
     fees            INTEGER  NOT NULL DEFAULT 0,
     taxes           INTEGER  NOT NULL DEFAULT 0,
     cash_delta      INTEGER  NOT NULL DEFAULT 0,
@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS staged_transactions (
                   )),
     time          TIMESTAMP NOT NULL,
     units         REAL     NOT NULL DEFAULT 0,
-    price         INTEGER,
+    price         DECIMAL(19,4),
     fees          INTEGER  NOT NULL DEFAULT 0,
     taxes         INTEGER  NOT NULL DEFAULT 0,
     cash_delta    INTEGER  NOT NULL DEFAULT 0,

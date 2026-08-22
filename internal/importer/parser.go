@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/oxisto/money-gopher/internal/persistence"
 )
 
 // StagedTransaction is one transaction parsed from a document, before user
@@ -15,8 +17,10 @@ type StagedTransaction struct {
 	Type  string
 	Time  time.Time
 	Units float64
-	// Price per unit in minor units; nil when the document has none.
-	Price *int64
+	// Price per unit; !Valid when the document has none. Kept as an exact
+	// Decimal rather than minor-unit cents like the rest of this struct —
+	// real fund/bond prices need more than 2 decimal digits.
+	Price persistence.Decimal
 	Fees  int64
 	Taxes int64
 	// CashDelta in minor units; 0 lets the server derive it for trades.

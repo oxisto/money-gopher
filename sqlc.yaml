@@ -15,3 +15,10 @@ sql:
             go_type:
               type: "byte"
               slice: true
+          - db_type: "DECIMAL(19,4)"
+            go_type:
+              type: "Decimal"
+          - db_type: "DECIMAL(19,4)"
+            go_type:
+              type: "Decimal"
+            nullable: true

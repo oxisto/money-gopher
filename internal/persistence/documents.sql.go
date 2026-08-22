@@ -80,7 +80,7 @@ type CreateStagedTransactionParams struct {
 	Type         string
 	Time         time.Time
 	Units        float64
-	Price        sql.NullInt64
+	Price        Decimal
 	Fees         int64
 	Taxes        int64
 	CashDelta    int64

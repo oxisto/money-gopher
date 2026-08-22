@@ -31,8 +31,8 @@ func TestYahoo_LatestQuote(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LatestQuote() error = %v", err)
 	}
-	if quote.Price != 12345 {
-		t.Errorf("price = %d, want 12345", quote.Price)
+	if quote.Price.StringPrec(2) != "123.45" {
+		t.Errorf("price = %s, want 123.45", quote.Price.StringPrec(2))
 	}
 	if want := time.Unix(1767225600, 0).UTC(); !quote.Time.Equal(want) {
 		t.Errorf("time = %v, want %v", quote.Time, want)
@@ -72,8 +72,8 @@ func TestING_LatestQuote(t *testing.T) {
 		t.Fatalf("LatestQuote() error = %v", err)
 	}
 	// With bid/ask available, the bid wins over the plain price.
-	if quote.Price != 11111 {
-		t.Errorf("price = %d, want 11111", quote.Price)
+	if quote.Price.StringPrec(2) != "111.11" {
+		t.Errorf("price = %s, want 111.11", quote.Price.StringPrec(2))
 	}
 
 	// Without an ISIN the provider must refuse instead of querying nonsense.

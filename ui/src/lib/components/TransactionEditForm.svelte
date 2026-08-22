@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { graphql, TransactionType, type PortfolioDetail$result } from '$houdini';
 	import type { TransactionType$options } from '$houdini';
-	import { parseAmount } from '$lib/format';
+	import { parseAmount, parsePrice } from '$lib/format';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import SelectField from './ui/SelectField.svelte';
@@ -49,7 +49,7 @@
 	let securityID = $state(tx.security?.id ?? '');
 	let cashAccountID = $state(tx.cashAccount?.id ?? '');
 	let units = $state(tx.units ? String(tx.units) : '');
-	let price = $state(minorToStr(tx.price?.amount));
+	let price = $state(tx.price?.amount ?? '');
 	let fees = $state(minorToStr(tx.fees?.amount));
 	let taxes = $state(minorToStr(tx.taxes?.amount));
 	let cashDelta = $state(minorToStr(tx.cashDelta?.amount));
@@ -68,7 +68,7 @@
 				securityID: securityID || undefined,
 				cashAccountID: cashAccountID || undefined,
 				units: units ? parseFloat(units) : undefined,
-				price: parseAmount(price) ?? undefined,
+				price: parsePrice(price) ?? undefined,
 				fees: parseAmount(fees) ?? undefined,
 				taxes: parseAmount(taxes) ?? undefined,
 				cashDelta: parseAmount(cashDelta) ?? undefined

@@ -65,7 +65,7 @@ type Portfolio struct {
 type Quote struct {
 	ListingID string
 	Time      time.Time
-	Price     int64
+	Price     Decimal
 }
 
 type Security struct {
@@ -93,7 +93,7 @@ type StagedTransaction struct {
 	Type         string
 	Time         time.Time
 	Units        float64
-	Price        sql.NullInt64
+	Price        Decimal
 	Fees         int64
 	Taxes        int64
 	CashDelta    int64
@@ -112,7 +112,7 @@ type Transaction struct {
 	SecurityID    sql.NullString
 	CashAccountID sql.NullString
 	Units         float64
-	Price         sql.NullInt64
+	Price         Decimal
 	Fees          int64
 	Taxes         int64
 	CashDelta     int64

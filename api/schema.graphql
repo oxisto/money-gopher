@@ -14,6 +14,21 @@ type Money {
   currency: String!
 }
 
+"""
+Decimal is an exact decimal number, transmitted as a string (e.g. "8.2656")
+rather than a number — GraphQL's Int is 32 bits and Float is IEEE 754 binary,
+neither of which can hold an arbitrary decimal exactly. Used for per-unit
+prices, which need more precision than the 2-decimal minor-unit convention
+Money uses for amounts.
+"""
+scalar Decimal
+
+"Price is the price of one unit of a security, unlike Money an exact Decimal."
+type Price {
+  amount: Decimal!
+  currency: String!
+}
+
 "TransactionType is the kind of a transaction."
 enum TransactionType {
   "A purchase of a security, settling against a cash account."
@@ -115,9 +130,9 @@ type Position {
   "The FIFO cost basis of the held shares, without fees and taxes."
   purchaseValue: Money!
   "The average purchase price of one share."
-  purchasePrice: Money!
+  purchasePrice: Price!
   "The latest quote at the snapshot time, or the purchase price if none exists."
-  marketPrice: Money!
+  marketPrice: Price!
   "The market price times the held units."
   marketValue: Money!
   "The absolute unrealized gain (or loss, if negative)."
@@ -157,7 +172,7 @@ type SecurityIdentifier {
 "Quote is one price observation for a listing."
 type Quote {
   time: Time!
-  price: Money!
+  price: Price!
 }
 
 "Listing is a security listed on a particular exchange."
@@ -209,7 +224,7 @@ type Transaction {
   "The number of shares involved."
   units: Float!
   "The price per unit."
-  price: Money
+  price: Price
   fees: Money!
   taxes: Money!
   "The signed change of the cash account balance."
@@ -263,7 +278,7 @@ type StagedTransaction {
   type: TransactionType!
   time: Time!
   units: Float!
-  price: Money
+  price: Price
   fees: Money!
   taxes: Money!
   cashDelta: Money!
@@ -359,8 +374,8 @@ input CreateTransactionInput {
   securityID: ID
   cashAccountID: ID
   units: Float
-  "The price per unit in minor units."
-  price: Int
+  "The price per unit, in major units (e.g. \"8.2656\")."
+  price: Decimal
   fees: Int
   taxes: Int
   "The signed change of the cash account balance in minor units."
@@ -379,7 +394,7 @@ input UpdateTransactionInput {
   securityID: ID
   cashAccountID: ID
   units: Float
-  price: Int
+  price: Decimal
   fees: Int
   taxes: Int
   cashDelta: Int

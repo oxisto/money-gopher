@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { graphql } from '$houdini';
 	import type { PortfolioDetail$result } from '$houdini';
-	import { formatDate, formatMoney } from '$lib/format';
+	import { formatDate, formatMoney, formatPrice } from '$lib/format';
 	import TransactionEditForm from './TransactionEditForm.svelte';
 
 	type Transactions = NonNullable<PortfolioDetail$result['portfolio']>['transactions'];
@@ -63,7 +63,7 @@
 						<td class="px-4 py-2">{tx.security?.displayName ?? '—'}</td>
 						<td class="px-4 py-2 text-right tabular-nums">{tx.units || '—'}</td>
 						<td class="px-4 py-2 text-right tabular-nums">
-							{tx.price ? formatMoney(tx.price) : '—'}
+							{tx.price ? formatPrice(tx.price) : '—'}
 						</td>
 						<td class="px-4 py-2 text-right tabular-nums {tx.cashDelta.amount < 0 ? 'text-red-600' : 'text-green-700'}">
 							{formatMoney(tx.cashDelta)}

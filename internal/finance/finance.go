@@ -15,15 +15,15 @@ import (
 	"github.com/oxisto/money-gopher/internal/persistence"
 )
 
-// QuoteFunc looks up the market price (in minor units) of a security at the
-// given time, typically from the latest quote at or before that time. It
-// reports ok == false when no quote is known, in which case calculations
-// fall back to the purchase price.
-type QuoteFunc func(securityID string, at time.Time) (price int64, ok bool)
+// QuoteFunc looks up the market price (an exact per-unit Decimal) of a
+// security at the given time, typically from the latest quote at or before
+// that time. It reports ok == false when no quote is known, in which case
+// calculations fall back to the purchase price.
+type QuoteFunc func(securityID string, at time.Time) (price persistence.Decimal, ok bool)
 
 // NoQuotes is a QuoteFunc that knows no quotes at all; every position is
 // valued at its purchase price.
-func NoQuotes(string, time.Time) (int64, bool) { return 0, false }
+func NoQuotes(string, time.Time) (persistence.Decimal, bool) { return persistence.Decimal{}, false }
 
 // Position is the holding of one security at the snapshot time.
 type Position struct {
@@ -37,18 +37,21 @@ type Position struct {
 	// and taxes.
 	PurchaseValue int64
 	// MarketPrice is the price of one share: the latest quote if one is
-	// known, the average purchase price otherwise.
-	MarketPrice int64
+	// known, the average purchase price otherwise. An exact Decimal, unlike
+	// the rest of this struct's minor-units Money fields — see
+	// persistence.Decimal for why per-unit prices need more precision.
+	MarketPrice persistence.Decimal
 	// MarketValue is MarketPrice times Units.
 	MarketValue int64
 }
 
 // PurchasePrice is the average purchase price of one held share.
-func (p *Position) PurchasePrice() int64 {
+func (p *Position) PurchasePrice() persistence.Decimal {
 	if p.Units == 0 {
-		return 0
+		return persistence.Decimal{}
 	}
-	return int64(math.Round(float64(p.PurchaseValue) / p.Units))
+	// PurchaseValue is minor units (cents); Decimal prices are major units.
+	return persistence.NewDecimalFromInt64(p.PurchaseValue).DivFloat(p.Units).DivInt(100)
 }
 
 // ProfitOrLoss is the absolute unrealized gain (or loss, if negative).
@@ -99,12 +102,13 @@ func (s *Snapshot) TotalGains() float64 {
 // lot is one FIFO entry: shares bought together at one price.
 type lot struct {
 	units float64
-	ppu   int64 // purchase price per unit in minor units
+	ppu   persistence.Decimal // purchase price per unit, major units
 }
 
-// value is the cost basis of the remaining shares of the lot.
+// value is the cost basis of the remaining shares of the lot, in minor
+// units (cents).
 func (l *lot) value() int64 {
-	return int64(math.Round(float64(l.ppu) * l.units))
+	return l.ppu.MulFloat(l.units).MulInt(100).RoundToInt64()
 }
 
 // book tracks the FIFO lots of one security.
@@ -131,7 +135,7 @@ func (b *book) purchaseValue() (v int64) {
 func (b *book) apply(tx *persistence.Transaction) {
 	switch tx.Type {
 	case "BUY", "DELIVERY_INBOUND":
-		b.lots = append(b.lots, &lot{units: tx.Units, ppu: tx.Price.Int64})
+		b.lots = append(b.lots, &lot{units: tx.Units, ppu: tx.Price})
 	case "SELL", "DELIVERY_OUTBOUND":
 		// Sold shares leave the book first-in-first-out.
 		sold := tx.Units
@@ -175,7 +179,7 @@ func SnapshotAt(txs []*persistence.Transaction, at time.Time, quote QuoteFunc) *
 		} else {
 			pos.MarketPrice = pos.PurchasePrice()
 		}
-		pos.MarketValue = int64(math.Round(float64(pos.MarketPrice) * pos.Units))
+		pos.MarketValue = pos.MarketPrice.MulFloat(pos.Units).MulInt(100).RoundToInt64()
 
 		snap.Positions = append(snap.Positions, pos)
 		snap.TotalPurchaseValue += pos.PurchaseValue
@@ -246,9 +250,10 @@ func marketValue(bs []*securityBook, at time.Time, quote QuoteFunc) (v int64) {
 		price, ok := quote(b.securityID, at)
 		if !ok {
 			// Fall back to the average purchase price, like SnapshotAt.
-			price = int64(math.Round(float64(b.purchaseValue()) / units))
+			// purchaseValue() is minor units (cents); price is major units.
+			price = persistence.NewDecimalFromInt64(b.purchaseValue()).DivFloat(units).DivInt(100)
 		}
-		v += int64(math.Round(float64(price) * units))
+		v += price.MulFloat(units).MulInt(100).RoundToInt64()
 	}
 	return
 }

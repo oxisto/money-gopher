@@ -28,6 +28,19 @@ const config = {
 			marshal(date) {
 				return date.toISOString();
 			}
+		},
+		// Transmitted as a string (e.g. "8.2656") — see api/schema.graphql's
+		// Decimal doc comment. Kept as a plain string here too, never parsed
+		// to a number, so per-unit prices never pass through float64 on the
+		// frontend either.
+		Decimal: {
+			type: 'string',
+			unmarshal(val) {
+				return val;
+			},
+			marshal(val) {
+				return val;
+			}
 		}
 	}
 };

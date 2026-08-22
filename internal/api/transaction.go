@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/google/uuid"
@@ -30,7 +29,7 @@ type txData struct {
 	SecurityID    *string
 	CashAccountID *string
 	Units         float64
-	Price         *int64
+	Price         persistence.Decimal
 	Fees          int64
 	Taxes         int64
 	CashDelta     int64
@@ -41,11 +40,8 @@ type txData struct {
 // it follows from units, price, fees and taxes. The second return value is
 // false for pure cash events, whose delta must be provided explicitly.
 func deriveCashDelta(d *txData) (int64, bool) {
-	var price int64
-	if d.Price != nil {
-		price = *d.Price
-	}
-	gross := int64(math.Round(d.Units * float64(price)))
+	// d.Price is major units; gross is minor units (cents), like CashDelta.
+	gross := d.Price.MulFloat(d.Units).MulInt(100).RoundToInt64()
 
 	switch d.Type {
 	case "BUY":
@@ -70,7 +66,7 @@ func (d *txData) validate(ctx context.Context, db *persistence.DB, person *persi
 		if d.CashAccountID == nil {
 			return fmt.Errorf("%s requires a cash account to settle against", d.Type)
 		}
-		if d.Type != "DIVIDEND" && (d.Units <= 0 || d.Price == nil) {
+		if d.Type != "DIVIDEND" && (d.Units <= 0 || !d.Price.Valid) {
 			return fmt.Errorf("%s requires positive units and a price", d.Type)
 		}
 	case "DELIVERY_INBOUND", "DELIVERY_OUTBOUND":
@@ -181,7 +177,7 @@ type CreateTransactionInput struct {
 	SecurityID    *graphql.ID
 	CashAccountID *graphql.ID
 	Units         *float64
-	Price         *int32
+	Price         *Decimal
 	Fees          *int32
 	Taxes         *int32
 	CashDelta     *int32
@@ -212,8 +208,7 @@ func (r *RootResolver) CreateTransaction(ctx context.Context, args struct{ Input
 		d.Units = *in.Units
 	}
 	if in.Price != nil {
-		price := int64(*in.Price)
-		d.Price = &price
+		d.Price = persistence.Decimal(*in.Price)
 	}
 
 	if in.CashDelta != nil {
@@ -238,7 +233,7 @@ func (r *RootResolver) CreateTransaction(ctx context.Context, args struct{ Input
 		SecurityID:    nullString(d.SecurityID),
 		CashAccountID: nullString(d.CashAccountID),
 		Units:         d.Units,
-		Price:         nullInt64(d.Price),
+		Price:         d.Price,
 		Fees:          d.Fees,
 		Taxes:         d.Taxes,
 		CashDelta:     d.CashDelta,
@@ -259,7 +254,7 @@ type UpdateTransactionInput struct {
 	SecurityID    *graphql.ID
 	CashAccountID *graphql.ID
 	Units         *float64
-	Price         *int32
+	Price         *Decimal
 	Fees          *int32
 	Taxes         *int32
 	CashDelta     *int32
@@ -296,10 +291,7 @@ func (r *RootResolver) UpdateTransaction(ctx context.Context, args struct {
 		Taxes:         current.Taxes,
 		CashDelta:     current.CashDelta,
 		Currency:      current.Currency,
-	}
-	if current.Price.Valid {
-		price := current.Price.Int64
-		d.Price = &price
+		Price:         current.Price,
 	}
 
 	if in.Type != nil {
@@ -318,8 +310,7 @@ func (r *RootResolver) UpdateTransaction(ctx context.Context, args struct {
 		d.Units = *in.Units
 	}
 	if in.Price != nil {
-		price := int64(*in.Price)
-		d.Price = &price
+		d.Price = persistence.Decimal(*in.Price)
 	}
 	if in.Fees != nil {
 		d.Fees = int64(*in.Fees)
@@ -352,7 +343,7 @@ func (r *RootResolver) UpdateTransaction(ctx context.Context, args struct {
 		SecurityID:    nullString(d.SecurityID),
 		CashAccountID: nullString(d.CashAccountID),
 		Units:         d.Units,
-		Price:         nullInt64(d.Price),
+		Price:         d.Price,
 		Fees:          d.Fees,
 		Taxes:         d.Taxes,
 		CashDelta:     d.CashDelta,
@@ -462,13 +453,13 @@ func (r *TransactionResolver) Units() float64 {
 	return r.transaction.Units
 }
 
-func (r *TransactionResolver) Price() *Money {
+func (r *TransactionResolver) Price() *Price {
 	if !r.transaction.Price.Valid {
 		return nil
 	}
 
-	m := money(r.transaction.Price.Int64, r.transaction.Currency)
-	return &m
+	p := price(r.transaction.Price, r.transaction.Currency)
+	return &p
 }
 
 func (r *TransactionResolver) Fees() Money {
@@ -502,12 +493,4 @@ func int64Value(i *int32) int64 {
 	}
 
 	return int64(*i)
-}
-
-func nullInt64(i *int64) sql.NullInt64 {
-	if i == nil {
-		return sql.NullInt64{}
-	}
-
-	return sql.NullInt64{Int64: *i, Valid: true}
 }

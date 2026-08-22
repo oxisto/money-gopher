@@ -24,7 +24,8 @@ func (f *fake) LatestQuote(_ context.Context, ins Instrument) (Quote, error) {
 	if f.err != nil {
 		return Quote{}, f.err
 	}
-	return Quote{Price: 12345, Time: time.Date(2026, 7, 3, 0, 0, 0, 0, time.UTC)}, nil
+	price, _ := persistence.NewDecimal("123.45")
+	return Quote{Price: price, Time: time.Date(2026, 7, 3, 0, 0, 0, 0, time.UTC)}, nil
 }
 
 func TestUpdater(t *testing.T) {
@@ -88,8 +89,8 @@ func TestUpdater(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetLatestQuote() error = %v", err)
 	}
-	if quote.Price != 12345 {
-		t.Errorf("stored price = %d, want 12345", quote.Price)
+	if quote.Price.StringPrec(2) != "123.45" {
+		t.Errorf("stored price = %s, want 123.45", quote.Price.StringPrec(2))
 	}
 
 	// A failing provider is reported but counted as not updated.

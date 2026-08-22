@@ -27,6 +27,40 @@ export function parseAmount(input: string): number | null {
 	return Math.round(value * 100);
 }
 
+/**
+ * A per-unit price, exact to more than 2 decimals (e.g. "8.2656") — unlike
+ * Money, amount is a Decimal string, never a number, so it never passes
+ * through float64 on its way to or from the API.
+ */
+export interface Price {
+	amount: string;
+	currency: string;
+}
+
+/** Formats a Price value using the browser locale, e.g. "8,2656 €". */
+export function formatPrice(price: Price): string {
+	return new Intl.NumberFormat(undefined, {
+		style: 'currency',
+		currency: price.currency,
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 4
+	}).format(Number(price.amount));
+}
+
+/**
+ * Parses a user-entered decimal price (e.g. "8,2656") into the canonical
+ * dot-decimal string the Decimal scalar expects. Unlike parseAmount, this
+ * never multiplies or rounds — the exact digits the user typed are what gets
+ * sent. Returns null for empty or invalid input.
+ */
+export function parsePrice(input: string): string | null {
+	const trimmed = input.trim().replace(',', '.');
+	if (trimmed === '' || isNaN(Number(trimmed))) {
+		return null;
+	}
+	return trimmed;
+}
+
 /** Formats a transaction timestamp using the browser locale. */
 export function formatDate(date: Date): string {
 	return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(date);

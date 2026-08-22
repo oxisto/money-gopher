@@ -107,7 +107,7 @@ func (s *Service) Process(ctx context.Context, documentID string, personID strin
 			Type:         tx.Type,
 			Time:         tx.Time,
 			Units:        tx.Units,
-			Price:        nullInt64(tx.Price),
+			Price:        tx.Price,
 			Fees:         tx.Fees,
 			Taxes:        tx.Taxes,
 			CashDelta:    tx.CashDelta,
@@ -180,11 +180,4 @@ func nullStr(s string) sql.NullString {
 		return sql.NullString{}
 	}
 	return sql.NullString{String: s, Valid: true}
-}
-
-func nullInt64(i *int64) sql.NullInt64 {
-	if i == nil {
-		return sql.NullInt64{}
-	}
-	return sql.NullInt64{Int64: *i, Valid: true}
 }

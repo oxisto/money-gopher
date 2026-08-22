@@ -49,7 +49,7 @@ func TestCSV_Parse(t *testing.T) {
 	}
 
 	buy := staged[0]
-	if buy.Type != "BUY" || buy.Units != 10 || *buy.Price != 10050 || buy.Fees != 150 {
+	if buy.Type != "BUY" || buy.Units != 10 || buy.Price.StringPrec(2) != "100.50" || buy.Fees != 150 {
 		t.Errorf("buy = %+v", buy)
 	}
 	if buy.ISIN != "IE00B4L5Y983" || buy.SecurityHint != "iShares Core MSCI World" {
