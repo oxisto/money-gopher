@@ -38,6 +38,7 @@
 					transactions={account.transactions}
 					securities={$CashAccountDetail.data.securities}
 					cashAccounts={$CashAccountDetail.data.cashAccounts}
+					showBalance
 					onchanged={refresh}
 				/>
 			</Section>

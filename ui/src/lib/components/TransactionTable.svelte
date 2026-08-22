@@ -8,13 +8,32 @@
 		transactions,
 		securities,
 		cashAccounts,
+		showBalance = false,
 		onchanged
 	}: {
 		transactions: TransactionRow[];
 		securities: SecurityOption[];
 		cashAccounts: CashAccountOption[];
+		// Only meaningful when transactions is a single cash account's full
+		// history (as on the cash account detail page): the running sum
+		// then ends exactly at its current balance. A portfolio's
+		// transaction list may not include every movement on its
+		// settlement account (another portfolio can share it, or it can
+		// have deposits/withdrawals of its own), so the same running sum
+		// there wouldn't be accurate — callers opt in explicitly instead
+		// of this component guessing which case it's in.
+		showBalance?: boolean;
 		onchanged: () => void;
 	} = $props();
+
+	// transactions is already ordered oldest-first (the query it comes from
+	// sorts by time), so a running total in that order is a running balance.
+	const balances = $derived.by(() => {
+		let running = 0;
+		return transactions.map((tx) => (running += tx.cashDelta.amount));
+	});
+
+	const columnCount = $derived(showBalance ? 8 : 7);
 
 	const deleteTransaction = graphql(`
 		mutation DeleteTransaction($id: ID!) {
@@ -48,11 +67,14 @@
 					<th class="px-4 py-2 text-right font-medium">Units</th>
 					<th class="px-4 py-2 text-right font-medium">Price</th>
 					<th class="px-4 py-2 text-right font-medium">Cash</th>
+					{#if showBalance}
+						<th class="px-4 py-2 text-right font-medium">Balance</th>
+					{/if}
 					<th class="px-4 py-2"></th>
 				</tr>
 			</thead>
 			<tbody class="divide-y divide-gray-100">
-				{#each transactions as tx (tx.id)}
+				{#each transactions as tx, i (tx.id)}
 					<tr class={editingID === tx.id ? 'bg-gray-50' : ''}>
 						<td class="px-4 py-2 whitespace-nowrap">{formatDate(tx.time)}</td>
 						<td class="px-4 py-2">
@@ -74,6 +96,11 @@
 						<td class="px-4 py-2 text-right tabular-nums {tx.cashDelta.amount < 0 ? 'text-red-600' : 'text-green-700'}">
 							{formatMoney(tx.cashDelta)}
 						</td>
+						{#if showBalance}
+							<td class="px-4 py-2 text-right tabular-nums text-gray-600">
+								{formatMoney({ amount: balances[i], currency: tx.cashDelta.currency })}
+							</td>
+						{/if}
 						<td class="px-4 py-2 text-right whitespace-nowrap">
 							{#if tx.document}
 								<a
@@ -102,12 +129,12 @@
 					</tr>
 					{#if deleteErrors[tx.id]}
 						<tr>
-							<td colspan="7" class="px-4 pb-2 text-xs text-red-600">{deleteErrors[tx.id]}</td>
+							<td colspan={columnCount} class="px-4 pb-2 text-xs text-red-600">{deleteErrors[tx.id]}</td>
 						</tr>
 					{/if}
 					{#if editingID === tx.id}
 						<tr>
-							<td colspan="7" class="px-4 py-3 bg-gray-50 border-b border-gray-200">
+							<td colspan={columnCount} class="px-4 py-3 bg-gray-50 border-b border-gray-200">
 								<TransactionEditForm
 									transaction={tx}
 									{securities}
