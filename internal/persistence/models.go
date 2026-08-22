@@ -69,8 +69,10 @@ type Quote struct {
 }
 
 type Security struct {
-	ID          string
-	DisplayName string
+	ID string
+	// The security this one derives from (a right, option or warrant's
+	DisplayName          string
+	UnderlyingSecurityID sql.NullString
 }
 
 type SecurityIdentifier struct {

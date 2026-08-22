@@ -56,7 +56,10 @@ CREATE TABLE portfolios (
 
 CREATE TABLE securities (
     id           TEXT PRIMARY KEY,
-    display_name TEXT NOT NULL
+    display_name TEXT NOT NULL,
+    -- The security this one derives from (a right, option or warrant's
+    -- underlying stock); see migrations/0007_underlying_security.sql.
+    underlying_security_id TEXT REFERENCES securities(id) ON DELETE SET NULL
 );
 
 CREATE TABLE security_identifiers (

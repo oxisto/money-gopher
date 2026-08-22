@@ -204,6 +204,13 @@ type Security {
   displayName: String!
   identifiers: [SecurityIdentifier!]!
   listings: [Listing!]!
+  """
+  The security this one derives from — a subscription right or an
+  option/warrant's underlying stock. Null for a security that isn't a
+  derivative of anything else tracked here (an ordinary stock, a bond, an
+  ETF, ...).
+  """
+  underlyingSecurity: Security
 }
 
 """
@@ -376,6 +383,8 @@ input CreateSecurityInput {
   displayName: String!
   identifiers: [SecurityIdentifierInput!]
   listings: [ListingInput!]
+  "The security this one derives from; see Security.underlyingSecurity."
+  underlyingSecurityID: ID
 }
 
 """
@@ -386,6 +395,8 @@ input UpdateSecurityInput {
   displayName: String
   identifiers: [SecurityIdentifierInput!]
   listings: [ListingInput!]
+  "The security this one derives from; see Security.underlyingSecurity."
+  underlyingSecurityID: ID
 }
 
 """

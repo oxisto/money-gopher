@@ -6,6 +6,10 @@ query Securities {
 			kind
 			value
 		}
+		underlyingSecurity {
+			id
+			displayName
+		}
 		listings {
 			id
 			ticker

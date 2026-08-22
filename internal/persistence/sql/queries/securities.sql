@@ -1,8 +1,8 @@
 -- name: CreateSecurity :one
 INSERT INTO
-    securities (id, display_name)
+    securities (id, display_name, underlying_security_id)
 VALUES
-    (?, ?) RETURNING *;
+    (?, ?, ?) RETURNING *;
 
 -- name: GetSecurity :one
 SELECT
@@ -23,7 +23,8 @@ ORDER BY
 -- name: UpdateSecurity :one
 UPDATE securities
 SET
-    display_name = ?
+    display_name = ?,
+    underlying_security_id = ?
 WHERE
     id = ? RETURNING *;
 

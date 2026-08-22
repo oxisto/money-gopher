@@ -177,6 +177,59 @@ func TestLifecycle(t *testing.T) {
 	}
 }
 
+// TestSecurityUnderlying verifies linking a derivative security (e.g. a
+// subscription right) to the stock it derives from, both at creation and
+// via a later update, and that the link resolves both ways round-trip
+// (fetching it back by ID sees the same underlying).
+func TestSecurityUnderlying(t *testing.T) {
+	schema, ctx := newTestSchema(t)
+
+	data := exec(t, schema, ctx, `mutation {
+		createSecurity(input: { displayName: "Eutelsat Communications" }) { id }
+	}`, nil)
+	stockID := data["createSecurity"].(map[string]any)["id"].(string)
+
+	// Link at creation time.
+	data = exec(t, schema, ctx, `mutation ($underlying: ID!) {
+		createSecurity(input: {
+			displayName: "Eutelsat Communications Anrechte"
+			underlyingSecurityID: $underlying
+		}) { id underlyingSecurity { id displayName } }
+	}`, map[string]any{"underlying": stockID})
+	rights := data["createSecurity"].(map[string]any)
+	rightsID := rights["id"].(string)
+	underlying := rights["underlyingSecurity"].(map[string]any)
+	if underlying["id"] != stockID {
+		t.Errorf("underlyingSecurity.id = %v, want %v", underlying["id"], stockID)
+	}
+	if underlying["displayName"] != "Eutelsat Communications" {
+		t.Errorf("underlyingSecurity.displayName = %v, want Eutelsat Communications", underlying["displayName"])
+	}
+
+	// A plain security (no underlying) resolves it as null.
+	data = exec(t, schema, ctx, `query ($id: ID!) { security(id: $id) { underlyingSecurity { id } } }`,
+		map[string]any{"id": stockID})
+	if got := data["security"].(map[string]any)["underlyingSecurity"]; got != nil {
+		t.Errorf("stock underlyingSecurity = %v, want nil", got)
+	}
+
+	// Link via a later update, e.g. fixing a security created without one —
+	// the exact scenario a misattributed DELIVERY_INBOUND needs.
+	data = exec(t, schema, ctx, `mutation {
+		createSecurity(input: { displayName: "Some Warrant" }) { id }
+	}`, nil)
+	warrantID := data["createSecurity"].(map[string]any)["id"].(string)
+
+	data = exec(t, schema, ctx, `mutation ($id: ID!, $underlying: ID!) {
+		updateSecurity(id: $id, input: { underlyingSecurityID: $underlying }) {
+			underlyingSecurity { id }
+		}
+	}`, map[string]any{"id": warrantID, "underlying": rightsID})
+	if got := data["updateSecurity"].(map[string]any)["underlyingSecurity"].(map[string]any)["id"]; got != rightsID {
+		t.Errorf("updateSecurity underlyingSecurity.id = %v, want %v", got, rightsID)
+	}
+}
+
 // TestUserIsolation ensures one user cannot see or modify another user's data.
 func TestUserIsolation(t *testing.T) {
 	schema, ctx := newTestSchema(t)

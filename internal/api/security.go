@@ -79,9 +79,10 @@ type ListingInput struct {
 
 // CreateSecurityInput is the input for Mutation.createSecurity.
 type CreateSecurityInput struct {
-	DisplayName string
-	Identifiers *[]SecurityIdentifierInput
-	Listings    *[]ListingInput
+	DisplayName          string
+	Identifiers          *[]SecurityIdentifierInput
+	Listings             *[]ListingInput
+	UnderlyingSecurityID *graphql.ID
 }
 
 // CreateSecurity resolves Mutation.createSecurity.
@@ -90,8 +91,9 @@ func (r *RootResolver) CreateSecurity(ctx context.Context, args struct{ Input Cr
 
 	err := r.db.Tx(ctx, func(q *persistence.Queries) (err error) {
 		security, err = q.CreateSecurity(ctx, persistence.CreateSecurityParams{
-			ID:          uuid.NewString(),
-			DisplayName: args.Input.DisplayName,
+			ID:                    uuid.NewString(),
+			DisplayName:           args.Input.DisplayName,
+			UnderlyingSecurityID:  idToNullString(args.Input.UnderlyingSecurityID),
 		})
 		if err != nil {
 			return err
@@ -120,9 +122,10 @@ func (r *RootResolver) CreateSecurity(ctx context.Context, args struct{ Input Cr
 // UpdateSecurityInput is the input for Mutation.updateSecurity. Provided
 // identifiers or listings replace the existing set entirely.
 type UpdateSecurityInput struct {
-	DisplayName *string
-	Identifiers *[]SecurityIdentifierInput
-	Listings    *[]ListingInput
+	DisplayName          *string
+	Identifiers          *[]SecurityIdentifierInput
+	Listings             *[]ListingInput
+	UnderlyingSecurityID *graphql.ID
 }
 
 // UpdateSecurity resolves Mutation.updateSecurity.
@@ -140,10 +143,20 @@ func (r *RootResolver) UpdateSecurity(ctx context.Context, args struct {
 			return err
 		}
 
-		if args.Input.DisplayName != nil {
+		if args.Input.DisplayName != nil || args.Input.UnderlyingSecurityID != nil {
+			displayName := security.DisplayName
+			if args.Input.DisplayName != nil {
+				displayName = *args.Input.DisplayName
+			}
+			underlying := security.UnderlyingSecurityID
+			if args.Input.UnderlyingSecurityID != nil {
+				underlying = idToNullString(args.Input.UnderlyingSecurityID)
+			}
+
 			security, err = q.UpdateSecurity(ctx, persistence.UpdateSecurityParams{
-				DisplayName: *args.Input.DisplayName,
-				ID:          string(args.ID),
+				DisplayName:          displayName,
+				UnderlyingSecurityID: underlying,
+				ID:                   string(args.ID),
 			})
 			if err != nil {
 				return err
@@ -249,6 +262,22 @@ func (r *SecurityResolver) Identifiers(ctx context.Context) ([]*SecurityIdentifi
 	return resolvers, nil
 }
 
+// UnderlyingSecurity resolves Security.underlyingSecurity — the security
+// this one derives from (a right, option or warrant's underlying stock),
+// null when this security isn't a derivative of anything else tracked here.
+func (r *SecurityResolver) UnderlyingSecurity(ctx context.Context) (*SecurityResolver, error) {
+	if !r.security.UnderlyingSecurityID.Valid {
+		return nil, nil
+	}
+
+	underlying, err := r.db.GetSecurity(ctx, r.security.UnderlyingSecurityID.String)
+	if err != nil {
+		return nil, err
+	}
+
+	return &SecurityResolver{db: r.db, security: underlying}, nil
+}
+
 // Listings resolves Security.listings.
 func (r *SecurityResolver) Listings(ctx context.Context) ([]*ListingResolver, error) {
 	listings, err := r.db.ListListings(ctx, r.security.ID)
@@ -318,6 +347,14 @@ func nullString(s *string) sql.NullString {
 	}
 
 	return sql.NullString{String: *s, Valid: true}
+}
+
+func idToNullString(id *graphql.ID) sql.NullString {
+	if id == nil {
+		return sql.NullString{}
+	}
+
+	return sql.NullString{String: string(*id), Valid: true}
 }
 
 func stringPtr(s sql.NullString) *string {

@@ -12,7 +12,14 @@
 		{#each securities as security (security.id)}
 			<li class="px-4 py-3">
 				<div class="flex items-center justify-between">
-					<span class="text-sm font-medium">{security.displayName}</span>
+					<span class="text-sm font-medium">
+						{security.displayName}
+						{#if security.underlyingSecurity}
+							<span class="ml-1 text-xs font-normal text-gray-400">
+								→ {security.underlyingSecurity.displayName}
+							</span>
+						{/if}
+					</span>
 					<span class="flex gap-1">
 						{#each security.identifiers as identifier (identifier.kind)}
 							<span class="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">

@@ -78,20 +78,21 @@ func (q *Queries) CreateQuote(ctx context.Context, arg CreateQuoteParams) error 
 
 const createSecurity = `-- name: CreateSecurity :one
 INSERT INTO
-    securities (id, display_name)
+    securities (id, display_name, underlying_security_id)
 VALUES
-    (?, ?) RETURNING id, display_name
+    (?, ?, ?) RETURNING id, display_name, underlying_security_id
 `
 
 type CreateSecurityParams struct {
-	ID          string
-	DisplayName string
+	ID                   string
+	DisplayName          string
+	UnderlyingSecurityID sql.NullString
 }
 
 func (q *Queries) CreateSecurity(ctx context.Context, arg CreateSecurityParams) (*Security, error) {
-	row := q.db.QueryRowContext(ctx, createSecurity, arg.ID, arg.DisplayName)
+	row := q.db.QueryRowContext(ctx, createSecurity, arg.ID, arg.DisplayName, arg.UnderlyingSecurityID)
 	var i Security
-	err := row.Scan(&i.ID, &i.DisplayName)
+	err := row.Scan(&i.ID, &i.DisplayName, &i.UnderlyingSecurityID)
 	return &i, err
 }
 
@@ -151,7 +152,7 @@ func (q *Queries) DeleteSecurityIdentifiers(ctx context.Context, securityID stri
 
 const findSecurityByIdentifier = `-- name: FindSecurityByIdentifier :one
 SELECT
-    s.id, s.display_name
+    s.id, s.display_name, s.underlying_security_id
 FROM
     securities s
     JOIN security_identifiers si ON si.security_id = s.id
@@ -168,7 +169,7 @@ type FindSecurityByIdentifierParams struct {
 func (q *Queries) FindSecurityByIdentifier(ctx context.Context, arg FindSecurityByIdentifierParams) (*Security, error) {
 	row := q.db.QueryRowContext(ctx, findSecurityByIdentifier, arg.Kind, arg.Value)
 	var i Security
-	err := row.Scan(&i.ID, &i.DisplayName)
+	err := row.Scan(&i.ID, &i.DisplayName, &i.UnderlyingSecurityID)
 	return &i, err
 }
 
@@ -220,7 +221,7 @@ func (q *Queries) GetLatestQuoteBefore(ctx context.Context, arg GetLatestQuoteBe
 
 const getSecurity = `-- name: GetSecurity :one
 SELECT
-    id, display_name
+    id, display_name, underlying_security_id
 FROM
     securities
 WHERE
@@ -230,7 +231,7 @@ WHERE
 func (q *Queries) GetSecurity(ctx context.Context, id string) (*Security, error) {
 	row := q.db.QueryRowContext(ctx, getSecurity, id)
 	var i Security
-	err := row.Scan(&i.ID, &i.DisplayName)
+	err := row.Scan(&i.ID, &i.DisplayName, &i.UnderlyingSecurityID)
 	return &i, err
 }
 
@@ -361,7 +362,7 @@ func (q *Queries) ListQuotes(ctx context.Context, arg ListQuotesParams) ([]*Quot
 
 const listSecurities = `-- name: ListSecurities :many
 SELECT
-    id, display_name
+    id, display_name, underlying_security_id
 FROM
     securities
 ORDER BY
@@ -377,7 +378,7 @@ func (q *Queries) ListSecurities(ctx context.Context) ([]*Security, error) {
 	var items []*Security
 	for rows.Next() {
 		var i Security
-		if err := rows.Scan(&i.ID, &i.DisplayName); err != nil {
+		if err := rows.Scan(&i.ID, &i.DisplayName, &i.UnderlyingSecurityID); err != nil {
 			return nil, err
 		}
 		items = append(items, &i)
@@ -429,19 +430,21 @@ func (q *Queries) ListSecurityIdentifiers(ctx context.Context, securityID string
 const updateSecurity = `-- name: UpdateSecurity :one
 UPDATE securities
 SET
-    display_name = ?
+    display_name = ?,
+    underlying_security_id = ?
 WHERE
-    id = ? RETURNING id, display_name
+    id = ? RETURNING id, display_name, underlying_security_id
 `
 
 type UpdateSecurityParams struct {
-	DisplayName string
-	ID          string
+	DisplayName          string
+	UnderlyingSecurityID sql.NullString
+	ID                   string
 }
 
 func (q *Queries) UpdateSecurity(ctx context.Context, arg UpdateSecurityParams) (*Security, error) {
-	row := q.db.QueryRowContext(ctx, updateSecurity, arg.DisplayName, arg.ID)
+	row := q.db.QueryRowContext(ctx, updateSecurity, arg.DisplayName, arg.UnderlyingSecurityID, arg.ID)
 	var i Security
-	err := row.Scan(&i.ID, &i.DisplayName)
+	err := row.Scan(&i.ID, &i.DisplayName, &i.UnderlyingSecurityID)
 	return &i, err
 }
