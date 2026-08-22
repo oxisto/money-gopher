@@ -10,6 +10,7 @@ import (
 	"github.com/graph-gophers/graphql-go"
 
 	"github.com/oxisto/money-gopher/internal/auth"
+	"github.com/oxisto/money-gopher/internal/importer"
 	"github.com/oxisto/money-gopher/internal/persistence"
 )
 
@@ -67,6 +68,28 @@ func (r *RootResolver) DeleteDocument(ctx context.Context, args struct{ ID graph
 		return "", fmt.Errorf("document %q not found", args.ID)
 	}
 	return args.ID, nil
+}
+
+// ReprocessDocument resolves Mutation.reprocessDocument. Re-runs extraction
+// and parsing with the current importer code, replacing the document's
+// staged transactions — never its already-committed ones; see
+// Document.transactions.
+func (r *RootResolver) ReprocessDocument(ctx context.Context, args struct{ ID graphql.ID }) (*DocumentResolver, error) {
+	person, err := auth.PersonFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	svc := importer.NewService(r.db)
+	if err := svc.Process(ctx, string(args.ID), person.ID); err != nil {
+		return nil, err
+	}
+
+	doc, err := r.db.GetDocument(ctx, persistence.GetDocumentParams{ID: string(args.ID), PersonID: person.ID})
+	if err != nil {
+		return nil, err
+	}
+	return &DocumentResolver{db: r.db, doc: doc}, nil
 }
 
 // ConfirmImportInput is the input type for Mutation.confirmImport.
@@ -309,6 +332,22 @@ func (r *DocumentResolver) SuggestedCashAccount(ctx context.Context) (*CashAccou
 		return nil, err
 	}
 	return &CashAccountResolver{db: r.db, account: account}, nil
+}
+
+// Transactions resolves Document.transactions — already-committed
+// transactions that came from this document; see the schema doc comment
+// for why this matters before re-confirming a reprocessed document.
+func (r *DocumentResolver) Transactions(ctx context.Context) ([]*TransactionResolver, error) {
+	transactions, err := r.db.ListTransactionsByDocument(ctx, sql.NullString{String: r.doc.ID, Valid: true})
+	if err != nil {
+		return nil, err
+	}
+
+	resolvers := make([]*TransactionResolver, 0, len(transactions))
+	for _, t := range transactions {
+		resolvers = append(resolvers, &TransactionResolver{db: r.db, transaction: t})
+	}
+	return resolvers, nil
 }
 
 // StagedTransaction field resolvers.

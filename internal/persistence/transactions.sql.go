@@ -196,6 +196,58 @@ func (q *Queries) ListTransactionsByCashAccount(ctx context.Context, cashAccount
 	return items, nil
 }
 
+const listTransactionsByDocument = `-- name: ListTransactionsByDocument :many
+SELECT
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate
+FROM
+    transactions
+WHERE
+    document_id = ?
+ORDER BY
+    time
+`
+
+func (q *Queries) ListTransactionsByDocument(ctx context.Context, documentID sql.NullString) ([]*Transaction, error) {
+	rows, err := q.db.QueryContext(ctx, listTransactionsByDocument, documentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Time,
+			&i.PortfolioID,
+			&i.SecurityID,
+			&i.CashAccountID,
+			&i.Units,
+			&i.Price,
+			&i.Fees,
+			&i.Taxes,
+			&i.CashDelta,
+			&i.Currency,
+			&i.Source,
+			&i.CreatedAt,
+			&i.DocumentID,
+			&i.PriceCurrency,
+			&i.FxRate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTransactionsByPortfolio = `-- name: ListTransactionsByPortfolio :many
 SELECT
     id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate

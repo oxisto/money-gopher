@@ -287,6 +287,13 @@ type Document {
   document. Nil when no match is found or the document has no IBAN.
   """
   suggestedCashAccount: CashAccount
+  """
+  Already-committed transactions that came from this document. Check this
+  before re-confirming a reprocessed document's staged transactions —
+  confirming again duplicates whatever's already here rather than
+  replacing it.
+  """
+  transactions: [Transaction!]!
 }
 
 """
@@ -517,6 +524,15 @@ type Mutation {
 
   "Delete an uploaded document and its staged transactions. Returns the deleted ID."
   deleteDocument(id: ID!): ID!
+  """
+  Re-runs extraction and parsing for a document with the current importer
+  code, replacing its staged transactions (never its already-committed
+  ones — see Document.transactions to check for those before re-confirming,
+  since doing so on a document that already has committed transactions
+  will duplicate them unless the old ones are deleted first). Works
+  regardless of the document's current state, including IMPORTED.
+  """
+  reprocessDocument(id: ID!): Document!
 
   """
   Validate and commit all staged transactions from a document as real

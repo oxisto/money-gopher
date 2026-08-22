@@ -14,6 +14,7 @@
 		transactionDate: Date | null;
 		stagedTransactions: StagedTx[];
 		suggestedCashAccount: { id: string; displayName: string; currency: string } | null;
+		transactions: { id: string; type: string; cashDelta: { amount: number; currency: string } }[];
 	}
 	interface StagedTx {
 		id: string;
@@ -74,11 +75,35 @@
 		}
 	`);
 
+	const reprocessDocument = graphql(`
+		mutation ReprocessDocument($id: ID!) {
+			reprocessDocument(id: $id) {
+				id
+			}
+		}
+	`);
+
 	let reviewDocID = $state<string | null>(null);
 	let deleteError = $state<Record<string, string>>({});
 	let quickImporting = $state<Record<string, boolean>>({});
 	let quickImportError = $state<Record<string, string>>({});
+	let reprocessing = $state<Record<string, boolean>>({});
+	let reprocessError = $state<Record<string, string>>({});
 	let hideImported = $state(true);
+
+	async function reanalyze(id: string) {
+		reprocessing = { ...reprocessing, [id]: true };
+		reprocessError = { ...reprocessError, [id]: '' };
+
+		const result = await reprocessDocument.mutate({ id });
+
+		reprocessing = { ...reprocessing, [id]: false };
+		if (result.errors?.length) {
+			reprocessError = { ...reprocessError, [id]: result.errors[0].message };
+		} else {
+			onchanged();
+		}
+	}
 
 	const visibleDocuments = $derived(
 		hideImported ? documents.filter((d) => d.state !== 'IMPORTED') : documents
@@ -104,6 +129,10 @@
 	// and every transaction's security (already resolved from its ISIN).
 	function autoMatch(doc: Document): { cashAccountID: string; portfolioID: string | null } | null {
 		if (doc.stagedTransactions.length === 0) return null;
+		// A reprocessed document can be PARSED again while still having
+		// committed transactions from before — confirming these staged ones
+		// too would duplicate them, not replace them.
+		if (doc.transactions.length > 0) return null;
 
 		const cashAccountID = doc.suggestedCashAccount?.id ?? (cashAccounts.length === 1 ? cashAccounts[0].id : null);
 		if (!cashAccountID) return null;
@@ -248,6 +277,16 @@
 								{reviewDocID === doc.id ? 'Close' : 'Review'}
 							</Button>
 						{/if}
+						{#if doc.state !== 'UPLOADED'}
+							<button
+								onclick={() => reanalyze(doc.id)}
+								disabled={reprocessing[doc.id]}
+								class="rounded px-2 py-1.5 text-xs text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+								title="Re-run extraction and parsing with the current importer code"
+							>
+								{reprocessing[doc.id] ? 'Re-analyzing…' : 'Re-analyze'}
+							</button>
+						{/if}
 						<button
 							onclick={() => del(doc.id)}
 							class="rounded px-2 py-1.5 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50"
@@ -257,11 +296,26 @@
 					</div>
 				</div>
 
+				{#if doc.transactions.length > 0}
+					<p class="mt-2 rounded bg-amber-50 px-2 py-1.5 text-xs text-amber-800">
+						Already has {doc.transactions.length} committed transaction{doc.transactions.length === 1
+							? ''
+							: 's'} from this document. Confirming the staged transactions below would duplicate
+						{doc.transactions.length === 1 ? 'it' : 'them'} — delete the existing one{doc.transactions
+							.length === 1
+							? ''
+							: 's'} first if you want to replace {doc.transactions.length === 1 ? 'it' : 'them'}.
+					</p>
+				{/if}
+
 				{#if deleteError[doc.id]}
 					<ErrorNote message={deleteError[doc.id]} />
 				{/if}
 				{#if quickImportError[doc.id]}
 					<ErrorNote message={quickImportError[doc.id]} />
+				{/if}
+				{#if reprocessError[doc.id]}
+					<ErrorNote message={reprocessError[doc.id]} />
 				{/if}
 
 				{#if reviewDocID === doc.id}

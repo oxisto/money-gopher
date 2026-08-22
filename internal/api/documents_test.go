@@ -180,6 +180,26 @@ func TestDocumentsLifecycle(t *testing.T) {
 		t.Errorf("state after confirm = %v, want IMPORTED", got)
 	}
 
+	// Reprocessing an already-IMPORTED document must not touch its
+	// already-committed transactions — only regenerate staged ones.
+	data = exec(t, schema, ctx, `mutation ($id: ID!) {
+		reprocessDocument(id: $id) {
+			state
+			stagedTransactions { id }
+			transactions { id }
+		}
+	}`, map[string]any{"id": docID})
+	reprocessed := data["reprocessDocument"].(map[string]any)
+	if got := reprocessed["state"]; got != "PARSED" {
+		t.Errorf("state after reprocess = %v, want PARSED", got)
+	}
+	if got := len(reprocessed["stagedTransactions"].([]any)); got != 2 {
+		t.Errorf("stagedTransactions after reprocess = %d, want 2 (regenerated)", got)
+	}
+	if got := len(reprocessed["transactions"].([]any)); got != 2 {
+		t.Errorf("transactions after reprocess = %d, want 2 (untouched)", got)
+	}
+
 	// Delete the document.
 	exec(t, schema, ctx, `mutation ($id: ID!) { deleteDocument(id: $id) }`,
 		map[string]any{"id": docID})

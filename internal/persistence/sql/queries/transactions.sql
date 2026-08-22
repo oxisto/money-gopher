@@ -49,6 +49,16 @@ WHERE
 ORDER BY
     time;
 
+-- name: ListTransactionsByDocument :many
+SELECT
+    *
+FROM
+    transactions
+WHERE
+    document_id = ?
+ORDER BY
+    time;
+
 -- name: UpdateTransaction :one
 UPDATE transactions
 SET

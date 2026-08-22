@@ -11,6 +11,14 @@ query Imports {
 			displayName
 			currency
 		}
+		transactions {
+			id
+			type
+			cashDelta {
+				amount
+				currency
+			}
+		}
 		stagedTransactions {
 			id
 			type
