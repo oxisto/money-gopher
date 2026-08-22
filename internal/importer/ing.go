@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/oxisto/money-gopher/internal/persistence"
 )
 
 // ING parses ING-DiBa Germany brokerage confirmations.
@@ -30,11 +32,18 @@ func (ING) Matches(text string) bool {
 			strings.Contains(text, "Ertragsthesaurierung") ||
 			strings.Contains(text, "Rückzahlung") ||
 			strings.Contains(text, "Wertpapier Eingang") ||
-			strings.Contains(text, "Vorabpauschale"))
+			strings.Contains(text, "Vorabpauschale") ||
+			ingIsKontoauszug(text))
 }
 
-// ING emits one document per transaction, so Parse always returns a single row.
+// Parse routes to the brokerage-confirmation handling below (one document,
+// one transaction) or to ingParseKontoauszug (one document, many
+// transactions) depending on the document type.
 func (ING) Parse(text string) ([]StagedTransaction, error) {
+	if ingIsKontoauszug(text) {
+		return ingParseKontoauszug(text)
+	}
+
 	// pdftotext uses \f (form feed) as a page separator. Only the first page
 	// has the transaction summary; later pages are tax detail sheets.
 	page1, _, _ := strings.Cut(text, "\f")
@@ -101,6 +110,8 @@ var (
 	ingUnitsNom = regexp.MustCompile(`Nominale\s+([\d.,]+)\s+Stück`)         // income:     "361,0823 Stück"
 	// Currency on the Kurs line; optional qualifier like "(Festpreisgeschäft)" is tolerated.
 	ingKursCurr = regexp.MustCompile(`Kurs\s+(?:[^\n]*?\s+)?([A-Z]{3})\s`)
+	// Bond price: "Kurs   100,00 %" — a percentage of face value, no currency.
+	ingKursPercent = regexp.MustCompile(`Kurs\s+([\d.]+,\d+)\s*%`)
 	// Execution date: old format omits " / -zeit".
 	ingExecDate = regexp.MustCompile(`Ausführungstag(?: / -zeit)?\s+(\d{2}\.\d{2}\.\d{4})`)
 	ingPayDate  = regexp.MustCompile(`Zahltag\s+(\d{2}\.\d{2}\.\d{4})`)
@@ -144,11 +155,26 @@ func ingParseTrade(text string) (StagedTransaction, error) {
 	}
 
 	// Currency and price.
-	// Bonds show "Kurs  94,44 %" — no currency code, price is a percentage.
+	// Bonds show "Kurs  94,44 %" — no currency code; the price is a percentage
+	// of face value, conventionally quoted per 100 nominal. So units becomes
+	// face-value/100 "lots" and price becomes the percentage number itself —
+	// units × price then reproduces Kurswert exactly, the same
+	// units-times-price invariant equities already satisfy.
 	// Equity shows "Kurs [optional qualifier]  EUR  26,15".
 	currency := "EUR"
-	var price *int64
-	if !isBond {
+	var price persistence.Decimal
+	if isBond {
+		units /= 100
+
+		percentStr, perr := ingFind(ingKursPercent, text, "Kurs percentage")
+		if perr != nil {
+			return StagedTransaction{}, perr
+		}
+		price, perr = ingDecimal(percentStr)
+		if perr != nil {
+			return StagedTransaction{}, fmt.Errorf("price: %w", perr)
+		}
+	} else {
 		c, cerr := ingFind(ingKursCurr, text, "Kurs currency")
 		if cerr != nil {
 			return StagedTransaction{}, cerr
@@ -158,11 +184,10 @@ func ingParseTrade(text string) (StagedTransaction, error) {
 		if perr != nil {
 			return StagedTransaction{}, fmt.Errorf("Kurs amount: %w", perr)
 		}
-		p, perr := ingMinor(priceStr)
+		price, perr = ingDecimal(priceStr)
 		if perr != nil {
 			return StagedTransaction{}, fmt.Errorf("price: %w", perr)
 		}
-		price = &p
 	}
 
 	// Execution date; old ING format (pre-2017) uses "Ausführungstag" without " / -zeit".
@@ -423,11 +448,17 @@ func ingParseDelivery(text string) (StagedTransaction, error) {
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-// ingTaxSum sums all German withholding-tax line items.
+// ingTaxSum sums all withholding- and transaction-tax line items.
 // Income documents use "Kapitalertragsteuer"; sell documents use
 // "KapSt anteilig" (split across two lines at 50% each) — both are handled.
 // Kirchensteuer and Solidaritätszuschlag appear on both document types and
-// may appear more than once; every occurrence is summed.
+// may appear more than once; every occurrence is summed. Trade confirmations
+// for securities from countries levying a financial transaction tax (e.g.
+// France's "Franz. Transaktionssteuer") carry an extra line item that must
+// not be folded into Fees (Provision) — it's a tax, not a broker charge. The
+// substring match also catches the help-text sentence mentioning
+// "Finanztransaktionssteuer", but that line has no trailing decimal amount,
+// so the empty-matches guard below skips it.
 func ingTaxSum(text string) int64 {
 	var total int64
 	for _, line := range strings.Split(text, "\n") {
@@ -435,7 +466,8 @@ func ingTaxSum(text string) int64 {
 			strings.Contains(line, "KapSt anteilig")
 		isKirche := strings.Contains(line, "Kirchensteuer")
 		isSoli := strings.Contains(line, "Solidaritätszuschlag")
-		if !isKapSt && !isKirche && !isSoli {
+		isFTT := strings.Contains(line, "Transaktionssteuer")
+		if !isKapSt && !isKirche && !isSoli && !isFTT {
 			continue
 		}
 		matches := reGermanDecimal.FindAllString(line, -1)
@@ -495,6 +527,18 @@ func ingFloat(s string) (float64, error) {
 	s = strings.ReplaceAll(s, ".", "")
 	s = strings.ReplaceAll(s, ",", ".")
 	return strconv.ParseFloat(s, 64)
+}
+
+// ingDecimal parses a German locale decimal string (dot=thousands,
+// comma=decimal) as an exact persistence.Decimal, never passing through a
+// float64. Used for price specifically: real fund/bond prices need more
+// than 2 decimal digits, and a float64 round-trip would lose that precision
+// the same way ingMinor's cent-rounding does for amounts that are fine to
+// round.
+func ingDecimal(s string) (persistence.Decimal, error) {
+	s = strings.ReplaceAll(s, ".", "")
+	s = strings.ReplaceAll(s, ",", ".")
+	return persistence.NewDecimal(s)
 }
 
 // ingMinor converts a German decimal string to minor monetary units (cents).

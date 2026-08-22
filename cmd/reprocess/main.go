@@ -1,7 +1,7 @@
 // reprocess bulk-uploads PDFs from a directory and/or re-runs the import
 // pipeline on every non-imported document already in the DB.
 //
-//	go run ./cmd/reprocess -db money.db [-dir /path/to/pdfs]
+//	go run ./cmd/reprocess -db money.db [-dir /path/to/pdfs] [-person id]
 package main
 
 import (
@@ -21,15 +21,16 @@ import (
 func main() {
 	dbPath := flag.String("db", "moneyd-data", "path to the lightsql data directory (must match moneyd's -db; moneyd must not be running, lightsql has no multi-process locking yet)")
 	dir := flag.String("dir", "", "directory of PDFs to upload before reprocessing")
+	personID := flag.String("person", "", "person ID whose documents to reprocess (default: the dev user's person)")
 	flag.Parse()
 
-	if err := run(*dbPath, *dir); err != nil {
+	if err := run(*dbPath, *dir, *personID); err != nil {
 		slog.Error("reprocess failed", "err", err)
 		os.Exit(1)
 	}
 }
 
-func run(dbPath, dir string) error {
+func run(dbPath, dir, personID string) error {
 	db, err := persistence.OpenDB(dbPath)
 	if err != nil {
 		return err
@@ -38,9 +39,17 @@ func run(dbPath, dir string) error {
 
 	ctx := context.Background()
 
-	_, person, err := auth.EnsureDevUser(ctx, db)
-	if err != nil {
-		return err
+	var person *persistence.Person
+	if personID != "" {
+		person, err = db.GetPerson(ctx, personID)
+		if err != nil {
+			return fmt.Errorf("get person %q: %w", personID, err)
+		}
+	} else {
+		_, person, err = auth.EnsureDevUser(ctx, db)
+		if err != nil {
+			return err
+		}
 	}
 
 	svc := importer.NewService(db)
