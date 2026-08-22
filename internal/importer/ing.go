@@ -212,6 +212,7 @@ func ingParseTrade(text string) (StagedTransaction, error) {
 			return StagedTransaction{}, fmt.Errorf("fees: %w", err)
 		}
 	}
+	fees += ingFeeSum(text, currency)
 
 	// Taxes (optional – only on sell with a realised gain).
 	taxes := ingTaxSum(text)
@@ -468,6 +469,39 @@ func ingTaxSum(text string) int64 {
 		isSoli := strings.Contains(line, "Solidaritätszuschlag")
 		isFTT := strings.Contains(line, "Transaktionssteuer")
 		if !isKapSt && !isKirche && !isSoli && !isFTT {
+			continue
+		}
+		matches := reGermanDecimal.FindAllString(line, -1)
+		if len(matches) == 0 {
+			continue
+		}
+		if v, err := ingMinor(matches[len(matches)-1]); err == nil {
+			total += v
+		}
+	}
+	return total
+}
+
+// ingFeeSum sums broker/venue fee line items beyond the base Provision
+// commission: Handelsplatzgebühr (trading-venue fee), "Variables
+// Transaktionsentgelt" (variable transaction fee), and Stückzinsen (a bond's
+// accrued interest, paid to the seller). Stückzinsen isn't a fee in the
+// accounting sense — it comes back via the next coupon — but there is no
+// dedicated field for it, ING books it as part of the same single cash
+// flow as everything else, and folding it in here was the explicit call
+// over adding a schema field for it.
+//
+// A line is only counted when it is quoted in currency: an FX bond's
+// Stückzinsen line is quoted in the security's own trading currency, not
+// the settlement currency, and converting it isn't supported yet, so it is
+// intentionally skipped rather than added in at face value.
+func ingFeeSum(text, currency string) int64 {
+	var total int64
+	for _, line := range strings.Split(text, "\n") {
+		isFee := strings.Contains(line, "Handelsplatzgebühr") ||
+			strings.Contains(line, "Variables Transaktionsentgelt") ||
+			strings.Contains(line, "Stückzinsen")
+		if !isFee || !strings.Contains(line, currency) {
 			continue
 		}
 		matches := reGermanDecimal.FindAllString(line, -1)

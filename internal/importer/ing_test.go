@@ -148,6 +148,38 @@ func TestING_ParseTrade_BondAtPar(t *testing.T) {
 	}
 }
 
+// TestING_ParseTrade_BondFeesAndAccruedInterest verifies that
+// Handelsplatzgebühr, Variables Transaktionsentgelt and Stückzinsen (a
+// bond's accrued interest, folded into Fees since there is no dedicated
+// field for it) are all captured, and that Kurswert + Fees + Taxes
+// reconciles exactly against the Endbetrag-derived CashDelta.
+func TestING_ParseTrade_BondFeesAndAccruedInterest(t *testing.T) {
+	text, err := os.ReadFile("testdata/ing/buy_bond_fees.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	txs, err := ING{}.Parse(string(text))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	tx := txs[0]
+
+	// 51.23 (Stückzinsen) + 0.38 (Handelsplatzgebühr) + 8.17 (Provision) +
+	// 2.25 (Variables Transaktionsentgelt) = 62.03.
+	if tx.Fees != 6203 {
+		t.Errorf("Fees = %d, want 6203", tx.Fees)
+	}
+	if tx.CashDelta != -294203 {
+		t.Errorf("CashDelta = %d, want -294203", tx.CashDelta)
+	}
+
+	kurswert := tx.Price.MulFloat(tx.Units).MulInt(100).RoundToInt64()
+	if got, want := kurswert+tx.Fees+tx.Taxes, int64(294203); got != want {
+		t.Errorf("Kurswert+Fees+Taxes = %d, want %d (Endbetrag)", got, want)
+	}
+}
+
 // TestING_ParseTrade_ForeignTransactionTax verifies that a foreign financial
 // transaction tax (e.g. France's "Franz. Transaktionssteuer") lands in Taxes,
 // not Fees (Provision) — and that Kurswert + Fees + Taxes reconciles exactly

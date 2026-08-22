@@ -1,0 +1,80 @@
+                     ING-DiBa AG · 60628 Frankfurt am Main
+
+
+
+                                                                                                                        Depotinhaber:                         Max Mustermann
+                                                                                                                        Direkt-Depot Nr.:                     123456789
+                     Herrn
+                     Max Mustermann                                                                                     Datum:                                20.03.2026
+                     Musterstraße 1                                                                                     Seite:                                1 von 2
+                     12345 Musterstadt
+
+
+
+
+                     Wertpapierabrechnung                                           Kauf
+                     Ordernummer                                                    456336494.001
+                     ISIN (WKN)                         XS0000000098 (A2DADL)
+                     Wertpapierbezeichnung              4,30 % Muster Finanzanlagen
+                                                        Stufz.-Anl.X v.17(22/22-35)
+                     Zinstermin                         01. NOVEMBER
+                     Erste Fälligkeit                   01.11.2022
+                     Fälligkeit                         01.11.2035
+                     Kündigungsrecht des Emittenten ab 01.11.2022
+
+                     Nominale                                                       EUR                      3.000,00
+                     Kurs                                                           96,00 %
+                     Handelsplatz                                                   Stuttgart
+                     Ausführungstag / -zeit                                         20.03.2026 um 09:16:19 Uhr
+                     Kurswert                                                       EUR                                            2.880,00
+                     Stückzinsen                                                    EUR                                               51,23 (Zinsvaluta 23.03.2026 143 Tage)
+                     Handelsplatzgebühr                                             EUR                                                0,38
+                     Provision                                                      EUR                                                8,17
+                     Variables Transaktionsentgelt                                  EUR                                                2,25
+                     Endbetrag zu Ihren Lasten                                      EUR                                            2.942,03
+
+                     Abrechnungs-IBAN                                               DE12 3456 7890 1234 5678 90
+                     Valuta                                                         24.03.2026
+                     Wertpapiere zugunsten Girosammelverwahrung.
+                     Börsenentgelt inkl. 19,00% MwSt.
+                     Weiter geht es auf Seite 2.
+
+
+
+
+34WAAD123456789_T
+
+
+
+                     ING-DiBa AG · Theodor-Heuss-Allee 2 · 60486 Frankfurt am Main · Vorsitzende des Aufsichtsrates: Susanne Klöß-Braekler · Vorstand: Lars Stoy (Vorsitzender),
+                     Michael Clijdesdale, Eddy Henning, Nikolaus Maximilian Linaric, Dr. Ralph Müller, Nurten Spitzer-Erdogan · Sitz: Frankfurt am Main · AG Frankfurt am Main · HRB 7727
+                     Steuernummer: 014 220 2800 4 · USt-IdNr.: DE 114 103 475 · Internet: www.ing.de · BIC: INGDDEFFXXX · Mitglied im Einlagensicherungsfonds
+                                                         Depotinhaber:         Max Mustermann
+                                                         Direkt-Depot Nr.:     123456789
+                                                         Datum:                20.03.2026
+                                                         Seite:                2 von 2
+
+
+
+
+Ordernummer      456336494.001
+ISIN (WKN)       XS0000000098 (A2DADL)
+
+
+
+
+Mit Verrechnungstopf Allgemein verrechnet                          51,23 EUR
+Gezahlte Stückzinsen                                               51,23 EUR
+
+Verrechnungstopf Aktien vor Geschäft                                0,00 EUR
+Verrechnungstopf Aktien nach Geschäft                               0,00 EUR
+Verrechnungstopf Allgemein vor Geschäft                             0,00 EUR
+Verrechnungstopf Allgemein nach Geschäft                           51,23 EUR
+Verrechnungstopf ausländ. Quellensteuer vor Geschäft                0,00 EUR
+Verrechnungstopf ausländ. Quellensteuer nach Geschäft               0,00 EUR
+
+
+
+
+Bei Fragen besuchen Sie uns einfach unter www.ing.de/wertpapierwissen - da gibt es viele schnelle
+Antworten.
