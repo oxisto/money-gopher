@@ -142,12 +142,3 @@ func EnsurePersonForUser(ctx context.Context, db *persistence.DB, user *persiste
 	}
 	return person, nil
 }
-
-// DevMiddleware pins every request to the development user and their default person.
-func DevMiddleware(user *persistence.User, person *persistence.Person, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := WithUser(r.Context(), user)
-		ctx = WithPerson(ctx, person)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { graphql } from '$houdini';
+	import { cache, graphql } from '$houdini';
 	import { invalidateAll } from '$app/navigation';
 
 	interface Person {
@@ -40,6 +40,12 @@
 	async function switchTo(id: string) {
 		open = false;
 		await switchPersonMutation.mutate({ personID: id });
+		// switchPerson's response only carries the newly active Person, not
+		// every other person-scoped query already cached (activePerson,
+		// portfolios, cashAccounts, ...) — Houdini has no way to know those
+		// need refetching just because the mutation ran, so mark the whole
+		// cache stale before re-running load functions.
+		cache.markStale();
 		await invalidateAll();
 	}
 </script>

@@ -139,18 +139,21 @@ func run(addr string, dbPath string, quoteInterval time.Duration) error {
 		slog.Info("OIDC auth enabled", "issuer", *oidcIssuer)
 
 	default: // "dev"
-		user, person, err := auth.EnsureDevUser(context.Background(), db)
+		user, _, err := auth.EnsureDevUser(context.Background(), db)
 		if err != nil {
 			return err
 		}
 		protect = func(h http.Handler) http.Handler {
-			return auth.DevMiddleware(user, person, h)
+			return auth.DevMiddleware(db, user.ID, h)
 		}
-		// Stub auth routes so the UI's "Sign out" link doesn't 404 in dev mode.
+		// Sign-out clears the session; DevMiddleware transparently creates a
+		// fresh one (defaulting back to the first accessible person) on the
+		// next request, so this doubles as a dev-mode "reset active person".
 		mux.HandleFunc("/auth/logout", func(w http.ResponseWriter, r *http.Request) {
+			auth.ClearSession(r.Context(), db, w, r)
 			http.Redirect(w, r, "/", http.StatusFound)
 		})
-		slog.Info("dev auth enabled; all requests pinned to dev user")
+		slog.Info("dev auth enabled; sessions auto-created for the dev user")
 	}
 
 	mux.Handle("/graphql", protect(api.NewHandler(api.NewSchema(db, updater))))
