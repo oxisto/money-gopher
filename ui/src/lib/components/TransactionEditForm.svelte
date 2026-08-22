@@ -1,13 +1,12 @@
 <script lang="ts">
-	import { graphql, TransactionType, type PortfolioDetail$result } from '$houdini';
+	import { graphql, TransactionType } from '$houdini';
 	import type { TransactionType$options } from '$houdini';
 	import { parseAmount, parsePrice } from '$lib/format';
+	import type { TransactionRow, SecurityOption, CashAccountOption } from '$lib/transaction-types';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import SelectField from './ui/SelectField.svelte';
 	import TextField from './ui/TextField.svelte';
-
-	type Transaction = NonNullable<PortfolioDetail$result['portfolio']>['transactions'][number];
 
 	let {
 		transaction: tx,
@@ -16,9 +15,9 @@
 		onsaved,
 		oncancel
 	}: {
-		transaction: Transaction;
-		securities: PortfolioDetail$result['securities'];
-		cashAccounts: PortfolioDetail$result['cashAccounts'];
+		transaction: TransactionRow;
+		securities: SecurityOption[];
+		cashAccounts: CashAccountOption[];
 		onsaved: () => void;
 		oncancel: () => void;
 	} = $props();

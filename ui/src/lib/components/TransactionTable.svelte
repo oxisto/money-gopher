@@ -1,10 +1,8 @@
 <script lang="ts">
 	import { graphql } from '$houdini';
-	import type { PortfolioDetail$result } from '$houdini';
 	import { formatDate, formatMoney, formatPrice } from '$lib/format';
+	import type { TransactionRow, SecurityOption, CashAccountOption } from '$lib/transaction-types';
 	import TransactionEditForm from './TransactionEditForm.svelte';
-
-	type Transactions = NonNullable<PortfolioDetail$result['portfolio']>['transactions'];
 
 	let {
 		transactions,
@@ -12,9 +10,9 @@
 		cashAccounts,
 		onchanged
 	}: {
-		transactions: Transactions;
-		securities: PortfolioDetail$result['securities'];
-		cashAccounts: PortfolioDetail$result['cashAccounts'];
+		transactions: TransactionRow[];
+		securities: SecurityOption[];
+		cashAccounts: CashAccountOption[];
 		onchanged: () => void;
 	} = $props();
 

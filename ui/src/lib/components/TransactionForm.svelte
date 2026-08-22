@@ -1,23 +1,26 @@
 <script lang="ts">
-	import { graphql, TransactionType, type PortfolioDetail$result } from '$houdini';
+	import { graphql, TransactionType } from '$houdini';
 	import type { TransactionType$options } from '$houdini';
 	import { parseAmount, parsePrice } from '$lib/format';
+	import type { SecurityOption, CashAccountOption } from '$lib/transaction-types';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import SelectField from './ui/SelectField.svelte';
 	import TextField from './ui/TextField.svelte';
 
 	let {
-		portfolioID,
+		portfolioID = '',
 		defaultCashAccountID = '',
+		defaultType = 'BUY',
 		securities,
 		cashAccounts,
 		oncreated
 	}: {
-		portfolioID: string;
+		portfolioID?: string;
 		defaultCashAccountID?: string;
-		securities: PortfolioDetail$result['securities'];
-		cashAccounts: PortfolioDetail$result['cashAccounts'];
+		defaultType?: TransactionType$options;
+		securities: SecurityOption[];
+		cashAccounts: CashAccountOption[];
 		oncreated: () => void;
 	} = $props();
 
@@ -36,7 +39,7 @@
 		return now.toISOString().slice(0, 16);
 	}
 
-	let type = $state<TransactionType$options>('BUY');
+	let type = $state<TransactionType$options>(defaultType);
 	let time = $state(nowLocal());
 	let securityID = $state('');
 	let cashAccountID = $state(defaultCashAccountID);
@@ -56,7 +59,7 @@
 				type,
 				time: new Date(time),
 				currency: currency.toUpperCase(),
-				portfolioID,
+				portfolioID: portfolioID || undefined,
 				securityID: securityID || undefined,
 				cashAccountID: cashAccountID || undefined,
 				units: units ? parseFloat(units) : undefined,

@@ -1,0 +1,55 @@
+query CashAccountDetail($id: ID!) {
+	cashAccount(id: $id) {
+		id
+		displayName
+		currency
+		iban
+		balance {
+			amount
+			currency
+		}
+		transactions {
+			id
+			type
+			time
+			units
+			price {
+				amount
+				currency
+			}
+			fees {
+				amount
+				currency
+			}
+			taxes {
+				amount
+				currency
+			}
+			cashDelta {
+				amount
+				currency
+			}
+			fxRate
+			security {
+				id
+				displayName
+			}
+			cashAccount {
+				id
+			}
+			document {
+				id
+				filename
+			}
+		}
+	}
+	securities {
+		id
+		displayName
+	}
+	cashAccounts {
+		id
+		displayName
+		currency
+	}
+}

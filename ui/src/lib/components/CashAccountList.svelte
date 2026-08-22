@@ -44,9 +44,14 @@
 {:else}
 	<ul class="divide-y divide-gray-200 rounded-md border border-gray-200 bg-white">
 		{#each accounts as account (account.id)}
-			<li class="flex items-center justify-between px-4 py-3 text-sm">
-				<span class="font-medium">{account.displayName}</span>
-				<span class="tabular-nums">{formatMoney(account.balance)}</span>
+			<li>
+				<a
+					href={`/cash-accounts/${account.id}`}
+					class="flex items-center justify-between px-4 py-3 text-sm hover:bg-gray-50"
+				>
+					<span class="font-medium">{account.displayName}</span>
+					<span class="tabular-nums">{formatMoney(account.balance)}</span>
+				</a>
 			</li>
 		{/each}
 	</ul>
