@@ -24,6 +24,7 @@
 		fees: { amount: number; currency: string };
 		taxes: { amount: number; currency: string };
 		cashDelta: { amount: number; currency: string };
+		calculatedCashDelta: { amount: number; currency: string } | null;
 		currency: string;
 		securityHint: string | null;
 		isin: string | null;

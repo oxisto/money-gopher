@@ -32,6 +32,10 @@ query Imports {
 				amount
 				currency
 			}
+			calculatedCashDelta {
+				amount
+				currency
+			}
 			currency
 			securityHint
 			isin

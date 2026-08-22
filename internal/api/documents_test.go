@@ -76,7 +76,11 @@ func TestDocumentsLifecycle(t *testing.T) {
 	data = exec(t, schema, ctx, `query {
 		documents {
 			id filename state detectedBank
-			stagedTransactions { id type isin security { id } }
+			stagedTransactions {
+				id type isin security { id }
+				cashDelta { amount }
+				calculatedCashDelta { amount }
+			}
 		}
 	}`, nil)
 	docs := data["documents"].([]any)
@@ -107,9 +111,20 @@ func TestDocumentsLifecycle(t *testing.T) {
 	}
 	buyID := buy["id"].(string)
 
-	// DEPOSIT_CASH has no security.
-	if staged[1].(map[string]any)["security"] != nil {
+	// The CSV left CashDelta blank for the BUY; calculatedCashDelta fills in
+	// what it should be: -(10*100.50 + 1.50) = -100650 minor units.
+	if got := buy["calculatedCashDelta"].(map[string]any)["amount"].(float64); got != -100650 {
+		t.Errorf("BUY calculatedCashDelta = %v, want -100650", got)
+	}
+
+	// DEPOSIT_CASH has no security, and no price to calculate a cash delta
+	// from — calculatedCashDelta must be nil, not a bogus 0-minus-fees value.
+	depositMap := staged[1].(map[string]any)
+	if depositMap["security"] != nil {
 		t.Error("staged[1].security should be nil for DEPOSIT_CASH")
+	}
+	if depositMap["calculatedCashDelta"] != nil {
+		t.Errorf("DEPOSIT_CASH calculatedCashDelta = %v, want nil", depositMap["calculatedCashDelta"])
 	}
 
 	// Filter by state.

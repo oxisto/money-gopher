@@ -282,6 +282,14 @@ type StagedTransaction {
   fees: Money!
   taxes: Money!
   cashDelta: Money!
+  """
+  cashDelta as recomputed from units, price, fees and taxes rather than
+  parsed from the document's own total line — null for cash-only types
+  (DEPOSIT_CASH, WITHDRAW_CASH, ...) where units/price don't apply. A
+  mismatch against cashDelta usually means a line item on the document
+  (a fee, a foreign tax, accrued interest) isn't being captured yet.
+  """
+  calculatedCashDelta: Money
   currency: String!
   "The security name as printed on the document."
   securityHint: String

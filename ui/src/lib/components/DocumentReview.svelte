@@ -14,6 +14,7 @@
 		fees: { amount: number; currency: string };
 		taxes: { amount: number; currency: string };
 		cashDelta: { amount: number; currency: string };
+		calculatedCashDelta: { amount: number; currency: string } | null;
 		currency: string;
 		securityHint: string | null;
 		isin: string | null;
@@ -296,6 +297,14 @@
 								</td>
 								<td class="px-2 py-1.5 text-right tabular-nums {tx.cashDelta.amount >= 0 ? 'text-green-700' : 'text-red-700'}">
 									{tx.cashDelta.amount !== 0 ? formatMoney(tx.cashDelta) : '—'}
+									{#if tx.calculatedCashDelta && tx.calculatedCashDelta.amount !== tx.cashDelta.amount}
+										<span
+											class="ml-1 inline-block rounded bg-amber-100 px-1 text-xs font-normal text-amber-700"
+											title={`Calculated from units × price ± fees ± taxes: ${formatMoney(tx.calculatedCashDelta)} — parsed value differs by ${formatMoney({ amount: tx.cashDelta.amount - tx.calculatedCashDelta.amount, currency: tx.cashDelta.currency })}. Likely an uncaptured line item on the document (a fee, a foreign tax, accrued interest).`}
+										>
+											⚠
+										</span>
+									{/if}
 								</td>
 							</tr>
 						{/each}

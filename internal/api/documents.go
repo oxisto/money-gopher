@@ -335,6 +335,30 @@ func (r *StagedTransactionResolver) CashDelta() Money {
 	return money(r.tx.CashDelta, r.tx.Currency)
 }
 
+// CalculatedCashDelta resolves StagedTransaction.calculatedCashDelta — see
+// its schema doc comment for why this is worth showing next to the parsed
+// CashDelta. Only meaningful when there's an actual per-unit Price to
+// reconcile against: deriveCashDelta's formula is gross = price × units,
+// and a cash-only DIVIDEND/INTEREST document (no per-share price parsed at
+// all) would otherwise show a bogus "mismatch" against every single one.
+func (r *StagedTransactionResolver) CalculatedCashDelta() *Money {
+	if !r.tx.Price.Valid {
+		return nil
+	}
+	delta, ok := deriveCashDelta(&txData{
+		Type:  r.tx.Type,
+		Units: r.tx.Units,
+		Price: r.tx.Price,
+		Fees:  r.tx.Fees,
+		Taxes: r.tx.Taxes,
+	})
+	if !ok {
+		return nil
+	}
+	m := money(delta, r.tx.Currency)
+	return &m
+}
+
 func (r *StagedTransactionResolver) Currency() string { return r.tx.Currency }
 
 func (r *StagedTransactionResolver) SecurityHint() *string {
