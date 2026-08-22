@@ -120,6 +120,18 @@ var (
 	// is the security's own currency (matches ingNominaleCurr). Group 3 is
 	// the rate: 1 unit of the settlement currency in that currency.
 	ingFxConversion = regexp.MustCompile(`umger\. zum Devisenkurs\s+EUR\s+([\d.]+,\d+)\s+\(([A-Z]{3}) = ([\d.]+,\d+)\)`)
+	// Rückzahlung's FX conversion line has the rate and currency in the
+	// opposite order and no "=" sign: "umger. zum Devisenkurs   EUR
+	// 1.894,96 (1,055432 USD)". Group 1 is the EUR amount, group 2 the
+	// rate, group 3 the security's own currency.
+	ingFxConversionRedemption = regexp.MustCompile(`umger\. zum Devisenkurs\s+EUR\s+([\d.]+,\d+)\s+\(([\d.]+,\d+) ([A-Z]{3})\)`)
+	// Bond face value on a Rückzahlung: "Nominale   2.000,00   USD" — amount
+	// before currency, no "Stück". The mirror image of ingUnitsFV, which is
+	// currency-before-amount on a trade confirmation.
+	ingUnitsFace = regexp.MustCompile(`Nominale\s+([\d.]+,\d+)\s+([A-Z]{3})`)
+	// Redemption price: "Einlösung zum Kurs von   100,00 %" — same meaning
+	// as a bond trade confirmation's Kurs.
+	ingEinloesungPercent = regexp.MustCompile(`Einlösung zum Kurs von\s+([\d.]+,\d+)\s*%`)
 	// Execution date: old format omits " / -zeit".
 	ingExecDate = regexp.MustCompile(`Ausführungstag(?: / -zeit)?\s+(\d{2}\.\d{2}\.\d{4})`)
 	ingPayDate  = regexp.MustCompile(`Zahltag\s+(\d{2}\.\d{2}\.\d{4})`)
@@ -133,7 +145,9 @@ var (
 
 func ingParseTrade(text string) (StagedTransaction, error) {
 	txType := "BUY"
-	if strings.Contains(text, "Verkauf") {
+	// "Verk. Teil-/Bezugsr." (a sale of unexercised subscription rights) is
+	// abbreviated and doesn't contain "Verkauf".
+	if strings.Contains(text, "Verkauf") || strings.Contains(text, "Verk.") {
 		txType = "SELL"
 	}
 
@@ -390,7 +404,8 @@ func ingParseIncome(text string) (StagedTransaction, error) {
 
 // ingParseRepayment handles "Rückzahlung" documents — a bond or warrant that
 // was redeemed at maturity. It maps to a SELL (the issuer buys it back).
-// The Endbetrag line gives the total cash received; Nominale is in Stück.
+// The Endbetrag line gives the total cash received; Nominale is in Stück
+// for equity-like instruments (warrants), or a bare face value (bonds).
 var ingEndbetrag = regexp.MustCompile(`Endbetrag\s+([A-Z]{3})\s`)
 
 func ingParseRepayment(text string) (StagedTransaction, error) {
@@ -400,17 +415,52 @@ func ingParseRepayment(text string) (StagedTransaction, error) {
 	}
 	name, _ := ingFind(ingName, text, "")
 
-	unitsStr, err := ingFind(ingUnitsStk, text, "")
-	if err != nil {
-		// Some Rückzahlungen use "Nominale 150,00 Stück" order.
-		unitsStr, err = ingFind(ingUnitsNom, text, "Nominale")
+	// Units: warrants report Stück; bonds report a bare face value, matching
+	// the same 100-nominal "lot" convention a bond purchase uses — Price
+	// (the redemption percentage) then multiplies back to Kurswert exactly,
+	// same as it does for a purchase.
+	var units float64
+	var price persistence.Decimal
+	var priceCurrency string
+	var fxRate persistence.Decimal
+	if unitsStr, uerr := ingFind(ingUnitsStk, text, ""); uerr == nil {
+		units, err = ingFloat(unitsStr)
 		if err != nil {
-			return StagedTransaction{}, err
+			return StagedTransaction{}, fmt.Errorf("units: %w", err)
 		}
-	}
-	units, err := ingFloat(unitsStr)
-	if err != nil {
-		return StagedTransaction{}, fmt.Errorf("units: %w", err)
+	} else if unitsStr, uerr := ingFind(ingUnitsNom, text, ""); uerr == nil {
+		// Some Rückzahlungen use "Nominale 150,00 Stück" order.
+		units, err = ingFloat(unitsStr)
+		if err != nil {
+			return StagedTransaction{}, fmt.Errorf("units: %w", err)
+		}
+	} else if m := ingUnitsFace.FindStringSubmatch(text); m != nil {
+		units, err = ingFloat(m[1])
+		if err != nil {
+			return StagedTransaction{}, fmt.Errorf("units: %w", err)
+		}
+		units /= 100
+
+		if pctStr, perr := ingFind(ingEinloesungPercent, text, "Einlösung zum Kurs von"); perr == nil {
+			price, err = ingDecimal(pctStr)
+			if err != nil {
+				return StagedTransaction{}, fmt.Errorf("price: %w", err)
+			}
+		}
+
+		// A foreign bond: see the equivalent block in ingParseTrade for why
+		// ING's own converted EUR amount is trusted directly.
+		if m[2] != "EUR" {
+			if fm := ingFxConversionRedemption.FindStringSubmatch(text); fm != nil {
+				priceCurrency = fm[3]
+				fxRate, err = ingDecimal(fm[2])
+				if err != nil {
+					return StagedTransaction{}, fmt.Errorf("fx rate: %w", err)
+				}
+			}
+		}
+	} else {
+		return StagedTransaction{}, fmt.Errorf("could not find Nominale in document")
 	}
 
 	dateStr, err := ingFind(ingValuta, text, "Valuta")
@@ -436,6 +486,8 @@ func ingParseRepayment(text string) (StagedTransaction, error) {
 		return StagedTransaction{}, fmt.Errorf("cash delta: %w", err)
 	}
 
+	taxes := ingTaxSum(text)
+
 	iban, _ := ingFind(ingIBAN, text, "")
 	iban = strings.ReplaceAll(iban, " ", "")
 
@@ -443,8 +495,12 @@ func ingParseRepayment(text string) (StagedTransaction, error) {
 		Type:           "SELL",
 		Time:           t,
 		Units:          units,
+		Price:          price,
+		Taxes:          taxes,
 		CashDelta:      cashDelta,
 		Currency:       currency,
+		PriceCurrency:  priceCurrency,
+		FxRate:         fxRate,
 		SecurityHint:   strings.TrimSpace(name),
 		ISIN:           isin,
 		SettlementIBAN: iban,
@@ -538,9 +594,10 @@ func ingTaxSum(text string) int64 {
 }
 
 // ingFeeSum sums broker/venue fee line items beyond the base Provision
-// commission: Handelsplatzgebühr (trading-venue fee), "Variables
-// Transaktionsentgelt" (variable transaction fee), and Stückzinsen (a bond's
-// accrued interest, paid to the seller). Stückzinsen isn't a fee in the
+// commission: Handelsplatzgebühr and Handelsentgelt (trading-venue fees),
+// "Variables Transaktionsentgelt" (variable transaction fee), and
+// Stückzinsen (a bond's accrued interest, paid to the seller). Stückzinsen
+// isn't a fee in the
 // accounting sense — it comes back via the next coupon — but there is no
 // dedicated field for it, ING books it as part of the same single cash
 // flow as everything else, and folding it in here was the explicit call
@@ -555,6 +612,7 @@ func ingFeeSum(text, currency string) int64 {
 	for _, line := range strings.Split(text, "\n") {
 		isFee := strings.Contains(line, "Handelsplatzgebühr") ||
 			strings.Contains(line, "Variables Transaktionsentgelt") ||
+			strings.Contains(line, "Handelsentgelt") ||
 			strings.Contains(line, "Stückzinsen")
 		if !isFee || !strings.Contains(line, currency) {
 			continue

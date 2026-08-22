@@ -249,6 +249,98 @@ func TestING_ParseTrade_ForeignBondRoundingBoundary(t *testing.T) {
 	}
 }
 
+// TestING_ParseRepayment_Bond verifies a bond redemption at maturity
+// (Rückzahlung): Nominale is a bare face value (no "Stück"), so Units
+// follows the same face-value/100 "lot" convention a bond purchase uses,
+// and Price is the redemption percentage — reproducing Kurswert = Endbetrag
+// exactly for a same-currency, no-tax redemption at par.
+func TestING_ParseRepayment_Bond(t *testing.T) {
+	text, err := os.ReadFile("testdata/ing/repayment_bond.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx, err := ingParseRepayment(string(text))
+	if err != nil {
+		t.Fatalf("ingParseRepayment() error = %v", err)
+	}
+
+	if tx.Type != "SELL" {
+		t.Errorf("Type = %q, want SELL", tx.Type)
+	}
+	if tx.Units != 50 {
+		t.Errorf("Units = %v, want 50 (5000 nominal / 100)", tx.Units)
+	}
+	if got := tx.Price.StringPrec(2); got != "100.00" {
+		t.Errorf("Price = %s, want 100.00 (redeemed at par)", got)
+	}
+	if tx.CashDelta != 500000 {
+		t.Errorf("CashDelta = %d, want 500000", tx.CashDelta)
+	}
+}
+
+// TestING_ParseRepayment_ForeignBond verifies a foreign bond redemption:
+// Price/Units are in the bond's own currency, FxRate carries the
+// conversion (trusting ING's own printed EUR amount, same as a foreign
+// bond purchase), and Kapitalertragsteuer/Kirchensteuer/Solidaritätszuschlag
+// are captured as Taxes so gross-fees-taxes reproduces Endbetrag exactly.
+func TestING_ParseRepayment_ForeignBond(t *testing.T) {
+	text, err := os.ReadFile("testdata/ing/repayment_bond_fx.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx, err := ingParseRepayment(string(text))
+	if err != nil {
+		t.Fatalf("ingParseRepayment() error = %v", err)
+	}
+
+	if tx.PriceCurrency != "USD" {
+		t.Errorf("PriceCurrency = %q, want USD", tx.PriceCurrency)
+	}
+	if !tx.FxRate.Valid || tx.FxRate.Sign() <= 0 {
+		t.Errorf("FxRate = %v, want a positive rate", tx.FxRate)
+	}
+	if tx.Taxes != 573 {
+		t.Errorf("Taxes = %d, want 573 (5.05+0.40+0.28)", tx.Taxes)
+	}
+	if tx.CashDelta != 94175 {
+		t.Errorf("CashDelta = %d, want 94175", tx.CashDelta)
+	}
+
+	grossEUR := tx.Price.MulFloat(tx.Units).Div(tx.FxRate).MulInt(100).RoundToInt64()
+	if got, want := grossEUR-tx.Taxes, int64(94175); got != want {
+		t.Errorf("gross(EUR)-Taxes = %d, want %d (Endbetrag)", got, want)
+	}
+}
+
+// TestING_ParseTrade_SubscriptionRightsSale verifies that "Verk.
+// Teil-/Bezugsr." (a sale of unexercised subscription rights) is detected
+// as a SELL despite not containing the word "Verkauf", and that
+// Handelsentgelt — a fee label not seen elsewhere — is captured.
+func TestING_ParseTrade_SubscriptionRightsSale(t *testing.T) {
+	text, err := os.ReadFile("testdata/ing/sell_subscription_rights.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx, err := ingParseTrade(string(text))
+	if err != nil {
+		t.Fatalf("ingParseTrade() error = %v", err)
+	}
+
+	if tx.Type != "SELL" {
+		t.Errorf("Type = %q, want SELL", tx.Type)
+	}
+	// Handelsplatzgebühr 1.50 + Provision 3.00 + Handelsentgelt 1.30 = 5.80.
+	if tx.Fees != 580 {
+		t.Errorf("Fees = %d, want 580", tx.Fees)
+	}
+	if tx.CashDelta != 12150 {
+		t.Errorf("CashDelta = %d, want 12150", tx.CashDelta)
+	}
+}
+
 // TestING_ParseTrade_ForeignTransactionTax verifies that a foreign financial
 // transaction tax (e.g. France's "Franz. Transaktionssteuer") lands in Taxes,
 // not Fees (Provision) — and that Kurswert + Fees + Taxes reconciles exactly

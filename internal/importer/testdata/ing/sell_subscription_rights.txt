@@ -1,0 +1,45 @@
+                     ING-DiBa AG · 60628 Frankfurt am Main
+
+
+
+                                                                                                                        Depotinhaber:                         Max Mustermann
+                                                                                                                        Direkt-Depot Nr.:                     123456789
+                     Herrn
+                     Max Mustermann                                                                                     Datum:                                03.12.2025
+                     Musterstraße 1                                                                                     Seite:                                1 von 1
+                     12345 Musterstadt
+
+
+
+
+                     Wertpapierabrechnung                                           Verk. Teil-/Bezugsr.
+                     Ordernummer                                                    434728559.001
+                     ISIN (WKN)                                                     FR0000000093 (A41TS3)
+                     Wertpapierbezeichnung                                          Muster Communications Anrechte
+
+                     Fälligkeit                                                     09.12.2025
+
+                     Nominale                                                       Stück                      300,00
+                     Kurs                                                           EUR                     0,500000
+                     Handelsplatz                                                   Frankfurt
+                     Ausführungstag / -zeit                                         03.12.2025 um 08:35:24 Uhr
+                     Kurswert                                                       EUR                                                150,00
+                     Kapitalertragsteuer 24,51 %                                    EUR                                                 20,00
+                     Kirchensteuer 8,00 %                                           EUR                                                  1,60
+                     Solidaritätszuschlag 5,50 %                                    EUR                                                  1,10
+                     Handelsplatzgebühr                                             EUR                                                  1,50
+                     Provision                                                      EUR                                                  3,00
+                     Handelsentgelt                                                 EUR                                                  1,30
+                     Endbetrag zu Ihren Gunsten                                     EUR                                                121,50
+
+                     Abrechnungs-IBAN                                               DE12 3456 7890 1234 5678 90
+                     Valuta                                                         05.12.2025
+                     Wertpapiere zulasten Girosammelverwahrung.
+                     Ihre nicht ausgeübten Bezugsrechte haben wir bestens für Sie verkauft.
+                     Jahressteuerbescheinigung folgt.
+
+
+
+                     ING-DiBa AG · Theodor-Heuss-Allee 2 · 60486 Frankfurt am Main · Vorsitzende des Aufsichtsrates: Susanne Klöß-Braekler · Vorstand: Lars Stoy (Vorsitzender),
+                     Michael Clijdesdale, Eddy Henning, Nikolaus Maximilian Linaric, Dr. Ralph Müller, Nurten Spitzer-Erdogan · Sitz: Frankfurt am Main · AG Frankfurt am Main · HRB 7727
+                     Steuernummer: 014 220 2800 4 · USt-IdNr.: DE 114 103 475 · Internet: www.ing.de · BIC: INGDDEFFXXX · Mitglied im Einlagensicherungsfonds
