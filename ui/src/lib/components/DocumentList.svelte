@@ -113,6 +113,10 @@
 
 		for (const tx of doc.stagedTransactions) {
 			if (!tx.security && (tx.isin || tx.securityHint)) return null;
+			// A mismatch between the parsed and calculated cash delta usually
+			// means a line item on the document isn't being captured — skipping
+			// review here would import a transaction nobody checked.
+			if (tx.calculatedCashDelta && tx.calculatedCashDelta.amount !== tx.cashDelta.amount) return null;
 		}
 
 		return { cashAccountID, portfolioID };
