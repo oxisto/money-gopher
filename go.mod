@@ -7,7 +7,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/graph-gophers/graphql-go v1.10.2
-	github.com/oxisto/lightsql v0.3.0
+	github.com/oxisto/lightsql v0.4.0
 	github.com/oxisto/oauth2go v0.16.0
 	github.com/pressly/goose/v3 v3.27.2
 	golang.org/x/oauth2 v0.36.0
