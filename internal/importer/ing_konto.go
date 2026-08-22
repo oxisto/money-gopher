@@ -10,7 +10,9 @@ import (
 // Extra-Konto). Unlike the brokerage confirmations above — one document, one
 // transaction — a Kontoauszug covers a whole statement period and lists many
 // cash movements, so ingParseKontoauszug returns one StagedTransaction per
-// dated, amount-bearing row instead of exactly one.
+// dated, amount-bearing row instead of exactly one — except rows for
+// securities trades and dividends/coupons, which are deliberately skipped;
+// see the ISIN check below.
 var (
 	ingKontoIBAN = regexp.MustCompile(`(?m)^\s*IBAN\s+([A-Z]{2}\d{2}[\d ]+)\s*$`)
 
@@ -38,8 +40,9 @@ func ingParseKontoauszug(text string) ([]StagedTransaction, error) {
 		iban = strings.ReplaceAll(strings.TrimSpace(m[1]), " ", "")
 	}
 
+	lines := strings.Split(text, "\n")
 	var out []StagedTransaction
-	for _, line := range strings.Split(text, "\n") {
+	for i, line := range lines {
 		m := ingKontoRow.FindStringSubmatch(line)
 		if m == nil {
 			continue
@@ -51,6 +54,18 @@ func ingParseKontoauszug(text string) ([]StagedTransaction, error) {
 		// real ledger postings, and it happens to fit the row pattern above
 		// (a leading date followed by a trailing amount).
 		if strings.Contains(desc, "%") {
+			continue
+		}
+
+		// A securities-related cash movement (a trade's settlement, or a
+		// dividend/coupon payout) always has a continuation line naming an
+		// ISIN — "WP-ABRECHNUNG ... ISIN ..." for a trade, "Zins/Dividende
+		// ISIN ..." for income. These carry no unit/price/fee breakdown
+		// here (a Kontoauszug only shows the net cash effect), and the
+		// user already imports a dedicated, complete confirmation PDF for
+		// every one of them — so importing this row too would double-count
+		// the same cash movement rather than add information.
+		if i+1 < len(lines) && strings.Contains(lines[i+1], "ISIN") {
 			continue
 		}
 

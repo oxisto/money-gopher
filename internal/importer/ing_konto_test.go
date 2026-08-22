@@ -29,10 +29,19 @@ func TestING_ParseKontoauszug(t *testing.T) {
 	// Stromversorger (withdrawal), Zinsertrag (interest), and three tax
 	// withholding lines (withdrawals) — eight real rows. The "%"-marked
 	// breakdown table row and the Abschlussbetrag restatement must not
-	// produce a ninth.
+	// produce a ninth. Nor must the Wertpapierkauf (-100.00) and
+	// Zins/Dividende WP (+24.50) rows: both have an ISIN-bearing
+	// continuation line, so a dedicated trade/dividend confirmation already
+	// covers them elsewhere — counting them here too would double the cash
+	// impact of the same real-world event.
 	const wantRows = 8
 	if len(txs) != wantRows {
 		t.Fatalf("len(txs) = %d, want %d", len(txs), wantRows)
+	}
+	for _, tx := range txs {
+		if tx.CashDelta == -10000 || tx.CashDelta == 2450 {
+			t.Errorf("%+v: a securities-related row (ISIN continuation line) leaked through", tx)
+		}
 	}
 
 	for _, tx := range txs {
