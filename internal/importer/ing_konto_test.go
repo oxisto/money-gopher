@@ -26,15 +26,17 @@ func TestING_ParseKontoauszug(t *testing.T) {
 	}
 
 	// Gehalt (deposit), Miete (withdrawal), Kontoführungsentgelt (fee),
-	// Stromversorger (withdrawal), Zinsertrag (interest), and three tax
-	// withholding lines (withdrawals) — eight real rows. The "%"-marked
-	// breakdown table row and the Abschlussbetrag restatement must not
-	// produce a ninth. Nor must the Wertpapierkauf (-100.00) and
-	// Zins/Dividende WP (+24.50) rows: both have an ISIN-bearing
+	// Stromversorger (withdrawal), and Zinsertrag (interest) — five real
+	// rows. The three withholding-tax lines (Kapitalertragsteuer,
+	// Solidaritätszuschlag, Kirchensteuer) fold into the interest row's
+	// Taxes rather than standing alone, so they don't add three more. The
+	// "%"-marked breakdown table row and the Abschlussbetrag restatement
+	// must not produce a row either. Nor must the Wertpapierkauf (-100.00)
+	// and Zins/Dividende WP (+24.50) rows: both have an ISIN-bearing
 	// continuation line, so a dedicated trade/dividend confirmation already
 	// covers them elsewhere — counting them here too would double the cash
 	// impact of the same real-world event.
-	const wantRows = 8
+	const wantRows = 5
 	if len(txs) != wantRows {
 		t.Fatalf("len(txs) = %d, want %d", len(txs), wantRows)
 	}
@@ -42,6 +44,25 @@ func TestING_ParseKontoauszug(t *testing.T) {
 		if tx.CashDelta == -10000 || tx.CashDelta == 2450 {
 			t.Errorf("%+v: a securities-related row (ISIN continuation line) leaked through", tx)
 		}
+	}
+
+	// Zinsertrag (10.25) minus Kapitalertragsteuer (2.56) + Solidaritätszuschlag
+	// (0.14) + Kirchensteuer (0.55) = 7.00 net, with 3.25 folded into Taxes.
+	var foundInterest bool
+	for _, tx := range txs {
+		if tx.Type != "INTEREST" {
+			continue
+		}
+		foundInterest = true
+		if tx.CashDelta != 700 {
+			t.Errorf("INTEREST CashDelta = %d, want 700 (net of withheld tax)", tx.CashDelta)
+		}
+		if tx.Taxes != 325 {
+			t.Errorf("INTEREST Taxes = %d, want 325", tx.Taxes)
+		}
+	}
+	if !foundInterest {
+		t.Error("no INTEREST transaction found")
 	}
 
 	for _, tx := range txs {
@@ -81,7 +102,7 @@ func TestING_ParseKontoauszug(t *testing.T) {
 
 	wantByType := map[string]int{
 		"DEPOSIT_CASH":  1,
-		"WITHDRAW_CASH": 5, // Miete, Stromversorger, and the 3 tax lines
+		"WITHDRAW_CASH": 2, // Miete, Stromversorger
 		"ACCOUNT_FEES":  1,
 		"INTEREST":      1,
 	}

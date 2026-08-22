@@ -31,9 +31,32 @@ func ingIsKontoauszug(text string) bool {
 	return strings.Contains(text, "Kontoauszug")
 }
 
+// ingKontoTaxLabel reports whether desc is a withholding-tax line
+// (Kapitalertragsteuer, Kirchensteuer, Solidaritätszuschlag) that belongs
+// folded into a same-date interest row's Taxes, rather than standing alone.
+func ingKontoTaxLabel(desc string) bool {
+	return strings.Contains(desc, "Kapitalertragsteuer") ||
+		strings.Contains(desc, "Kirchensteuer") ||
+		strings.Contains(desc, "Solidaritätszuschlag")
+}
+
+// ingKontoRawRow is one matched, not-yet-filtered ledger line.
+type ingKontoRawRow struct {
+	dateStr string
+	desc    string
+	amount  int64
+}
+
 // ingParseKontoauszug parses every dated cash movement in an ING account
 // statement. Amounts are classified by sign (DEPOSIT_CASH / WITHDRAW_CASH),
 // refined to INTEREST or ACCOUNT_FEES when the description says so.
+// Kapitalertragsteuer/Kirchensteuer/Solidaritätszuschlag lines dated the
+// same day as an interest row are withholding on that interest, not a
+// separate cash event — they're folded into the interest row's Taxes (with
+// CashDelta reduced to the net amount actually received) instead of being
+// emitted as their own misleading WITHDRAW_CASH rows. Statements have been
+// seen with the tax lines both before and after the interest row, so this
+// groups by date rather than assuming an order.
 func ingParseKontoauszug(text string) ([]StagedTransaction, error) {
 	iban := ""
 	if m := ingKontoIBAN.FindStringSubmatch(text); m != nil {
@@ -41,7 +64,10 @@ func ingParseKontoauszug(text string) ([]StagedTransaction, error) {
 	}
 
 	lines := strings.Split(text, "\n")
-	var out []StagedTransaction
+
+	// First pass: collect every real ledger row (date, description, amount),
+	// filtering out non-postings but not yet classifying or grouping them.
+	var rows []ingKontoRawRow
 	for i, line := range lines {
 		m := ingKontoRow.FindStringSubmatch(line)
 		if m == nil {
@@ -69,33 +95,75 @@ func ingParseKontoauszug(text string) ([]StagedTransaction, error) {
 			continue
 		}
 
-		t, err := ingDate(m[1])
-		if err != nil {
+		if _, err := ingDate(m[1]); err != nil {
 			continue // header/footer noise that happens to look date-shaped
 		}
 		amount, err := ingMinor(m[3])
-		if err != nil {
+		if err != nil || amount == 0 {
 			continue
 		}
-		if amount == 0 {
+
+		rows = append(rows, ingKontoRawRow{dateStr: m[1], desc: desc, amount: amount})
+	}
+
+	// Second pass: for each date, sum any withholding-tax rows and fold them
+	// into the first interest row on that date, wherever in the row order
+	// each happens to fall. A tax-labeled row with no interest row on the
+	// same date (never seen in practice, but not impossible) has nothing to
+	// fold into — leave it to be classified normally rather than silently
+	// dropping real money.
+	hasInterest := map[string]bool{}
+	for _, r := range rows {
+		if strings.Contains(r.desc, "Zins") {
+			hasInterest[r.dateStr] = true
+		}
+	}
+
+	taxByDate := map[string]int64{}
+	consumed := make([]bool, len(rows))
+	for i, r := range rows {
+		if ingKontoTaxLabel(r.desc) && hasInterest[r.dateStr] {
+			taxByDate[r.dateStr] += -r.amount // stored negative; Taxes is positive.
+			consumed[i] = true
+		}
+	}
+
+	var out []StagedTransaction
+	foldedDate := map[string]bool{} // only the first interest row per date gets the fold.
+	for i, r := range rows {
+		if consumed[i] {
+			continue
+		}
+
+		t, err := ingDate(r.dateStr)
+		if err != nil {
 			continue
 		}
 
 		txType := "DEPOSIT_CASH"
-		if amount < 0 {
+		if r.amount < 0 {
 			txType = "WITHDRAW_CASH"
 		}
 		switch {
-		case strings.Contains(desc, "Zins"):
+		case strings.Contains(r.desc, "Zins"):
 			txType = "INTEREST"
-		case strings.Contains(desc, "Entgelt"), strings.Contains(desc, "Gebühr"):
+		case strings.Contains(r.desc, "Entgelt"), strings.Contains(r.desc, "Gebühr"):
 			txType = "ACCOUNT_FEES"
+		}
+
+		amount := r.amount
+		var taxes int64
+		if txType == "INTEREST" && !foldedDate[r.dateStr] {
+			taxes = taxByDate[r.dateStr]
+			amount -= taxes
+			foldedDate[r.dateStr] = true
 		}
 
 		out = append(out, StagedTransaction{
 			Type:           txType,
 			Time:           t,
 			CashDelta:      amount,
+			Taxes:          taxes,
 			Currency:       "EUR",
 			SettlementIBAN: iban,
 		})
