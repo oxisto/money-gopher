@@ -34,20 +34,30 @@ type txData struct {
 	Taxes         int64
 	CashDelta     int64
 	Currency      string
+	// PriceCurrency and FxRate: see StagedTransaction's doc comments in
+	// internal/importer/parser.go — same meaning here.
+	PriceCurrency string
+	FxRate        persistence.Decimal
 }
 
 // deriveCashDelta computes the signed cash effect for transaction types where
 // it follows from units, price, fees and taxes. The second return value is
 // false for pure cash events, whose delta must be provided explicitly.
 func deriveCashDelta(d *txData) (int64, bool) {
-	// d.Price is major units; gross is minor units (cents), like CashDelta.
-	gross := d.Price.MulFloat(d.Units).MulInt(100).RoundToInt64()
+	// d.Price is major units, in PriceCurrency when set or Currency
+	// otherwise; gross converts it to Currency minor units (cents), like
+	// CashDelta, Fees and Taxes already are.
+	gross := d.Price.MulFloat(d.Units)
+	if d.FxRate.Valid {
+		gross = gross.Div(d.FxRate)
+	}
+	grossMinor := gross.MulInt(100).RoundToInt64()
 
 	switch d.Type {
 	case "BUY":
-		return -(gross + d.Fees + d.Taxes), true
+		return -(grossMinor + d.Fees + d.Taxes), true
 	case "SELL", "DIVIDEND":
-		return gross - d.Fees - d.Taxes, true
+		return grossMinor - d.Fees - d.Taxes, true
 	case "DELIVERY_INBOUND", "DELIVERY_OUTBOUND":
 		return 0, true
 	default:
@@ -458,8 +468,17 @@ func (r *TransactionResolver) Price() *Price {
 		return nil
 	}
 
-	p := price(r.transaction.Price, r.transaction.Currency)
+	p := price(r.transaction.Price, priceCurrencyOf(r.transaction.PriceCurrency, r.transaction.Currency))
 	return &p
+}
+
+// FxRate resolves Transaction.fxRate — see StagedTransactionResolver.FxRate.
+func (r *TransactionResolver) FxRate() *Decimal {
+	if !r.transaction.FxRate.Valid {
+		return nil
+	}
+	d := decimal(r.transaction.FxRate)
+	return &d
 }
 
 func (r *TransactionResolver) Fees() Money {

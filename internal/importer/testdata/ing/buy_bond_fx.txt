@@ -1,0 +1,77 @@
+                     ING-DiBa AG · 60628 Frankfurt am Main
+
+
+
+                                                                                                                        Depotinhaber:                         Max Mustermann
+                                                                                                                        Direkt-Depot Nr.:                     123456789
+                     Herrn
+                     Max Mustermann                                                                                     Datum:                                13.08.2026
+                     Musterstraße 1                                                                                     Seite:                                1 von 2
+                     12345 Musterstadt
+
+
+
+
+                     Wertpapierabrechnung                                           Kauf
+                     Ordernummer                                                    486082869.001
+                     ISIN (WKN)                                                     XS0000000097 (A38J3M)
+                     Wertpapierbezeichnung                                          4,25 % Muster Bank
+                                                                                    LS-Med.Term Nts. v.24(30)
+                     Zinstermin                                                     01. OKTOBER
+                     Fälligkeit                                                     01.10.2030
+
+                     Nominale                                                       GBP                      6.000,00
+                     Kurs                                                           98,50 %
+                     Handelsplatz                                                   Direkthandel
+                     Ausführungstag / -zeit                                         13.08.2026 um 13:27:56 Uhr
+                     Kurswert                                                       GBP                                            5.910,00
+                     Stückzinsen                                                    GBP                                              120,00 (320 Tage)
+                     Zwischensumme                                                  GBP                                            6.030,00
+                     umger. zum Devisenkurs                                         EUR                                            7.537,50 (GBP = 0,8000)
+                     Provision                                                      EUR                                               20,00
+                     Endbetrag zu Ihren Lasten                                      EUR                                            7.557,50
+
+                     Abrechnungs-IBAN                                               DE12 3456 7890 1234 5678 90
+                     Valuta                                                         17.08.2026
+                     Wertpapiere zugunsten Wertpapierrechnung Luxemburg.
+                     Weiter geht es auf Seite 2.
+
+
+
+
+34WAAD123456789_T
+
+
+
+                     ING-DiBa AG · Theodor-Heuss-Allee 2 · 60486 Frankfurt am Main · Vorsitzende des Aufsichtsrates: Susanne Klöß-Braekler · Vorstand: Lars Stoy (Vorsitzender),
+                     Michael Clijdesdale, Eddy Henning, Nikolaus Maximilian Linaric, Dr. Ralph Müller, Nurten Spitzer-Erdogan · Sitz: Frankfurt am Main · AG Frankfurt am Main · HRB 7727
+                     Steuernummer: 014 220 2800 4 · USt-IdNr.: DE 114 103 475 · Internet: www.ing.de · BIC: INGDDEFFXXX · Mitglied im Einlagensicherungsfonds
+                                                         Depotinhaber:         Max Mustermann
+                                                         Direkt-Depot Nr.:     123456789
+                                                         Datum:                13.08.2026
+                                                         Seite:                2 von 2
+
+
+
+
+Ordernummer      486082869.001
+ISIN (WKN)       XS0000000097 (A38J3M)
+
+
+
+
+Mit Verrechnungstopf Allgemein verrechnet                         150,00 EUR
+Gezahlte Stückzinsen                                              150,00 EUR
+
+Verrechnungstopf Aktien vor Geschäft                                0,00 EUR
+Verrechnungstopf Aktien nach Geschäft                               0,00 EUR
+Verrechnungstopf Allgemein vor Geschäft                             0,00 EUR
+Verrechnungstopf Allgemein nach Geschäft                          150,00 EUR
+Verrechnungstopf ausländ. Quellensteuer vor Geschäft                0,00 EUR
+Verrechnungstopf ausländ. Quellensteuer nach Geschäft               0,00 EUR
+
+
+
+
+Bei Fragen besuchen Sie uns einfach unter www.ing.de/wertpapierwissen - da gibt es viele schnelle
+Antworten.

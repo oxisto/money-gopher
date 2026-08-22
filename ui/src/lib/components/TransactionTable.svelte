@@ -64,6 +64,14 @@
 						<td class="px-4 py-2 text-right tabular-nums">{tx.units || '—'}</td>
 						<td class="px-4 py-2 text-right tabular-nums">
 							{tx.price ? formatPrice(tx.price) : '—'}
+							{#if tx.fxRate}
+								<div
+									class="text-xs text-gray-400"
+									title={`1 ${tx.cashDelta.currency} = ${tx.fxRate} ${tx.price?.currency}`}
+								>
+									FX {tx.fxRate}
+								</div>
+							{/if}
 						</td>
 						<td class="px-4 py-2 text-right tabular-nums {tx.cashDelta.amount < 0 ? 'text-red-600' : 'text-green-700'}">
 							{formatMoney(tx.cashDelta)}

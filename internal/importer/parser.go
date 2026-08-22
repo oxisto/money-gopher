@@ -26,6 +26,14 @@ type StagedTransaction struct {
 	// CashDelta in minor units; 0 lets the server derive it for trades.
 	CashDelta int64
 	Currency  string
+	// PriceCurrency is the currency Price/Units are denominated in, when it
+	// differs from Currency (e.g. a GBP bond settling in EUR). Empty means
+	// "same as Currency" — the common case, no FX involved.
+	PriceCurrency string
+	// FxRate is 1 unit of Currency expressed in PriceCurrency, exactly as
+	// printed on the document (e.g. 0.8519 for "GBP = 0,8519", meaning
+	// 1 EUR = 0.8519 GBP). !Valid when PriceCurrency is empty.
+	FxRate persistence.Decimal
 	// SecurityHint is the security name as printed on the document.
 	SecurityHint string
 	// ISIN as printed on the document.

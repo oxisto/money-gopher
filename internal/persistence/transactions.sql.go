@@ -27,10 +27,12 @@ INSERT INTO
         cash_delta,
         currency,
         source,
-        document_id
+        document_id,
+        price_currency,
+        fx_rate
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate
 `
 
 type CreateTransactionParams struct {
@@ -48,6 +50,8 @@ type CreateTransactionParams struct {
 	Currency      string
 	Source        string
 	DocumentID    sql.NullString
+	PriceCurrency sql.NullString
+	FxRate        Decimal
 }
 
 func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionParams) (*Transaction, error) {
@@ -66,6 +70,8 @@ func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionPa
 		arg.Currency,
 		arg.Source,
 		arg.DocumentID,
+		arg.PriceCurrency,
+		arg.FxRate,
 	)
 	var i Transaction
 	err := row.Scan(
@@ -84,6 +90,8 @@ func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionPa
 		&i.Source,
 		&i.CreatedAt,
 		&i.DocumentID,
+		&i.PriceCurrency,
+		&i.FxRate,
 	)
 	return &i, err
 }
@@ -104,7 +112,7 @@ func (q *Queries) DeleteTransaction(ctx context.Context, id string) (int64, erro
 
 const getTransaction = `-- name: GetTransaction :one
 SELECT
-    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate
 FROM
     transactions
 WHERE
@@ -130,13 +138,15 @@ func (q *Queries) GetTransaction(ctx context.Context, id string) (*Transaction, 
 		&i.Source,
 		&i.CreatedAt,
 		&i.DocumentID,
+		&i.PriceCurrency,
+		&i.FxRate,
 	)
 	return &i, err
 }
 
 const listTransactionsByCashAccount = `-- name: ListTransactionsByCashAccount :many
 SELECT
-    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate
 FROM
     transactions
 WHERE
@@ -170,6 +180,8 @@ func (q *Queries) ListTransactionsByCashAccount(ctx context.Context, cashAccount
 			&i.Source,
 			&i.CreatedAt,
 			&i.DocumentID,
+			&i.PriceCurrency,
+			&i.FxRate,
 		); err != nil {
 			return nil, err
 		}
@@ -186,7 +198,7 @@ func (q *Queries) ListTransactionsByCashAccount(ctx context.Context, cashAccount
 
 const listTransactionsByPortfolio = `-- name: ListTransactionsByPortfolio :many
 SELECT
-    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate
 FROM
     transactions
 WHERE
@@ -220,6 +232,8 @@ func (q *Queries) ListTransactionsByPortfolio(ctx context.Context, portfolioID s
 			&i.Source,
 			&i.CreatedAt,
 			&i.DocumentID,
+			&i.PriceCurrency,
+			&i.FxRate,
 		); err != nil {
 			return nil, err
 		}
@@ -249,7 +263,7 @@ SET
     cash_delta = ?,
     currency = ?
 WHERE
-    id = ? RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id
+    id = ? RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate
 `
 
 type UpdateTransactionParams struct {
@@ -299,6 +313,8 @@ func (q *Queries) UpdateTransaction(ctx context.Context, arg UpdateTransactionPa
 		&i.Source,
 		&i.CreatedAt,
 		&i.DocumentID,
+		&i.PriceCurrency,
+		&i.FxRate,
 	)
 	return &i, err
 }

@@ -36,6 +36,7 @@ query Imports {
 				amount
 				currency
 			}
+			fxRate
 			currency
 			securityHint
 			isin

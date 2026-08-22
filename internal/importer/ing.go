@@ -112,6 +112,12 @@ var (
 	ingKursCurr = regexp.MustCompile(`Kurs\s+(?:[^\n]*?\s+)?([A-Z]{3})\s`)
 	// Bond price: "Kurs   100,00 %" — a percentage of face value, no currency.
 	ingKursPercent = regexp.MustCompile(`Kurs\s+([\d.]+,\d+)\s*%`)
+	// Currency on a bond's Nominale line: "Nominale   USD   10.000,00".
+	ingNominaleCurr = regexp.MustCompile(`Nominale\s+([A-Z]{3})\s+[\d.]+,\d+`)
+	// FX conversion line: "umger. zum Devisenkurs   EUR   14.487,05 (GBP = 0,8519)".
+	// Group 1 is the security's own currency (matches ingNominaleCurr), group
+	// 2 is the rate: 1 unit of the settlement currency in that currency.
+	ingFxRate = regexp.MustCompile(`umger\. zum Devisenkurs\s+[A-Z]{3}\s+[\d.]+,\d+\s+\(([A-Z]{3}) = ([\d.]+,\d+)\)`)
 	// Execution date: old format omits " / -zeit".
 	ingExecDate = regexp.MustCompile(`Ausführungstag(?: / -zeit)?\s+(\d{2}\.\d{2}\.\d{4})`)
 	ingPayDate  = regexp.MustCompile(`Zahltag\s+(\d{2}\.\d{2}\.\d{4})`)
@@ -163,6 +169,8 @@ func ingParseTrade(text string) (StagedTransaction, error) {
 	// Equity shows "Kurs [optional qualifier]  EUR  26,15".
 	currency := "EUR"
 	var price persistence.Decimal
+	var priceCurrency string
+	var fxRate persistence.Decimal
 	if isBond {
 		units /= 100
 
@@ -173,6 +181,19 @@ func ingParseTrade(text string) (StagedTransaction, error) {
 		price, perr = ingDecimal(percentStr)
 		if perr != nil {
 			return StagedTransaction{}, fmt.Errorf("price: %w", perr)
+		}
+
+		// A foreign bond: Price/Units are denominated in its own currency
+		// (Nominale), not the EUR settlement currency. The FX conversion
+		// line gives the exact rate ING used.
+		if nomCurr, nerr := ingFind(ingNominaleCurr, text, ""); nerr == nil && nomCurr != currency {
+			if m := ingFxRate.FindStringSubmatch(text); m != nil {
+				priceCurrency = m[1]
+				fxRate, perr = ingDecimal(m[2])
+				if perr != nil {
+					return StagedTransaction{}, fmt.Errorf("fx rate: %w", perr)
+				}
+			}
 		}
 	} else {
 		c, cerr := ingFind(ingKursCurr, text, "Kurs currency")
@@ -214,6 +235,19 @@ func ingParseTrade(text string) (StagedTransaction, error) {
 	}
 	fees += ingFeeSum(text, currency)
 
+	// A foreign bond's Stückzinsen is quoted in its own currency and skipped
+	// by ingFeeSum above (which only takes EUR-quoted lines); convert it at
+	// the FX rate and add it in now that the rate is known.
+	if priceCurrency != "" {
+		if s, serr := ingFindLineAmount(text, "Stückzinsen", priceCurrency); serr == nil {
+			stkz, derr := ingDecimal(s)
+			if derr != nil {
+				return StagedTransaction{}, fmt.Errorf("Stückzinsen: %w", derr)
+			}
+			fees += stkz.Div(fxRate).MulInt(100).RoundToInt64()
+		}
+	}
+
 	// Taxes (optional – only on sell with a realised gain).
 	taxes := ingTaxSum(text)
 
@@ -253,6 +287,8 @@ func ingParseTrade(text string) (StagedTransaction, error) {
 		Taxes:          taxes,
 		CashDelta:      cashDelta,
 		Currency:       currency,
+		PriceCurrency:  priceCurrency,
+		FxRate:         fxRate,
 		SecurityHint:   strings.TrimSpace(name),
 		ISIN:           isin,
 		SettlementIBAN: iban,

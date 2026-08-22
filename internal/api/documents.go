@@ -138,6 +138,10 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 			Currency:  stx.Currency,
 		}
 		d.Price = stx.Price
+		if stx.PriceCurrency.Valid {
+			d.PriceCurrency = stx.PriceCurrency.String
+		}
+		d.FxRate = stx.FxRate
 
 		// Apply portfolio default only for types that use a portfolio; pure cash
 		// events (DEPOSIT_CASH, WITHDRAW_CASH, INTEREST, etc.) must not have one.
@@ -194,6 +198,8 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 			Currency:      d.Currency,
 			Source:        source,
 			DocumentID:    sql.NullString{String: doc.ID, Valid: true},
+			PriceCurrency: sql.NullString{String: d.PriceCurrency, Valid: d.PriceCurrency != ""},
+			FxRate:        d.FxRate,
 		})
 		if err != nil {
 			return nil, err
@@ -320,8 +326,19 @@ func (r *StagedTransactionResolver) Price() *Price {
 	if !r.tx.Price.Valid {
 		return nil
 	}
-	p := price(r.tx.Price, r.tx.Currency)
+	p := price(r.tx.Price, priceCurrencyOf(r.tx.PriceCurrency, r.tx.Currency))
 	return &p
+}
+
+// FxRate resolves StagedTransaction.fxRate — 1 unit of Currency expressed
+// in the Price's own currency, when they differ (see the schema doc
+// comment on price_currency in migrations/0005_fx_rate.sql).
+func (r *StagedTransactionResolver) FxRate() *Decimal {
+	if !r.tx.FxRate.Valid {
+		return nil
+	}
+	d := decimal(r.tx.FxRate)
+	return &d
 }
 
 func (r *StagedTransactionResolver) Fees() Money {
@@ -347,11 +364,13 @@ func (r *StagedTransactionResolver) CalculatedCashDelta() *Money {
 		return nil
 	}
 	delta, ok := deriveCashDelta(&txData{
-		Type:  r.tx.Type,
-		Units: r.tx.Units,
-		Price: r.tx.Price,
-		Fees:  r.tx.Fees,
-		Taxes: r.tx.Taxes,
+		Type:          r.tx.Type,
+		Units:         r.tx.Units,
+		Price:         r.tx.Price,
+		Fees:          r.tx.Fees,
+		Taxes:         r.tx.Taxes,
+		PriceCurrency: priceCurrencyOf(r.tx.PriceCurrency, ""),
+		FxRate:        r.tx.FxRate,
 	})
 	if !ok {
 		return nil

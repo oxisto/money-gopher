@@ -15,6 +15,7 @@
 		taxes: { amount: number; currency: string };
 		cashDelta: { amount: number; currency: string };
 		calculatedCashDelta: { amount: number; currency: string } | null;
+		fxRate: string | null;
 		currency: string;
 		securityHint: string | null;
 		isin: string | null;
@@ -288,6 +289,14 @@
 								</td>
 								<td class="px-2 py-1.5 text-right tabular-nums text-gray-700">
 									{tx.price ? formatPrice(tx.price) : '—'}
+									{#if tx.fxRate}
+										<div
+											class="text-xs text-gray-400"
+											title={`1 ${tx.currency} = ${tx.fxRate} ${tx.price?.currency}`}
+										>
+											FX {tx.fxRate}
+										</div>
+									{/if}
 								</td>
 								<td class="px-2 py-1.5 text-right tabular-nums text-gray-700">
 									{tx.fees.amount !== 0 ? formatMoney(tx.fees) : '—'}

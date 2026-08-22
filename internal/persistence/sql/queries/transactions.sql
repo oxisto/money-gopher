@@ -14,10 +14,12 @@ INSERT INTO
         cash_delta,
         currency,
         source,
-        document_id
+        document_id,
+        price_currency,
+        fx_rate
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *;
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *;
 
 -- name: GetTransaction :one
 SELECT

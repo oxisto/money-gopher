@@ -223,12 +223,23 @@ type Transaction {
   cashAccount: CashAccount
   "The number of shares involved."
   units: Float!
-  "The price per unit."
+  """
+  The price per unit. For a foreign bond this is denominated in the
+  security's own currency, not this transaction's settlement currency —
+  see fxRate.
+  """
   price: Price
   fees: Money!
   taxes: Money!
   "The signed change of the cash account balance."
   cashDelta: Money!
+  """
+  1 unit of this transaction's currency expressed in price's currency, as
+  printed on the source document (e.g. 0.8519 for a bond bought in GBP
+  while this transaction settles in EUR). Null when price is already in
+  this transaction's currency — the common case.
+  """
+  fxRate: Decimal
   "Provenance of this transaction, e.g. 'MANUAL' or an import kind."
   source: String!
   "The document this transaction was imported from; null for manual entries."
@@ -280,6 +291,10 @@ type StagedTransaction {
   type: TransactionType!
   time: Time!
   units: Float!
+  """
+  The price per unit. For a foreign bond this is denominated in the
+  security's own currency, not currency — see fxRate.
+  """
   price: Price
   fees: Money!
   taxes: Money!
@@ -292,6 +307,8 @@ type StagedTransaction {
   (a fee, a foreign tax, accrued interest) isn't being captured yet.
   """
   calculatedCashDelta: Money
+  "1 unit of currency expressed in price's currency; see Transaction.fxRate."
+  fxRate: Decimal
   currency: String!
   "The security name as printed on the document."
   securityHint: String

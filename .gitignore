@@ -15,6 +15,7 @@ coverage.cov
 *.db-wal
 *.db-shm
 /moneyd-data/
+/moneyd-data.bak/
 session.json
 
 # OS noise

@@ -180,6 +180,46 @@ func TestING_ParseTrade_BondFeesAndAccruedInterest(t *testing.T) {
 	}
 }
 
+// TestING_ParseTrade_ForeignBond verifies FX bond handling: Price/Units are
+// denominated in the bond's own currency (not settlement), FxRate carries
+// the conversion, Stückzinsen (quoted in the bond's currency) converts into
+// Fees, and units × price ÷ fxRate + fees + taxes reproduces the EUR
+// Endbetrag exactly.
+func TestING_ParseTrade_ForeignBond(t *testing.T) {
+	text, err := os.ReadFile("testdata/ing/buy_bond_fx.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	txs, err := ING{}.Parse(string(text))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	tx := txs[0]
+
+	if tx.PriceCurrency != "GBP" {
+		t.Errorf("PriceCurrency = %q, want GBP", tx.PriceCurrency)
+	}
+	if got := tx.FxRate.StringPrec(4); got != "0.8000" {
+		t.Errorf("FxRate = %s, want 0.8000", got)
+	}
+	// Stückzinsen 120.00 GBP / 0.80 = 150.00 EUR, + Provision 20.00 = 170.00.
+	if tx.Fees != 17000 {
+		t.Errorf("Fees = %d, want 17000", tx.Fees)
+	}
+	if tx.CashDelta != -755750 {
+		t.Errorf("CashDelta = %d, want -755750", tx.CashDelta)
+	}
+
+	// Kurswert (5910.00 GBP) ÷ 0.80 = 7387.50 EUR; + Fees (207.50) must
+	// reproduce the Endbetrag exactly, cent for cent.
+	grossGBP := tx.Price.MulFloat(tx.Units)
+	grossEUR := grossGBP.Div(tx.FxRate).MulInt(100).RoundToInt64()
+	if got, want := grossEUR+tx.Fees+tx.Taxes, int64(755750); got != want {
+		t.Errorf("gross(EUR)+Fees+Taxes = %d, want %d (Endbetrag)", got, want)
+	}
+}
+
 // TestING_ParseTrade_ForeignTransactionTax verifies that a foreign financial
 // transaction tax (e.g. France's "Franz. Transaktionssteuer") lands in Taxes,
 // not Fees (Provision) — and that Kurswert + Fees + Taxes reconciles exactly

@@ -69,6 +69,7 @@ query PortfolioDetail($id: ID!) {
 				amount
 				currency
 			}
+			fxRate
 			security {
 				id
 				displayName

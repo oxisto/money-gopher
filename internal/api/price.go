@@ -1,6 +1,10 @@
 package api
 
-import "github.com/oxisto/money-gopher/internal/persistence"
+import (
+	"database/sql"
+
+	"github.com/oxisto/money-gopher/internal/persistence"
+)
 
 // Price resolves the Price GraphQL type: an exact per-unit price together
 // with its ISO 4217 currency code. Unlike Money, the amount is a Decimal —
@@ -13,4 +17,13 @@ type Price struct {
 
 func price(amount persistence.Decimal, currency string) Price {
 	return Price{Amount: decimal(amount), Currency: currency}
+}
+
+// priceCurrencyOf returns pc's value when set (a foreign bond's own
+// currency), or fallback (the settlement currency) otherwise.
+func priceCurrencyOf(pc sql.NullString, fallback string) string {
+	if pc.Valid {
+		return pc.String
+	}
+	return fallback
 }

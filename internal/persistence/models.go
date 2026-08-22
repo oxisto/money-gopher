@@ -88,20 +88,22 @@ type Session struct {
 }
 
 type StagedTransaction struct {
-	ID           string
-	DocumentID   string
-	Type         string
-	Time         time.Time
-	Units        float64
-	Price        Decimal
-	Fees         int64
-	Taxes        int64
-	CashDelta    int64
-	Currency     string
-	SecurityHint sql.NullString
-	Isin         sql.NullString
-	SecurityID   sql.NullString
-	CreatedAt    time.Time
+	ID            string
+	DocumentID    string
+	Type          string
+	Time          time.Time
+	Units         float64
+	Price         Decimal
+	Fees          int64
+	Taxes         int64
+	CashDelta     int64
+	Currency      string
+	SecurityHint  sql.NullString
+	Isin          sql.NullString
+	SecurityID    sql.NullString
+	CreatedAt     time.Time
+	PriceCurrency sql.NullString
+	FxRate        Decimal
 }
 
 type Transaction struct {
@@ -119,8 +121,11 @@ type Transaction struct {
 	Currency      string
 	Source        string
 	// The document this transaction was imported from, if any (see
-	CreatedAt  time.Time
-	DocumentID sql.NullString
+	CreatedAt time.Time
+	// FX bond support (see migrations/0005_fx_rate.sql): NULL price_currency
+	DocumentID    sql.NullString
+	PriceCurrency sql.NullString
+	FxRate        Decimal
 }
 
 type User struct {

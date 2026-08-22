@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/oxisto/money-gopher/internal/auth"
@@ -154,6 +155,75 @@ func TestImportPipeline(t *testing.T) {
 	bal := account["balance"].(map[string]any)
 	if amt := bal["amount"].(float64); amt >= 0 {
 		t.Errorf("balance after BUY = %v, want negative (cash left the account)", amt)
+	}
+}
+
+// TestImportFXBond exercises a foreign-currency bond end to end through
+// GraphQL: Price resolves in the bond's own currency (not settlement),
+// fxRate is exposed, and calculatedCashDelta matches the parsed cashDelta
+// exactly despite the FX conversion.
+func TestImportFXBond(t *testing.T) {
+	text, err := os.ReadFile("../importer/testdata/ing/buy_bond_fx.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	db, err := persistence.OpenDB(":memory:")
+	if err != nil {
+		t.Fatalf("OpenDB: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+
+	user, person, err := auth.EnsureDevUser(context.Background(), db)
+	if err != nil {
+		t.Fatalf("EnsureDevUser: %v", err)
+	}
+	ctx := auth.WithPerson(auth.WithUser(context.Background(), user), person)
+	updater := &quotes.Updater{DB: db, Registry: quotes.NewRegistry()}
+	schema := NewSchema(db, updater)
+
+	svc := importer.NewService(db)
+	doc, err := svc.Upload(ctx, person.ID, "bond_fx.txt", "text/plain", text)
+	if err != nil {
+		t.Fatalf("Upload: %v", err)
+	}
+	if err := svc.Process(ctx, doc.ID, person.ID); err != nil {
+		t.Fatalf("Process: %v", err)
+	}
+
+	data := exec(t, schema, ctx, `{
+		documents {
+			id
+			stagedTransactions {
+				price { amount currency }
+				fxRate
+				cashDelta { amount }
+				calculatedCashDelta { amount }
+			}
+		}
+	}`, nil)
+	docs := data["documents"].([]any)
+	if len(docs) != 1 {
+		t.Fatalf("documents count = %d, want 1", len(docs))
+	}
+	txs := docs[0].(map[string]any)["stagedTransactions"].([]any)
+	if len(txs) != 1 {
+		t.Fatalf("stagedTransactions count = %d, want 1", len(txs))
+	}
+	tx := txs[0].(map[string]any)
+
+	priceObj := tx["price"].(map[string]any)
+	if got := priceObj["currency"]; got != "GBP" {
+		t.Errorf("price.currency = %v, want GBP (the bond's own currency, not EUR settlement)", got)
+	}
+	if got := tx["fxRate"]; got != "0.8000" {
+		t.Errorf("fxRate = %v, want \"0.8000\"", got)
+	}
+
+	cashDelta := tx["cashDelta"].(map[string]any)["amount"].(float64)
+	calculated := tx["calculatedCashDelta"].(map[string]any)["amount"].(float64)
+	if cashDelta != calculated {
+		t.Errorf("cashDelta = %v, calculatedCashDelta = %v; want them to match exactly", cashDelta, calculated)
 	}
 }
 

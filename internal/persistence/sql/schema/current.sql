@@ -118,7 +118,11 @@ CREATE TABLE transactions (
     created_at      TIMESTAMP NOT NULL,
     -- The document this transaction was imported from, if any (see
     -- migrations/0004_transaction_document.sql).
-    document_id     TEXT     REFERENCES documents(id) ON DELETE SET NULL
+    document_id     TEXT     REFERENCES documents(id) ON DELETE SET NULL,
+    -- FX bond support (see migrations/0005_fx_rate.sql): NULL price_currency
+    -- means Price is denominated in currency (the common case).
+    price_currency  TEXT,
+    fx_rate         DECIMAL(19,4)
 );
 
 CREATE TABLE staged_transactions (
@@ -135,7 +139,9 @@ CREATE TABLE staged_transactions (
     security_hint TEXT,
     isin          TEXT,
     security_id   TEXT     REFERENCES securities(id) ON DELETE SET NULL,
-    created_at    TIMESTAMP NOT NULL
+    created_at    TIMESTAMP NOT NULL,
+    price_currency TEXT,
+    fx_rate       DECIMAL(19,4)
 );
 
 CREATE TABLE sessions (

@@ -102,19 +102,21 @@ func (s *Service) Process(ctx context.Context, documentID string, personID strin
 		}
 
 		_, err = s.DB.CreateStagedTransaction(ctx, persistence.CreateStagedTransactionParams{
-			ID:           uuid.NewString(),
-			DocumentID:   doc.ID,
-			Type:         tx.Type,
-			Time:         tx.Time,
-			Units:        tx.Units,
-			Price:        tx.Price,
-			Fees:         tx.Fees,
-			Taxes:        tx.Taxes,
-			CashDelta:    tx.CashDelta,
-			Currency:     tx.Currency,
-			SecurityHint: nullStr(tx.SecurityHint),
-			Isin:         nullStr(tx.ISIN),
-			SecurityID:   securityID,
+			ID:            uuid.NewString(),
+			DocumentID:    doc.ID,
+			Type:          tx.Type,
+			Time:          tx.Time,
+			Units:         tx.Units,
+			Price:         tx.Price,
+			Fees:          tx.Fees,
+			Taxes:         tx.Taxes,
+			CashDelta:     tx.CashDelta,
+			Currency:      tx.Currency,
+			SecurityHint:  nullStr(tx.SecurityHint),
+			Isin:          nullStr(tx.ISIN),
+			SecurityID:    securityID,
+			PriceCurrency: nullStr(tx.PriceCurrency),
+			FxRate:        tx.FxRate,
 		})
 		if err != nil {
 			return err

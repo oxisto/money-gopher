@@ -25,6 +25,7 @@
 		taxes: { amount: number; currency: string };
 		cashDelta: { amount: number; currency: string };
 		calculatedCashDelta: { amount: number; currency: string } | null;
+		fxRate: string | null;
 		currency: string;
 		securityHint: string | null;
 		isin: string | null;
