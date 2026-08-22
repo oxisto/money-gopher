@@ -9,12 +9,13 @@ import (
 
 // Decimal is an exact decimal number backed by math/big.Rat. Unlike the rest
 // of this schema's INTEGER-minor-units convention, price columns
-// (DECIMAL(19,4)) need more than 2 decimal places — real ING fund/bond
-// confirmations quote prices to 4 decimals — and lightsql's DECIMAL type is
-// exact as of v0.6.0 (github.com/oxisto/lightsql), so this reads and writes
-// it as text through database/sql's driver.Value rather than through an
-// intermediate float64, which would reintroduce the precision loss this
-// type exists to avoid.
+// (DECIMAL(19,8)) need more than 2 decimal places — real ING confirmations
+// quote some prices and FX rates to 6 decimals (a subscription-rights Kurs,
+// an FX rate), so the column (and this type's String()/Value()) use 8 for
+// headroom — and lightsql's DECIMAL type is exact as of v0.6.0
+// (github.com/oxisto/lightsql), so this reads and writes it as text through
+// database/sql's driver.Value rather than through an intermediate float64,
+// which would reintroduce the precision loss this type exists to avoid.
 //
 // The zero Decimal represents SQL NULL; Valid reports whether it holds a
 // real value, matching the database/sql sql.Null* convention.
@@ -124,19 +125,19 @@ func (d Decimal) RoundToInt64() int64 {
 	return n
 }
 
-// StringPrec formats d with exactly prec decimal digits, e.g. StringPrec(4)
-// for a DECIMAL(19,4) column.
+// StringPrec formats d with exactly prec decimal digits, e.g. StringPrec(8)
+// for a DECIMAL(19,8) column.
 func (d Decimal) StringPrec(prec int) string {
 	return d.rat().FloatString(prec)
 }
 
-// String formats d at 4 decimal digits, matching the DECIMAL(19,4) columns
+// String formats d at 8 decimal digits, matching the DECIMAL(19,8) columns
 // this type is used for today.
 func (d Decimal) String() string {
 	if !d.Valid {
 		return ""
 	}
-	return d.StringPrec(4)
+	return d.StringPrec(8)
 }
 
 // Scan implements sql.Scanner. lightsql hands back DECIMAL columns as a
@@ -169,5 +170,5 @@ func (d Decimal) Value() (driver.Value, error) {
 	if !d.Valid {
 		return nil, nil
 	}
-	return d.StringPrec(4), nil
+	return d.StringPrec(8), nil
 }

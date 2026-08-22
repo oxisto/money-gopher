@@ -67,8 +67,8 @@ func TestTriggerQuoteUpdate(t *testing.T) {
 	}`, nil)
 	listing := data["securities"].([]any)[0].(map[string]any)["listings"].([]any)[0].(map[string]any)
 	latest := listing["latestQuote"].(map[string]any)
-	if got := latest["price"].(map[string]any)["amount"].(string); got != "111.1100" {
-		t.Errorf("latest quote = %v, want 111.1100", got)
+	if got := latest["price"].(map[string]any)["amount"].(string); got != "111.11000000" {
+		t.Errorf("latest quote = %v, want 111.11000000", got)
 	}
 	if got := len(listing["quotes"].([]any)); got != 1 {
 		t.Errorf("quote history length = %v, want 1", got)

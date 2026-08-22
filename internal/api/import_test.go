@@ -216,8 +216,8 @@ func TestImportFXBond(t *testing.T) {
 	if got := priceObj["currency"]; got != "GBP" {
 		t.Errorf("price.currency = %v, want GBP (the bond's own currency, not EUR settlement)", got)
 	}
-	if got := tx["fxRate"]; got != "0.8000" {
-		t.Errorf("fxRate = %v, want \"0.8000\"", got)
+	if got := tx["fxRate"]; got != "0.80000000" {
+		t.Errorf("fxRate = %v, want \"0.80000000\"", got)
 	}
 
 	cashDelta := tx["cashDelta"].(map[string]any)["amount"].(float64)

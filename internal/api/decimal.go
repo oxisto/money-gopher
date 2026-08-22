@@ -36,7 +36,7 @@ func (d *Decimal) UnmarshalGraphQL(input any) error {
 
 // MarshalJSON is called whenever a field using the Decimal scalar is queried.
 func (d Decimal) MarshalJSON() ([]byte, error) {
-	return json.Marshal(persistence.Decimal(d).StringPrec(4))
+	return json.Marshal(persistence.Decimal(d).StringPrec(8))
 }
 
 func decimal(d persistence.Decimal) Decimal { return Decimal(d) }
