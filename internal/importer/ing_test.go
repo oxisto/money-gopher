@@ -220,6 +220,35 @@ func TestING_ParseTrade_ForeignBond(t *testing.T) {
 	}
 }
 
+// TestING_ParseTrade_ForeignBondRoundingBoundary covers a real-world case
+// where converting Kurswert and Stückzinsen to EUR separately (each rounded
+// to the cent) lands a cent away from converting their combined Zwischensumme
+// once, which is what ING itself does. The fix trusts ING's own printed EUR
+// conversion directly instead of recomputing it, so gross+fees+taxes must
+// reproduce Endbetrag exactly even across this rounding boundary.
+func TestING_ParseTrade_ForeignBondRoundingBoundary(t *testing.T) {
+	text, err := os.ReadFile("testdata/ing/buy_bond_fx_rounding.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	txs, err := ING{}.Parse(string(text))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	tx := txs[0]
+
+	if tx.CashDelta != -186621 {
+		t.Errorf("CashDelta = %d, want -186621", tx.CashDelta)
+	}
+
+	grossUSD := tx.Price.MulFloat(tx.Units)
+	grossEUR := grossUSD.Div(tx.FxRate).MulInt(100).RoundToInt64()
+	if got, want := grossEUR+tx.Fees+tx.Taxes, int64(186621); got != want {
+		t.Errorf("gross(EUR)+Fees+Taxes = %d, want %d (Endbetrag) — rounding boundary not closed", got, want)
+	}
+}
+
 // TestING_ParseTrade_ForeignTransactionTax verifies that a foreign financial
 // transaction tax (e.g. France's "Franz. Transaktionssteuer") lands in Taxes,
 // not Fees (Provision) — and that Kurswert + Fees + Taxes reconciles exactly

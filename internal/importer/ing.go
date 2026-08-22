@@ -115,9 +115,11 @@ var (
 	// Currency on a bond's Nominale line: "Nominale   USD   10.000,00".
 	ingNominaleCurr = regexp.MustCompile(`Nominale\s+([A-Z]{3})\s+[\d.]+,\d+`)
 	// FX conversion line: "umger. zum Devisenkurs   EUR   14.487,05 (GBP = 0,8519)".
-	// Group 1 is the security's own currency (matches ingNominaleCurr), group
-	// 2 is the rate: 1 unit of the settlement currency in that currency.
-	ingFxRate = regexp.MustCompile(`umger\. zum Devisenkurs\s+[A-Z]{3}\s+[\d.]+,\d+\s+\(([A-Z]{3}) = ([\d.]+,\d+)\)`)
+	// Group 1 is the EUR amount — the bank's own already-converted,
+	// already-rounded Kurswert+Stückzinsen subtotal (Zwischensumme). Group 2
+	// is the security's own currency (matches ingNominaleCurr). Group 3 is
+	// the rate: 1 unit of the settlement currency in that currency.
+	ingFxConversion = regexp.MustCompile(`umger\. zum Devisenkurs\s+EUR\s+([\d.]+,\d+)\s+\(([A-Z]{3}) = ([\d.]+,\d+)\)`)
 	// Execution date: old format omits " / -zeit".
 	ingExecDate = regexp.MustCompile(`Ausführungstag(?: / -zeit)?\s+(\d{2}\.\d{2}\.\d{4})`)
 	ingPayDate  = regexp.MustCompile(`Zahltag\s+(\d{2}\.\d{2}\.\d{4})`)
@@ -171,6 +173,7 @@ func ingParseTrade(text string) (StagedTransaction, error) {
 	var price persistence.Decimal
 	var priceCurrency string
 	var fxRate persistence.Decimal
+	var fxConvertedEUR persistence.Decimal
 	if isBond {
 		units /= 100
 
@@ -185,11 +188,21 @@ func ingParseTrade(text string) (StagedTransaction, error) {
 
 		// A foreign bond: Price/Units are denominated in its own currency
 		// (Nominale), not the EUR settlement currency. The FX conversion
-		// line gives the exact rate ING used.
+		// line gives the rate ING used, and — just as importantly — the
+		// already-converted, already-rounded EUR subtotal (Kurswert +
+		// Stückzinsen, i.e. Zwischensumme). That EUR figure is trusted
+		// directly below rather than recomputed via the rate: the printed
+		// rate is rounded to 4 decimals for display, so re-deriving the
+		// conversion ourselves risks a cent of drift against whatever
+		// higher-precision rate the bank's own system actually used.
 		if nomCurr, nerr := ingFind(ingNominaleCurr, text, ""); nerr == nil && nomCurr != currency {
-			if m := ingFxRate.FindStringSubmatch(text); m != nil {
-				priceCurrency = m[1]
-				fxRate, perr = ingDecimal(m[2])
+			if m := ingFxConversion.FindStringSubmatch(text); m != nil {
+				fxConvertedEUR, perr = ingDecimal(m[1])
+				if perr != nil {
+					return StagedTransaction{}, fmt.Errorf("fx conversion: %w", perr)
+				}
+				priceCurrency = m[2]
+				fxRate, perr = ingDecimal(m[3])
 				if perr != nil {
 					return StagedTransaction{}, fmt.Errorf("fx rate: %w", perr)
 				}
@@ -235,17 +248,23 @@ func ingParseTrade(text string) (StagedTransaction, error) {
 	}
 	fees += ingFeeSum(text, currency)
 
-	// A foreign bond's Stückzinsen is quoted in its own currency and skipped
-	// by ingFeeSum above (which only takes EUR-quoted lines); convert it at
-	// the FX rate and add it in now that the rate is known.
+	// A foreign bond's accrued interest (Stückzinsen) is quoted in its own
+	// currency and has no dedicated field — same as the EUR-bond case, it's
+	// folded into Fees. Rather than parsing Stückzinsen and converting it
+	// ourselves (which would round Kurswert and Stückzinsen separately,
+	// same failure mode as recomputing the rate: the two can differ by a
+	// cent from ING's own combined Zwischensumme conversion when the
+	// fractional remainders straddle a rounding boundary), the fee is
+	// derived as the residual between ING's own converted EUR subtotal
+	// (fxConvertedEUR, trusted as-is) and Kurswert alone, converted the same
+	// way deriveCashDelta's gross always is. That residual is exactly what
+	// the accrued interest is worth in EUR once ING's own rounding is
+	// accounted for — and it's ~0 when there's no accrued interest at all,
+	// so this needs no separate presence check for the Stückzinsen line.
 	if priceCurrency != "" {
-		if s, serr := ingFindLineAmount(text, "Stückzinsen", priceCurrency); serr == nil {
-			stkz, derr := ingDecimal(s)
-			if derr != nil {
-				return StagedTransaction{}, fmt.Errorf("Stückzinsen: %w", derr)
-			}
-			fees += stkz.Div(fxRate).MulInt(100).RoundToInt64()
-		}
+		kurswertEUR := price.MulFloat(units).Div(fxRate).MulInt(100).RoundToInt64()
+		fxConvertedEURMinor := fxConvertedEUR.MulInt(100).RoundToInt64()
+		fees += fxConvertedEURMinor - kurswertEUR
 	}
 
 	// Taxes (optional – only on sell with a realised gain).
