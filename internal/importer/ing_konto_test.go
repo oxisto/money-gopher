@@ -35,13 +35,16 @@ func TestING_ParseKontoauszug(t *testing.T) {
 	// and Zins/Dividende WP (+24.50) rows: both have an ISIN-bearing
 	// continuation line, so a dedicated trade/dividend confirmation already
 	// covers them elsewhere — counting them here too would double the cash
-	// impact of the same real-world event.
+	// impact of the same real-world event. Nor the second Wertpapierkauf
+	// (-5,432.10), whose ISIN continuation lands on a simulated next page —
+	// past a page-footer watermark, a blank gap, and a repeated
+	// page-header/column-heading block — rather than the very next line.
 	const wantRows = 5
 	if len(txs) != wantRows {
 		t.Fatalf("len(txs) = %d, want %d", len(txs), wantRows)
 	}
 	for _, tx := range txs {
-		if tx.CashDelta == -10000 || tx.CashDelta == 2450 {
+		if tx.CashDelta == -10000 || tx.CashDelta == 2450 || tx.CashDelta == -543210 {
 			t.Errorf("%+v: a securities-related row (ISIN continuation line) leaked through", tx)
 		}
 	}
@@ -112,8 +115,14 @@ func TestING_ParseKontoauszug(t *testing.T) {
 		}
 	}
 
-	// The statement's own opening/closing balance ties out the net exactly:
-	// 5,000.00 -> 6,239.12, i.e. +1,239.12.
+	// The five tracked rows' own net: 2500.00 (Gehalt) - 800.00 (Miete)
+	// - 11.90 (Kontoführungsentgelt) - 455.98 (Stromversorger) + 7.00
+	// (net interest) = 1239.12. This is smaller than the statement's own
+	// Alter Saldo -> Neuer Saldo delta (5,000.00 -> 731.52, i.e.
+	// -4,268.48): the difference is exactly the two excluded
+	// Wertpapierkauf rows and the excluded dividend (-100.00 - 5,432.10 +
+	// 24.50 = -5,507.60), deliberately not tracked here since a dedicated
+	// document covers each of them.
 	const wantNet = 123912
 	if net != wantNet {
 		t.Errorf("net = %d, want %d", net, wantNet)

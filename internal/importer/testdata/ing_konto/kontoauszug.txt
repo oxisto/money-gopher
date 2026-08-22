@@ -6,7 +6,7 @@
                                                                                                                  Datum                                                                      31.03.2024
                      Herrn                                                                                       Auszugsnummer                                                                       1
                      Max Mustermann                                                                              Alter Saldo                                                          5.000,00 Euro
-                     Musterstraße 1                                                                              Neuer Saldo                                                          6.163,62 Euro
+                     Musterstraße 1                                                                              Neuer Saldo                                                            731,52 Euro
                      12345 Musterstadt
 
                                                                                                                  IBAN                                 DE02 1234 5678 0000 0000 42
@@ -27,6 +27,24 @@
                      06.01.2024                 Wertpapierkauf                                                                                                                                -100,00
                      08.01.2024                 WP-ABRECHNUNG 0000000001001 Kauf ISIN DE0000000090
                                                 MUSTER ETF
+                     07.01.2024                 Wertpapierkauf                                                                                                                              -5.432,10
+                     09.01.2024
+
+
+
+99ABCD1234567842_T
+                                                WP-ABRECHNUNG 0000000002001 Kauf ISIN US0000000091 MUSTER
+                                                CORP
+                     Girokonto Nummer 1234567842
+                     Kontoauszug 2024
+
+
+                                                                                         Datum    31.03.2024
+                                                                                         Seite        2 von 1
+
+                     Buchung      Buchung / Verwendungszweck                                     Betrag (EUR)
+                     Valuta
+
                      20.01.2024                 Zins/Dividende WP                                                                                                                               24,50
                      20.01.2024                 Zins/Dividende ISIN DE0000000090 MUSTER ETF
                      10.01.2024                 Ueberweisung Max Mustermann                                                                                                                  -800,00

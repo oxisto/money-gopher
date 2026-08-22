@@ -40,6 +40,24 @@ func ingKontoTaxLabel(desc string) bool {
 		strings.Contains(desc, "Solidaritätszuschlag")
 }
 
+// ingKontoHasISINContinuation reports whether an ISIN mention appears
+// between lines[from] and the next line matching ingKontoRow (exclusive) —
+// i.e. within the current row's own continuation text, however many
+// boilerplate lines (a page footer, blank gap, next page's header) it
+// happens to span, but not spilling into a subsequent transaction's own
+// continuation.
+func ingKontoHasISINContinuation(lines []string, from int) bool {
+	for j := from; j < len(lines); j++ {
+		if ingKontoRow.MatchString(lines[j]) {
+			return false
+		}
+		if strings.Contains(lines[j], "ISIN") {
+			return true
+		}
+	}
+	return false
+}
+
 // ingKontoRawRow is one matched, not-yet-filtered ledger line.
 type ingKontoRawRow struct {
 	dateStr string
@@ -91,7 +109,14 @@ func ingParseKontoauszug(text string) ([]StagedTransaction, error) {
 		// user already imports a dedicated, complete confirmation PDF for
 		// every one of them — so importing this row too would double-count
 		// the same cash movement rather than add information.
-		if i+1 < len(lines) && strings.Contains(lines[i+1], "ISIN") {
+		//
+		// The continuation line is usually the very next one, but a row
+		// landing at the bottom of a page pushes it past the page footer,
+		// a blank gap, and the next page's header/column-heading block —
+		// so this scans ahead rather than checking only lines[i+1], and
+		// stops at the next real ledger row so it can't attribute a much
+		// later ISIN mention to the wrong transaction.
+		if ingKontoHasISINContinuation(lines, i+1) {
 			continue
 		}
 
