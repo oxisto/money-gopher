@@ -76,6 +76,10 @@ query PortfolioDetail($id: ID!) {
 			cashAccount {
 				id
 			}
+			document {
+				id
+				filename
+			}
 		}
 	}
 	securities {

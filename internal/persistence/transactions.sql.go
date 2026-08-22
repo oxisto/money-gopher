@@ -26,10 +26,11 @@ INSERT INTO
         taxes,
         cash_delta,
         currency,
-        source
+        source,
+        document_id
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id
 `
 
 type CreateTransactionParams struct {
@@ -46,6 +47,7 @@ type CreateTransactionParams struct {
 	CashDelta     int64
 	Currency      string
 	Source        string
+	DocumentID    sql.NullString
 }
 
 func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionParams) (*Transaction, error) {
@@ -63,6 +65,7 @@ func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionPa
 		arg.CashDelta,
 		arg.Currency,
 		arg.Source,
+		arg.DocumentID,
 	)
 	var i Transaction
 	err := row.Scan(
@@ -80,6 +83,7 @@ func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionPa
 		&i.Currency,
 		&i.Source,
 		&i.CreatedAt,
+		&i.DocumentID,
 	)
 	return &i, err
 }
@@ -100,7 +104,7 @@ func (q *Queries) DeleteTransaction(ctx context.Context, id string) (int64, erro
 
 const getTransaction = `-- name: GetTransaction :one
 SELECT
-    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id
 FROM
     transactions
 WHERE
@@ -125,13 +129,14 @@ func (q *Queries) GetTransaction(ctx context.Context, id string) (*Transaction, 
 		&i.Currency,
 		&i.Source,
 		&i.CreatedAt,
+		&i.DocumentID,
 	)
 	return &i, err
 }
 
 const listTransactionsByCashAccount = `-- name: ListTransactionsByCashAccount :many
 SELECT
-    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id
 FROM
     transactions
 WHERE
@@ -164,6 +169,7 @@ func (q *Queries) ListTransactionsByCashAccount(ctx context.Context, cashAccount
 			&i.Currency,
 			&i.Source,
 			&i.CreatedAt,
+			&i.DocumentID,
 		); err != nil {
 			return nil, err
 		}
@@ -180,7 +186,7 @@ func (q *Queries) ListTransactionsByCashAccount(ctx context.Context, cashAccount
 
 const listTransactionsByPortfolio = `-- name: ListTransactionsByPortfolio :many
 SELECT
-    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id
 FROM
     transactions
 WHERE
@@ -213,6 +219,7 @@ func (q *Queries) ListTransactionsByPortfolio(ctx context.Context, portfolioID s
 			&i.Currency,
 			&i.Source,
 			&i.CreatedAt,
+			&i.DocumentID,
 		); err != nil {
 			return nil, err
 		}
@@ -242,7 +249,7 @@ SET
     cash_delta = ?,
     currency = ?
 WHERE
-    id = ? RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at
+    id = ? RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id
 `
 
 type UpdateTransactionParams struct {
@@ -291,6 +298,7 @@ func (q *Queries) UpdateTransaction(ctx context.Context, arg UpdateTransactionPa
 		&i.Currency,
 		&i.Source,
 		&i.CreatedAt,
+		&i.DocumentID,
 	)
 	return &i, err
 }

@@ -193,6 +193,7 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 			CashDelta:     d.CashDelta,
 			Currency:      d.Currency,
 			Source:        source,
+			DocumentID:    sql.NullString{String: doc.ID, Valid: true},
 		})
 		if err != nil {
 			return nil, err

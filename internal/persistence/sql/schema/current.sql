@@ -83,23 +83,6 @@ CREATE TABLE quotes (
     PRIMARY KEY (listing_id, time)
 );
 
-CREATE TABLE transactions (
-    id              TEXT     PRIMARY KEY,
-    type            TEXT     NOT NULL,
-    time            TIMESTAMP NOT NULL,
-    portfolio_id    TEXT     REFERENCES portfolios(id)    ON DELETE CASCADE,
-    security_id     TEXT     REFERENCES securities(id)    ON DELETE RESTRICT,
-    cash_account_id TEXT     REFERENCES cash_accounts(id) ON DELETE CASCADE,
-    units           REAL     NOT NULL,
-    price           DECIMAL(19,4),
-    fees            INTEGER  NOT NULL,
-    taxes           INTEGER  NOT NULL,
-    cash_delta      INTEGER  NOT NULL,
-    currency        TEXT     NOT NULL,
-    source          TEXT     NOT NULL,
-    created_at      TIMESTAMP NOT NULL
-);
-
 CREATE TABLE documents (
     id              TEXT     PRIMARY KEY,
     -- Superseded by person_id. Kept only because lightsql cannot DROP
@@ -116,6 +99,26 @@ CREATE TABLE documents (
     transaction_date TIMESTAMP,
     created_at      TIMESTAMP NOT NULL,
     person_id       TEXT     NOT NULL REFERENCES persons(id) ON DELETE CASCADE
+);
+
+CREATE TABLE transactions (
+    id              TEXT     PRIMARY KEY,
+    type            TEXT     NOT NULL,
+    time            TIMESTAMP NOT NULL,
+    portfolio_id    TEXT     REFERENCES portfolios(id)    ON DELETE CASCADE,
+    security_id     TEXT     REFERENCES securities(id)    ON DELETE RESTRICT,
+    cash_account_id TEXT     REFERENCES cash_accounts(id) ON DELETE CASCADE,
+    units           REAL     NOT NULL,
+    price           DECIMAL(19,4),
+    fees            INTEGER  NOT NULL,
+    taxes           INTEGER  NOT NULL,
+    cash_delta      INTEGER  NOT NULL,
+    currency        TEXT     NOT NULL,
+    source          TEXT     NOT NULL,
+    created_at      TIMESTAMP NOT NULL,
+    -- The document this transaction was imported from, if any (see
+    -- migrations/0004_transaction_document.sql).
+    document_id     TEXT     REFERENCES documents(id) ON DELETE SET NULL
 );
 
 CREATE TABLE staged_transactions (

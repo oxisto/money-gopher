@@ -231,6 +231,8 @@ type Transaction {
   cashDelta: Money!
   "Provenance of this transaction, e.g. 'MANUAL' or an import kind."
   source: String!
+  "The document this transaction was imported from; null for manual entries."
+  document: Document
 }
 
 "DocumentState is the processing state of an uploaded document."

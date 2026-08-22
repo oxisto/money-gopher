@@ -69,6 +69,17 @@
 							{formatMoney(tx.cashDelta)}
 						</td>
 						<td class="px-4 py-2 text-right whitespace-nowrap">
+							{#if tx.document}
+								<a
+									href={`/documents/${tx.document.id}`}
+									target="_blank"
+									rel="noopener"
+									title={`Source document: ${tx.document.filename}`}
+									class="rounded px-2 py-1 text-xs text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+								>
+									📄
+								</a>
+							{/if}
 							<button
 								onclick={() => (editingID = editingID === tx.id ? null : tx.id)}
 								class="rounded px-2 py-1 text-xs text-gray-400 hover:text-gray-700 hover:bg-gray-100"

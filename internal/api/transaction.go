@@ -478,6 +478,28 @@ func (r *TransactionResolver) Source() string {
 	return r.transaction.Source
 }
 
+// Document resolves Transaction.document.
+func (r *TransactionResolver) Document(ctx context.Context) (*DocumentResolver, error) {
+	if !r.transaction.DocumentID.Valid {
+		return nil, nil
+	}
+
+	person, err := auth.PersonFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	doc, err := r.db.GetDocument(ctx, persistence.GetDocumentParams{
+		ID:       r.transaction.DocumentID.String,
+		PersonID: person.ID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &DocumentResolver{db: r.db, doc: doc}, nil
+}
+
 func idPtr(id *graphql.ID) *string {
 	if id == nil {
 		return nil

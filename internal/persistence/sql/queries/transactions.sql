@@ -13,10 +13,11 @@ INSERT INTO
         taxes,
         cash_delta,
         currency,
-        source
+        source,
+        document_id
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *;
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *;
 
 -- name: GetTransaction :one
 SELECT

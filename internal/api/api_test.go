@@ -103,12 +103,16 @@ func TestLifecycle(t *testing.T) {
 			type: BUY, time: "2026-01-03T10:00:00Z", currency: "EUR"
 			portfolioID: $portfolio, securityID: $security, cashAccountID: $account
 			units: 10, price: "95.00", fees: 150
-		}) { id cashDelta { amount currency } }
+		}) { id cashDelta { amount currency } document { id } }
 	}`, map[string]any{"portfolio": portfolioID, "security": securityID, "account": accountID})
 	buy := data["createTransaction"].(map[string]any)
 	buyID := buy["id"].(string)
 	if got := buy["cashDelta"].(map[string]any)["amount"].(float64); got != -95150 {
 		t.Errorf("derived cashDelta = %v, want -95150", got)
+	}
+	// A manually created transaction has no source document.
+	if buy["document"] != nil {
+		t.Errorf("document = %v, want nil for a manual transaction", buy["document"])
 	}
 
 	// The account balance reflects both transactions; the portfolio only

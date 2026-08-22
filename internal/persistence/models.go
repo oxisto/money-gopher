@@ -118,7 +118,9 @@ type Transaction struct {
 	CashDelta     int64
 	Currency      string
 	Source        string
-	CreatedAt     time.Time
+	// The document this transaction was imported from, if any (see
+	CreatedAt  time.Time
+	DocumentID sql.NullString
 }
 
 type User struct {

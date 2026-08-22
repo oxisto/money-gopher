@@ -143,7 +143,7 @@ func TestDocumentsLifecycle(t *testing.T) {
 			portfolioID: $portfolio
 			cashAccountID: $account
 			transactions: [{ id: $buyID }]
-		}) { id type source cashDelta { amount } }
+		}) { id type source cashDelta { amount } document { id filename } }
 	}`, map[string]any{
 		"docID":     docID,
 		"portfolio": portfolioID,
@@ -158,6 +158,14 @@ func TestDocumentsLifecycle(t *testing.T) {
 		m := tx.(map[string]any)
 		if got := m["source"]; got != "import:csv" {
 			t.Errorf("source = %v, want import:csv", got)
+		}
+		// The committed transaction must trace back to the document it came from.
+		doc, ok := m["document"].(map[string]any)
+		if !ok {
+			t.Fatalf("document = %v, want a linked document", m["document"])
+		}
+		if doc["id"] != docID {
+			t.Errorf("document.id = %v, want %v", doc["id"], docID)
 		}
 	}
 	// BUY: cashDelta should be -(10*10050 + 150) = -100650 minor units.
