@@ -1,34 +1,109 @@
-# Porting money-gopher from SQLite to lightsql
+# money-gopher on lightsql
 
-Status: **lightsql is ready, and everything this document depends on is merged.**
-All 65 generated queries bind against it, the ones exercised with real data
-return correct results, and a database now survives a restart.
+**The port is done.** `internal/persistence` opens a lightsql directory, goose
+runs on the `postgres` dialect, and both migrations are written for it. What
+follows is the record of what was changed and why, kept because the *why* is not
+recoverable from the diff.
 
-Written 2026-08-21 against lightsql `b1cb762`; updated 2026-08-22 for
-**`v0.4.0`**, which is `v0.2.0` plus persistence, the four issues this port
-raised, and the catalog views.
+Written 2026-08-21 while the port was still ahead of us; rewritten 2026-08-22,
+after it landed in `d250a48`, to describe what is rather than what to do.
 
-**Use `v0.4.0` or later.** None of the below works on `v0.2.0`, and `v0.3.0`
-is missing the catalog views that step 4 depends on:
+## Outstanding
+
+Two things, unrelated to each other.
+
+### Multi-write operations without a transaction
+
+Reviewed separately in [TRANSACTIONS.md](TRANSACTIONS.md). The short version:
+`db.Tx` exists and is used twice, and there are three places that need it and do
+not have it. `ConfirmImport` is the one worth fixing first, because a partial
+failure there duplicates financial records on the next attempt without saying so.
+
+### The lightsql version
+
+`go.mod` pins **`v0.4.0`**. Move it to `v0.6.0`:
 
 ```sh
-go get github.com/oxisto/lightsql@v0.4.0
+go get github.com/oxisto/lightsql@v0.6.0
 ```
 
-| Landed | What it changes for this port |
+Two of the releases in between matter here:
+
+- **v0.5.1** fixes `BYTEA` literals. `documents.data` is the one `BYTEA` column,
+  and `CreateDocument` writes it as a **bound parameter**, which has stored real
+  bytes correctly on every version — so nothing on disk is wrong. The fix only
+  changes literals written inside SQL text, which this codebase does not do.
+  Worth taking anyway, along with `length(bytea)` and `octet_length`.
+- **v0.6.0** makes `NUMERIC` exact, and changes one thing: a numeric column
+  scanned into an `any` is now a string rather than a `float64`. Scanning into a
+  concrete `float64` or `string` is unaffected, and this schema has no `NUMERIC`
+  column today — see below for why it might want one.
+- **v0.5.0** adds a shell, which is the reason to bump beyond curiosity:
+
+  ```sh
+  go install github.com/oxisto/lightsql/cmd/lightsql@v0.5.1
+  lightsql ./money.db
+  lightsql> .schema documents
+  ```
+
+  Being able to open the directory `moneyd` wrote and ask what the migrations
+  actually did is worth more than any amount of reasoning about them.
+
+Also note `CURRENT_TIMESTAMP` works as of v0.3.0. `sessions.sql` was changed to
+`now()` because it had to be at the time; both are correct now and there is no
+reason to change it back.
+
+## Worth considering: units is a REAL
+
+`transactions.units` and `staged_transactions.units` are `REAL`, which is
+float64. `units × price` is the core computation in this application, and a
+float cannot represent most decimal fractions exactly — accumulating those
+products is where a portfolio total drifts by a cent and nobody can say from
+where.
+
+Money is already safe: `price`, `fees`, `taxes` and `cash_delta` are `INTEGER`
+cents, which is the other correct answer. It is only `units` that is inexact.
+
+As of lightsql v0.6.0 the alternative exists:
+
+```sql
+ALTER TABLE transactions ADD COLUMN units_exact NUMERIC(18,8);
+UPDATE transactions SET units_exact = CAST(units AS NUMERIC(18,8));
+-- and later, once nothing reads the old column
+```
+
+Two things to weigh before doing it. lightsql has no `DROP COLUMN`, so the old
+`units` would linger the way `user_id` does. And a `NUMERIC` column arrives in
+Go as a string, so the sqlc-generated field changes type and every caller of it
+has to be looked at — which is a real change, not a mechanical one.
+
+Not urgent, and not something the port created. Flagged because the schema is
+being read carefully right now and this is the kind of thing that is easier to
+change before there is a lot of data than after.
+
+## What was changed, and why
+
+| Change | Reason |
 |---|---|
-| Persistence (#44-#47, v0.3.0) | A database in a directory survives a restart. Step 1. |
-| `CURRENT_TIMESTAMP` (#49, v0.3.0) | Step 2 disappears; `sessions.sql` needs no edits. |
-| `SET NOT NULL` (#39, #50, v0.3.0) | Migration 2 can tighten `person_id` after backfilling. |
-| `GENERATED AS IDENTITY` (#40, #51, v0.3.0) | goose's own version table parses verbatim. |
-| `information_schema`, `pg_catalog` (#54, **v0.4.0**) | goose's existence check answers. Step 4 should now work. |
+| `sql.Open("lightsql", "file:"+path)` | The `file:` prefix is load-bearing. Without it the name selects an in-memory instance, which works until the process restarts and the data is gone. |
+| `lightsql.Drop(dsn)` on close | Checkpoints the log, so the next start replays the rows that survived rather than every change ever made. Skipping it is safe, only slower. |
+| `_pragma=foreign_keys(1)` dropped | lightsql always enforces foreign keys and has no switch. This is what forced migration 2 to be rewritten. |
+| `_time_format=sqlite` dropped | lightsql stores a `time.Time` natively, so there is no format to agree on. |
+| `goose.SetDialect("postgres")` | Every statement goose's stock postgres dialect issues is supported as of v0.4.0, and pinned upstream by a regression test. |
+| `DATETIME`→`TIMESTAMP`, `BLOB`→`BYTEA`, `STRFTIME(...)`→`now()` | Dialect. Mechanical. |
+| Migration 2 rewritten | SQLite's `PRAGMA foreign_keys = OFF` table-rebuild idiom cannot work where foreign keys cannot be switched off. It uses `ADD COLUMN`, backfill, then `SET NOT NULL` — which is what a PostgreSQL migration would have looked like from the start. |
+| `sqlc.yaml` left on `engine: "sqlite"` | The queries are dialect-clean and all 150 placeholders are `?`, which lightsql accepts. Generated code is untouched. |
 
-One issue, #41, did not reproduce: the `EXISTS` error it reported comes from
-`v0.1.0`. On `v0.2.0` and later the same query already names `pg_tables` as the
-missing relation, which is what the issue asked for. Check which version is in
-`go.mod` before writing the next one up.
+The old `user_id` columns survive because lightsql has no `DROP COLUMN`. They are
+still `NOT NULL`, so the application has to keep writing them. That is the one
+piece of debt the port took on.
 
-## What this port is, and is not
+## Historical record
+
+Everything below describes the port as it was planned, before it was carried
+out. It is kept for the reasoning, not as instructions.
+
+### What this port was, and was not
 
 It is a **dialect** port, not just a driver swap: lightsql speaks the PostgreSQL
 dialect and the schema is written for SQLite.
@@ -106,6 +181,14 @@ the transaction's start time as PostgreSQL does. The queries are unchanged, and
 
 A `sed` pass handles the first two; the `STRFTIME` default is a fixed string, so
 it substitutes cleanly too. `CURRENT_TIMESTAMP` needs no change at all now.
+
+The one `BLOB` column, on `documents`, is worth a second look. lightsql writes a
+`BYTEA` as a string literal in PostgreSQL's format — `'\x0102'` for two bytes —
+whereas SQLite takes `X'0102'`. Nothing in `queries/` writes one as a literal;
+they all bind a parameter, which carries real bytes and needs no change. If you
+add a literal later, write it PostgreSQL's way. **This only works on `v0.5.1`
+and later**: earlier versions stored the characters that spell the bytes rather
+than the bytes.
 
 `TEXT`, `INTEGER` and `REAL` are common to both. Everything else in this file —
 including the partial unique index
@@ -262,7 +345,7 @@ are worth knowing before pointing a second one at the same directory.
 
 ## Suggested order
 
-0. `go get github.com/oxisto/lightsql@v0.4.0`. Earlier tags are not enough.
+0. `go get github.com/oxisto/lightsql@v0.5.1`. Earlier tags are not enough.
 1. goose dialect (step 4) — one line, and no longer expected to fight back.
 2. Driver swap (step 1) — and mind the `file:` prefix.
 3. Migration 1 substitutions (step 3).
