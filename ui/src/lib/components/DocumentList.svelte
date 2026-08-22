@@ -208,6 +208,15 @@
 										{formatMoney(tx.cashDelta)}
 									</span>
 								{/if}
+								{#if tx.calculatedCashDelta}
+									<span
+										class="text-xs {tx.calculatedCashDelta.amount !== tx.cashDelta.amount
+											? 'font-medium text-amber-700'
+											: 'text-gray-400'}"
+									>
+										calc: {formatMoney(tx.calculatedCashDelta)}
+									</span>
+								{/if}
 							</div>
 						{:else if doc.state === 'FAILED' && doc.error}
 							<p class="mt-1 text-xs text-red-600">{doc.error}</p>

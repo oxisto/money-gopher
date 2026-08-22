@@ -295,15 +295,20 @@
 								<td class="px-2 py-1.5 text-right tabular-nums text-gray-700">
 									{tx.taxes.amount !== 0 ? formatMoney(tx.taxes) : '—'}
 								</td>
-								<td class="px-2 py-1.5 text-right tabular-nums {tx.cashDelta.amount >= 0 ? 'text-green-700' : 'text-red-700'}">
-									{tx.cashDelta.amount !== 0 ? formatMoney(tx.cashDelta) : '—'}
-									{#if tx.calculatedCashDelta && tx.calculatedCashDelta.amount !== tx.cashDelta.amount}
-										<span
-											class="ml-1 inline-block rounded bg-amber-100 px-1 text-xs font-normal text-amber-700"
-											title={`Calculated from units × price ± fees ± taxes: ${formatMoney(tx.calculatedCashDelta)} — parsed value differs by ${formatMoney({ amount: tx.cashDelta.amount - tx.calculatedCashDelta.amount, currency: tx.cashDelta.currency })}. Likely an uncaptured line item on the document (a fee, a foreign tax, accrued interest).`}
+								<td class="px-2 py-1.5 text-right tabular-nums">
+									<div class={tx.cashDelta.amount >= 0 ? 'text-green-700' : 'text-red-700'}>
+										{tx.cashDelta.amount !== 0 ? formatMoney(tx.cashDelta) : '—'}
+									</div>
+									{#if tx.calculatedCashDelta}
+										{@const mismatch = tx.calculatedCashDelta.amount !== tx.cashDelta.amount}
+										<div
+											class="text-xs {mismatch ? 'font-medium text-amber-700' : 'text-gray-400'}"
+											title={mismatch
+												? `Parsed value differs by ${formatMoney({ amount: tx.cashDelta.amount - tx.calculatedCashDelta.amount, currency: tx.cashDelta.currency })} — likely an uncaptured line item on the document (a fee, a foreign tax, accrued interest).`
+												: 'Matches the parsed value.'}
 										>
-											⚠
-										</span>
+											calc: {formatMoney(tx.calculatedCashDelta)}
+										</div>
 									{/if}
 								</td>
 							</tr>
