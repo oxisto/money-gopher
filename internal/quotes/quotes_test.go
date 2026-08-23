@@ -52,14 +52,17 @@ func TestYahoo_LatestQuote(t *testing.T) {
 
 func TestING_LatestQuote(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/components/instrumentheader/IE00BK5BQT80" {
+		if r.URL.Path != "/api/v1/instrument-header" {
 			http.NotFound(w, r)
 			return
 		}
+		if got := r.URL.Query().Get("isinOrSearchTerm"); got != "IE00BK5BQT80" {
+			t.Errorf("isinOrSearchTerm = %q, want IE00BK5BQT80", got)
+		}
+		// Bid/ask are entirely absent for instruments without a spread (many
+		// ETFs) — price/priceChangeDate is the only field relied on.
 		w.Write([]byte(`{
-			"hasBidAsk": true,
-			"bid": 111.11, "bidDate": "2026-07-03T15:30:00Z",
-			"price": 999.99, "priceChangeDate": "2026-07-01T00:00:00Z"
+			"price": 111.11, "priceChangeDate": "2026-07-03T15:30:00Z"
 		}`))
 	}))
 	defer srv.Close()
@@ -71,7 +74,6 @@ func TestING_LatestQuote(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LatestQuote() error = %v", err)
 	}
-	// With bid/ask available, the bid wins over the plain price.
 	if quote.Price.StringPrec(2) != "111.11" {
 		t.Errorf("price = %s, want 111.11", quote.Price.StringPrec(2))
 	}

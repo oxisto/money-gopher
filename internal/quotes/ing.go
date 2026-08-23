@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/oxisto/money-gopher/internal/persistence"
@@ -31,13 +32,12 @@ func NewING() *ING {
 
 func (i *ING) Name() string { return ProviderING }
 
-// instrumentHeader is the part of the API response we care about.
+// instrumentHeader is the part of the API response we care about. Bid/ask
+// aren't included: the API omits those keys entirely for instruments that
+// don't trade with a spread (e.g. many ETFs), and price/priceChangeDate is
+// present uniformly across stocks, bonds and ETFs, matching what ING's own
+// site shows as "the" price.
 type instrumentHeader struct {
-	Ask              float64   `json:"ask"`
-	AskDate          time.Time `json:"askDate"`
-	Bid              float64   `json:"bid"`
-	BidDate          time.Time `json:"bidDate"`
-	HasBidAsk        bool      `json:"hasBidAsk"`
 	Price            float64   `json:"price"`
 	PriceChangedDate time.Time `json:"priceChangeDate"`
 }
@@ -47,9 +47,16 @@ func (i *ING) LatestQuote(ctx context.Context, ins Instrument) (Quote, error) {
 		return Quote{}, fmt.Errorf("the ING provider needs an ISIN identifier")
 	}
 
-	url := fmt.Sprintf("%s/api/v1/components/instrumentheader/%s", i.BaseURL, ins.ISIN)
+	// As of 2026, this is a query-string endpoint (isinOrSearchTerm), not a
+	// path segment — ING moved it from the old
+	// /api/v1/components/instrumentheader/{isin} some time after 2024,
+	// which now 404s unconditionally, even for highly liquid instruments.
+	u := fmt.Sprintf("%s/api/v1/instrument-header?%s", i.BaseURL, url.Values{
+		"isinOrSearchTerm": {ins.ISIN},
+		"isKnownIsin":      {"true"},
+	}.Encode())
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return Quote{}, err
 	}
@@ -69,9 +76,5 @@ func (i *ING) LatestQuote(ctx context.Context, ins Instrument) (Quote, error) {
 		return Quote{}, fmt.Errorf("could not decode JSON: %w", err)
 	}
 
-	// Prefer the bid when the instrument trades with bid/ask.
-	if h.HasBidAsk {
-		return Quote{Price: persistence.DecimalFromFloat(h.Bid), Time: h.BidDate.UTC()}, nil
-	}
 	return Quote{Price: persistence.DecimalFromFloat(h.Price), Time: h.PriceChangedDate.UTC()}, nil
 }
