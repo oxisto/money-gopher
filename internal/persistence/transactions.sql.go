@@ -370,3 +370,81 @@ func (q *Queries) UpdateTransaction(ctx context.Context, arg UpdateTransactionPa
 	)
 	return &i, err
 }
+
+const updateTransactionFromImport = `-- name: UpdateTransactionFromImport :one
+UPDATE transactions
+SET
+    type = ?,
+    time = ?,
+    portfolio_id = ?,
+    security_id = ?,
+    cash_account_id = ?,
+    units = ?,
+    price = ?,
+    fees = ?,
+    taxes = ?,
+    cash_delta = ?,
+    currency = ?,
+    price_currency = ?,
+    fx_rate = ?
+WHERE
+    id = ? RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate
+`
+
+type UpdateTransactionFromImportParams struct {
+	Type          string
+	Time          time.Time
+	PortfolioID   sql.NullString
+	SecurityID    sql.NullString
+	CashAccountID sql.NullString
+	Units         float64
+	Price         Decimal
+	Fees          int64
+	Taxes         int64
+	CashDelta     int64
+	Currency      string
+	PriceCurrency sql.NullString
+	FxRate        Decimal
+	ID            string
+}
+
+// ConfirmImport's reconciliation update; also refreshes FX fields, unlike UpdateTransaction.
+func (q *Queries) UpdateTransactionFromImport(ctx context.Context, arg UpdateTransactionFromImportParams) (*Transaction, error) {
+	row := q.db.QueryRowContext(ctx, updateTransactionFromImport,
+		arg.Type,
+		arg.Time,
+		arg.PortfolioID,
+		arg.SecurityID,
+		arg.CashAccountID,
+		arg.Units,
+		arg.Price,
+		arg.Fees,
+		arg.Taxes,
+		arg.CashDelta,
+		arg.Currency,
+		arg.PriceCurrency,
+		arg.FxRate,
+		arg.ID,
+	)
+	var i Transaction
+	err := row.Scan(
+		&i.ID,
+		&i.Type,
+		&i.Time,
+		&i.PortfolioID,
+		&i.SecurityID,
+		&i.CashAccountID,
+		&i.Units,
+		&i.Price,
+		&i.Fees,
+		&i.Taxes,
+		&i.CashDelta,
+		&i.Currency,
+		&i.Source,
+		&i.CreatedAt,
+		&i.DocumentID,
+		&i.PriceCurrency,
+		&i.FxRate,
+	)
+	return &i, err
+}

@@ -137,6 +137,31 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 		return nil, err
 	}
 
+	// Re-processing (see reprocessDocument) regenerates staged transactions
+	// for a document that may already have committed ones from an earlier
+	// confirm — reprocessDocument never touches those. Matching each staged
+	// row against them here (by type/time/units/cashDelta, i.e. "the same
+	// real-world event") lets confirming safely reconcile a transaction
+	// in place — picking up whatever the newer parser now gets right, e.g.
+	// FX precision or a security match — instead of creating a duplicate.
+	existingForDoc, err := r.db.ListTransactionsByDocument(ctx, sql.NullString{String: doc.ID, Valid: true})
+	if err != nil {
+		return nil, err
+	}
+	consumed := make(map[string]bool, len(existingForDoc))
+	matchExisting := func(d *txData) *persistence.Transaction {
+		for _, ex := range existingForDoc {
+			if consumed[ex.ID] {
+				continue
+			}
+			if ex.Type == d.Type && ex.Time.Equal(d.Time) && ex.Units == d.Units && ex.CashDelta == d.CashDelta {
+				consumed[ex.ID] = true
+				return ex
+			}
+		}
+		return nil
+	}
+
 	overrides := make(map[string]StagedTransactionConfirmInput, len(args.Input.Transactions))
 	for _, ov := range args.Input.Transactions {
 		overrides[string(ov.ID)] = ov
@@ -204,6 +229,30 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 
 		if err := d.validate(ctx, r.db, person); err != nil {
 			return nil, fmt.Errorf("staged transaction %q: %w", stx.ID, err)
+		}
+
+		if match := matchExisting(&d); match != nil {
+			tx, err := r.db.UpdateTransactionFromImport(ctx, persistence.UpdateTransactionFromImportParams{
+				Type:          d.Type,
+				Time:          d.Time,
+				PortfolioID:   nullString(d.PortfolioID),
+				SecurityID:    nullString(d.SecurityID),
+				CashAccountID: nullString(d.CashAccountID),
+				Units:         d.Units,
+				Price:         d.Price,
+				Fees:          d.Fees,
+				Taxes:         d.Taxes,
+				CashDelta:     d.CashDelta,
+				Currency:      d.Currency,
+				PriceCurrency: sql.NullString{String: d.PriceCurrency, Valid: d.PriceCurrency != ""},
+				FxRate:        d.FxRate,
+				ID:            match.ID,
+			})
+			if err != nil {
+				return nil, err
+			}
+			created = append(created, &TransactionResolver{db: r.db, transaction: tx})
+			continue
 		}
 
 		tx, err := r.db.CreateTransaction(ctx, persistence.CreateTransactionParams{

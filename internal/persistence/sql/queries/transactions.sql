@@ -59,6 +59,26 @@ WHERE
 ORDER BY
     time;
 
+-- name: UpdateTransactionFromImport :one
+-- ConfirmImport's reconciliation update; also refreshes FX fields, unlike UpdateTransaction.
+UPDATE transactions
+SET
+    type = ?,
+    time = ?,
+    portfolio_id = ?,
+    security_id = ?,
+    cash_account_id = ?,
+    units = ?,
+    price = ?,
+    fees = ?,
+    taxes = ?,
+    cash_delta = ?,
+    currency = ?,
+    price_currency = ?,
+    fx_rate = ?
+WHERE
+    id = ? RETURNING *;
+
 -- name: UpdateTransaction :one
 UPDATE transactions
 SET

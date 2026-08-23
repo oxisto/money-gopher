@@ -130,9 +130,10 @@
 	function autoMatch(doc: Document): { cashAccountID: string; portfolioID: string | null } | null {
 		if (doc.stagedTransactions.length === 0) return null;
 		// A reprocessed document can be PARSED again while still having
-		// committed transactions from before — confirming these staged ones
-		// too would duplicate them, not replace them.
-		if (doc.transactions.length > 0) return null;
+		// committed transactions from before — confirmImport reconciles each
+		// staged row against its already-committed counterpart from the same
+		// document (matched by type/time/units/cashDelta) instead of
+		// duplicating it, so this is safe to auto-confirm too.
 
 		const cashAccountID = doc.suggestedCashAccount?.id ?? (cashAccounts.length === 1 ? cashAccounts[0].id : null);
 		if (!cashAccountID) return null;
@@ -297,14 +298,12 @@
 				</div>
 
 				{#if doc.transactions.length > 0}
-					<p class="mt-2 rounded bg-amber-50 px-2 py-1.5 text-xs text-amber-800">
+					<p class="mt-2 rounded bg-blue-50 px-2 py-1.5 text-xs text-blue-800">
 						Already has {doc.transactions.length} committed transaction{doc.transactions.length === 1
 							? ''
-							: 's'} from this document. Confirming the staged transactions below would duplicate
-						{doc.transactions.length === 1 ? 'it' : 'them'} — delete the existing one{doc.transactions
-							.length === 1
-							? ''
-							: 's'} first if you want to replace {doc.transactions.length === 1 ? 'it' : 'them'}.
+							: 's'} from this document. Confirming the staged transactions below will update
+						{doc.transactions.length === 1 ? 'it' : 'them'} in place (matched by type/time/units/amount)
+						rather than creating a duplicate.
 					</p>
 				{/if}
 

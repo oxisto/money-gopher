@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 
 	"github.com/graph-gophers/graphql-go"
@@ -207,6 +208,67 @@ func TestDocumentsLifecycle(t *testing.T) {
 	data = exec(t, schema, ctx, `query { documents { id } }`, nil)
 	if len(data["documents"].([]any)) != 0 {
 		t.Errorf("documents after delete = %d, want 0", len(data["documents"].([]any)))
+	}
+}
+
+// TestConfirmImport_ReconcilesReprocessedDocument verifies that
+// re-confirming a reprocessed document (which already has committed
+// transactions from an earlier confirm — see the reprocess step at the end
+// of TestDocumentsLifecycle) reconciles each staged row against its
+// already-committed counterpart in place, instead of creating a duplicate.
+func TestConfirmImport_ReconcilesReprocessedDocument(t *testing.T) {
+	schema, ctx, db, person := newTestEnv(t)
+
+	data := exec(t, schema, ctx, `mutation {
+		createCashAccount(input: { displayName: "Giro", currency: "EUR" }) { id }
+	}`, nil)
+	accountID := data["createCashAccount"].(map[string]any)["id"].(string)
+
+	const sampleCSV = "Date,Type,Security,ISIN,Units,Price,Fees,Taxes,CashDelta,Currency\n" +
+		"2026-01-04,DEPOSIT_CASH,,,,,0,0,200.00,EUR\n"
+
+	svc := importer.NewService(db)
+	doc, err := svc.Upload(ctx, person.ID, "test.csv", "text/csv", []byte(sampleCSV))
+	if err != nil {
+		t.Fatalf("Upload() error = %v", err)
+	}
+	if err := svc.Process(ctx, doc.ID, person.ID); err != nil {
+		t.Fatalf("Process() error = %v", err)
+	}
+
+	data = exec(t, schema, ctx, `mutation ($docID: ID!, $account: ID!) {
+		confirmImport(documentID: $docID, input: { cashAccountID: $account, transactions: [] })
+		{ id }
+	}`, map[string]any{"docID": doc.ID, "account": accountID})
+	firstTxID := data["confirmImport"].([]any)[0].(map[string]any)["id"].(string)
+
+	// Re-process: regenerates staged transactions, leaves the committed one alone.
+	if err := svc.Process(ctx, doc.ID, person.ID); err != nil {
+		t.Fatalf("Process() (reprocess) error = %v", err)
+	}
+
+	// Re-confirm the reprocessed document.
+	data = exec(t, schema, ctx, `mutation ($docID: ID!, $account: ID!) {
+		confirmImport(documentID: $docID, input: { cashAccountID: $account, transactions: [] })
+		{ id cashDelta { amount } }
+	}`, map[string]any{"docID": doc.ID, "account": accountID})
+	second := data["confirmImport"].([]any)
+	if len(second) != 1 {
+		t.Fatalf("confirmImport (reconcile) = %d transactions, want 1", len(second))
+	}
+	secondTxID := second[0].(map[string]any)["id"].(string)
+	if secondTxID != firstTxID {
+		t.Errorf("reconciled transaction ID = %q, want %q (same row, not a duplicate)", secondTxID, firstTxID)
+	}
+
+	// The document must still have exactly one linked transaction — no
+	// duplicate was created alongside the reconciled one.
+	txs, err := db.ListTransactionsByDocument(ctx, sql.NullString{String: doc.ID, Valid: true})
+	if err != nil {
+		t.Fatalf("ListTransactionsByDocument() error = %v", err)
+	}
+	if len(txs) != 1 {
+		t.Fatalf("transactions linked to document = %d, want 1", len(txs))
 	}
 }
 
