@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { graphql } from '$houdini';
+	import { invalidateAll } from '$app/navigation';
+	import { cache, graphql } from '$houdini';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import TextField from './ui/TextField.svelte';
@@ -21,7 +22,15 @@
 
 		const result = await createPerson.mutate({ displayName: name.trim() });
 		error = result.errors?.[0]?.message ?? null;
-		if (!error) name = '';
+		if (!error) {
+			name = '';
+			// The new person needs to show up in AppNav's switcher too, which
+			// reads from the root layout's `me.persons` — a separate query
+			// from this page's `All_Persons` list, so the ...All_Persons_insert
+			// fragment above doesn't reach it. Same fix as switchPerson's.
+			cache.markStale();
+			await invalidateAll();
+		}
 	}
 </script>
 
