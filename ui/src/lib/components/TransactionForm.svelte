@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { graphql, TransactionType } from '$houdini';
 	import type { TransactionType$options } from '$houdini';
-	import { parseAmount, parsePrice } from '$lib/format';
+	import { formatMoney, parseAmount, parsePrice } from '$lib/format';
 	import type { SecurityOption, CashAccountOption } from '$lib/transaction-types';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
@@ -48,8 +48,24 @@
 	let fees = $state('');
 	let taxes = $state('');
 	let cashDelta = $state('');
+	let gross = $state('');
 	let currency = $state('EUR');
 	let error = $state<string | null>(null);
+
+	// DEPOSIT_CASH/INTEREST credit the account net of any withheld tax;
+	// WITHDRAW_CASH/ACCOUNT_FEES debit it the same way — matching the
+	// gross/taxes/net convention the Kontoauszug importer already applies
+	// (see internal/importer/ing_konto.go), so a manual entry ends up
+	// looking the same as an imported one instead of needing the net
+	// amount worked out by hand first.
+	const creditTypes = new Set(['DEPOSIT_CASH', 'INTEREST']);
+	const debitTypes = new Set(['WITHDRAW_CASH', 'ACCOUNT_FEES']);
+	const isGrossDerived = $derived(creditTypes.has(type) || debitTypes.has(type));
+
+	const derivedCashDelta = $derived.by(() => {
+		const net = (parseAmount(gross) ?? 0) - (parseAmount(taxes) ?? 0);
+		return debitTypes.has(type) ? -net : net;
+	});
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
@@ -66,7 +82,7 @@
 				price: parsePrice(price) ?? undefined,
 				fees: parseAmount(fees) ?? undefined,
 				taxes: parseAmount(taxes) ?? undefined,
-				cashDelta: parseAmount(cashDelta) ?? undefined
+				cashDelta: isGrossDerived ? derivedCashDelta : (parseAmount(cashDelta) ?? undefined)
 			}
 		});
 		error = result.errors?.[0]?.message ?? null;
@@ -76,6 +92,7 @@
 			fees = '';
 			taxes = '';
 			cashDelta = '';
+			gross = '';
 			oncreated();
 		}
 	}
@@ -105,15 +122,28 @@
 			{/each}
 		</SelectField>
 
-		<TextField bind:value={units} label="Units" type="number" step="any" />
-		<TextField bind:value={price} label="Price per unit" placeholder="0.00" />
-		<TextField bind:value={fees} label="Fees" placeholder="0.00" />
-		<TextField bind:value={taxes} label="Taxes" placeholder="0.00" />
-		<TextField
-			bind:value={cashDelta}
-			label="Cash delta (cash events only)"
-			placeholder="e.g. 1000.00 or -50.00"
-		/>
+		{#if isGrossDerived}
+			<TextField bind:value={gross} label="Gross amount" placeholder="0.00" />
+			<TextField bind:value={taxes} label="Taxes withheld" placeholder="0.00" />
+			<div class="flex flex-col justify-end pb-1.5">
+				<span class="mb-1 block text-sm font-medium text-gray-700">Cash delta</span>
+				<span
+					class="tabular-nums {derivedCashDelta < 0 ? 'text-red-600' : 'text-green-700'}"
+				>
+					{formatMoney({ amount: derivedCashDelta, currency: currency.toUpperCase() || 'EUR' })}
+				</span>
+			</div>
+		{:else}
+			<TextField bind:value={units} label="Units" type="number" step="any" />
+			<TextField bind:value={price} label="Price per unit" placeholder="0.00" />
+			<TextField bind:value={fees} label="Fees" placeholder="0.00" />
+			<TextField bind:value={taxes} label="Taxes" placeholder="0.00" />
+			<TextField
+				bind:value={cashDelta}
+				label="Cash delta (cash events only)"
+				placeholder="e.g. 1000.00 or -50.00"
+			/>
+		{/if}
 		<TextField bind:value={currency} label="Currency" maxlength={3} required />
 	</div>
 
