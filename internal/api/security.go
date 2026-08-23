@@ -69,8 +69,11 @@ type SecurityIdentifierInput struct {
 	Value string
 }
 
-// ListingInput is one exchange listing in security mutations.
+// ListingInput is one exchange listing in security mutations. See its
+// schema doc comment for how ID drives create/update/delete reconciliation
+// in updateSecurity.
 type ListingInput struct {
+	ID            *graphql.ID
 	Exchange      *string
 	Ticker        string
 	Currency      string
@@ -172,13 +175,8 @@ func (r *RootResolver) UpdateSecurity(ctx context.Context, args struct {
 			}
 		}
 
-		// Note: replacing listings drops their quote history via ON DELETE
-		// CASCADE. Fine for now, revisit once quotes arrive in M4.
 		if args.Input.Listings != nil {
-			if err = q.DeleteListings(ctx, security.ID); err != nil {
-				return err
-			}
-			if err = createListings(ctx, q, security.ID, *args.Input.Listings); err != nil {
+			if err = reconcileListings(ctx, q, security.ID, *args.Input.Listings); err != nil {
 				return err
 			}
 		}
@@ -214,6 +212,63 @@ func createIdentifiers(ctx context.Context, q *persistence.Queries, securityID s
 			Value:      i.Value,
 		})
 		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// reconcileListings applies the desired listing set to a security that may
+// already have listings, matching by ListingInput.ID rather than blindly
+// replacing — a matched listing is updated in place (keeping its ID, and so
+// its quote history, intact), an unmatched one is created, and an existing
+// listing missing from the input set is removed.
+func reconcileListings(ctx context.Context, q *persistence.Queries, securityID string, listings []ListingInput) error {
+	existing, err := q.ListListings(ctx, securityID)
+	if err != nil {
+		return err
+	}
+	stillPresent := make(map[string]bool, len(existing))
+	for _, e := range existing {
+		stillPresent[e.ID] = false
+	}
+
+	for _, l := range listings {
+		if l.ID != nil {
+			if _, ok := stillPresent[string(*l.ID)]; ok {
+				stillPresent[string(*l.ID)] = true
+				if _, err := q.UpdateListing(ctx, persistence.UpdateListingParams{
+					ID:            string(*l.ID),
+					SecurityID:    securityID,
+					Exchange:      nullString(l.Exchange),
+					Ticker:        l.Ticker,
+					Currency:      l.Currency,
+					QuoteProvider: nullString(l.QuoteProvider),
+				}); err != nil {
+					return err
+				}
+				continue
+			}
+		}
+
+		if _, err := q.CreateListing(ctx, persistence.CreateListingParams{
+			ID:            uuid.NewString(),
+			SecurityID:    securityID,
+			Exchange:      nullString(l.Exchange),
+			Ticker:        l.Ticker,
+			Currency:      l.Currency,
+			QuoteProvider: nullString(l.QuoteProvider),
+		}); err != nil {
+			return err
+		}
+	}
+
+	for id, kept := range stillPresent {
+		if kept {
+			continue
+		}
+		if _, err := q.DeleteListing(ctx, persistence.DeleteListingParams{ID: id, SecurityID: securityID}); err != nil {
 			return err
 		}
 	}

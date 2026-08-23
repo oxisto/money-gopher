@@ -114,6 +114,26 @@ func (q *Queries) CreateSecurityIdentifier(ctx context.Context, arg CreateSecuri
 	return err
 }
 
+const deleteListing = `-- name: DeleteListing :execrows
+DELETE FROM listings
+WHERE
+    id = ?
+    AND security_id = ?
+`
+
+type DeleteListingParams struct {
+	ID         string
+	SecurityID string
+}
+
+func (q *Queries) DeleteListing(ctx context.Context, arg DeleteListingParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteListing, arg.ID, arg.SecurityID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const deleteListings = `-- name: DeleteListings :exec
 DELETE FROM listings
 WHERE
@@ -425,6 +445,48 @@ func (q *Queries) ListSecurityIdentifiers(ctx context.Context, securityID string
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateListing = `-- name: UpdateListing :one
+UPDATE listings
+SET
+    exchange = ?,
+    ticker = ?,
+    currency = ?,
+    quote_provider = ?
+WHERE
+    id = ?
+    AND security_id = ? RETURNING id, security_id, exchange, ticker, currency, quote_provider
+`
+
+type UpdateListingParams struct {
+	Exchange      sql.NullString
+	Ticker        string
+	Currency      string
+	QuoteProvider sql.NullString
+	ID            string
+	SecurityID    string
+}
+
+func (q *Queries) UpdateListing(ctx context.Context, arg UpdateListingParams) (*Listing, error) {
+	row := q.db.QueryRowContext(ctx, updateListing,
+		arg.Exchange,
+		arg.Ticker,
+		arg.Currency,
+		arg.QuoteProvider,
+		arg.ID,
+		arg.SecurityID,
+	)
+	var i Listing
+	err := row.Scan(
+		&i.ID,
+		&i.SecurityID,
+		&i.Exchange,
+		&i.Ticker,
+		&i.Currency,
+		&i.QuoteProvider,
+	)
+	return &i, err
 }
 
 const updateSecurity = `-- name: UpdateSecurity :one

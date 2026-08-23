@@ -104,6 +104,23 @@ DELETE FROM listings
 WHERE
     security_id = ?;
 
+-- name: UpdateListing :one
+UPDATE listings
+SET
+    exchange = ?,
+    ticker = ?,
+    currency = ?,
+    quote_provider = ?
+WHERE
+    id = ?
+    AND security_id = ? RETURNING *;
+
+-- name: DeleteListing :execrows
+DELETE FROM listings
+WHERE
+    id = ?
+    AND security_id = ?;
+
 -- name: CreateQuote :exec
 INSERT INTO
     quotes (listing_id, time, price)

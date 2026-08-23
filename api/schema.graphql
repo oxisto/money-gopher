@@ -438,6 +438,13 @@ input SecurityIdentifierInput {
 }
 
 input ListingInput {
+  """
+  Set to update that existing listing in place, preserving its quote
+  history. Omitted (or an ID not found among the security's current
+  listings) creates a new listing instead. Only meaningful for
+  updateSecurity — createSecurity has no existing listings to match.
+  """
+  id: ID
   exchange: String
   ticker: String!
   currency: String!
@@ -453,8 +460,12 @@ input CreateSecurityInput {
 }
 
 """
-UpdateSecurityInput updates a security. When identifiers or listings are
-provided, they replace the existing set entirely.
+UpdateSecurityInput updates a security. Identifiers, when provided, replace
+the existing set entirely. Listings, when provided, are reconciled by
+ListingInput.id instead: a matched listing is updated in place (its quote
+history stays intact), an input with no ID (or an unmatched one) creates a
+new listing, and an existing listing missing from the input set is removed
+(dropping its quote history too).
 """
 input UpdateSecurityInput {
   displayName: String

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/graph-gophers/graphql-go"
 
@@ -174,6 +175,76 @@ func TestLifecycle(t *testing.T) {
 		map[string]any{"id": accountID})
 	if got := data["cashAccount"].(map[string]any)["balance"].(map[string]any)["amount"].(float64); got != 100000 {
 		t.Errorf("balance after cleanup = %v, want 100000", got)
+	}
+}
+
+// TestUpdateSecurity_ListingReconciliation verifies that editing an
+// existing listing (matched by ListingInput.id) preserves its quote
+// history, while omitting a listing from the input set removes it (and its
+// quotes) — the whole reason reconcileListings replaced a blind
+// delete-all/recreate.
+func TestUpdateSecurity_ListingReconciliation(t *testing.T) {
+	db, err := persistence.OpenDB(":memory:")
+	if err != nil {
+		t.Fatalf("OpenDB() error = %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+
+	user, person, err := auth.EnsureDevUser(context.Background(), db)
+	if err != nil {
+		t.Fatalf("EnsureDevUser() error = %v", err)
+	}
+	updater := &quotes.Updater{DB: db, Registry: quotes.NewRegistry()}
+	schema := NewSchema(db, updater)
+	ctx := auth.WithPerson(auth.WithUser(context.Background(), user), person)
+
+	data := exec(t, schema, ctx, `mutation {
+		createSecurity(input: {
+			displayName: "Test Corp"
+			listings: [{ ticker: "TST", currency: "EUR", quoteProvider: "yf" }]
+		}) { id listings { id } }
+	}`, nil)
+	sec := data["createSecurity"].(map[string]any)
+	securityID := sec["id"].(string)
+	listingID := sec["listings"].([]any)[0].(map[string]any)["id"].(string)
+
+	if err := db.CreateQuote(ctx, persistence.CreateQuoteParams{
+		ListingID: listingID,
+		Time:      time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+		Price:     persistence.NewDecimalFromInt64(10000).DivInt(100),
+	}); err != nil {
+		t.Fatalf("CreateQuote() error = %v", err)
+	}
+
+	// Editing the listing (same ID, new ticker) must keep its ID — and so
+	// its quote history — intact, not delete-and-recreate it.
+	data = exec(t, schema, ctx, `mutation ($id: ID!, $listingID: ID!) {
+		updateSecurity(id: $id, input: {
+			listings: [{ id: $listingID, ticker: "TST2", currency: "EUR", quoteProvider: "yf" }]
+		}) { listings { id ticker quotes(from: null, to: null) { price { amount } } } }
+	}`, map[string]any{"id": securityID, "listingID": listingID})
+
+	listings := data["updateSecurity"].(map[string]any)["listings"].([]any)
+	if len(listings) != 1 {
+		t.Fatalf("len(listings) = %d, want 1", len(listings))
+	}
+	updated := listings[0].(map[string]any)
+	if updated["id"] != listingID {
+		t.Errorf("listing ID changed: got %v, want %v (quote history would be orphaned)", updated["id"], listingID)
+	}
+	if updated["ticker"] != "TST2" {
+		t.Errorf("ticker = %v, want TST2", updated["ticker"])
+	}
+	if qs := updated["quotes"].([]any); len(qs) != 1 {
+		t.Errorf("len(quotes) = %d, want 1 (quote history should survive an in-place edit)", len(qs))
+	}
+
+	// Dropping the listing from the input set entirely must remove it.
+	data = exec(t, schema, ctx, `mutation ($id: ID!) {
+		updateSecurity(id: $id, input: { listings: [] }) { listings { id } }
+	}`, map[string]any{"id": securityID})
+	if got := data["updateSecurity"].(map[string]any)["listings"].([]any); len(got) != 0 {
+		t.Errorf("listings after removal = %v, want empty", got)
 	}
 }
 
