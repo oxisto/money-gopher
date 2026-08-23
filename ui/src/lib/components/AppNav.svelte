@@ -17,6 +17,7 @@
 
 	const nav = [
 		{ href: '/', label: 'Dashboard' },
+		{ href: '/gains', label: 'Gains' },
 		{ href: '/securities', label: 'Securities' },
 		{ href: '/imports', label: 'Imports' },
 		{ href: '/settings/people', label: 'People' }

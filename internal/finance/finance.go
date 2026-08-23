@@ -239,6 +239,152 @@ func books(txs []*persistence.Transaction, cutoff time.Time, exclusive bool) []*
 	return out
 }
 
+// costBasis returns the FIFO cost basis of the next `units` shares in the
+// book (in minor units), without draining them — the caller applies the
+// actual sale separately.
+func (b *book) costBasis(units float64) (v int64) {
+	remaining := units
+	for _, l := range b.lots {
+		if remaining <= 0 {
+			break
+		}
+		n := math.Min(remaining, l.units)
+		v += l.ppu.MulFloat(n).MulInt(100).RoundToInt64()
+		remaining -= n
+	}
+	return v
+}
+
+// RealizedGain is one cash-realized event within a period: a dividend or
+// interest payment (already net of withheld tax), or the realized profit or
+// loss of a completed sale (net proceeds minus the FIFO cost basis of the
+// shares sold). Unlike Position.ProfitOrLoss, this is money that has
+// actually moved, not a mark-to-market valuation.
+type RealizedGain struct {
+	TransactionID string
+	Time          time.Time
+	Type          string // "DIVIDEND", "INTEREST", or "SELL".
+	SecurityID    string // Set for DIVIDEND and SELL; empty for INTEREST.
+	// PortfolioID/CashAccountID identify where the underlying transaction can
+	// be found (and edited) in the UI — a trade/dividend has a portfolio, a
+	// cash account statement's interest doesn't.
+	PortfolioID   string
+	CashAccountID string
+	Currency      string
+	Amount        int64
+}
+
+// RealizedGains replays txs (any order, from any number of portfolios/cash
+// accounts) to find every dividend, interest payment, and completed sale
+// whose time falls within [from, to). Sales are costed FIFO against the full
+// transaction history, not just the ones inside the window, so a sale of
+// shares bought before `from` still gets the correct cost basis.
+func RealizedGains(txs []*persistence.Transaction, from, to time.Time) []RealizedGain {
+	sorted := make([]*persistence.Transaction, len(txs))
+	copy(sorted, txs)
+	sort.SliceStable(sorted, func(i, j int) bool { return sorted[i].Time.Before(sorted[j].Time) })
+
+	books := map[string]*book{}
+	inWindow := func(t time.Time) bool { return !t.Before(from) && t.Before(to) }
+
+	var out []RealizedGain
+	for _, tx := range sorted {
+		switch tx.Type {
+		case "BUY", "DELIVERY_INBOUND":
+			if !tx.SecurityID.Valid {
+				continue
+			}
+			b := books[tx.SecurityID.String]
+			if b == nil {
+				b = &book{currency: tx.Currency}
+				books[tx.SecurityID.String] = b
+			}
+			b.apply(tx)
+
+		case "SELL", "DELIVERY_OUTBOUND":
+			if !tx.SecurityID.Valid {
+				continue
+			}
+			b := books[tx.SecurityID.String]
+			var basis int64
+			if b != nil {
+				basis = b.costBasis(tx.Units)
+				b.apply(tx)
+			}
+			if tx.Type == "SELL" && inWindow(tx.Time) {
+				out = append(out, RealizedGain{
+					TransactionID: tx.ID, Time: tx.Time, Type: "SELL", SecurityID: tx.SecurityID.String,
+					PortfolioID: tx.PortfolioID.String, CashAccountID: tx.CashAccountID.String,
+					Currency: tx.Currency, Amount: tx.CashDelta - basis,
+				})
+			}
+
+		case "DIVIDEND":
+			if inWindow(tx.Time) {
+				out = append(out, RealizedGain{
+					TransactionID: tx.ID, Time: tx.Time, Type: "DIVIDEND", SecurityID: tx.SecurityID.String,
+					PortfolioID: tx.PortfolioID.String, CashAccountID: tx.CashAccountID.String,
+					Currency: tx.Currency, Amount: tx.CashDelta,
+				})
+			}
+
+		case "INTEREST":
+			if inWindow(tx.Time) {
+				out = append(out, RealizedGain{
+					TransactionID: tx.ID, Time: tx.Time, Type: "INTEREST",
+					PortfolioID: tx.PortfolioID.String, CashAccountID: tx.CashAccountID.String,
+					Currency: tx.Currency, Amount: tx.CashDelta,
+				})
+			}
+		}
+	}
+
+	return out
+}
+
+// RealizedGainOf returns the realized profit or loss of one specific SELL
+// transaction: its net proceeds minus the FIFO cost basis of the shares it
+// sold, found by replaying the full history of that security (in any order,
+// across every portfolio) up to and including it. Unlike RealizedGains'
+// time-window matching, this pins to the transaction's own ID, so it stays
+// unambiguous even when several sales share the same day. ok is false for
+// anything that isn't a SELL, or isn't found in txs at all.
+func RealizedGainOf(txs []*persistence.Transaction, transactionID string) (amount int64, ok bool) {
+	var target *persistence.Transaction
+	for _, tx := range txs {
+		if tx.ID == transactionID {
+			target = tx
+			break
+		}
+	}
+	if target == nil || target.Type != "SELL" || !target.SecurityID.Valid {
+		return 0, false
+	}
+
+	sorted := make([]*persistence.Transaction, 0, len(txs))
+	for _, tx := range txs {
+		if tx.SecurityID.Valid && tx.SecurityID.String == target.SecurityID.String {
+			sorted = append(sorted, tx)
+		}
+	}
+	sort.SliceStable(sorted, func(i, j int) bool { return sorted[i].Time.Before(sorted[j].Time) })
+
+	b := &book{currency: target.Currency}
+	for _, tx := range sorted {
+		switch tx.Type {
+		case "BUY", "DELIVERY_INBOUND":
+			b.apply(tx)
+		case "SELL", "DELIVERY_OUTBOUND":
+			basis := b.costBasis(tx.Units)
+			b.apply(tx)
+			if tx.ID == transactionID {
+				return tx.CashDelta - basis, true
+			}
+		}
+	}
+	return 0, false
+}
+
 // marketValue prices the books at the given time.
 func marketValue(bs []*securityBook, at time.Time, quote QuoteFunc) (v int64) {
 	for _, b := range bs {

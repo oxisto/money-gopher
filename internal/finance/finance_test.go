@@ -241,3 +241,79 @@ func TestTimeWeightedReturn(t *testing.T) {
 		}
 	})
 }
+
+func TestRealizedGains(t *testing.T) {
+	txs := []*persistence.Transaction{
+		tx("BUY", t0, "msci", 10, 10000, -100000),      // 10 @ 100.00
+		tx("SELL", t1, "msci", 4, 12000, 47600),         // sell 4 @ 120.00, net 476.00
+		tx("DIVIDEND", t1, "msci", 0, 0, 5000),
+		{Type: "INTEREST", Time: t2, CashDelta: 700, Currency: "EUR"},
+		tx("SELL", t3, "msci", 2, 11000, 21800), // outside the [t0,t3) window below
+	}
+
+	gains := RealizedGains(txs, t0, t3)
+
+	// Cost basis of the 4 sold shares (FIFO out of the 10 bought at 100.00
+	// each) is 400.00; net proceeds were 476.00, so the realized gain is
+	// 76.00 — the t3 sale must not appear at all, since [t0,t3) excludes it.
+	var dividends, interest, sell int64
+	for _, g := range gains {
+		switch g.Type {
+		case "DIVIDEND":
+			dividends += g.Amount
+		case "INTEREST":
+			interest += g.Amount
+		case "SELL":
+			sell += g.Amount
+			if g.Time != t1 {
+				t.Errorf("unexpected SELL gain at %v (window is [t0,t3))", g.Time)
+			}
+		}
+	}
+	if dividends != 5000 {
+		t.Errorf("dividends = %d, want 5000", dividends)
+	}
+	if interest != 700 {
+		t.Errorf("interest = %d, want 700", interest)
+	}
+	if sell != 7600 {
+		t.Errorf("sell gain = %d, want 7600", sell)
+	}
+}
+
+func TestRealizedGainOf(t *testing.T) {
+	firstSale := &persistence.Transaction{
+		ID: "sale1", Type: "SELL", Time: t1,
+		SecurityID: sql.NullString{String: "msci", Valid: true},
+		Units:      4, CashDelta: 47600, Currency: "EUR",
+	}
+	secondSale := &persistence.Transaction{
+		ID: "sale2", Type: "SELL", Time: t1, // same day, must not be confused with sale1
+		SecurityID: sql.NullString{String: "msci", Valid: true},
+		Units:      2, CashDelta: 21800, Currency: "EUR",
+	}
+	txs := []*persistence.Transaction{
+		tx("BUY", t0, "msci", 10, 10000, -100000), // 10 @ 100.00
+		firstSale,
+		secondSale,
+	}
+
+	if amount, ok := RealizedGainOf(txs, "sale1"); !ok || amount != 7600 {
+		t.Errorf("sale1 gain = %d, %v; want 7600, true", amount, ok)
+	}
+	// Cost basis continues FIFO from where sale1 left off: 2 more shares
+	// @ 100.00 = 20000; proceeds 21800 -> gain 1800.
+	if amount, ok := RealizedGainOf(txs, "sale2"); !ok || amount != 1800 {
+		t.Errorf("sale2 gain = %d, %v; want 1800, true", amount, ok)
+	}
+
+	if _, ok := RealizedGainOf(txs, "nonexistent"); ok {
+		t.Error("RealizedGainOf found a transaction that isn't in txs")
+	}
+
+	buy := tx("BUY", t0, "msci", 10, 10000, -100000)
+	buy.ID = "buy1"
+	if _, ok := RealizedGainOf([]*persistence.Transaction{buy}, "buy1"); ok {
+		t.Error("RealizedGainOf reported ok for a BUY, not a SELL")
+	}
+}

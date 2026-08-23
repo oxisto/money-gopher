@@ -11,6 +11,7 @@ import (
 	"github.com/graph-gophers/graphql-go"
 
 	"github.com/oxisto/money-gopher/internal/auth"
+	"github.com/oxisto/money-gopher/internal/finance"
 	"github.com/oxisto/money-gopher/internal/persistence"
 )
 
@@ -498,6 +499,33 @@ func (r *TransactionResolver) Taxes() Money {
 
 func (r *TransactionResolver) CashDelta() Money {
 	return money(r.transaction.CashDelta, r.transaction.Currency)
+}
+
+// Gain resolves Transaction.gain: the realized profit/loss of a SELL,
+// costed FIFO against the security's full transaction history (not just
+// this portfolio's) — null for every other type.
+func (r *TransactionResolver) Gain(ctx context.Context) (*Money, error) {
+	if r.transaction.Type != "SELL" {
+		return nil, nil
+	}
+
+	person, err := auth.PersonFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	txs, err := allPersonTransactions(ctx, r.db, person.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	amount, ok := finance.RealizedGainOf(txs, r.transaction.ID)
+	if !ok {
+		return nil, nil
+	}
+
+	m := money(amount, r.transaction.Currency)
+	return &m, nil
 }
 
 func (r *TransactionResolver) Source() string {
