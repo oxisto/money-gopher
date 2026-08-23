@@ -37,7 +37,7 @@ FROM
 WHERE
     portfolio_id = ?
 ORDER BY
-    time;
+    time DESC;
 
 -- name: ListTransactionsByCashAccount :many
 SELECT
@@ -47,7 +47,7 @@ FROM
 WHERE
     cash_account_id = ?
 ORDER BY
-    time;
+    time DESC;
 
 -- name: ListTransactionsByDocument :many
 SELECT

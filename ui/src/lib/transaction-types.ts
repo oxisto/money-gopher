@@ -17,7 +17,6 @@ export interface TransactionRow {
 	fxRate: string | null;
 	security: { id: string; displayName: string } | null;
 	cashAccount: { id: string } | null;
-	document: { id: string; filename: string } | null;
 }
 
 export interface SecurityOption {

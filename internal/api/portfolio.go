@@ -184,7 +184,7 @@ func (r *PortfolioResolver) CashAccount(ctx context.Context) (*CashAccountResolv
 	return &CashAccountResolver{db: r.db, account: account}, nil
 }
 
-// Transactions resolves Portfolio.transactions, ordered by time.
+// Transactions resolves Portfolio.transactions, newest first.
 func (r *PortfolioResolver) Transactions(ctx context.Context) ([]*TransactionResolver, error) {
 	transactions, err := r.db.ListTransactionsByPortfolio(ctx, sql.NullString{String: r.portfolio.ID, Valid: true})
 	if err != nil {

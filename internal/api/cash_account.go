@@ -170,7 +170,7 @@ func (r *CashAccountResolver) Balance(ctx context.Context) (Money, error) {
 	return money(balance, r.account.Currency), nil
 }
 
-// Transactions resolves CashAccount.transactions, ordered by time.
+// Transactions resolves CashAccount.transactions, newest first.
 func (r *CashAccountResolver) Transactions(ctx context.Context) ([]*TransactionResolver, error) {
 	transactions, err := r.db.ListTransactionsByCashAccount(ctx, sql.NullString{String: r.account.ID, Valid: true})
 	if err != nil {

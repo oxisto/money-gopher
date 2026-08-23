@@ -152,7 +152,7 @@ FROM
 WHERE
     cash_account_id = ?
 ORDER BY
-    time
+    time DESC
 `
 
 func (q *Queries) ListTransactionsByCashAccount(ctx context.Context, cashAccountID sql.NullString) ([]*Transaction, error) {
@@ -256,7 +256,7 @@ FROM
 WHERE
     portfolio_id = ?
 ORDER BY
-    time
+    time DESC
 `
 
 func (q *Queries) ListTransactionsByPortfolio(ctx context.Context, portfolioID sql.NullString) ([]*Transaction, error) {

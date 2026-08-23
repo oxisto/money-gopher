@@ -37,10 +37,6 @@ query CashAccountDetail($id: ID!) {
 			cashAccount {
 				id
 			}
-			document {
-				id
-				filename
-			}
 		}
 	}
 	securities {
