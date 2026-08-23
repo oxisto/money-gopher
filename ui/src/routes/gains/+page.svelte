@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PieChart from '$lib/components/ui/PieChart.svelte';
 	import Section from '$lib/components/ui/Section.svelte';
 	import { formatDate, formatMoney } from '$lib/format';
 	import type { PageProps } from './$types';
@@ -76,44 +77,57 @@
 		</div>
 	</div>
 
-	<Section title="Events">
-		{#if gains.entries.length === 0}
-			<p class="text-sm text-gray-500">No realized gains in {selectedYear}.</p>
-		{:else}
-			<div class="overflow-x-auto rounded-md border border-gray-200 bg-white">
-				<table class="w-full text-sm">
-					<thead>
-						<tr class="border-b border-gray-200 text-left text-xs text-gray-500 uppercase">
-							<th class="px-4 py-2 font-medium">Date</th>
-							<th class="px-4 py-2 font-medium">Type</th>
-							<th class="px-4 py-2 font-medium">Security</th>
-							<th class="px-4 py-2 text-right font-medium">Amount</th>
-						</tr>
-					</thead>
-					<tbody class="divide-y divide-gray-100">
-						{#each gains.entries as entry (entry.id)}
-							<tr class="hover:bg-gray-50">
-								<td class="px-4 py-2 whitespace-nowrap">
-									<a href={entryHref(entry)} class="text-gray-900 hover:underline"
-										>{formatDate(entry.time)}</a
-									>
-								</td>
-								<td class="px-4 py-2">
-									<span class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-mono">{entry.type}</span>
-								</td>
-								<td class="px-4 py-2">{entry.security?.displayName ?? '—'}</td>
-								<td
-									class="px-4 py-2 text-right tabular-nums {entry.amount.amount < 0
-										? 'text-red-600'
-										: 'text-green-700'}"
-								>
-									{formatMoney(entry.amount)}
-								</td>
+	<div class="flex flex-col gap-8">
+		<Section title="Breakdown">
+			<PieChart
+				segments={[
+					{ label: 'Dividends', value: gains.dividends.amount, color: '#6366f1' },
+					{ label: 'Interest', value: gains.interest.amount, color: '#f59e0b' },
+					{ label: 'Trading gains', value: gains.tradingGains.amount, color: '#10b981' }
+				]}
+				formatValue={(amount) => formatMoney({ amount, currency: gains.currency })}
+			/>
+		</Section>
+
+		<Section title="Events">
+			{#if gains.entries.length === 0}
+				<p class="text-sm text-gray-500">No realized gains in {selectedYear}.</p>
+			{:else}
+				<div class="overflow-x-auto rounded-md border border-gray-200 bg-white">
+					<table class="w-full text-sm">
+						<thead>
+							<tr class="border-b border-gray-200 text-left text-xs text-gray-500 uppercase">
+								<th class="px-4 py-2 font-medium">Date</th>
+								<th class="px-4 py-2 font-medium">Type</th>
+								<th class="px-4 py-2 font-medium">Security</th>
+								<th class="px-4 py-2 text-right font-medium">Amount</th>
 							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-		{/if}
-	</Section>
+						</thead>
+						<tbody class="divide-y divide-gray-100">
+							{#each gains.entries as entry (entry.id)}
+								<tr class="hover:bg-gray-50">
+									<td class="px-4 py-2 whitespace-nowrap">
+										<a href={entryHref(entry)} class="text-gray-900 hover:underline"
+											>{formatDate(entry.time)}</a
+										>
+									</td>
+									<td class="px-4 py-2">
+										<span class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-mono">{entry.type}</span>
+									</td>
+									<td class="px-4 py-2">{entry.security?.displayName ?? '—'}</td>
+									<td
+										class="px-4 py-2 text-right tabular-nums {entry.amount.amount < 0
+											? 'text-red-600'
+											: 'text-green-700'}"
+									>
+										{formatMoney(entry.amount)}
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{/if}
+		</Section>
+	</div>
 {/if}
