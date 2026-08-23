@@ -177,6 +177,46 @@ func TestLifecycle(t *testing.T) {
 	}
 }
 
+// TestTaxRefundEitherSign verifies that TAX_REFUND accepts a negative
+// cashDelta as well as positive — a retroactive capital-gains loss offset
+// can net to an additional small charge, not just a refund — but still
+// rejects zero.
+func TestTaxRefundEitherSign(t *testing.T) {
+	schema, ctx := newTestSchema(t)
+
+	data := exec(t, schema, ctx, `mutation {
+		createCashAccount(input: { displayName: "Extra-Konto", currency: "EUR" }) { id }
+	}`, nil)
+	accountID := data["createCashAccount"].(map[string]any)["id"].(string)
+
+	data = exec(t, schema, ctx, `mutation ($account: ID!) {
+		createTransaction(input: {
+			type: TAX_REFUND, time: "2025-03-19T00:00:00Z", currency: "EUR"
+			cashAccountID: $account, cashDelta: -2
+		}) { id cashDelta { amount } }
+	}`, map[string]any{"account": accountID})
+	if got := data["createTransaction"].(map[string]any)["cashDelta"].(map[string]any)["amount"].(float64); got != -2 {
+		t.Errorf("negative TAX_REFUND cashDelta = %v, want -2", got)
+	}
+
+	data = exec(t, schema, ctx, `mutation ($account: ID!) {
+		createTransaction(input: {
+			type: TAX_REFUND, time: "2025-05-06T00:00:00Z", currency: "EUR"
+			cashAccountID: $account, cashDelta: 1262
+		}) { id cashDelta { amount } }
+	}`, map[string]any{"account": accountID})
+	if got := data["createTransaction"].(map[string]any)["cashDelta"].(map[string]any)["amount"].(float64); got != 1262 {
+		t.Errorf("positive TAX_REFUND cashDelta = %v, want 1262", got)
+	}
+
+	execExpectError(t, schema, ctx, `mutation ($account: ID!) {
+		createTransaction(input: {
+			type: TAX_REFUND, time: "2025-01-01T00:00:00Z", currency: "EUR"
+			cashAccountID: $account, cashDelta: 0
+		}) { id }
+	}`, map[string]any{"account": accountID})
+}
+
 // TestSecurityUnderlying verifies linking a derivative security (e.g. a
 // subscription right) to the stock it derives from, both at creation and
 // via a later update, and that the link resolves both ways round-trip

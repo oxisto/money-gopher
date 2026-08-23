@@ -26,20 +26,22 @@ func TestING_ParseKontoauszug(t *testing.T) {
 	}
 
 	// Gehalt (deposit), Miete (withdrawal), Kontoführungsentgelt (fee),
-	// Stromversorger (withdrawal), and Zinsertrag (interest) — five real
-	// rows. The three withholding-tax lines (Kapitalertragsteuer,
-	// Solidaritätszuschlag, Kirchensteuer) fold into the interest row's
-	// Taxes rather than standing alone, so they don't add three more. The
-	// "%"-marked breakdown table row and the Abschlussbetrag restatement
-	// must not produce a row either. Nor must the Wertpapierkauf (-100.00)
-	// and Zins/Dividende WP (+24.50) rows: both have an ISIN-bearing
-	// continuation line, so a dedicated trade/dividend confirmation already
-	// covers them elsewhere — counting them here too would double the cash
-	// impact of the same real-world event. Nor the second Wertpapierkauf
-	// (-5,432.10), whose ISIN continuation lands on a simulated next page —
-	// past a page-footer watermark, a blank gap, and a repeated
-	// page-header/column-heading block — rather than the very next line.
-	const wantRows = 5
+	// Stromversorger (withdrawal), a standalone Kapitalertragsteuer
+	// correction (tax refund, see below), and Zinsertrag (interest) — six
+	// real rows. The three withholding-tax lines dated the same day as
+	// Zinsertrag (Kapitalertragsteuer, Solidaritätszuschlag, Kirchensteuer)
+	// fold into the interest row's Taxes rather than standing alone, so
+	// they don't add three more. The "%"-marked breakdown table row and the
+	// Abschlussbetrag restatement must not produce a row either. Nor must
+	// the Wertpapierkauf (-100.00) and Zins/Dividende WP (+24.50) rows:
+	// both have an ISIN-bearing continuation line, so a dedicated
+	// trade/dividend confirmation already covers them elsewhere — counting
+	// them here too would double the cash impact of the same real-world
+	// event. Nor the second Wertpapierkauf (-5,432.10), whose ISIN
+	// continuation lands on a simulated next page — past a page-footer
+	// watermark, a blank gap, and a repeated page-header/column-heading
+	// block — rather than the very next line.
+	const wantRows = 6
 	if len(txs) != wantRows {
 		t.Fatalf("len(txs) = %d, want %d", len(txs), wantRows)
 	}
@@ -47,6 +49,24 @@ func TestING_ParseKontoauszug(t *testing.T) {
 		if tx.CashDelta == -10000 || tx.CashDelta == 2450 || tx.CashDelta == -543210 {
 			t.Errorf("%+v: a securities-related row (ISIN continuation line) leaked through", tx)
 		}
+	}
+
+	// A Kapitalertragsteuer line with no same-date interest row to fold
+	// into (a "Nachtr. Verlustverrechnung" — a retroactive capital-gains
+	// loss offset) is a standalone tax adjustment: TAX_REFUND, negative
+	// here since this one nets to an additional small charge rather than a
+	// refund — the type allows either sign for exactly this reason.
+	var foundTaxRefund bool
+	for _, tx := range txs {
+		if tx.Type == "TAX_REFUND" {
+			foundTaxRefund = true
+			if tx.CashDelta != -2 {
+				t.Errorf("TAX_REFUND CashDelta = %d, want -2", tx.CashDelta)
+			}
+		}
+	}
+	if !foundTaxRefund {
+		t.Error("no TAX_REFUND transaction found")
 	}
 
 	// Zinsertrag (10.25) minus Kapitalertragsteuer (2.56) + Solidaritätszuschlag
@@ -98,6 +118,8 @@ func TestING_ParseKontoauszug(t *testing.T) {
 			if tx.CashDelta >= 0 {
 				t.Errorf("%s: CashDelta = %d, want negative", tx.Type, tx.CashDelta)
 			}
+		case "TAX_REFUND":
+			// Either sign is valid; checked explicitly above instead.
 		default:
 			t.Errorf("unexpected type %q", tx.Type)
 		}
@@ -108,6 +130,7 @@ func TestING_ParseKontoauszug(t *testing.T) {
 		"WITHDRAW_CASH": 2, // Miete, Stromversorger
 		"ACCOUNT_FEES":  1,
 		"INTEREST":      1,
+		"TAX_REFUND":    1,
 	}
 	for typ, want := range wantByType {
 		if byType[typ] != want {
@@ -115,15 +138,15 @@ func TestING_ParseKontoauszug(t *testing.T) {
 		}
 	}
 
-	// The five tracked rows' own net: 2500.00 (Gehalt) - 800.00 (Miete)
-	// - 11.90 (Kontoführungsentgelt) - 455.98 (Stromversorger) + 7.00
-	// (net interest) = 1239.12. This is smaller than the statement's own
-	// Alter Saldo -> Neuer Saldo delta (5,000.00 -> 731.52, i.e.
-	// -4,268.48): the difference is exactly the two excluded
+	// The six tracked rows' own net: 2500.00 (Gehalt) - 800.00 (Miete)
+	// - 11.90 (Kontoführungsentgelt) - 455.98 (Stromversorger) - 0.02
+	// (TAX_REFUND) + 7.00 (net interest) = 1239.10. This is smaller than
+	// the statement's own Alter Saldo -> Neuer Saldo delta (5,000.00 ->
+	// 731.50, i.e. -4,268.50): the difference is exactly the two excluded
 	// Wertpapierkauf rows and the excluded dividend (-100.00 - 5,432.10 +
 	// 24.50 = -5,507.60), deliberately not tracked here since a dedicated
 	// document covers each of them.
-	const wantNet = 123912
+	const wantNet = 123910
 	if net != wantNet {
 		t.Errorf("net = %d, want %d", net, wantNet)
 	}

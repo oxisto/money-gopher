@@ -96,7 +96,7 @@ func (d *txData) validate(ctx context.Context, db *persistence.DB, person *persi
 	}
 
 	switch d.Type {
-	case "DEPOSIT_CASH", "INTEREST", "TAX_REFUND":
+	case "DEPOSIT_CASH", "INTEREST":
 		if d.CashDelta <= 0 {
 			return fmt.Errorf("%s must increase the cash balance", d.Type)
 		}
@@ -104,6 +104,13 @@ func (d *txData) validate(ctx context.Context, db *persistence.DB, person *persi
 		if d.CashDelta >= 0 {
 			return fmt.Errorf("%s must decrease the cash balance", d.Type)
 		}
+	}
+	// TAX_REFUND deliberately allows either sign: a retroactive
+	// capital-gains-tax adjustment (a loss offset applied after the fact)
+	// can net to an additional small charge as easily as a refund — see
+	// ingKontoTaxLabel's callers in ing_konto.go for a real example.
+	if d.Type == "TAX_REFUND" && d.CashDelta == 0 {
+		return fmt.Errorf("%s must not be zero", d.Type)
 	}
 
 	if d.PortfolioID != nil {

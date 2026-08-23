@@ -174,6 +174,13 @@ func ingParseKontoauszug(text string) ([]StagedTransaction, error) {
 			txType = "INTEREST"
 		case strings.Contains(r.desc, "Entgelt"), strings.Contains(r.desc, "Gebühr"):
 			txType = "ACCOUNT_FEES"
+		case ingKontoTaxLabel(r.desc):
+			// Reaching here (not consumed above) means this tax-labeled row
+			// has no same-date interest row to fold into — a standalone
+			// adjustment, e.g. a retroactive capital-gains loss offset
+			// ("Nachträgliche Verlustverrechnung"), which can net to an
+			// additional small charge as easily as a refund.
+			txType = "TAX_REFUND"
 		}
 
 		amount := r.amount
