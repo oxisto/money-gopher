@@ -112,7 +112,9 @@ CREATE TABLE documents (
     settlement_iban TEXT,
     transaction_date TIMESTAMP,
     created_at      TIMESTAMP NOT NULL,
-    person_id       TEXT     NOT NULL REFERENCES persons(id) ON DELETE CASCADE
+    person_id       TEXT     NOT NULL REFERENCES persons(id) ON DELETE CASCADE,
+    -- SHA-256 of data, hex; see migrations/0010_document_hash.sql.
+    content_hash    TEXT
 );
 
 CREATE TABLE transactions (
