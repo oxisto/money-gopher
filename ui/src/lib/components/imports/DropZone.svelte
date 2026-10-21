@@ -1,6 +1,6 @@
 <script lang="ts">
-	import ErrorNote from '$lib/components/ui/ErrorNote.svelte';
-	import Icon from '$lib/components/ui/Icon.svelte';
+	import ErrorNote from '#lib/components/ui/ErrorNote.svelte';
+	import Icon from '#lib/components/ui/Icon.svelte';
 
 	let { onuploaded }: { onuploaded: () => void } = $props();
 

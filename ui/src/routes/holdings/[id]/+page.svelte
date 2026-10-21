@@ -1,8 +1,8 @@
 <script lang="ts">
-	import PriceChart from '$lib/components/holdings/PriceChart.svelte';
-	import { holdingsOf } from '$lib/components/holdings/HoldingsTable.svelte';
-	import Icon from '$lib/components/ui/Icon.svelte';
-	import { describeTransaction, formatUnits } from '$lib/describe';
+	import PriceChart from '#lib/components/holdings/PriceChart.svelte';
+	import { holdingsOf } from '#lib/components/holdings/HoldingsTable.svelte';
+	import Icon from '#lib/components/ui/Icon.svelte';
+	import { describeTransaction, formatUnits } from '#lib/describe.js';
 	import {
 		formatDate,
 		formatMoney,
@@ -11,7 +11,7 @@
 		formatSignedMoney,
 		toneOf,
 		type Money
-	} from '$lib/format';
+	} from '#lib/format.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();

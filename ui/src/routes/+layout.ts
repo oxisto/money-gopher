@@ -1,5 +1,5 @@
-import { query } from '$lib/graphql/client';
-import { LayoutQuery } from '$lib/graphql/documents';
+import { query } from '#lib/graphql/client.js';
+import { LayoutQuery } from '#lib/graphql/documents.js';
 import type { LayoutLoad } from './$types';
 
 // The UI is a pure SPA; rendering happens only in the browser.

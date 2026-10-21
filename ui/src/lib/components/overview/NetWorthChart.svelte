@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatMoney, formatMoneyCompact, type Money } from '$lib/format';
+	import { formatMoney, formatMoneyCompact, type Money } from '#lib/format.js';
 
 	interface Point {
 		time: Date;

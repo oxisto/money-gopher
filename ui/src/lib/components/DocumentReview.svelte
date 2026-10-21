@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { graphql, mutate } from '$lib/graphql/client';
-	import { describeTransaction, formatUnits, labelOf } from '$lib/describe';
-	import { formatMoney, formatPrice, formatDate, formatSignedMoney } from '$lib/format';
+	import { graphql, mutate } from '#lib/graphql/client.js';
+	import { describeTransaction, formatUnits, labelOf } from '#lib/describe.js';
+	import { formatMoney, formatPrice, formatDate, formatSignedMoney } from '#lib/format.js';
 	import Button from './ui/Button.svelte';
 	import Dialog from './ui/Dialog.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';

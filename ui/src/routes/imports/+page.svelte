@@ -1,13 +1,13 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
-	import DropZone from '$lib/components/imports/DropZone.svelte';
-	import ImportInbox from '$lib/components/imports/ImportInbox.svelte';
+	import { refreshAll } from '$app/navigation';
+	import DropZone from '#lib/components/imports/DropZone.svelte';
+	import ImportInbox from '#lib/components/imports/ImportInbox.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
 	function refresh() {
-		invalidateAll();
+		refreshAll();
 	}
 </script>
 

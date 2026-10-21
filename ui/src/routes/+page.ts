@@ -1,4 +1,4 @@
-import { graphql, query, type VariablesOf } from '$lib/graphql/client';
+import { graphql, query, type VariablesOf } from '#lib/graphql/client.js';
 import type { PageLoad } from './$types';
 
 const OverviewTransaction = graphql(`

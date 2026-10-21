@@ -1,12 +1,12 @@
 <script lang="ts">
-	import Icon from '$lib/components/ui/Icon.svelte';
-	import Panel from '$lib/components/ui/Panel.svelte';
-	import Segmented from '$lib/components/ui/Segmented.svelte';
-	import StatStrip from '$lib/components/ui/StatStrip.svelte';
+	import Icon from '#lib/components/ui/Icon.svelte';
+	import Panel from '#lib/components/ui/Panel.svelte';
+	import Segmented from '#lib/components/ui/Segmented.svelte';
+	import StatStrip from '#lib/components/ui/StatStrip.svelte';
 	import { goto } from '$app/navigation';
 	import { navigating } from '$app/state';
-	import { describeTransaction } from '$lib/describe';
-	import { formatDate, formatMoney, formatSignedMoney, toneOf } from '$lib/format';
+	import { describeTransaction } from '#lib/describe.js';
+	import { formatDate, formatMoney, formatSignedMoney, toneOf } from '#lib/format.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -17,7 +17,7 @@
 	let year = $derived(String(data.year));
 
 	function loadYear(value: string) {
-		goto(`?year=${value}`, { noScroll: true, keepFocus: true, replaceState: true });
+		goto(`?year=${value}`, { reset: false, replace: true });
 	}
 
 	const g = $derived(data.gains);

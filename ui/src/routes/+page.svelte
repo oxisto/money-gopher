@@ -1,14 +1,14 @@
 <script lang="ts">
-	import NetWorthChart from '$lib/components/overview/NetWorthChart.svelte';
-	import NewAccountForm from '$lib/components/NewAccountForm.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
-	import Dialog from '$lib/components/ui/Dialog.svelte';
-	import Icon from '$lib/components/ui/Icon.svelte';
-	import Panel from '$lib/components/ui/Panel.svelte';
-	import Segmented from '$lib/components/ui/Segmented.svelte';
-	import StatStrip from '$lib/components/ui/StatStrip.svelte';
-	import { describeTransaction } from '$lib/describe';
-	import { formatDate, formatMoney, formatPercent, formatSignedMoney, toneOf, type Money } from '$lib/format';
+	import NetWorthChart from '#lib/components/overview/NetWorthChart.svelte';
+	import NewAccountForm from '#lib/components/NewAccountForm.svelte';
+	import Button from '#lib/components/ui/Button.svelte';
+	import Dialog from '#lib/components/ui/Dialog.svelte';
+	import Icon from '#lib/components/ui/Icon.svelte';
+	import Panel from '#lib/components/ui/Panel.svelte';
+	import Segmented from '#lib/components/ui/Segmented.svelte';
+	import StatStrip from '#lib/components/ui/StatStrip.svelte';
+	import { describeTransaction } from '#lib/describe.js';
+	import { formatDate, formatMoney, formatPercent, formatSignedMoney, toneOf, type Money } from '#lib/format.js';
 	import { goto } from '$app/navigation';
 	import { navigating } from '$app/state';
 	import type { PageProps } from './$types';
@@ -61,7 +61,7 @@
 	});
 
 	function pickPeriod(value: string) {
-		goto(`?range=${value}`, { noScroll: true, keepFocus: true, replaceState: true });
+		goto(`?range=${value}`, { reset: false, replace: true });
 	}
 
 	const tiles = $derived.by(() => {

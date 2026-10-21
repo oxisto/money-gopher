@@ -1,7 +1,7 @@
 <script lang="ts">
-	import Icon from '$lib/components/ui/Icon.svelte';
-	import { describeTransaction, formatUnits } from '$lib/describe';
-	import { formatDate, formatMoney, formatPrice, formatSignedMoney, toneOf } from '$lib/format';
+	import Icon from '#lib/components/ui/Icon.svelte';
+	import { describeTransaction, formatUnits } from '#lib/describe.js';
+	import { formatDate, formatMoney, formatPrice, formatSignedMoney, toneOf } from '#lib/format.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();

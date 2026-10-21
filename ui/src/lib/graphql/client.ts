@@ -77,7 +77,7 @@ export async function query<Result, Variables>(
 /**
  * Runs a mutation from a form or button. Errors come back as a message to
  * show next to the control, not as an exception. Afterwards, call
- * invalidateAll() to reload whatever the page shows.
+ * refreshAll() to reload whatever the page shows.
  */
 export async function mutate<Result, Variables>(
 	document: TadaDocumentNode<Result, Variables>,
