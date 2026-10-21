@@ -143,6 +143,7 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 	// transaction and read through the pool.
 	var created []*TransactionResolver
 	err = r.db.Tx(ctx, func(q *persistence.Queries) error {
+		created = nil // Tx retries on write conflicts
 		// Re-processing (see reprocessDocument) regenerates staged transactions
 		// for a document that may already have committed ones from an earlier
 		// confirm — reprocessDocument never touches those. Matching each staged

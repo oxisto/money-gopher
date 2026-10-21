@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"embed"
+	"errors"
 	"fmt"
 
 	"github.com/pressly/goose/v3"
@@ -72,9 +73,35 @@ func (db *DB) Close() error {
 	return err
 }
 
+// maxTxAttempts bounds how often Tx runs fn when it keeps hitting write
+// conflicts.
+const maxTxAttempts = 3
+
 // Tx runs fn inside a database transaction, committing if fn returns nil and
 // rolling back otherwise.
-func (db *DB) Tx(ctx context.Context, fn func(q *Queries) error) error {
+//
+// lightsql is MVCC: two transactions writing the same row don't block, the
+// second one fails with SQLSTATE 40001 (serialization_failure). Tx retries
+// those, so fn may run more than once and must not leave anything behind
+// outside the transaction — reset any captured results at its start.
+func (db *DB) Tx(ctx context.Context, fn func(q *Queries) error) (err error) {
+	for attempt := 1; ; attempt++ {
+		err = db.tx(ctx, fn)
+		if attempt < maxTxAttempts && isSerializationFailure(err) {
+			continue
+		}
+		return err
+	}
+}
+
+// isSerializationFailure reports whether err is a write conflict. The
+// SQLState interface is the one pgx and lib/pq also satisfy.
+func isSerializationFailure(err error) bool {
+	var e interface{ SQLState() string }
+	return errors.As(err, &e) && e.SQLState() == "40001"
+}
+
+func (db *DB) tx(ctx context.Context, fn func(q *Queries) error) error {
 	tx, err := db.conn.BeginTx(ctx, nil)
 	if err != nil {
 		return err

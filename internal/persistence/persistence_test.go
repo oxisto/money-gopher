@@ -96,3 +96,58 @@ func TestQuoteTimeOrdering(t *testing.T) {
 		t.Errorf("quote before = %s, want 100", before.Price.StringPrec(0))
 	}
 }
+
+// TestTx_RetriesWriteConflict forces a write conflict on the first attempt —
+// another transaction holds an uncommitted write to the same row — and checks
+// Tx re-runs fn instead of returning the serialization failure.
+func TestTx_RetriesWriteConflict(t *testing.T) {
+	ctx := context.Background()
+
+	db, err := OpenDB(":memory:")
+	if err != nil {
+		t.Fatalf("OpenDB() error = %v", err)
+	}
+	defer db.Close()
+
+	if _, err := db.CreatePerson(ctx, CreatePersonParams{ID: "person-1", DisplayName: "Before"}); err != nil {
+		t.Fatalf("CreatePerson() error = %v", err)
+	}
+
+	other, err := db.conn.BeginTx(ctx, nil)
+	if err != nil {
+		t.Fatalf("BeginTx() error = %v", err)
+	}
+	defer other.Rollback()
+	if _, err := db.WithTx(other).UpdatePersonDisplayName(ctx, UpdatePersonDisplayNameParams{ID: "person-1", DisplayName: "Concurrent"}); err != nil {
+		t.Fatalf("UpdatePersonDisplayName() (other) error = %v", err)
+	}
+
+	attempts := 0
+	err = db.Tx(ctx, func(q *Queries) error {
+		attempts++
+
+		_, err := q.UpdatePersonDisplayName(ctx, UpdatePersonDisplayNameParams{ID: "person-1", DisplayName: "After"})
+		if attempts == 1 {
+			// The other transaction finishes only after it made this attempt
+			// fail, so the retry finds the row free.
+			if cerr := other.Commit(); cerr != nil {
+				t.Fatalf("Commit() (other) error = %v", cerr)
+			}
+		}
+		return err
+	})
+	if err != nil {
+		t.Fatalf("Tx() error = %v", err)
+	}
+	if attempts != 2 {
+		t.Errorf("attempts = %d, want 2", attempts)
+	}
+
+	got, err := db.GetPerson(ctx, "person-1")
+	if err != nil {
+		t.Fatalf("GetPerson() error = %v", err)
+	}
+	if got.DisplayName != "After" {
+		t.Errorf("DisplayName = %q, want %q", got.DisplayName, "After")
+	}
+}

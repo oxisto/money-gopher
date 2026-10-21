@@ -128,6 +128,9 @@ code is not lightsql-specific.
 
 ## Suggested order
 
+> Retry on `40001` is **done**: `db.Tx` re-runs `fn` up to three times;
+> covered by `TestTx_RetriesWriteConflict` in `internal/persistence`.
+
 1. `ConfirmImport` (#1) — silent duplicates, real money.
 2. Retry on `40001` in `db.Tx` (#3) — cheap, and wanted before more callers use it.
 3. The three provisioning sites (#2).
