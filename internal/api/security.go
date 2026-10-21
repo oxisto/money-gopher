@@ -138,7 +138,10 @@ func (r *RootResolver) UpdateSecurity(ctx context.Context, args struct {
 }) (*SecurityResolver, error) {
 	var security *persistence.Security
 
-	err := r.db.Tx(ctx, func(q *persistence.Queries) (err error) {
+	// Fields not in the input are written back as read, so the read and the
+	// write must see the same snapshot — otherwise a concurrent update to them
+	// in between is silently undone.
+	err := r.db.TxWith(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead}, func(q *persistence.Queries) (err error) {
 		security, err = q.GetSecurity(ctx, string(args.ID))
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("security %q not found", args.ID)

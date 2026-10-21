@@ -84,9 +84,19 @@ const maxTxAttempts = 3
 // second one fails with SQLSTATE 40001 (serialization_failure). Tx retries
 // those, so fn may run more than once and must not leave anything behind
 // outside the transaction — reset any captured results at its start.
-func (db *DB) Tx(ctx context.Context, fn func(q *Queries) error) (err error) {
+func (db *DB) Tx(ctx context.Context, fn func(q *Queries) error) error {
+	return db.TxWith(ctx, nil, fn)
+}
+
+// TxWith is Tx with explicit transaction options. The default, READ
+// COMMITTED, takes a fresh snapshot per statement, so fn can read a row and
+// then overwrite a change someone committed in between. Pass
+// sql.LevelRepeatableRead when fn writes based on what it read: the whole
+// transaction then sees one snapshot, and an in-between change is a write
+// conflict — which Tx retries, re-reading the current row.
+func (db *DB) TxWith(ctx context.Context, opts *sql.TxOptions, fn func(q *Queries) error) (err error) {
 	for attempt := 1; ; attempt++ {
-		err = db.tx(ctx, fn)
+		err = db.tx(ctx, opts, fn)
 		if attempt < maxTxAttempts && isSerializationFailure(err) {
 			continue
 		}
@@ -101,8 +111,8 @@ func isSerializationFailure(err error) bool {
 	return errors.As(err, &e) && e.SQLState() == "40001"
 }
 
-func (db *DB) tx(ctx context.Context, fn func(q *Queries) error) error {
-	tx, err := db.conn.BeginTx(ctx, nil)
+func (db *DB) tx(ctx context.Context, opts *sql.TxOptions, fn func(q *Queries) error) error {
+	tx, err := db.conn.BeginTx(ctx, opts)
 	if err != nil {
 		return err
 	}

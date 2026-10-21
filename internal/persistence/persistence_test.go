@@ -175,3 +175,55 @@ func TestCreatePersonWithAccess_RollsBackOnFailedGrant(t *testing.T) {
 		t.Errorf("GetPerson() error = %v, want sql.ErrNoRows (rolled back)", err)
 	}
 }
+
+// TestTxWith_RepeatableReadRetriesStaleRead commits a change between fn's read
+// and its write. At REPEATABLE READ that is a write conflict, so Tx re-runs fn,
+// which then reads the change instead of overwriting it.
+func TestTxWith_RepeatableReadRetriesStaleRead(t *testing.T) {
+	ctx := context.Background()
+
+	db, err := OpenDB(":memory:")
+	if err != nil {
+		t.Fatalf("OpenDB() error = %v", err)
+	}
+	defer db.Close()
+
+	if _, err := db.CreatePerson(ctx, CreatePersonParams{ID: "person-1", DisplayName: "Before"}); err != nil {
+		t.Fatalf("CreatePerson() error = %v", err)
+	}
+
+	attempts := 0
+	var read string
+	err = db.TxWith(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead}, func(q *Queries) error {
+		attempts++
+
+		p, err := q.GetPerson(ctx, "person-1")
+		if err != nil {
+			return err
+		}
+		read = p.DisplayName
+
+		if attempts == 1 {
+			if _, err := db.UpdatePersonDisplayName(ctx, UpdatePersonDisplayNameParams{ID: "person-1", DisplayName: "Concurrent"}); err != nil {
+				return err
+			}
+		}
+
+		_, err = q.UpdatePersonDisplayName(ctx, UpdatePersonDisplayNameParams{ID: "person-1", DisplayName: read + "!"})
+		return err
+	})
+	if err != nil {
+		t.Fatalf("TxWith() error = %v", err)
+	}
+	if attempts != 2 {
+		t.Errorf("attempts = %d, want 2", attempts)
+	}
+
+	got, err := db.GetPerson(ctx, "person-1")
+	if err != nil {
+		t.Fatalf("GetPerson() error = %v", err)
+	}
+	if got.DisplayName != "Concurrent!" {
+		t.Errorf("DisplayName = %q, want %q (built on the concurrent change)", got.DisplayName, "Concurrent!")
+	}
+}
