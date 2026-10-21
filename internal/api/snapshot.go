@@ -130,25 +130,9 @@ func (r *SnapshotResolver) TotalGains() float64 {
 func (r *SnapshotResolver) Performance(args struct{ Period string }) (*PerformanceResolver, error) {
 	to := r.snap.Time
 
-	var from time.Time
-	switch args.Period {
-	case "ONE_WEEK":
-		from = to.AddDate(0, 0, -7)
-	case "ONE_MONTH":
-		from = to.AddDate(0, -1, 0)
-	case "SIX_MONTHS":
-		from = to.AddDate(0, -6, 0)
-	case "YEAR_TO_DATE":
-		from = time.Date(to.Year(), time.January, 1, 0, 0, 0, 0, to.Location())
-	case "ONE_YEAR":
-		from = to.AddDate(-1, 0, 0)
-	case "ALL_TIME":
-		from = r.snap.FirstTransactionTime
-		if from.IsZero() {
-			from = to
-		}
-	default:
-		return nil, fmt.Errorf("unknown period %q", args.Period)
+	from, err := periodStart(args.Period, to, r.snap.FirstTransactionTime)
+	if err != nil {
+		return nil, err
 	}
 
 	return &PerformanceResolver{
@@ -157,6 +141,30 @@ func (r *SnapshotResolver) Performance(args struct{ Period string }) (*Performan
 		to:     to,
 		twr:    finance.TimeWeightedReturn(r.txs, from, to, r.quote),
 	}, nil
+}
+
+// periodStart returns the start of a Period ending at to. ALL_TIME starts at
+// first, the earliest transaction, or at to if there is none.
+func periodStart(period string, to, first time.Time) (time.Time, error) {
+	switch period {
+	case "ONE_WEEK":
+		return to.AddDate(0, 0, -7), nil
+	case "ONE_MONTH":
+		return to.AddDate(0, -1, 0), nil
+	case "SIX_MONTHS":
+		return to.AddDate(0, -6, 0), nil
+	case "YEAR_TO_DATE":
+		return time.Date(to.Year(), time.January, 1, 0, 0, 0, 0, to.Location()), nil
+	case "ONE_YEAR":
+		return to.AddDate(-1, 0, 0), nil
+	case "ALL_TIME":
+		if first.IsZero() {
+			return to, nil
+		}
+		return first, nil
+	default:
+		return time.Time{}, fmt.Errorf("unknown period %q", period)
+	}
 }
 
 // PositionResolver resolves the Position GraphQL type.

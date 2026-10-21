@@ -129,6 +129,22 @@ type Performance {
   timeWeightedReturn: Float!
 }
 
+"""
+NetWorthPoint is everything the active person holds at one point in time,
+across all portfolios and cash accounts.
+"""
+type NetWorthPoint {
+  time: Time!
+  "Market value of all held securities plus all cash balances."
+  netWorth: Money!
+  """
+  The net value brought in from outside up to this time: deposits minus
+  withdrawals, plus securities delivered in minus those delivered out.
+  netWorth − invested is what the money has earned.
+  """
+  invested: Money!
+}
+
 "Position is the holding of one security in a portfolio snapshot."
 type Position {
   security: Security!
@@ -408,6 +424,11 @@ type Query {
   current calendar year to date.
   """
   realizedGains(from: Time, to: Time): RealizedGains!
+  """
+  The active person's net worth over the period, sampled at `points` evenly
+  spaced times from the period's start up to now (at least 2, at most 365).
+  """
+  netWorthHistory(period: Period!, points: Int = 60): [NetWorthPoint!]!
 }
 
 input CreatePortfolioInput {
