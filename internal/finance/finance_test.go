@@ -84,11 +84,10 @@ func TestSnapshotAt_FIFO(t *testing.T) {
 	if want := "113.33"; pos.PurchasePrice().StringPrec(2) != want {
 		t.Errorf("purchase price = %s, want %s", pos.PurchasePrice().StringPrec(2), want)
 	}
-	// Without quotes, the market value equals the purchase value exactly:
-	// MarketPrice is PurchasePrice, and multiplying it back by units*100
-	// exactly undoes the division that computed it.
-	if pos.MarketValue != pos.PurchaseValue {
-		t.Errorf("market value = %d, want purchase value %d", pos.MarketValue, pos.PurchaseValue)
+	// Without quotes, the last trade is the best price known: the sale at
+	// 130.00 values the remaining 15 shares at 1950.00.
+	if pos.MarketValue != 195000 {
+		t.Errorf("market value = %d, want 195000 (15 × the last trade at 130.00)", pos.MarketValue)
 	}
 	if snap.Currency != "EUR" {
 		t.Errorf("currency = %q, want EUR", snap.Currency)
@@ -135,6 +134,48 @@ func TestSnapshotAt_WithQuotes(t *testing.T) {
 	// A snapshot before the quote falls back to the purchase price.
 	if snap := SnapshotAt(txs, t1, q); snap.Positions[0].MarketPrice.StringPrec(2) != "100.00" {
 		t.Errorf("market price before quote = %s, want 100.00", snap.Positions[0].MarketPrice.StringPrec(2))
+	}
+}
+
+// TestSnapshotAt_NoQuoteFallback covers a security the quote feed knows
+// nothing about (a bond that matured, a delisted stock): it is valued at
+// the price it last changed hands at, buy or sell, and at the average
+// purchase price only while no trade carried a price.
+func TestSnapshotAt_NoQuoteFallback(t *testing.T) {
+	delivered := tx("DELIVERY_INBOUND", t0, "bond", 10, 0, 0)
+	delivered.Price = persistence.Decimal{} // a transfer in: no price known
+	txs := []*persistence.Transaction{delivered}
+
+	price := func(at time.Time) string {
+		return SnapshotAt(txs, at, NoQuotes).Positions[0].MarketPrice.StringPrec(2)
+	}
+
+	// Only a priceless delivery so far: nothing better than the (zero)
+	// purchase price.
+	if got := price(t0); got != "0.00" {
+		t.Errorf("after a priceless delivery: market price = %s, want 0.00", got)
+	}
+
+	// A purchase at 94.44 sets the price for the whole position.
+	txs = append(txs, tx("BUY", t1, "bond", 10, 9444, -94440))
+	if got := price(t1); got != "94.44" {
+		t.Errorf("after a buy: market price = %s, want 94.44", got)
+	}
+
+	// A partial redemption at par is the newest price: the rest is worth
+	// par too, until a quote says otherwise.
+	txs = append(txs, tx("SELL", t2, "bond", 5, 10000, 50000))
+	snap := SnapshotAt(txs, t2, NoQuotes)
+	if got := snap.Positions[0].MarketPrice.StringPrec(2); got != "100.00" {
+		t.Errorf("after a partial sale: market price = %s, want 100.00", got)
+	}
+	if snap.Positions[0].MarketValue != 15*10000 {
+		t.Errorf("market value = %d, want 150000", snap.Positions[0].MarketValue)
+	}
+
+	// Travelling back before the sale sees the buy price again.
+	if got := price(t1); got != "94.44" {
+		t.Errorf("at t1 again: market price = %s, want 94.44", got)
 	}
 }
 
