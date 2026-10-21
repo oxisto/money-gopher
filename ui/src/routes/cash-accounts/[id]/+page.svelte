@@ -44,7 +44,7 @@
 	<div class="mb-6 flex flex-wrap items-center gap-3">
 		<div class="flex-1">
 			<h1 class="text-lg font-semibold">{account.displayName}</h1>
-			<p class="num text-[13px] text-muted">
+			<p class="num text-[14px] text-muted">
 				Cash account · {account.currency}{#if account.iban}
 					· {account.iban}{/if}
 			</p>

@@ -29,7 +29,7 @@
 	<div class="mb-6 flex flex-wrap items-center gap-3">
 		<div class="flex-1">
 			<h1 class="text-lg font-semibold">{portfolio.displayName}</h1>
-			<p class="text-[13px] text-muted">
+			<p class="text-[14px] text-muted">
 				Settles against
 				<a href="/cash-accounts/{portfolio.cashAccount.id}" class="text-fg hover:underline">
 					{portfolio.cashAccount.displayName}

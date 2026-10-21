@@ -134,7 +134,7 @@
 								{p.id === activePerson.id ? 'font-medium' : ''}"
 						>
 							<span
-								class="grid size-5.5 place-items-center rounded-md border border-line bg-raised text-[11px] font-semibold"
+								class="grid size-5.5 place-items-center rounded-md border border-line bg-raised text-[12px] font-semibold"
 							>
 								{p.displayName.charAt(0)}
 							</span>
@@ -161,7 +161,7 @@
 				{@render icon(item.icon)}
 				<span class="flex-1">{item.label}</span>
 				{#if item.badge}
-					<span class="rounded-full bg-accent-soft px-1.5 text-[11px] font-semibold text-accent-fg">
+					<span class="rounded-full bg-accent-soft px-1.5 text-[12px] font-semibold text-accent-fg">
 						{item.badge}
 					</span>
 				{/if}
@@ -171,14 +171,14 @@
 
 	{#if data && (data.portfolios.length || data.cashAccounts.length)}
 		<div class="flex flex-col gap-px">
-			<div class="px-2 pb-1 text-[11px] font-medium text-muted">Accounts</div>
+			<div class="px-2 pb-1 text-[12px] font-medium text-muted">Accounts</div>
 			{#each data.portfolios as p (p.id)}
 				{@const href = `/portfolios/${p.id}`}
 				<a
 					{href}
 					onclick={onnavigate}
 					aria-current={isActive(href) ? 'page' : undefined}
-					class="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px]
+					class="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[14px]
 						{isActive(href) ? 'bg-hover' : 'hover:bg-hover'}"
 				>
 					<span class="size-1.5 rounded-full bg-accent"></span>
@@ -192,7 +192,7 @@
 					{href}
 					onclick={onnavigate}
 					aria-current={isActive(href) ? 'page' : undefined}
-					class="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px]
+					class="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[14px]
 						{isActive(href) ? 'bg-hover' : 'hover:bg-hover'}"
 				>
 					<span class="size-1.5 rounded-full bg-gold"></span>
@@ -209,7 +209,7 @@
 				href={item.href}
 				onclick={onnavigate}
 				aria-current={isActive(item.href) ? 'page' : undefined}
-				class="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px]
+				class="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[14px]
 					{isActive(item.href) ? 'bg-hover text-fg' : 'text-muted hover:bg-hover hover:text-fg'}"
 			>
 				{@render icon(item.icon, 15)}
@@ -218,7 +218,7 @@
 		{/each}
 		<a
 			href="/auth/logout"
-			class="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] text-muted hover:bg-hover hover:text-fg"
+			class="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[14px] text-muted hover:bg-hover hover:text-fg"
 		>
 			{@render icon('M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11', 15)}
 			Sign out

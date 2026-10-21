@@ -143,7 +143,7 @@
 
 			{#if averageCost !== null}
 				<span
-					class="num absolute right-0 -translate-y-full bg-surface px-1 text-[11px] text-muted"
+					class="num absolute right-0 -translate-y-full bg-surface px-1 text-[12px] text-muted"
 					style="top: {(y(averageCost) / H) * 100}%"
 				>
 					avg cost {money(averageCost)}
@@ -168,7 +168,7 @@
 				></span>
 			{/each}
 		</div>
-		<div class="flex justify-between text-[11px] text-muted">
+		<div class="flex justify-between text-[12px] text-muted">
 			{#each xLabels as label, i (i)}<span>{label}</span>{/each}
 		</div>
 	{/if}

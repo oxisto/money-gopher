@@ -234,7 +234,7 @@
 
 			<!-- Staged transactions table -->
 			<div class="overflow-x-auto rounded-xl border border-line">
-				<table class="num min-w-full text-[13px]">
+				<table class="num min-w-full text-[14px]">
 					<thead class="bg-raised text-xs text-muted">
 						<tr>
 							<th class="py-2 pr-2 pl-3 text-left font-medium">Date</th>
@@ -319,7 +319,7 @@
 									{#if tx.calculatedCashDelta}
 										{@const diff = tx.cashDelta.amount - tx.calculatedCashDelta.amount}
 										<div
-											class="text-[11px] {diff ? 'font-medium text-neg' : 'text-pos'}"
+											class="text-[12px] {diff ? 'font-medium text-neg' : 'text-pos'}"
 											title={diff
 												? `The document says ${formatMoney(tx.cashDelta)}, units × price ± fees and taxes give ${formatMoney(tx.calculatedCashDelta)}. Usually a line item that isn't captured yet (a fee, a foreign tax, accrued interest).`
 												: 'Matches units × price ± fees and taxes.'}

@@ -14,7 +14,7 @@
 <div class="mb-6 flex flex-wrap items-center gap-3">
 	<div class="flex-1">
 		<h1 class="text-lg font-semibold">People &amp; access</h1>
-		<p class="text-[13px] text-muted">
+		<p class="text-[14px] text-muted">
 			Each person has their own accounts. Switch between them at the top of the sidebar.
 		</p>
 	</div>
@@ -30,7 +30,7 @@
 
 	<section class="flex flex-col gap-2">
 		<h2 class="text-sm font-semibold">Logins</h2>
-		<p class="text-[13px] text-muted">
+		<p class="text-[14px] text-muted">
 			<span class="text-fg">{data.users.map((u) => u.displayName).join(', ')}</span>
 			{#if data.users.length === 1}
 				— the only login, so it sees every person above. Other logins show up here after their first sign-in, and

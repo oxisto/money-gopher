@@ -141,7 +141,7 @@
 		</p>
 	{:else}
 		<div class="overflow-x-auto rounded-xl border border-line">
-			<table class="w-full min-w-[52rem] text-[13px]">
+			<table class="w-full min-w-[52rem] text-[14px]">
 				<thead class="bg-raised text-xs text-muted">
 					<tr>
 						{@render header('name', 'Security', 'left')}
@@ -159,7 +159,7 @@
 						<tr class="border-t border-line hover:bg-raised">
 							<td class="py-2 pr-3 pl-4">
 								<a href="/holdings/{h.securityId}" class="font-medium hover:underline">{h.name}</a>
-								{#if h.isin}<div class="text-[11px] text-muted">{h.isin}</div>{/if}
+								{#if h.isin}<div class="text-[12px] text-muted">{h.isin}</div>{/if}
 							</td>
 							<td class="px-3 py-2 text-right">{formatUnits(h.units)}</td>
 							<td class="px-3 py-2 text-right text-muted">{formatPrice(h.purchasePrice, 2)}</td>
@@ -167,7 +167,7 @@
 							<td class="px-3 py-2 text-right font-medium">{formatMoney(h.marketValue)}</td>
 							<td class="px-3 py-2 text-right {toneOf(h.profitOrLoss.amount)}">
 								<div>{formatSignedMoney(h.profitOrLoss)}</div>
-								<div class="text-[11px]">{formatPercent(h.gains)}</div>
+								<div class="text-[12px]">{formatPercent(h.gains)}</div>
 							</td>
 							<td class="py-2 pr-4 pl-3">
 								<div class="flex items-center justify-end gap-2">

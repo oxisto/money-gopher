@@ -86,7 +86,7 @@
 			<path d={line} fill="none" class="stroke-accent" stroke-width="2" vector-effect="non-scaling-stroke" />
 		</svg>
 
-		<div class="num pointer-events-none absolute inset-y-0 right-0 flex flex-col justify-between text-[11px] text-muted">
+		<div class="num pointer-events-none absolute inset-y-0 right-0 flex flex-col justify-between text-[12px] text-muted">
 			{#each yLabels as label, i (i)}
 				<span class="bg-surface pl-1">{label}</span>
 			{/each}
@@ -123,7 +123,7 @@
 		{/if}
 	</div>
 
-	<div class="flex justify-between text-[11px] text-muted">
+	<div class="flex justify-between text-[12px] text-muted">
 		{#each xLabels as label, i (i)}
 			<span>{label}</span>
 		{/each}

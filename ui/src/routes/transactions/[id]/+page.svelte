@@ -21,7 +21,7 @@
 		['Taxes', formatMoney(tx.taxes)],
 		['Source', tx.source]
 	].filter(([, v]) => v)}
-	<nav aria-label="Breadcrumb" class="mb-4 flex gap-1.5 text-[13px] text-muted">
+	<nav aria-label="Breadcrumb" class="mb-4 flex gap-1.5 text-[14px] text-muted">
 		<a href="/activity#tx-{tx.id}" class="hover:text-fg">Activity</a>
 		<span aria-hidden="true">/</span>
 		<span class="truncate text-fg">{d.title}</span>
@@ -33,14 +33,14 @@
 		</span>
 		<div class="min-w-48 flex-1">
 			<h1 class="text-lg font-semibold">{d.title}</h1>
-			<p class="text-[13px] text-muted">{formatDate(tx.time)}</p>
+			<p class="text-[14px] text-muted">{formatDate(tx.time)}</p>
 		</div>
 		<div class="num text-right">
 			<div class="text-2xl font-semibold tracking-tight {tx.cashDelta.amount > 0 ? 'text-pos' : ''}">
 				{tx.cashDelta.amount ? formatSignedMoney(tx.cashDelta) : 'No cash movement'}
 			</div>
 			{#if tx.gain}
-				<div class="text-[13px] {toneOf(tx.gain.amount)}">realized {formatSignedMoney(tx.gain)}</div>
+				<div class="text-[14px] {toneOf(tx.gain.amount)}">realized {formatSignedMoney(tx.gain)}</div>
 			{/if}
 		</div>
 	</div>
@@ -49,7 +49,7 @@
 		<div class="flex min-w-0 flex-[1_1_20rem] flex-col gap-5">
 			<section class="num rounded-xl border border-line p-4">
 				<h2 class="mb-1 text-sm font-semibold">Details</h2>
-				<dl class="text-[13px]">
+				<dl class="text-[14px]">
 					{#each fields as [k, v] (k)}
 						<div class="flex justify-between gap-3 border-t border-line py-2 first:border-t-0">
 							<dt class="text-muted">{k}</dt>
@@ -61,13 +61,13 @@
 
 			<section class="rounded-xl border border-line p-4">
 				<h2 class="mb-2 text-sm font-semibold">Related</h2>
-				<ul class="flex flex-col gap-1 text-[13px]">
+				<ul class="flex flex-col gap-1 text-[14px]">
 					{#if tx.security}
 						<li>
 							<a href="/holdings/{tx.security.id}" class="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 hover:bg-raised">
 								<span>
 									{tx.security.displayName}
-									<span class="block text-[11px] text-muted">
+									<span class="block text-[12px] text-muted">
 										{tx.security.identifiers.map((i) => `${i.kind} ${i.value}`).join(' · ')}
 									</span>
 								</span>
@@ -103,7 +103,7 @@
 						href="/documents/{tx.document.id}"
 						target="_blank"
 						rel="noopener"
-						class="ml-auto text-[13px] text-muted hover:text-fg"
+						class="ml-auto text-[14px] text-muted hover:text-fg"
 					>
 						Open in new tab ↗
 					</a>

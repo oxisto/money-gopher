@@ -84,6 +84,16 @@
 @theme inline {
 	--font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
 
+	/*
+	 * The type scale sits one pixel above Tailwind's: xs 13px, sm 15px.
+	 * Dense is fine; squinting isn't. (Sizes given as px classes in the
+	 * components, 12px and 14px, follow the same shift.)
+	 */
+	--text-xs: 0.8125rem;
+	--text-xs--line-height: calc(1.125 / 0.8125);
+	--text-sm: 0.9375rem;
+	--text-sm--line-height: calc(1.375 / 0.9375);
+
 	--color-canvas: var(--mg-canvas);
 	--color-surface: var(--mg-surface);
 	--color-raised: var(--mg-raised);

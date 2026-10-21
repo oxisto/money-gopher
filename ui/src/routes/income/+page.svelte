@@ -92,7 +92,7 @@
 <div class="mb-6 flex flex-wrap items-center gap-3">
 	<div class="flex-1">
 		<h1 class="text-lg font-semibold">Income</h1>
-		<p class="text-[13px] text-muted">What your money paid out: dividends, interest and the result of completed sales.</p>
+		<p class="text-[14px] text-muted">What your money paid out: dividends, interest and the result of completed sales.</p>
 	</div>
 	<Segmented label="Year" options={years.map((y) => ({ value: y, label: y }))} bind:value={year} onchange={loadYear} />
 </div>
@@ -121,7 +121,7 @@
 
 		<Panel title="Top dividend payers">
 			{#if payers.length}
-				<ul class="num flex flex-col gap-2 text-[13px]">
+				<ul class="num flex flex-col gap-2 text-[14px]">
 					{#each payers as p (p.id)}
 						<li>
 							<a href="/holdings/{p.id}" class="flex justify-between gap-3 hover:underline">
@@ -132,7 +132,7 @@
 								<span class="h-1.5 flex-1 overflow-hidden rounded-full bg-line">
 									<span class="block h-full rounded-full bg-accent" style="width: {p.width}%"></span>
 								</span>
-								<span class="w-16 text-right text-[11px] text-muted">{p.count} {p.count === 1 ? 'payment' : 'payments'}</span>
+								<span class="w-16 text-right text-[12px] text-muted">{p.count} {p.count === 1 ? 'payment' : 'payments'}</span>
 							</div>
 						</li>
 					{/each}
@@ -153,7 +153,7 @@
 		{#each groups as m (m.label)}
 			<section aria-label={m.label}>
 				<div class="num flex items-baseline justify-between border-b border-line px-1 pb-1.5">
-					<h3 class="text-[13px] font-semibold">{m.label}</h3>
+					<h3 class="text-[14px] font-semibold">{m.label}</h3>
 					<span class="text-xs font-semibold {toneOf(m.total)}">{formatSignedMoney(money(m.total))}</span>
 				</div>
 				<ul class="mt-1 flex flex-col gap-px">

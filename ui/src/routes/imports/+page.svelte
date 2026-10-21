@@ -13,7 +13,7 @@
 
 <div class="mb-6">
 	<h1 class="text-lg font-semibold">Import</h1>
-	<p class="text-[13px] text-muted">
+	<p class="text-[14px] text-muted">
 		Bank statements become transactions here. Documents whose amounts check out can be booked in one click; anything
 		else waits for your review.
 	</p>

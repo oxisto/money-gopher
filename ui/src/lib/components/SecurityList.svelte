@@ -172,7 +172,7 @@
 		</p>
 	{:else}
 		<div class="overflow-x-auto rounded-xl border border-line">
-			<table class="num w-full min-w-[46rem] text-[13px]">
+			<table class="num w-full min-w-[46rem] text-[14px]">
 				<thead class="bg-raised text-xs text-muted">
 					<tr>
 						<th scope="col" class="py-2.5 pr-3 pl-4 text-left font-medium">Security</th>
@@ -188,7 +188,7 @@
 						<tr class="border-t border-line align-top hover:bg-raised">
 							<td class="py-2.5 pr-3 pl-4">
 								<a href="/holdings/{security.id}" class="font-medium hover:underline">{security.displayName}</a>
-								<div class="text-[11px] text-muted">
+								<div class="text-[12px] text-muted">
 									{security.identifiers.map((i) => (i.kind === 'ISIN' ? i.value : `${i.kind} ${i.value}`)).join(' · ')}
 									{#if security.underlyingSecurity}
 										· derives from {security.underlyingSecurity.displayName}
@@ -209,7 +209,7 @@
 								{#if listing?.latestQuote}
 									{@const stale = isStale(listing.latestQuote.time)}
 									<div>{formatPrice(listing.latestQuote.price, 4)}</div>
-									<div class="text-[11px] {stale ? 'text-gold' : 'text-muted'}" title={stale ? 'No new quote for a while' : ''}>
+									<div class="text-[12px] {stale ? 'text-gold' : 'text-muted'}" title={stale ? 'No new quote for a while' : ''}>
 										{formatDate(listing.latestQuote.time)}{stale ? ' · stale' : ''}
 									</div>
 								{:else if listing?.quoteProvider}

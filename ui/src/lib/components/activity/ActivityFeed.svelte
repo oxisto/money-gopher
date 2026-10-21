@@ -174,7 +174,7 @@
 		<div class="text-2xl font-semibold tracking-tight {t.cashDelta.amount > 0 ? 'text-pos' : ''}">
 			{t.cashDelta.amount ? formatSignedMoney(t.cashDelta) : 'No cash movement'}
 		</div>
-		<dl class="text-[13px]">
+		<dl class="text-[14px]">
 			{#each fields as [k, v] (k)}
 				<div class="flex justify-between gap-3 border-t border-line py-1.5">
 					<dt class="text-muted">{k}</dt>
@@ -184,7 +184,7 @@
 		</dl>
 		<a
 			href="/transactions/{t.id}"
-			class="flex items-center gap-2 rounded-lg border border-line bg-raised px-3 py-2.5 text-[13px] hover:bg-hover"
+			class="flex items-center gap-2 rounded-lg border border-line bg-raised px-3 py-2.5 text-[14px] hover:bg-hover"
 		>
 			<Icon name="document" size={15} />
 			<span class="min-w-0 flex-1 truncate">{t.document ? t.document.filename : 'Entered manually'}</span>
@@ -227,9 +227,9 @@
 			{/each}
 		</div>
 		{#if showAccountFilter && accounts.length > 1}
-			<label class="ml-auto flex items-center gap-2 text-[13px] text-muted">
+			<label class="ml-auto flex items-center gap-2 text-[14px] text-muted">
 				Account
-				<select bind:value={account} class="h-8 py-0 pr-8 pl-2.5 text-[13px]">
+				<select bind:value={account} class="h-8 py-0 pr-8 pl-2.5 text-[14px]">
 					<option value="all">All accounts</option>
 					{#each accounts as a (a.id)}
 						<option value={a.id}>{a.name}</option>
@@ -253,7 +253,7 @@
 				{#each months as m (m.label)}
 					<section aria-label={m.label}>
 						<div class="num flex items-baseline justify-between border-b border-line px-1 pb-1.5">
-							<h2 class="text-[13px] font-semibold">{m.label}</h2>
+							<h2 class="text-[14px] font-semibold">{m.label}</h2>
 							<span class="text-xs text-muted">
 								{m.rows.length}
 								{m.rows.length === 1 ? 'entry' : 'entries'} · net
@@ -293,11 +293,11 @@
 												{t.cashDelta.amount ? formatSignedMoney(t.cashDelta) : '—'}
 											</span>
 											{#if showBalance}
-												<span class="block text-[11px] text-muted">
+												<span class="block text-[12px] text-muted">
 													{formatMoney({ amount: balances.get(t.id) ?? 0, currency })}
 												</span>
 											{:else if t.gain}
-												<span class="block text-[11px] {toneOf(t.gain.amount)}">
+												<span class="block text-[12px] {toneOf(t.gain.amount)}">
 													realized {formatSignedMoney(t.gain)}
 												</span>
 											{/if}
@@ -312,7 +312,7 @@
 					<button
 						type="button"
 						onclick={() => (limit += 60)}
-						class="h-8 self-center rounded-lg border border-line px-3.5 text-[13px] text-muted hover:text-fg"
+						class="h-8 self-center rounded-lg border border-line px-3.5 text-[14px] text-muted hover:text-fg"
 					>
 						Show more · {filtered.length - limit} older
 					</button>

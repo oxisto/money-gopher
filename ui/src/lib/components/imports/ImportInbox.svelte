@@ -269,12 +269,12 @@
 					tab = t.key;
 					tabChosen = true;
 				}}
-				class="-mb-px flex items-center gap-1.5 border-b-2 py-2 text-[13px] font-medium
+				class="-mb-px flex items-center gap-1.5 border-b-2 py-2 text-[14px] font-medium
 					{tab === t.key ? 'border-accent text-fg' : 'border-transparent text-muted hover:text-fg'}"
 			>
 				{t.label}
 				<span
-					class="rounded-full px-1.5 text-[11px] font-semibold
+					class="rounded-full px-1.5 text-[12px] font-semibold
 						{t.loud && count ? 'bg-accent-soft text-accent-fg' : 'text-muted'}">{count}</span
 				>
 			</button>
@@ -288,7 +288,7 @@
 			</p>
 		{:else}
 			{#if ready.length}
-				<div class="flex flex-wrap items-center gap-3 rounded-lg bg-pos-soft px-4 py-2.5 text-[13px] text-pos">
+				<div class="flex flex-wrap items-center gap-3 rounded-lg bg-pos-soft px-4 py-2.5 text-[14px] text-pos">
 					<Icon name="check" />
 					<span class="flex-1">
 						{ready.length === 1 ? '1 document matches' : `${ready.length} documents match`} exactly: account, portfolio,
@@ -396,7 +396,7 @@
 			</ul>
 		{/if}
 	{:else if tab === 'skipped'}
-		<p class="text-[13px] text-muted">
+		<p class="text-[14px] text-muted">
 			Recognised, but with nothing to book. They stay here so you can see they were handled.
 		</p>
 		{#each skippedGroups as g (g.key)}
@@ -411,13 +411,13 @@
 						<span class="block font-medium">{g.title}</span>
 						<span class="block text-xs text-muted">{g.why}</span>
 					</span>
-					<span class="text-[13px] text-muted">{g.docs.length} documents {openGroup === g.key ? '▴' : '▾'}</span>
+					<span class="text-[14px] text-muted">{g.docs.length} documents {openGroup === g.key ? '▴' : '▾'}</span>
 				</button>
 				{#if openGroup === g.key}
 					<ul class="border-t border-line">
 						{#each g.docs as doc (doc.id)}
 							<li class="flex flex-wrap items-center gap-2 border-t border-line px-4 py-2 first:border-t-0">
-								<span class="min-w-0 flex-1 truncate text-[13px]" title={doc.filename}>{doc.filename}</span>
+								<span class="min-w-0 flex-1 truncate text-[14px]" title={doc.filename}>{doc.filename}</span>
 								{@render secondaryActions(doc)}
 							</li>
 						{/each}
@@ -427,7 +427,7 @@
 		{/each}
 	{:else}
 		<div class="overflow-x-auto rounded-xl border border-line">
-			<table class="w-full min-w-[40rem] text-[13px]">
+			<table class="w-full min-w-[40rem] text-[14px]">
 				<thead class="bg-raised text-xs text-muted">
 					<tr>
 						<th scope="col" class="py-2.5 pr-3 pl-4 text-left font-medium">Date</th>
@@ -449,7 +449,7 @@
 								{:else}
 									{s.title}
 								{/if}
-								<div class="truncate text-[11px] text-muted" title={doc.filename}>{doc.filename}</div>
+								<div class="truncate text-[12px] text-muted" title={doc.filename}>{doc.filename}</div>
 							</td>
 							<td class="px-3 py-2 text-right font-medium {s.amount.amount > 0 ? 'text-pos' : ''}">
 								{formatSignedMoney(s.amount)}

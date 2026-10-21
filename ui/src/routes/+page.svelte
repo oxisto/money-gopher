@@ -236,7 +236,7 @@
 		<section class="flex flex-col gap-4">
 			<div class="flex flex-wrap items-end gap-4">
 				<div class="min-w-64 flex-1">
-					<div class="text-[13px] text-muted">Net worth</div>
+					<div class="text-[14px] text-muted">Net worth</div>
 					<div class="num mt-1 text-4xl font-semibold tracking-tight">{formatMoney(netWorth)}</div>
 					{#if change}
 						{@const since = periods.find((p) => p.value === period)?.since}
@@ -278,7 +278,7 @@
 							<span class={row.color} style="flex: {row.share} 1 0"></span>
 						{/each}
 					</div>
-					<ul class="num text-[13px]">
+					<ul class="num text-[14px]">
 						{#each allocation as row (row.key)}
 							<li class="grid grid-cols-[0.75rem_1fr_auto_3.5rem] items-center gap-2.5 border-t border-line py-1.5 first:border-t-0">
 								<span class="size-2.5 rounded-[3px] {row.color}"></span>

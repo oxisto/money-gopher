@@ -44,7 +44,7 @@
 
 <div class="flex items-center gap-3">
 	{#if message}
-		<span class="text-[13px] text-muted">{message}</span>
+		<span class="text-[14px] text-muted">{message}</span>
 	{/if}
 	<Button variant="secondary" disabled={busy} onclick={update}>
 		{busy ? 'Updating…' : 'Update quotes'}

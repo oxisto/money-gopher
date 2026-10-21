@@ -109,7 +109,7 @@
 {#if !security}
 	<p class="text-sm text-muted">Security not found.</p>
 {:else}
-	<nav aria-label="Breadcrumb" class="mb-4 flex gap-1.5 text-[13px] text-muted">
+	<nav aria-label="Breadcrumb" class="mb-4 flex gap-1.5 text-[14px] text-muted">
 		<a href="/holdings" class="hover:text-fg">Holdings</a>
 		<span aria-hidden="true">/</span>
 		<span class="text-fg">{security.displayName}</span>
@@ -118,7 +118,7 @@
 	<div class="mb-6 flex flex-wrap items-end gap-4">
 		<div class="min-w-64 flex-1">
 			<h1 class="text-2xl font-semibold tracking-tight">{security.displayName}</h1>
-			<p class="mt-0.5 text-[13px] text-muted">
+			<p class="mt-0.5 text-[14px] text-muted">
 				<!-- ING listings use the ISIN as their ticker; don't print it twice. -->
 				{[
 					isin,
@@ -171,11 +171,11 @@
 				<h2 class="mb-1 text-sm font-semibold">Your position</h2>
 				<dl>
 					{#each position as row (row.label)}
-						<div class="grid grid-cols-[1fr_auto] gap-3 border-t border-line py-2 text-[13px] first:border-t-0">
+						<div class="grid grid-cols-[1fr_auto] gap-3 border-t border-line py-2 text-[14px] first:border-t-0">
 							<dt class="text-muted">{row.label}</dt>
 							<dd class="text-right {row.tone ?? ''}">
 								{row.value}
-								{#if row.sub}<span class="block text-[11px] {row.tone ? '' : 'text-muted'}">{row.sub}</span>{/if}
+								{#if row.sub}<span class="block text-[12px] {row.tone ? '' : 'text-muted'}">{row.sub}</span>{/if}
 							</dd>
 						</div>
 					{/each}
@@ -204,7 +204,7 @@
 
 			{#if shownHistory.length}
 				<div class="overflow-x-auto rounded-xl border border-line">
-					<table class="w-full min-w-[46rem] text-[13px]">
+					<table class="w-full min-w-[46rem] text-[14px]">
 						<thead class="bg-raised text-xs text-muted">
 							<tr>
 								<th scope="col" class="py-2.5 pr-3 pl-4 text-left font-medium">Date</th>
@@ -226,7 +226,7 @@
 											{describeTransaction(t).title}
 										</span>
 										{#if t.type === 'SELL' && t.gain}
-											<span class="ml-6 text-[11px] {toneOf(t.gain.amount)}">realized {formatSignedMoney(t.gain)}</span>
+											<span class="ml-6 text-[12px] {toneOf(t.gain.amount)}">realized {formatSignedMoney(t.gain)}</span>
 										{/if}
 									</td>
 									<td class="px-3 py-2 text-right">{t.price ? formatPrice(t.price, 4) : '—'}</td>
