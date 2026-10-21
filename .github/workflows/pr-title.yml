@@ -1,0 +1,27 @@
+name: Pull Request Title
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Check title follows "<area>: <what it does>"'
+        env:
+          # Via env, never interpolated into the script: titles are user input.
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          # See CONTRIBUTING.md, "Pull requests and commits".
+          area='[a-z0-9][a-z0-9/._-]*'
+          if ! printf '%s' "$TITLE" | grep -Eq "^${area}(, ${area})*: [^ ].*[^.]$"; then
+            echo "::error::Title \"$TITLE\" should look like \"importer: skip Storno statements\" — see CONTRIBUTING.md."
+            exit 1
+          fi
+          if [ "${#TITLE}" -gt 80 ]; then
+            echo "::error::Title is ${#TITLE} characters; keep it under about 72."
+            exit 1
+          fi
