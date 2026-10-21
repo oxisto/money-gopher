@@ -10,7 +10,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - name: Check title follows "<area>: <what it does>"
+      - name: 'Check title follows "<area>: <what it does>"'
         env:
           # Via env, never interpolated into the script: titles are user input.
           TITLE: ${{ github.event.pull_request.title }}
