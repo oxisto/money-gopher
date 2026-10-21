@@ -1,6 +1,6 @@
-// moneyd is the Money Gopher server. It serves the GraphQL API under
-// /graphql and an interactive GraphiQL explorer under /graphiql. In a later
-// milestone it also serves the embedded SvelteKit SPA.
+// moneyd is the Money Gopher server: the GraphQL API under /graphql, an
+// interactive GraphiQL explorer under /graphiql, document upload and
+// download, and the SvelteKit SPA embedded at build time (see package ui).
 package main
 
 import (
@@ -23,6 +23,7 @@ import (
 	"github.com/oxisto/money-gopher/internal/importer"
 	"github.com/oxisto/money-gopher/internal/persistence"
 	"github.com/oxisto/money-gopher/internal/quotes"
+	"github.com/oxisto/money-gopher/ui"
 
 	_ "modernc.org/sqlite"
 )
@@ -163,6 +164,10 @@ func run(addr string, dbPath string, quoteInterval time.Duration) error {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_, _ = w.Write(graphiql)
 	})
+	// Everything else is the SPA. It is public: the shell carries no data,
+	// and /login must load without a session. Its API calls are what the
+	// middleware above protects.
+	mux.Handle("/", ui.Handler())
 
 	slog.Info("moneyd listening", "addr", addr, "db", dbPath)
 

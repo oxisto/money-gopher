@@ -271,9 +271,13 @@ Deleted from v1: all buf/proto/Connect artifacts (`buf*.yaml`, `mgo.proto`, `gen
 
 ## Status / handoff notes (updated 2026-10-21)
 
-Work happens on `main`. M0–M6 are done; M7 (ship it: embedded SPA, single
-binary, Dockerfile, a release workflow that matches) is next, and is what
-v0.3.0 waits for.
+Work happens on `main`. M0–M6 are done. M7 (ship it): the SPA is embedded
+(`ui/ui.go`, `go:embed` of `ui/build`), and a release publishes a Docker
+image (`Dockerfile`, `.github/workflows/release.yml`; built but not pushed on
+every PR by the `docker` job in `build.yml`). Decided against downloadable
+binaries — the image is the distribution. Publishing v0.3.0 is a matter of
+creating the GitHub release. The `mgo` CLI rebuild from the M7 plan is
+deferred.
 
 **Since M6 (August–October 2026):**
 

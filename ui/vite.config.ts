@@ -13,9 +13,10 @@ export default defineConfig({
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
 
-			// The UI is a pure SPA: no SSR, everything falls back to index.html,
-			// so it can later be embedded into the moneyd binary via go:embed.
-			adapter: adapter({ fallback: 'index.html' })
+			// The UI is a pure SPA: no SSR, everything falls back to index.html.
+			// Output goes under build/site, which this wipes on every build;
+			// build/.gitkeep next to it keeps go:embed in ui.go valid without.
+			adapter: adapter({ pages: 'build/site', assets: 'build/site', fallback: 'index.html' })
 		})
 	],
 	server: {

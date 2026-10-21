@@ -6,7 +6,9 @@ node_modules
 .netlify
 .wrangler
 /.svelte-kit
-/build
+/build/*
+# …except the placeholder that keeps go:embed valid without an npm build.
+!/build/.gitkeep
 
 # OS
 .DS_Store
