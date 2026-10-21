@@ -73,4 +73,5 @@ cd ui && npm run generate            # refresh GraphQL types after changing api/
 
 Under heavy construction; see the milestones in
 [docs/DESIGN.md](docs/DESIGN.md). Expect breaking changes, including to the
-database schema, until v0.3.0 ships as a single binary.
+database schema, while releases are v0.x — keep a copy of your data directory
+before upgrading.
