@@ -20,7 +20,7 @@ jobs:
         run: |
           # Pinned: sqlc writes its version into every generated file, so CI
           # must run the same one as whoever last ran go generate.
-          go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.27.0
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
           go generate ./...
           git diff --exit-code
       - name: Build
