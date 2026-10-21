@@ -19,29 +19,37 @@ served from a single binary on your own machine.
   [graph-gophers/graphql-go](https://github.com/graph-gophers/graphql-go) —
   schema-first, see [api/schema.graphql](api/schema.graphql)
 - **Frontend**: SvelteKit SPA with Tailwind CSS 4 and
-  [gql.tada](https://gql-tada.0no.co) for typed GraphQL documents; embedding
-  it into the server binary is still to come
+  [gql.tada](https://gql-tada.0no.co) for typed GraphQL documents, embedded
+  into the server binary
 - **Imports**: bank PDFs via poppler's `pdftotext` and per-bank parsers
 
 ## Getting started
 
 ```sh
-go run ./cmd/moneyd        # API on :8080, data in ./moneyd-data
-cd ui && npm install && npm run dev   # UI on :5173, proxies to moneyd
+(cd ui && npm ci && npm run build)   # the SPA, into ui/build/site
+go build ./cmd/moneyd                # one binary with the SPA embedded
+./moneyd                             # http://localhost:8080
 ```
 
-`moneyd` stores its data in the `moneyd-data` directory (`-db` to change it)
-and serves the GraphQL API at `/graphql`. Without `-auth`, it signs everyone
-in as a development user. PDF import needs poppler's `pdftotext` on the
-`PATH`.
+`moneyd` stores its data in the `moneyd-data` directory (`-db` to change it),
+serves the UI at `/` and the GraphQL API at `/graphql`. Without `-auth`, it
+signs everyone in as a development user. PDF import needs poppler's
+`pdftotext` on the `PATH`.
+
+A `go build` without the npm step still works; the server then says so at `/`
+instead of serving the UI.
 
 `mgo`, the command-line client, is not functional yet.
 
 ## Development
 
 ```sh
-go generate ./...   # regenerate sqlc query code (needs sqlc installed)
+go run ./cmd/moneyd                  # API on :8080 (serves the last-built UI, if any)
+cd ui && npm run dev                 # UI on :5173 with hot reload, proxies to :8080
+
+go generate ./...                    # regenerate sqlc query code (needs sqlc installed)
 go test ./...
+cd ui && npm run generate            # refresh GraphQL types after changing api/schema.graphql
 ```
 
 ## Status
