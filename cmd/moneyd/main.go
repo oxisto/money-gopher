@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -35,7 +36,6 @@ var (
 	importSQLite     = flag.String("import-sqlite", "", "path to a pre-lightsql SQLite database to copy into -db at startup; a one-time cutover, since lightsql now persists to disk (re-running it against an already-migrated -db fails on the first duplicate primary key)")
 	quoteInterval    = flag.Duration("quote-interval", time.Hour, "how often to refresh quotes; 0 disables the background refresh")
 	authMode         = flag.String("auth", "dev", `authentication mode: "dev" (fixed dev user), "builtin" (embedded auth server), or "oidc"`)
-	builtinAuthAddr  = flag.String("builtin-auth-addr", ":8081", "address for the embedded auth server (--auth=builtin)")
 	builtinUser      = flag.String("auth-user", "admin", "username for the embedded auth server (--auth=builtin)")
 	builtinPassword  = flag.String("auth-password", "", "password for the embedded auth server (--auth=builtin, required)")
 	oidcIssuer       = flag.String("oidc-issuer", "", "OIDC issuer URL (required when --auth=oidc)")
@@ -82,38 +82,12 @@ func run(addr string, dbPath string, quoteInterval time.Duration) error {
 		if *builtinPassword == "" {
 			return fmt.Errorf("--auth-password is required when --auth=builtin")
 		}
-		clientSecret := oauth2go.GenerateSecret()
-		redirectURL := *publicURL + "/auth/callback"
-		builtinIssuer := "http://localhost" + *builtinAuthAddr
-
-		authServer := oauth2go.NewServer(*builtinAuthAddr,
-			oauth2go.WithPublicURL(builtinIssuer),
-			oauth2go.WithClient("moneyd", clientSecret, redirectURL),
-			login.WithLoginPage(login.WithUser(*builtinUser, *builtinPassword)),
-		)
-		go func() {
-			slog.Info("builtin auth server listening", "addr", *builtinAuthAddr)
-			if err := authServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				slog.Error("builtin auth server failed", "err", err)
-			}
-		}()
-
-		builtinHandler := auth.NewBuiltinHandler(db, auth.BuiltinConfig{
-			Issuer:       builtinIssuer,
-			ClientID:     "moneyd",
-			ClientSecret: clientSecret,
-			RedirectURL:  redirectURL,
-			PublicKeys:   authServer.PublicKeys,
-		})
-
-		mux.HandleFunc("/auth/login", builtinHandler.LoginHandler)
-		mux.HandleFunc("/auth/callback", builtinHandler.CallbackHandler)
-		mux.HandleFunc("/auth/logout", builtinHandler.LogoutHandler)
+		mountBuiltinAuth(mux, db, *publicURL, localURL(addr), *builtinUser, *builtinPassword)
 
 		protect = func(h http.Handler) http.Handler {
 			return auth.SessionMiddleware(db, h)
 		}
-		slog.Info("builtin auth enabled", "user", *builtinUser, "auth-addr", *builtinAuthAddr)
+		slog.Info("builtin auth enabled", "user", *builtinUser)
 
 	case "oidc":
 		if *oidcIssuer == "" || *oidcClientID == "" {
@@ -172,6 +146,57 @@ func run(addr string, dbPath string, quoteInterval time.Duration) error {
 	slog.Info("moneyd listening", "addr", addr, "db", dbPath)
 
 	return http.ListenAndServe(addr, mux)
+}
+
+// builtinAuthPrefix is where the embedded authorization server is mounted on
+// moneyd's own listener. One port, one -public-url: the login page is served
+// from the same address as the app, so no second port needs to be published
+// or proxied.
+const builtinAuthPrefix = "/auth/builtin"
+
+// mountBuiltinAuth registers the embedded oauth2go authorization server under
+// builtinAuthPrefix and the /auth/* handlers that run the authorization-code
+// flow against it. publicURL is where browsers reach moneyd; localURL is where
+// moneyd reaches its own listener for the code exchange, which therefore never
+// goes through a reverse proxy in front.
+func mountBuiltinAuth(mux *http.ServeMux, db *persistence.DB, publicURL, localURL, user, password string) {
+	clientSecret := oauth2go.GenerateSecret()
+	redirectURL := publicURL + "/auth/callback"
+
+	authServer := oauth2go.NewServer("",
+		oauth2go.WithPublicURL(publicURL+builtinAuthPrefix),
+		oauth2go.WithClient("moneyd", clientSecret, redirectURL),
+		login.WithLoginPage(
+			login.WithBaseURL(builtinAuthPrefix),
+			login.WithUser(user, password),
+		),
+	)
+	mux.Handle(builtinAuthPrefix+"/", http.StripPrefix(builtinAuthPrefix, authServer.Handler))
+
+	h := auth.NewBuiltinHandler(db, auth.BuiltinConfig{
+		ClientID:     "moneyd",
+		ClientSecret: clientSecret,
+		AuthURL:      publicURL + builtinAuthPrefix + "/authorize",
+		TokenURL:     localURL + builtinAuthPrefix + "/token",
+		RedirectURL:  redirectURL,
+		PublicKeys:   authServer.PublicKeys,
+	})
+	mux.HandleFunc("/auth/login", h.LoginHandler)
+	mux.HandleFunc("/auth/callback", h.CallbackHandler)
+	mux.HandleFunc("/auth/logout", h.LogoutHandler)
+}
+
+// localURL returns an http URL at which this process reaches its own
+// listener on addr. A wildcard host is replaced by the loopback address.
+func localURL(addr string) string {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return "http://" + addr
+	}
+	if host == "" || host == "0.0.0.0" || host == "::" {
+		host = "127.0.0.1"
+	}
+	return "http://" + net.JoinHostPort(host, port)
 }
 
 // uploadHandler handles POST /upload: stores a document and asynchronously
