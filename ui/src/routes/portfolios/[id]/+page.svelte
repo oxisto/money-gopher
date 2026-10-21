@@ -1,13 +1,20 @@
 <script lang="ts">
-	import PositionsTable from '$lib/components/PositionsTable.svelte';
-	import SnapshotSummary from '$lib/components/SnapshotSummary.svelte';
+	import HoldingsTable, { holdingsOf } from '$lib/components/holdings/HoldingsTable.svelte';
 	import TransactionForm from '$lib/components/TransactionForm.svelte';
 	import TransactionTable from '$lib/components/TransactionTable.svelte';
-	import Section from '$lib/components/ui/Section.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import Dialog from '$lib/components/ui/Dialog.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
+	import Segmented from '$lib/components/ui/Segmented.svelte';
+	import StatStrip from '$lib/components/ui/StatStrip.svelte';
+	import { formatMoney, formatPercent, formatSignedMoney, toneOf } from '$lib/format';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 	const PortfolioDetail = $derived(data.PortfolioDetail);
+
+	let tab = $state<'holdings' | 'transactions'>('holdings');
+	let addOpen = $state(false);
 
 	function refresh() {
 		PortfolioDetail.fetch({ policy: 'NetworkOnly' });
@@ -23,38 +30,76 @@
 {:else if $PortfolioDetail.data}
 	{@const portfolio = $PortfolioDetail.data.portfolio}
 	{#if portfolio}
-		<div class="mb-6">
-			<h1 class="text-2xl font-semibold">{portfolio.displayName}</h1>
-			<p class="mt-1 text-sm text-muted">
-				Settlement account: <span class="font-medium">{portfolio.cashAccount.displayName}</span>
-			</p>
+		{@const snap = portfolio.snapshot}
+		<div class="mb-6 flex flex-wrap items-center gap-3">
+			<div class="flex-1">
+				<h1 class="text-lg font-semibold">{portfolio.displayName}</h1>
+				<p class="text-[13px] text-muted">
+					Settles against
+					<a href="/cash-accounts/{portfolio.cashAccount.id}" class="text-fg hover:underline">
+						{portfolio.cashAccount.displayName}
+					</a>
+				</p>
+			</div>
+			<Button onclick={() => (addOpen = true)}><Icon name="plus" size={15} /> Add transaction</Button>
 		</div>
 
-		<div class="flex flex-col gap-8">
-			<SnapshotSummary snapshot={portfolio.snapshot} />
+		<Dialog bind:open={addOpen} title="Add transaction" wide>
+			<TransactionForm
+				portfolioID={portfolio.id}
+				defaultCashAccountID={portfolio.cashAccount.id}
+				securities={$PortfolioDetail.data.securities}
+				cashAccounts={$PortfolioDetail.data.cashAccounts}
+				oncreated={() => {
+					addOpen = false;
+					refresh();
+				}}
+			/>
+		</Dialog>
 
-			<Section title="Positions">
-				<PositionsTable positions={portfolio.snapshot.positions} />
-			</Section>
+		<div class="flex flex-col gap-6">
+			<StatStrip
+				stats={[
+					{
+						label: 'Market value',
+						value: formatMoney(snap.totalMarketValue),
+						sub: `${snap.positions.length} positions`
+					},
+					{ label: 'Cost basis', value: formatMoney(snap.totalPurchaseValue), sub: 'FIFO, without fees and taxes' },
+					{
+						label: 'Unrealized gain',
+						value: formatSignedMoney(snap.totalProfitOrLoss),
+						sub: formatPercent(snap.totalGains),
+						tone: toneOf(snap.totalProfitOrLoss.amount)
+					},
+					{
+						label: 'Return, all time',
+						value: formatPercent(snap.performance.timeWeightedReturn),
+						sub: 'time-weighted',
+						tone: toneOf(snap.performance.timeWeightedReturn)
+					}
+				]}
+			/>
 
-			<Section title="Transactions">
+			<Segmented
+				label="View"
+				bind:value={tab}
+				options={[
+					{ value: 'holdings', label: `Holdings · ${snap.positions.length}` },
+					{ value: 'transactions', label: `Transactions · ${portfolio.transactions.length}` }
+				]}
+			/>
+
+			{#if tab === 'holdings'}
+				<HoldingsTable holdings={holdingsOf(snap.positions)} />
+			{:else}
 				<TransactionTable
 					transactions={portfolio.transactions}
 					securities={$PortfolioDetail.data.securities}
 					cashAccounts={$PortfolioDetail.data.cashAccounts}
 					onchanged={refresh}
 				/>
-			</Section>
-
-			<Section title="Add transaction">
-				<TransactionForm
-					portfolioID={portfolio.id}
-					defaultCashAccountID={portfolio.cashAccount.id}
-					securities={$PortfolioDetail.data.securities}
-					cashAccounts={$PortfolioDetail.data.cashAccounts}
-					oncreated={refresh}
-				/>
-			</Section>
+			{/if}
 		</div>
 	{:else}
 		<p class="text-sm text-muted">Portfolio not found.</p>

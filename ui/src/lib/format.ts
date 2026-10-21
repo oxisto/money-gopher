@@ -37,13 +37,17 @@ export interface Price {
 	currency: string;
 }
 
-/** Formats a Price value using the browser locale, e.g. "8,2656 €". */
-export function formatPrice(price: Price): string {
+/**
+ * Formats a Price value using the browser locale, e.g. "8,2656 €". Exact
+ * to 8 decimals by default; pass fewer for derived prices like an average
+ * cost, whose long tails ("99.99972727") are noise, not information.
+ */
+export function formatPrice(price: Price, maxDecimals = 8): string {
 	return new Intl.NumberFormat(undefined, {
 		style: 'currency',
 		currency: price.currency,
 		minimumFractionDigits: 2,
-		maximumFractionDigits: 8
+		maximumFractionDigits: maxDecimals
 	}).format(Number(price.amount));
 }
 
@@ -59,6 +63,20 @@ export function parsePrice(input: string): string | null {
 		return null;
 	}
 	return trimmed;
+}
+
+/**
+ * Formats a Money value with an explicit sign, e.g. "+€12.50" or "−€3.00",
+ * using a real minus sign so columns of gains and losses line up.
+ */
+export function formatSignedMoney(money: Money): string {
+	const abs = formatMoney({ ...money, amount: Math.abs(money.amount) });
+	return money.amount > 0 ? `+${abs}` : money.amount < 0 ? `−${abs}` : abs;
+}
+
+/** The text color token for a gain (+), a loss (−) or neither. */
+export function toneOf(amount: number): string {
+	return amount > 0 ? 'text-pos' : amount < 0 ? 'text-neg' : 'text-muted';
 }
 
 /** Formats a transaction timestamp using the browser locale. */

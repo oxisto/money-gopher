@@ -6,8 +6,9 @@
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import Panel from '$lib/components/ui/Panel.svelte';
 	import Segmented from '$lib/components/ui/Segmented.svelte';
+	import StatStrip from '$lib/components/ui/StatStrip.svelte';
 	import { describeTransaction } from '$lib/describe';
-	import { formatDate, formatMoney, formatPercent, type Money } from '$lib/format';
+	import { formatDate, formatMoney, formatPercent, formatSignedMoney, toneOf, type Money } from '$lib/format';
 	import type { Period$options } from '$houdini';
 	import type { PageProps } from './$types';
 
@@ -32,8 +33,8 @@
 		amount: values.reduce((s, m) => s + m.amount, 0),
 		currency: values[0]?.currency ?? 'EUR'
 	});
-	const signed = (m: Money) => (m.amount > 0 ? '+' : m.amount < 0 ? '−' : '') + formatMoney({ ...m, amount: Math.abs(m.amount) });
-	const tone = (amount: number) => (amount > 0 ? 'text-pos' : amount < 0 ? 'text-neg' : 'text-muted');
+	const signed = formatSignedMoney;
+	const tone = toneOf;
 
 	const d = $derived($Dashboard.data);
 	const portfolios = $derived(d?.portfolios ?? []);
@@ -273,15 +274,7 @@
 			{/if}
 		</section>
 
-		<section class="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-px overflow-hidden rounded-xl border border-line bg-line">
-			{#each tiles as tile (tile.label)}
-				<div class="bg-surface px-4 py-3.5">
-					<div class="text-xs text-muted">{tile.label}</div>
-					<div class="num mt-1 text-xl font-semibold {tile.tone}">{tile.value}</div>
-					<div class="num mt-0.5 text-xs text-muted">{tile.sub}</div>
-				</div>
-			{/each}
-		</section>
+		<StatStrip stats={tiles} />
 
 		<div class="grid gap-5 lg:grid-cols-2">
 			<Panel title="Allocation">

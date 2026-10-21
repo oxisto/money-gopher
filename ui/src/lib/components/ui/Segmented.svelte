@@ -12,7 +12,7 @@
 	} = $props();
 </script>
 
-<div role="radiogroup" aria-label={label} class="inline-flex gap-0.5 rounded-lg border border-line bg-raised p-0.5">
+<div role="radiogroup" aria-label={label} class="inline-flex w-fit gap-0.5 rounded-lg border border-line bg-raised p-0.5">
 	{#each options as option (option.value)}
 		<button
 			type="button"

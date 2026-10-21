@@ -19,6 +19,7 @@
 	// Icons are 24×24 stroke paths, drawn by the template below.
 	const nav = $derived([
 		{ href: '/', label: 'Overview', icon: 'M3 12l9-8 9 8M5 10v10h5v-6h4v6h5V10' },
+		{ href: '/holdings', label: 'Holdings', icon: 'M4 20V10M10 20V4M16 20v-7M22 20H2' },
 		{
 			href: '/gains',
 			label: 'Income',

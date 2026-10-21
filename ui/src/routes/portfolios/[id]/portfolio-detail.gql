@@ -24,28 +24,7 @@ query PortfolioDetail($id: ID!) {
 				timeWeightedReturn
 			}
 			positions {
-				security {
-					id
-					displayName
-				}
-				units
-				purchasePrice {
-					amount
-					currency
-				}
-				marketPrice {
-					amount
-					currency
-				}
-				marketValue {
-					amount
-					currency
-				}
-				profitOrLoss {
-					amount
-					currency
-				}
-				gains
+				...HoldingPosition @mask_disable
 			}
 		}
 		transactions {
