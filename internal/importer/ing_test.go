@@ -1,0 +1,374 @@
+package importer
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+// TestING_Matches verifies the fingerprint against a representative sample.
+func TestING_Matches(t *testing.T) {
+	p := ING{}
+
+	entries, err := os.ReadDir("testdata/ing")
+	if err != nil {
+		t.Skipf("testdata/ing not found: %v", err)
+	}
+
+	for _, e := range entries {
+		text, err := os.ReadFile(filepath.Join("testdata/ing", e.Name()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !p.Matches(string(text)) {
+			t.Errorf("%s: Matches() = false", e.Name())
+		}
+	}
+
+	if p.Matches("Some random text without an ING header") {
+		t.Error("Matches() = true for a non-ING document")
+	}
+}
+
+// TestING_ParseAll runs every extracted ING text through the parser and checks
+// that the result is a single, internally consistent transaction.
+func TestING_ParseAll(t *testing.T) {
+	entries, err := os.ReadDir("testdata/ing")
+	if err != nil {
+		t.Skipf("testdata/ing not found: %v", err)
+	}
+
+	for _, e := range entries {
+		e := e
+		t.Run(strings.TrimSuffix(e.Name(), ".txt"), func(t *testing.T) {
+			text, err := os.ReadFile(filepath.Join("testdata/ing", e.Name()))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			txs, err := ING{}.Parse(string(text))
+			if err != nil {
+				t.Fatalf("Parse() error = %v", err)
+			}
+			if len(txs) != 1 {
+				t.Fatalf("len = %d, want 1", len(txs))
+			}
+			tx := txs[0]
+
+			// Every transaction must have a valid type.
+			validTypes := map[string]bool{
+				"BUY": true, "SELL": true, "DIVIDEND": true,
+			}
+			if !validTypes[tx.Type] {
+				t.Errorf("Type = %q, want BUY/SELL/DIVIDEND", tx.Type)
+			}
+
+			// ISIN: 12-char alphanumeric.
+			if len(tx.ISIN) != 12 {
+				t.Errorf("ISIN = %q, want 12 chars", tx.ISIN)
+			}
+
+			if tx.SecurityHint == "" {
+				t.Error("SecurityHint is empty")
+			}
+
+			if tx.Time.IsZero() {
+				t.Error("Time is zero")
+			}
+
+			// BUY: cash must leave the account (negative delta). Bonds report
+			// Units as face-value/100 "lots" and Price as the Kurs percentage
+			// (e.g. 100.00 for a bond bought at par) — units × price then
+			// reproduces Kurswert, same as it does for equities.
+			if tx.Type == "BUY" {
+				if tx.CashDelta >= 0 {
+					t.Errorf("BUY CashDelta = %d, want negative", tx.CashDelta)
+				}
+				if !tx.Price.Valid || tx.Price.Sign() <= 0 {
+					t.Errorf("BUY Price = %v, want positive", tx.Price)
+				}
+				if tx.Units <= 0 {
+					t.Errorf("BUY Units = %v, want positive", tx.Units)
+				}
+			}
+
+			// SELL: cash must arrive (positive delta).
+			if tx.Type == "SELL" && tx.CashDelta <= 0 {
+				t.Errorf("SELL CashDelta = %d, want positive", tx.CashDelta)
+			}
+
+			// DIVIDEND: cash must arrive, currency must be set.
+			if tx.Type == "DIVIDEND" {
+				if tx.CashDelta <= 0 {
+					t.Errorf("DIVIDEND CashDelta = %d, want positive", tx.CashDelta)
+				}
+				if tx.Currency == "" {
+					t.Error("DIVIDEND Currency is empty")
+				}
+			}
+
+			t.Logf("OK  %s  %s  %s  units=%.4f  cashDelta=%d  taxes=%d  iban=%s",
+				tx.Type, tx.ISIN, tx.Time.Format("2006-01-02"),
+				tx.Units, tx.CashDelta, tx.Taxes, tx.SettlementIBAN)
+		})
+	}
+}
+
+// TestING_ParseTrade_BondAtPar verifies the bond price/units convention: a
+// bond's "Kurs" is a percentage of face value (not a per-unit price), so
+// Units becomes face-value/100 "lots" and Price becomes the percentage
+// itself — units × price then reproduces Kurswert exactly, the same
+// invariant equities already satisfy.
+func TestING_ParseTrade_BondAtPar(t *testing.T) {
+	text, err := os.ReadFile("testdata/ing/buy_bond_par.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx, err := ingParseTrade(string(text))
+	if err != nil {
+		t.Fatalf("ingParseTrade() error = %v", err)
+	}
+
+	if tx.Units != 50 {
+		t.Errorf("Units = %v, want 50 (5000 nominal / 100)", tx.Units)
+	}
+	if got := tx.Price.StringPrec(2); got != "100.00" {
+		t.Errorf("Price = %s, want 100.00 (bought at par)", got)
+	}
+	if tx.CashDelta != -500000 {
+		t.Errorf("CashDelta = %d, want -500000", tx.CashDelta)
+	}
+
+	// units × price must reproduce Kurswert (500000, in cents) exactly.
+	kurswert := tx.Price.MulFloat(tx.Units).MulInt(100).RoundToInt64()
+	if kurswert != 500000 {
+		t.Errorf("Units*Price = %d, want 500000 (Kurswert)", kurswert)
+	}
+}
+
+// TestING_ParseTrade_BondFeesAndAccruedInterest verifies that
+// Handelsplatzgebühr, Variables Transaktionsentgelt and Stückzinsen (a
+// bond's accrued interest, folded into Fees since there is no dedicated
+// field for it) are all captured, and that Kurswert + Fees + Taxes
+// reconciles exactly against the Endbetrag-derived CashDelta.
+func TestING_ParseTrade_BondFeesAndAccruedInterest(t *testing.T) {
+	text, err := os.ReadFile("testdata/ing/buy_bond_fees.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	txs, err := ING{}.Parse(string(text))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	tx := txs[0]
+
+	// 51.23 (Stückzinsen) + 0.38 (Handelsplatzgebühr) + 8.17 (Provision) +
+	// 2.25 (Variables Transaktionsentgelt) = 62.03.
+	if tx.Fees != 6203 {
+		t.Errorf("Fees = %d, want 6203", tx.Fees)
+	}
+	if tx.CashDelta != -294203 {
+		t.Errorf("CashDelta = %d, want -294203", tx.CashDelta)
+	}
+
+	kurswert := tx.Price.MulFloat(tx.Units).MulInt(100).RoundToInt64()
+	if got, want := kurswert+tx.Fees+tx.Taxes, int64(294203); got != want {
+		t.Errorf("Kurswert+Fees+Taxes = %d, want %d (Endbetrag)", got, want)
+	}
+}
+
+// TestING_ParseTrade_ForeignBond verifies FX bond handling: Price/Units are
+// denominated in the bond's own currency (not settlement), FxRate carries
+// the conversion, Stückzinsen (quoted in the bond's currency) converts into
+// Fees, and units × price ÷ fxRate + fees + taxes reproduces the EUR
+// Endbetrag exactly.
+func TestING_ParseTrade_ForeignBond(t *testing.T) {
+	text, err := os.ReadFile("testdata/ing/buy_bond_fx.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	txs, err := ING{}.Parse(string(text))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	tx := txs[0]
+
+	if tx.PriceCurrency != "GBP" {
+		t.Errorf("PriceCurrency = %q, want GBP", tx.PriceCurrency)
+	}
+	if got := tx.FxRate.StringPrec(4); got != "0.8000" {
+		t.Errorf("FxRate = %s, want 0.8000", got)
+	}
+	// Stückzinsen 120.00 GBP / 0.80 = 150.00 EUR, + Provision 20.00 = 170.00.
+	if tx.Fees != 17000 {
+		t.Errorf("Fees = %d, want 17000", tx.Fees)
+	}
+	if tx.CashDelta != -755750 {
+		t.Errorf("CashDelta = %d, want -755750", tx.CashDelta)
+	}
+
+	// Kurswert (5910.00 GBP) ÷ 0.80 = 7387.50 EUR; + Fees (207.50) must
+	// reproduce the Endbetrag exactly, cent for cent.
+	grossGBP := tx.Price.MulFloat(tx.Units)
+	grossEUR := grossGBP.Div(tx.FxRate).MulInt(100).RoundToInt64()
+	if got, want := grossEUR+tx.Fees+tx.Taxes, int64(755750); got != want {
+		t.Errorf("gross(EUR)+Fees+Taxes = %d, want %d (Endbetrag)", got, want)
+	}
+}
+
+// TestING_ParseTrade_ForeignBondRoundingBoundary covers a real-world case
+// where converting Kurswert and Stückzinsen to EUR separately (each rounded
+// to the cent) lands a cent away from converting their combined Zwischensumme
+// once, which is what ING itself does. The fix trusts ING's own printed EUR
+// conversion directly instead of recomputing it, so gross+fees+taxes must
+// reproduce Endbetrag exactly even across this rounding boundary.
+func TestING_ParseTrade_ForeignBondRoundingBoundary(t *testing.T) {
+	text, err := os.ReadFile("testdata/ing/buy_bond_fx_rounding.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	txs, err := ING{}.Parse(string(text))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	tx := txs[0]
+
+	if tx.CashDelta != -186621 {
+		t.Errorf("CashDelta = %d, want -186621", tx.CashDelta)
+	}
+
+	grossUSD := tx.Price.MulFloat(tx.Units)
+	grossEUR := grossUSD.Div(tx.FxRate).MulInt(100).RoundToInt64()
+	if got, want := grossEUR+tx.Fees+tx.Taxes, int64(186621); got != want {
+		t.Errorf("gross(EUR)+Fees+Taxes = %d, want %d (Endbetrag) — rounding boundary not closed", got, want)
+	}
+}
+
+// TestING_ParseRepayment_Bond verifies a bond redemption at maturity
+// (Rückzahlung): Nominale is a bare face value (no "Stück"), so Units
+// follows the same face-value/100 "lot" convention a bond purchase uses,
+// and Price is the redemption percentage — reproducing Kurswert = Endbetrag
+// exactly for a same-currency, no-tax redemption at par.
+func TestING_ParseRepayment_Bond(t *testing.T) {
+	text, err := os.ReadFile("testdata/ing/repayment_bond.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx, err := ingParseRepayment(string(text))
+	if err != nil {
+		t.Fatalf("ingParseRepayment() error = %v", err)
+	}
+
+	if tx.Type != "SELL" {
+		t.Errorf("Type = %q, want SELL", tx.Type)
+	}
+	if tx.Units != 50 {
+		t.Errorf("Units = %v, want 50 (5000 nominal / 100)", tx.Units)
+	}
+	if got := tx.Price.StringPrec(2); got != "100.00" {
+		t.Errorf("Price = %s, want 100.00 (redeemed at par)", got)
+	}
+	if tx.CashDelta != 500000 {
+		t.Errorf("CashDelta = %d, want 500000", tx.CashDelta)
+	}
+}
+
+// TestING_ParseRepayment_ForeignBond verifies a foreign bond redemption:
+// Price/Units are in the bond's own currency, FxRate carries the
+// conversion (trusting ING's own printed EUR amount, same as a foreign
+// bond purchase), and Kapitalertragsteuer/Kirchensteuer/Solidaritätszuschlag
+// are captured as Taxes so gross-fees-taxes reproduces Endbetrag exactly.
+func TestING_ParseRepayment_ForeignBond(t *testing.T) {
+	text, err := os.ReadFile("testdata/ing/repayment_bond_fx.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx, err := ingParseRepayment(string(text))
+	if err != nil {
+		t.Fatalf("ingParseRepayment() error = %v", err)
+	}
+
+	if tx.PriceCurrency != "USD" {
+		t.Errorf("PriceCurrency = %q, want USD", tx.PriceCurrency)
+	}
+	if !tx.FxRate.Valid || tx.FxRate.Sign() <= 0 {
+		t.Errorf("FxRate = %v, want a positive rate", tx.FxRate)
+	}
+	if tx.Taxes != 573 {
+		t.Errorf("Taxes = %d, want 573 (5.05+0.40+0.28)", tx.Taxes)
+	}
+	if tx.CashDelta != 94175 {
+		t.Errorf("CashDelta = %d, want 94175", tx.CashDelta)
+	}
+
+	grossEUR := tx.Price.MulFloat(tx.Units).Div(tx.FxRate).MulInt(100).RoundToInt64()
+	if got, want := grossEUR-tx.Taxes, int64(94175); got != want {
+		t.Errorf("gross(EUR)-Taxes = %d, want %d (Endbetrag)", got, want)
+	}
+}
+
+// TestING_ParseTrade_SubscriptionRightsSale verifies that "Verk.
+// Teil-/Bezugsr." (a sale of unexercised subscription rights) is detected
+// as a SELL despite not containing the word "Verkauf", and that
+// Handelsentgelt — a fee label not seen elsewhere — is captured.
+func TestING_ParseTrade_SubscriptionRightsSale(t *testing.T) {
+	text, err := os.ReadFile("testdata/ing/sell_subscription_rights.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx, err := ingParseTrade(string(text))
+	if err != nil {
+		t.Fatalf("ingParseTrade() error = %v", err)
+	}
+
+	if tx.Type != "SELL" {
+		t.Errorf("Type = %q, want SELL", tx.Type)
+	}
+	// Handelsplatzgebühr 1.50 + Provision 3.00 + Handelsentgelt 1.30 = 5.80.
+	if tx.Fees != 580 {
+		t.Errorf("Fees = %d, want 580", tx.Fees)
+	}
+	if tx.CashDelta != 12150 {
+		t.Errorf("CashDelta = %d, want 12150", tx.CashDelta)
+	}
+}
+
+// TestING_ParseTrade_ForeignTransactionTax verifies that a foreign financial
+// transaction tax (e.g. France's "Franz. Transaktionssteuer") lands in Taxes,
+// not Fees (Provision) — and that Kurswert + Fees + Taxes reconciles exactly
+// against the Endbetrag-derived CashDelta.
+func TestING_ParseTrade_ForeignTransactionTax(t *testing.T) {
+	text, err := os.ReadFile("testdata/ing/buy_french_tax.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx, err := ingParseTrade(string(text))
+	if err != nil {
+		t.Fatalf("ingParseTrade() error = %v", err)
+	}
+
+	if tx.Taxes != 630 {
+		t.Errorf("Taxes = %d, want 630 (the 0.30%% French FTT)", tx.Taxes)
+	}
+	if tx.Fees != 990 {
+		t.Errorf("Fees = %d, want 990 (Provision only, not the FTT)", tx.Fees)
+	}
+
+	// Kurswert (210000) + Fees (990) + Taxes (630) must equal the Endbetrag.
+	const kurswert = 210000
+	if got, want := kurswert+tx.Fees+tx.Taxes, int64(211620); got != want {
+		t.Errorf("Kurswert+Fees+Taxes = %d, want %d (Endbetrag)", got, want)
+	}
+	if tx.CashDelta != -211620 {
+		t.Errorf("CashDelta = %d, want -211620", tx.CashDelta)
+	}
+}

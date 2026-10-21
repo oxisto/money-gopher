@@ -1,0 +1,48 @@
+                     ING-DiBa AG · 60628 Frankfurt am Main
+
+
+
+                                                                                                                        Depotinhaber:                         Max Mustermann
+                                                                                                                        Direkt-Depot Nr.:                     123456789
+
+                     Herrn
+                     Max Mustermann                                                                                     Datum:                                10.03.2025
+                     Musterstraße 1                                                                                     Seite:                                1 von 1
+                     12345 Musterstadt
+
+
+
+
+                     Wertpapierabrechnung                                           Kauf
+                     Ordernummer                                                    385072051.001
+                     ISIN (WKN)                                                     FR0010221234 (A0HGPT)
+                     Wertpapierbezeichnung                                          Eutelsat Communications
+                                                                                    Actions Port. EO 1
+
+                     Nominale                                                       Stück                      500,00
+                     Kurs                                                           EUR                         4,20
+                     Handelsplatz                                                   Direkthandel
+                     Ausführungstag / -zeit                                         10.03.2025 um 11:49:49 Uhr
+                     Kurswert                                                       EUR                                             2.100,00
+                     Franz. Transaktionssteuer 0,30%                                EUR                                                 6,30
+                     Provision                                                      EUR                                                 9,90
+                     Endbetrag zu Ihren Lasten                                      EUR                                             2.116,20
+
+                     Abrechnungs-IBAN                                               DE12 3456 7890 1234 5678 90
+                     Valuta                                                         12.03.2025
+                     Wertpapiere zugunsten Girosammelverwahrung.
+                     Besuchen Sie uns einfach unter www.ing.de/fts . Dort finden Sie das Wichtigste zur französischen
+                     Finanztransaktionssteuer.
+
+
+
+
+34WAAD123456789_T
+                     Bei Fragen besuchen Sie uns einfach unter www.ing.de/wertpapierwissen - da gibt es viele schnelle
+                     Antworten.
+
+
+
+                     ING-DiBa AG · Theodor-Heuss-Allee 2 · 60486 Frankfurt am Main · Vorsitzende des Aufsichtsrates: Susanne Klöß-Braekler · Vorstand: Lars Stoy (Vorsitzender),
+                     Michael Clijdesdale, Eddy Henning, Nikolaus Maximilian Linaric, Dr. Ralph Müller, Nurten Spitzer-Erdogan · Sitz: Frankfurt am Main · AG Frankfurt am Main · HRB 7727
+                     Steuernummer: 014 220 2800 4 · USt-IdNr.: DE 114 103 475 · Internet: www.ing.de · BIC: INGDDEFFXXX · Mitglied im Einlagensicherungsfonds

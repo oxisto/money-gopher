@@ -1,10 +1,24 @@
 version: "2"
 sql:
   - engine: "sqlite"
-    queries: "persistence/sql/queries"
-    schema: "persistence/sql/migrations"
+    queries: "internal/persistence/sql/queries"
+    schema: "internal/persistence/sql/schema"
     gen:
       go:
         package: "persistence"
-        out: "persistence"
+        out: "internal/persistence"
         emit_result_struct_pointers: true
+        overrides:
+          - db_type: "TIMESTAMP"
+            go_type: "time.Time"
+          - db_type: "BYTEA"
+            go_type:
+              type: "byte"
+              slice: true
+          - db_type: "DECIMAL(19,4)"
+            go_type:
+              type: "Decimal"
+          - db_type: "DECIMAL(19,4)"
+            go_type:
+              type: "Decimal"
+            nullable: true

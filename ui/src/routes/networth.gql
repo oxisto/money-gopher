@@ -1,0 +1,13 @@
+query NetWorthHistory($period: Period!) {
+	netWorthHistory(period: $period, points: 90) {
+		time
+		netWorth {
+			amount
+			currency
+		}
+		invested {
+			amount
+			currency
+		}
+	}
+}

@@ -1,0 +1,20 @@
+query Activity {
+	portfolios {
+		id
+		transactions {
+			...ActivityTransaction @mask_disable
+		}
+	}
+	cashAccounts {
+		id
+		displayName
+		currency
+		transactions {
+			...ActivityTransaction @mask_disable
+		}
+	}
+	securities {
+		id
+		displayName
+	}
+}

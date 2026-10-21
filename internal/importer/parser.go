@@ -1,0 +1,87 @@
+package importer
+
+import (
+	"fmt"
+	"math"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/oxisto/money-gopher/internal/persistence"
+)
+
+// StagedTransaction is one transaction parsed from a document, before user
+// review. It carries matching hints (security name, ISIN) instead of hard
+// references; those are resolved during review and confirmation.
+type StagedTransaction struct {
+	Type  string
+	Time  time.Time
+	Units float64
+	// Price per unit; !Valid when the document has none. Kept as an exact
+	// Decimal rather than minor-unit cents like the rest of this struct —
+	// real fund/bond prices need more than 2 decimal digits.
+	Price persistence.Decimal
+	Fees  int64
+	Taxes int64
+	// CashDelta in minor units; 0 lets the server derive it for trades.
+	CashDelta int64
+	Currency  string
+	// PriceCurrency is the currency Price/Units are denominated in, when it
+	// differs from Currency (e.g. a GBP bond settling in EUR). Empty means
+	// "same as Currency" — the common case, no FX involved.
+	PriceCurrency string
+	// FxRate is 1 unit of Currency expressed in PriceCurrency, exactly as
+	// printed on the document (e.g. 0.8519 for "GBP = 0,8519", meaning
+	// 1 EUR = 0.8519 GBP). !Valid when PriceCurrency is empty.
+	FxRate persistence.Decimal
+	// SecurityHint is the security name as printed on the document.
+	SecurityHint string
+	// ISIN as printed on the document.
+	ISIN string
+	// SettlementIBAN is the bank account IBAN the settlement goes against.
+	// Used to auto-match the import to a portfolio's linked cash account.
+	SettlementIBAN string
+}
+
+// Parser understands one bank's (or format's) documents.
+type Parser interface {
+	// Name identifies the parser, stored as the document's detected bank.
+	Name() string
+	// Matches is the fingerprint: does the extracted text look like a
+	// document of this format?
+	Matches(text string) bool
+	// Parse returns the staged transactions found in the text.
+	Parse(text string) ([]StagedTransaction, error)
+}
+
+// DefaultParsers returns all built-in parsers. Adding a bank means adding a
+// package and listing its parser here.
+func DefaultParsers() []Parser {
+	return []Parser{ING{}, CSV{}}
+}
+
+// detect returns the first parser whose fingerprint matches.
+func detect(parsers []Parser, text string) (Parser, bool) {
+	for _, p := range parsers {
+		if p.Matches(text) {
+			return p, true
+		}
+	}
+	return nil, false
+}
+
+// parseDecimal parses a decimal amount in major units (e.g. "1234.56") into
+// minor units. The empty string is zero.
+func parseDecimal(s string) (int64, error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return 0, nil
+	}
+
+	value, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid amount %q", s)
+	}
+
+	return int64(math.Round(value * 100)), nil
+}

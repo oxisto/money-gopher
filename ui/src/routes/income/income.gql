@@ -1,0 +1,42 @@
+query RealizedGains($from: Time, $to: Time) {
+	realizedGains(from: $from, to: $to) {
+		from
+		to
+		currency
+		dividends {
+			amount
+			currency
+		}
+		interest {
+			amount
+			currency
+		}
+		tradingGains {
+			amount
+			currency
+		}
+		total {
+			amount
+			currency
+		}
+		entries {
+			id
+			time
+			type
+			amount {
+				amount
+				currency
+			}
+			security {
+				id
+				displayName
+			}
+			cashAccount {
+				displayName
+			}
+			portfolio {
+				displayName
+			}
+		}
+	}
+}

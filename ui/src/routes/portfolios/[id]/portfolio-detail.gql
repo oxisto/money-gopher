@@ -1,0 +1,43 @@
+query PortfolioDetail($id: ID!) {
+	portfolio(id: $id) {
+		id
+		displayName
+		cashAccount {
+			id
+			displayName
+		}
+		snapshot {
+			totalPurchaseValue {
+				amount
+				currency
+			}
+			totalMarketValue {
+				amount
+				currency
+			}
+			totalProfitOrLoss {
+				amount
+				currency
+			}
+			totalGains
+			performance(period: ALL_TIME) {
+				timeWeightedReturn
+			}
+			positions {
+				...HoldingPosition @mask_disable
+			}
+		}
+		transactions {
+			...ActivityTransaction @mask_disable
+		}
+	}
+	securities {
+		id
+		displayName
+	}
+	cashAccounts {
+		id
+		displayName
+		currency
+	}
+}

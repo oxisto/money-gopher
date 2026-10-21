@@ -1,0 +1,77 @@
+                     ING-DiBa AG · 60628 Frankfurt am Main
+
+
+
+                                                                                                                       Depotinhaber:                        Max Mustermann
+                                                                                                                       Direkt-Depot Nr.:                    123456789
+                     Herrn
+                     Max Mustermann                                                                                    Datum:                               23.07.2024
+                     Musterstraße 1                                                                                    Seite:                               1 von 2
+                     12345 Musterstadt
+
+
+
+
+                     Wertpapierabrechnung                                          Kauf
+                     Ordernummer                                                   348979048.001
+                     ISIN (WKN)                                                    US0000000096 (912828)
+                     Wertpapierbezeichnung                                         Muster Treasury Note
+                                                                                    DL-Notes 2022(29)
+                     Zinstermin                                                    15. FEB/AUG
+                     Fälligkeit                                                    15.08.2029
+
+                     Nominale                                                      USD                     2.000,00
+                     Kurs                                                          99,78 %
+                     Handelsplatz                                                  Direkthandel
+                     Ausführungstag / -zeit                                        23.07.2024 um 18:03:33 Uhr
+                     Kurswert                                                      USD                                           1.995,60
+                     Stückzinsen                                                   USD                                              13,53 (56 Tage)
+                     Zwischensumme                                                 USD                                           2.009,13
+                     umger. zum Devisenkurs                                        EUR                                           1.856,70 (USD = 1,0821)
+                     Provision                                                     EUR                                               9,51
+                     Endbetrag zu Ihren Lasten                                     EUR                                           1.866,21
+
+                     Abrechnungs-IBAN                                              DE12 3456 7890 1234 5678 90
+                     Valuta                                                        25.07.2024
+                     Wertpapiere zugunsten Wertpapierrechnung USA.
+                     Weiter geht es auf Seite 2.
+
+
+
+
+34WAAD123456789_T
+
+
+
+                     ING-DiBa AG · Theodor-Heuss-Allee 2 · 60486 Frankfurt am Main · Vorsitzende des Aufsichtsrates: Susanne Klöß-Braekler · Vorstand: Nick Jue (Vorsitzender),
+                     Michael Clijdesdale, Eddy Henning, Daniel Llano Manibardo, Dr. Ralph Müller, Nurten Spitzer-Erdogan · Sitz: Frankfurt am Main · AG Frankfurt am Main · HRB 7727
+                     Steuernummer: 047 220 2800 4 · USt-IdNr.: DE 114 103 475 · Internet: www.ing.de · E-Mail: info@ing.de · BIC: INGDDEFFXXX · Mitglied im Einlagensicherungsfonds
+                                                        Depotinhaber:         Max Mustermann
+                                                        Direkt-Depot Nr.:     123456789
+                                                        Datum:                23.07.2024
+                                                        Seite:                2 von 2
+
+
+
+
+Ordernummer      348979048.001
+ISIN (WKN)       US0000000096 (912828)
+
+
+
+
+Mit Verrechnungstopf Allgemein verrechnet                          12,51 EUR
+Gezahlte Stückzinsen                                               12,51 EUR
+
+Verrechnungstopf Aktien vor Geschäft                                0,00 EUR
+Verrechnungstopf Aktien nach Geschäft                               0,00 EUR
+Verrechnungstopf Allgemein vor Geschäft                             0,00 EUR
+Verrechnungstopf Allgemein nach Geschäft                           12,51 EUR
+Verrechnungstopf ausländ. Quellensteuer vor Geschäft                0,00 EUR
+Verrechnungstopf ausländ. Quellensteuer nach Geschäft               0,00 EUR
+
+
+
+
+Bei Fragen besuchen Sie uns einfach unter www.ing.de/wertpapierwissen - da gibt es viele schnelle
+Antworten. Oder senden Sie uns eine E-Mail an info@ing.de .

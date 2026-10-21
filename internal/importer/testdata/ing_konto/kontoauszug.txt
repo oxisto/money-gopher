@@ -1,0 +1,76 @@
+                     ING-DiBa AG · 60628 Frankfurt am Main
+
+
+
+
+                                                                                                                 Datum                                                                      31.03.2024
+                     Herrn                                                                                       Auszugsnummer                                                                       1
+                     Max Mustermann                                                                              Alter Saldo                                                          5.000,00 Euro
+                     Musterstraße 1                                                                              Neuer Saldo                                                            731,50 Euro
+                     12345 Musterstadt
+
+                                                                                                                 IBAN                                 DE02 1234 5678 0000 0000 42
+                                                                                                                 BIC                                                 INGDDEFFXXX
+                                                                                                                 Seite                                                                         1 von 1
+
+
+
+                     Girokonto Nummer 1234567842
+                     Kontoauszug 2024
+
+                     Buchung                    Buchung / Verwendungszweck                                                                                                            Betrag (EUR)
+                     Valuta
+
+                     05.01.2024                 Gutschrift Max Mustermann                                                                                                                    2.500,00
+                     05.01.2024                 Gehalt Januar
+                                                Referenz: AB123456-E00000001
+                     06.01.2024                 Wertpapierkauf                                                                                                                                -100,00
+                     08.01.2024                 WP-ABRECHNUNG 0000000001001 Kauf ISIN DE0000000090
+                                                MUSTER ETF
+                     07.01.2024                 Wertpapierkauf                                                                                                                              -5.432,10
+                     09.01.2024
+
+
+
+99ABCD1234567842_T
+                                                WP-ABRECHNUNG 0000000002001 Kauf ISIN US0000000091 MUSTER
+                                                CORP
+                     Girokonto Nummer 1234567842
+                     Kontoauszug 2024
+
+
+                                                                                         Datum    31.03.2024
+                                                                                         Seite        2 von 1
+
+                     Buchung      Buchung / Verwendungszweck                                     Betrag (EUR)
+                     Valuta
+
+                     20.01.2024                 Zins/Dividende WP                                                                                                                               24,50
+                     20.01.2024                 Zins/Dividende ISIN DE0000000090 MUSTER ETF
+                     10.01.2024                 Ueberweisung Max Mustermann                                                                                                                  -800,00
+                     10.01.2024                 Miete Januar
+                     15.01.2024                 Entgeltabrechnung                                                                                                                              -11,90
+                     15.01.2024                 Kontoführungsentgelt
+                     20.02.2024                 Ueberweisung Max Mustermann                                                                                                                  -455,98
+                     20.02.2024                 Lastschrift Stromversorger
+                     25.02.2024                 Kapitalertragsteuer                                                                                                                             -0,02
+                     25.02.2024                 Nachtr. Verlustverrechnung Nr. 00099 vom 25.02.2024.
+                                                5132441267 / 10001 / 2024
+                     31.03.2024                 Zinsertrag                                                                                                                                     10,25
+                     31.03.2024
+                     31.03.2024                 Kapitalertragsteuer                                                                                                                             -2,56
+                     31.03.2024
+                     31.03.2024                 Solidaritätszuschlag                                                                                                                            -0,14
+                     31.03.2024
+                     31.03.2024                 Kirchensteuer                                                                                                                                   -0,55
+
+
+
+
+Abschluss für Konto 1234567842
+                     Zeitraum                                  Zins p.a.                                               Ertrag
+                     01.01.2024 bis 31.03.2024                 1,000% Zins                                              10,25
+                     Abschlussbetrag                                                                                    10,25
+
+
+                     ING-DiBa AG · Theodor-Heuss-Allee 2 · 60486 Frankfurt am Main

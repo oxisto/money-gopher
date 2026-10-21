@@ -1,0 +1,36 @@
+                     ING-DiBa AG · 60628 Frankfurt am Main
+
+
+
+                                                                                                                       Depotinhaber:                        Max Mustermann
+                     Max Mustermann                                                                                    Direkt-Depot Nr.:                    123456789
+                     Musterstraße 1                                                                                    Datum:                               31.07.2024
+                     12345 Musterstadt                                                                                 Seite:                               1 von 2
+
+
+
+
+                     Wertpapierabrechnung                                           Verkauf
+                     Ordernummer                                                    349524580.001
+                     ISIN (WKN)                                                     US1912161007 (850663)
+                     Wertpapierbezeichnung                                          Coca-Cola Co., The
+                                                                                    Registered Shares DL -,25
+
+                     Nominale                                                       Stück                      96,00
+                     Kurs                                                           EUR                        62,13
+                     Handelsplatz                                                   Direkthandel
+                     Ausführungstag / -zeit                                         31.07.2024 um 20:21:56 Uhr
+                     Kurswert                           EUR                                                                        5.964,48
+                     KapSt anteilig 50,00 %      24,51% EUR                                                                           58,58
+                     Kirchensteuer 8,00 %               EUR                                                                            4,68
+                     Solidaritätszuschlag 5,50 %        EUR                                                                            3,22
+                     KapSt anteilig 50,00 %      24,51% EUR                                                                           58,58
+                     Kirchensteuer 8,00 %               EUR                                                                            4,68
+                     Solidaritätszuschlag 5,50 %        EUR                                                                            3,22
+                     Provision                          EUR                                                                           19,81
+                     Endbetrag zu Ihren Gunsten                                     EUR                                           5.811,71
+
+                     Abrechnungs-IBAN                                               DE12 3456 7890 1234 5678 90
+                     Valuta                                                         02.08.2024
+                     Wertpapiere zulasten Girosammelverwahrung.
+                     Jahressteuerbescheinigung folgt.

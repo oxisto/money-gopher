@@ -1,0 +1,632 @@
+# Money Gopher GraphQL schema. This file is the single source of truth for the
+# API; Go resolvers (internal/api), the frontend (Houdini), and the CLI
+# (genqlient) are all checked or generated against it.
+
+"Time is an RFC 3339 timestamp."
+scalar Time
+
+"""
+Money is a monetary value: the amount in minor units (e.g. euro cents)
+together with its ISO 4217 currency code.
+"""
+type Money {
+  amount: Int!
+  currency: String!
+}
+
+"""
+Decimal is an exact decimal number, transmitted as a string (e.g. "8.2656")
+rather than a number — GraphQL's Int is 32 bits and Float is IEEE 754 binary,
+neither of which can hold an arbitrary decimal exactly. Used for per-unit
+prices, which need more precision than the 2-decimal minor-unit convention
+Money uses for amounts.
+"""
+scalar Decimal
+
+"Price is the price of one unit of a security, unlike Money an exact Decimal."
+type Price {
+  amount: Decimal!
+  currency: String!
+}
+
+"TransactionType is the kind of a transaction."
+enum TransactionType {
+  "A purchase of a security, settling against a cash account."
+  BUY
+  "A sale of a security, settling against a cash account."
+  SELL
+  "Securities transferred in from elsewhere; no cash movement."
+  DELIVERY_INBOUND
+  "Securities transferred out to elsewhere; no cash movement."
+  DELIVERY_OUTBOUND
+  "A dividend payout for a held security."
+  DIVIDEND
+  "Interest earned on a cash account."
+  INTEREST
+  "Cash paid into a cash account."
+  DEPOSIT_CASH
+  "Cash taken out of a cash account."
+  WITHDRAW_CASH
+  "Fees charged by the bank or broker."
+  ACCOUNT_FEES
+  """
+  A standalone tax adjustment not tied to a specific interest/dividend
+  payment, e.g. a retroactive capital-gains loss offset ("Nachträgliche
+  Verlustverrechnung"). Unlike the name suggests, cashDelta can be negative
+  as easily as positive — the adjustment can net to an additional small
+  charge rather than a refund.
+  """
+  TAX_REFUND
+}
+
+"User is a person using money-gopher."
+type User {
+  id: ID!
+  displayName: String!
+  "All persons this user has access to."
+  persons: [Person!]!
+  "The person currently active in this session."
+  activePerson: Person
+}
+
+"""
+Person is a financial entity (e.g. an individual or household) whose data is
+owned inside Money Gopher. A user can access multiple persons; a person can be
+accessed by multiple users (delegation).
+"""
+type Person {
+  id: ID!
+  displayName: String!
+  "All users who have access to this person's data."
+  users: [User!]!
+}
+
+"""
+CashAccount is a real-world bank/cash account. Its balance is derived from
+the cash deltas of all transactions settling against it.
+"""
+type CashAccount {
+  id: ID!
+  displayName: String!
+  "The ISO 4217 code the account is denominated in."
+  currency: String!
+  "The IBAN of this bank account, used to auto-match imported documents."
+  iban: String
+  balance: Money!
+  transactions: [Transaction!]!
+}
+
+"Portfolio is a collection of security positions belonging to one user."
+type Portfolio {
+  id: ID!
+  displayName: String!
+  "The settlement cash account for all trades and dividends in this portfolio."
+  cashAccount: CashAccount!
+  transactions: [Transaction!]!
+  "The computed state of the portfolio at the given time; defaults to now."
+  snapshot(time: Time): PortfolioSnapshot!
+}
+
+"Period is a time span for performance calculations, ending at the snapshot time."
+enum Period {
+  ONE_WEEK
+  ONE_MONTH
+  SIX_MONTHS
+  YEAR_TO_DATE
+  ONE_YEAR
+  "From the first transaction of the portfolio."
+  ALL_TIME
+}
+
+"Performance is the return of a portfolio over a period."
+type Performance {
+  period: Period!
+  "The start of the period."
+  from: Time!
+  "The end of the period, i.e. the snapshot time."
+  to: Time!
+  "The time-weighted return over the period as a fraction, e.g. 0.05 for +5 %."
+  timeWeightedReturn: Float!
+}
+
+"""
+NetWorthPoint is everything the active person holds at one point in time,
+across all portfolios and cash accounts.
+"""
+type NetWorthPoint {
+  time: Time!
+  "Market value of all held securities plus all cash balances."
+  netWorth: Money!
+  """
+  The net value brought in from outside up to this time: deposits minus
+  withdrawals, plus securities delivered in minus those delivered out.
+  netWorth − invested is what the money has earned.
+  """
+  invested: Money!
+}
+
+"Position is the holding of one security in a portfolio snapshot."
+type Position {
+  security: Security!
+  units: Float!
+  "The FIFO cost basis of the held shares, without fees and taxes."
+  purchaseValue: Money!
+  "The average purchase price of one share."
+  purchasePrice: Price!
+  "The latest quote at the snapshot time, or the purchase price if none exists."
+  marketPrice: Price!
+  "The market price times the held units."
+  marketValue: Money!
+  "The absolute unrealized gain (or loss, if negative)."
+  profitOrLoss: Money!
+  "The relative unrealized gain, e.g. 0.05 for +5 %."
+  gains: Float!
+}
+
+"""
+PortfolioSnapshot is the computed state of a portfolio at a point in time:
+the positions held and their value. It is never stored; asking for a past
+time replays the transactions up to that point.
+"""
+type PortfolioSnapshot {
+  time: Time!
+  "The time of the earliest transaction; null for an empty portfolio."
+  firstTransactionTime: Time
+  "The held positions, sorted by security name."
+  positions: [Position!]!
+  totalPurchaseValue: Money!
+  totalMarketValue: Money!
+  totalProfitOrLoss: Money!
+  "The relative unrealized gain over all positions."
+  totalGains: Float!
+  performance(period: Period!): Performance!
+}
+
+"""
+SecurityIdentifier maps an external identifier scheme (e.g. 'ISIN', 'WKN',
+'TICKER') to its value for one security.
+"""
+type SecurityIdentifier {
+  kind: String!
+  value: String!
+}
+
+"Quote is one price observation for a listing."
+type Quote {
+  time: Time!
+  price: Price!
+}
+
+"Listing is a security listed on a particular exchange."
+type Listing {
+  id: ID!
+  "The exchange the security is listed on, e.g. an MIC code."
+  exchange: String
+  ticker: String!
+  "The ISO 4217 code quotes are denominated in."
+  currency: String!
+  "The name of the provider that provides quotes for this listing."
+  quoteProvider: String
+  latestQuote: Quote
+  "The stored quote history, oldest first, optionally bounded."
+  quotes(from: Time, to: Time): [Quote!]!
+}
+
+"QuoteUpdateResult reports the outcome of a quote update."
+type QuoteUpdateResult {
+  "The number of listings that received a fresh quote."
+  updatedListings: Int!
+  "Error messages of listings whose update failed."
+  errors: [String!]!
+}
+
+"Security is a tradable security, shared across all users."
+type Security {
+  id: ID!
+  displayName: String!
+  identifiers: [SecurityIdentifier!]!
+  listings: [Listing!]!
+  """
+  The security this one derives from — a subscription right or an
+  option/warrant's underlying stock. Null for a security that isn't a
+  derivative of anything else tracked here (an ordinary stock, a bond, an
+  ETF, ...).
+  """
+  underlyingSecurity: Security
+}
+
+"""
+Transaction is a typed portfolio/cash event. Every transaction that moves
+money names the cash account it settles against and its signed effect on
+that account (cashDelta). All monetary values share one currency.
+"""
+type Transaction {
+  id: ID!
+  type: TransactionType!
+  time: Time!
+  "The affected portfolio; null for pure cash events."
+  portfolio: Portfolio
+  "The affected security; null for pure cash events."
+  security: Security
+  "The settling cash account; null if nothing settles (e.g. deliveries)."
+  cashAccount: CashAccount
+  "The number of shares involved."
+  units: Float!
+  """
+  The price per unit. For a foreign bond this is denominated in the
+  security's own currency, not this transaction's settlement currency —
+  see fxRate.
+  """
+  price: Price
+  fees: Money!
+  taxes: Money!
+  "The signed change of the cash account balance."
+  cashDelta: Money!
+  """
+  For a SELL, the realized profit or loss: net proceeds minus the FIFO cost
+  basis of the shares sold. Null for every other type.
+  """
+  gain: Money
+  """
+  1 unit of this transaction's currency expressed in price's currency, as
+  printed on the source document (e.g. 0.8519 for a bond bought in GBP
+  while this transaction settles in EUR). Null when price is already in
+  this transaction's currency — the common case.
+  """
+  fxRate: Decimal
+  "Provenance of this transaction, e.g. 'MANUAL' or an import kind."
+  source: String!
+  "The document this transaction was imported from; null for manual entries."
+  document: Document
+}
+
+"DocumentState is the processing state of an uploaded document."
+enum DocumentState {
+  "The document has been stored and is awaiting pipeline processing."
+  UPLOADED
+  "The document has been processed and staged transactions are ready to review."
+  PARSED
+  "The pipeline failed; the error field explains why."
+  FAILED
+  "The document was intentionally skipped (e.g. Vorabpauschale, Storno)."
+  SKIPPED
+  "All staged transactions have been committed as real transactions."
+  IMPORTED
+}
+
+"Document is an uploaded file (PDF, CSV) going through the import pipeline."
+type Document {
+  id: ID!
+  filename: String!
+  contentType: String!
+  state: DocumentState!
+  "The name of the bank parser that recognised this document."
+  detectedBank: String
+  "The error message if pipeline processing failed."
+  error: String
+  "The date of the transaction(s) in the document, extracted during parsing."
+  transactionDate: Time
+  createdAt: Time!
+  "The staged transactions extracted from this document, sorted by time."
+  stagedTransactions: [StagedTransaction!]!
+  """
+  The cash account whose IBAN matches the settlement IBAN printed on the
+  document. Nil when no match is found or the document has no IBAN.
+  """
+  suggestedCashAccount: CashAccount
+  """
+  Already-committed transactions that came from this document. Check this
+  before re-confirming a reprocessed document's staged transactions —
+  confirming again duplicates whatever's already here rather than
+  replacing it.
+  """
+  transactions: [Transaction!]!
+}
+
+"""
+RealizedGain is one cash-realized event within a period: a dividend or
+interest payment (net of withheld tax), or the profit/loss of a completed
+sale (net proceeds minus the FIFO cost basis of the shares sold). Unlike
+Position.profitOrLoss, this is money that has actually moved, not a
+mark-to-market valuation.
+"""
+type RealizedGain {
+  "The underlying transaction's ID, e.g. to build a link to it."
+  id: ID!
+  time: Time!
+  "DIVIDEND, INTEREST, or SELL."
+  type: TransactionType!
+  "The security this relates to; null for INTEREST."
+  security: Security
+  "The portfolio the underlying transaction belongs to; null for INTEREST."
+  portfolio: Portfolio
+  "The cash account the underlying transaction settles against."
+  cashAccount: CashAccount
+  amount: Money!
+}
+
+"""
+RealizedGains is the realized (not unrealized) result over a period: dividends
+and interest received, and the profit/loss of completed sales, across every
+portfolio and cash account of the active person.
+"""
+type RealizedGains {
+  from: Time!
+  to: Time!
+  currency: String!
+  dividends: Money!
+  interest: Money!
+  "The summed profit/loss of all sales completed in the period."
+  tradingGains: Money!
+  "dividends + interest + tradingGains."
+  total: Money!
+  "The individual events making up the totals, most recent first."
+  entries: [RealizedGain!]!
+}
+
+"""
+StagedTransaction is a transaction parsed from an uploaded document, awaiting
+user review. The security may already be linked when a matching ISIN was found.
+"""
+type StagedTransaction {
+  id: ID!
+  type: TransactionType!
+  time: Time!
+  units: Float!
+  """
+  The price per unit. For a foreign bond this is denominated in the
+  security's own currency, not currency — see fxRate.
+  """
+  price: Price
+  fees: Money!
+  taxes: Money!
+  cashDelta: Money!
+  """
+  cashDelta as recomputed from units, price, fees and taxes rather than
+  parsed from the document's own total line — null for cash-only types
+  (DEPOSIT_CASH, WITHDRAW_CASH, ...) where units/price don't apply. A
+  mismatch against cashDelta usually means a line item on the document
+  (a fee, a foreign tax, accrued interest) isn't being captured yet.
+  """
+  calculatedCashDelta: Money
+  "1 unit of currency expressed in price's currency; see Transaction.fxRate."
+  fxRate: Decimal
+  currency: String!
+  "The security name as printed on the document."
+  securityHint: String
+  "The ISIN printed on the document."
+  isin: String
+  "The security matched by ISIN, if any."
+  security: Security
+}
+
+type Query {
+  "The version of the moneyd server."
+  version: String!
+  "The currently authenticated user."
+  me: User!
+  "All users known to this instance."
+  users: [User!]!
+  "All persons known to this instance."
+  persons: [Person!]!
+  portfolios: [Portfolio!]!
+  portfolio(id: ID!): Portfolio
+  cashAccounts: [CashAccount!]!
+  cashAccount(id: ID!): CashAccount
+  securities: [Security!]!
+  security(id: ID!): Security
+  transaction(id: ID!): Transaction
+  "All documents uploaded by the current user, optionally filtered by state."
+  documents(state: DocumentState): [Document!]!
+  """
+  Realized gains (dividends, interest, and completed-sale profit/loss) across
+  every portfolio and cash account of the active person. Defaults to the
+  current calendar year to date.
+  """
+  realizedGains(from: Time, to: Time): RealizedGains!
+  """
+  The active person's net worth over the period, sampled at `points` evenly
+  spaced times from the period's start up to now (at least 2, at most 365).
+  """
+  netWorthHistory(period: Period!, points: Int = 60): [NetWorthPoint!]!
+}
+
+input CreatePortfolioInput {
+  displayName: String!
+  "The ID of the cash account that settles all trades and dividends."
+  cashAccountID: ID!
+}
+
+input UpdatePortfolioInput {
+  displayName: String
+}
+
+input CreateCashAccountInput {
+  displayName: String!
+  "The ISO 4217 code the account is denominated in."
+  currency: String!
+  "The IBAN of this bank account (optional but enables auto-matching of imported documents)."
+  iban: String
+}
+
+input UpdateCashAccountInput {
+  displayName: String
+}
+
+input SecurityIdentifierInput {
+  kind: String!
+  value: String!
+}
+
+input ListingInput {
+  """
+  Set to update that existing listing in place, preserving its quote
+  history. Omitted (or an ID not found among the security's current
+  listings) creates a new listing instead. Only meaningful for
+  updateSecurity — createSecurity has no existing listings to match.
+  """
+  id: ID
+  exchange: String
+  ticker: String!
+  currency: String!
+  quoteProvider: String
+}
+
+input CreateSecurityInput {
+  displayName: String!
+  identifiers: [SecurityIdentifierInput!]
+  listings: [ListingInput!]
+  "The security this one derives from; see Security.underlyingSecurity."
+  underlyingSecurityID: ID
+}
+
+"""
+UpdateSecurityInput updates a security. Identifiers, when provided, replace
+the existing set entirely. Listings, when provided, are reconciled by
+ListingInput.id instead: a matched listing is updated in place (its quote
+history stays intact), an input with no ID (or an unmatched one) creates a
+new listing, and an existing listing missing from the input set is removed
+(dropping its quote history too).
+"""
+input UpdateSecurityInput {
+  displayName: String
+  identifiers: [SecurityIdentifierInput!]
+  listings: [ListingInput!]
+  "The security this one derives from; see Security.underlyingSecurity."
+  underlyingSecurityID: ID
+}
+
+"""
+CreateTransactionInput creates a transaction. Monetary values are minor
+units in `currency`. For trade and dividend types, cashDelta is derived
+from units, price, fees and taxes when omitted; for pure cash events
+(deposit, withdrawal, interest, fees, tax refund) it is required.
+"""
+input CreateTransactionInput {
+  type: TransactionType!
+  time: Time!
+  portfolioID: ID
+  securityID: ID
+  cashAccountID: ID
+  units: Float
+  "The price per unit, in major units (e.g. \"8.2656\")."
+  price: Decimal
+  fees: Int
+  taxes: Int
+  "The signed change of the cash account balance in minor units."
+  cashDelta: Int
+  currency: String!
+}
+
+"""
+UpdateTransactionInput updates a transaction; only provided fields change.
+When trade fields (units, price, fees, taxes or type) change and cashDelta
+is not provided explicitly, it is re-derived for trade and dividend types.
+"""
+input UpdateTransactionInput {
+  type: TransactionType
+  time: Time
+  securityID: ID
+  cashAccountID: ID
+  units: Float
+  price: Decimal
+  fees: Int
+  taxes: Int
+  cashDelta: Int
+  currency: String
+}
+
+"""
+ConfirmImportInput provides defaults applied to every staged transaction when
+it is committed as a real transaction. Per-transaction overrides take precedence.
+"""
+input ConfirmImportInput {
+  "Default portfolio for trades and deliveries (required for those types)."
+  portfolioID: ID
+  "Default cash account for trades, dividends and cash events."
+  cashAccountID: ID
+  "Per-staged-transaction overrides; only needed when defaults are insufficient."
+  transactions: [StagedTransactionConfirmInput!]!
+}
+
+"""
+StagedTransactionConfirmInput overrides fields for one staged transaction when
+it is committed. Fields not provided fall back to the ConfirmImportInput defaults.
+"""
+input StagedTransactionConfirmInput {
+  id: ID!
+  "Override the matched security."
+  securityID: ID
+  "Override the default portfolio."
+  portfolioID: ID
+  "Override the default cash account."
+  cashAccountID: ID
+  "Explicit cash delta in minor units (derived from units/price/fees/taxes otherwise)."
+  cashDelta: Int
+}
+
+type Mutation {
+  createPortfolio(input: CreatePortfolioInput!): Portfolio!
+  updatePortfolio(id: ID!, input: UpdatePortfolioInput!): Portfolio!
+  "Deletes the portfolio and all its transactions. Returns the deleted ID."
+  deletePortfolio(id: ID!): ID!
+
+  createCashAccount(input: CreateCashAccountInput!): CashAccount!
+  updateCashAccount(id: ID!, input: UpdateCashAccountInput!): CashAccount!
+  "Deletes the cash account and all its transactions. Returns the deleted ID."
+  deleteCashAccount(id: ID!): ID!
+
+  createSecurity(input: CreateSecurityInput!): Security!
+  updateSecurity(id: ID!, input: UpdateSecurityInput!): Security!
+  "Deletes the security. Fails while transactions still reference it."
+  deleteSecurity(id: ID!): ID!
+
+  createTransaction(input: CreateTransactionInput!): Transaction!
+  updateTransaction(id: ID!, input: UpdateTransactionInput!): Transaction!
+  deleteTransaction(id: ID!): ID!
+
+  """
+  Fetches fresh quotes from the configured quote providers — for the given
+  securities, or for every listing with a provider when none are given.
+  """
+  triggerQuoteUpdate(securityIDs: [ID!]): QuoteUpdateResult!
+
+  "Create a new person (financial entity) accessible by the current user."
+  createPerson(displayName: String!): Person!
+
+  "Rename a person."
+  updatePerson(id: ID!, displayName: String!): Person!
+
+  "Grant a user access to a person."
+  grantPersonAccess(personID: ID!, userID: ID!): Person!
+
+  """
+  Revoke a user's access to a person. Fails if this would leave the person
+  with no accessible users.
+  """
+  revokePersonAccess(personID: ID!, userID: ID!): Person!
+
+  """
+  Switch the active person for the current session. Returns the new active person.
+  Fails if the current user does not have access to the requested person.
+  """
+  switchPerson(personID: ID!): Person!
+
+  "Delete an uploaded document and its staged transactions. Returns the deleted ID."
+  deleteDocument(id: ID!): ID!
+  """
+  Re-runs extraction and parsing for a document with the current importer
+  code, replacing its staged transactions (never its already-committed
+  ones — see Document.transactions to check for those before re-confirming,
+  since doing so on a document that already has committed transactions
+  will duplicate them unless the old ones are deleted first). Works
+  regardless of the document's current state, including IMPORTED.
+  """
+  reprocessDocument(id: ID!): Document!
+
+  """
+  Validate and commit all staged transactions from a document as real
+  transactions, then mark the document as IMPORTED.
+  """
+  confirmImport(documentID: ID!, input: ConfirmImportInput!): [Transaction!]!
+}

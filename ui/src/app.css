@@ -1,0 +1,142 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@plugin "@tailwindcss/forms";
+
+/*
+ * Design tokens. Components use the Tailwind names from @theme below
+ * (bg-surface, text-muted, border-line, text-pos, …), never raw palette
+ * colors, so light and dark only differ here.
+ *
+ * The theme follows the OS unless data-theme on <html> pins it; see
+ * $lib/theme.ts.
+ */
+:root {
+	color-scheme: light;
+	--mg-canvas: #f4f4f2;
+	--mg-surface: #ffffff;
+	--mg-raised: #fafaf9;
+	--mg-hover: #eeeeeb;
+	--mg-line: #e6e6e2;
+	--mg-line-strong: #cfcfc9;
+	--mg-fg: #17171a;
+	--mg-muted: #5f5f67;
+	--mg-accent: #3451d1;
+	--mg-accent-hover: #2a43b0;
+	--mg-accent-soft: #e9edfc;
+	--mg-accent-fg: #2a43b0;
+	--mg-on-accent: #ffffff;
+	--mg-pos: #11703a;
+	--mg-pos-soft: #e6f3ea;
+	--mg-neg: #b23a1b;
+	--mg-neg-soft: #fbebe6;
+	--mg-gold: #b57a1e;
+	--mg-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme='light']) {
+		color-scheme: dark;
+		--mg-canvas: #0f0f11;
+		--mg-surface: #17171a;
+		--mg-raised: #1d1d21;
+		--mg-hover: #222227;
+		--mg-line: #2a2a2f;
+		--mg-line-strong: #3c3c43;
+		--mg-fg: #ededef;
+		--mg-muted: #a1a1aa;
+		--mg-accent: #8ea2ff;
+		--mg-accent-hover: #a8b8ff;
+		--mg-accent-soft: #232a4d;
+		--mg-accent-fg: #b5c2ff;
+		--mg-on-accent: #0f1430;
+		--mg-pos: #56c485;
+		--mg-pos-soft: #15291d;
+		--mg-neg: #f2896b;
+		--mg-neg-soft: #35201a;
+		--mg-gold: #e0a54f;
+		--mg-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+	}
+}
+
+:root[data-theme='dark'] {
+	color-scheme: dark;
+	--mg-canvas: #0f0f11;
+	--mg-surface: #17171a;
+	--mg-raised: #1d1d21;
+	--mg-hover: #222227;
+	--mg-line: #2a2a2f;
+	--mg-line-strong: #3c3c43;
+	--mg-fg: #ededef;
+	--mg-muted: #a1a1aa;
+	--mg-accent: #8ea2ff;
+	--mg-accent-hover: #a8b8ff;
+	--mg-accent-soft: #232a4d;
+	--mg-accent-fg: #b5c2ff;
+	--mg-on-accent: #0f1430;
+	--mg-pos: #56c485;
+	--mg-pos-soft: #15291d;
+	--mg-neg: #f2896b;
+	--mg-neg-soft: #35201a;
+	--mg-gold: #e0a54f;
+	--mg-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+}
+
+@theme inline {
+	--font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+
+	--color-canvas: var(--mg-canvas);
+	--color-surface: var(--mg-surface);
+	--color-raised: var(--mg-raised);
+	--color-hover: var(--mg-hover);
+	--color-line: var(--mg-line);
+	--color-line-strong: var(--mg-line-strong);
+	--color-fg: var(--mg-fg);
+	--color-muted: var(--mg-muted);
+	--color-accent: var(--mg-accent);
+	--color-accent-hover: var(--mg-accent-hover);
+	--color-accent-soft: var(--mg-accent-soft);
+	--color-accent-fg: var(--mg-accent-fg);
+	--color-on-accent: var(--mg-on-accent);
+	--color-pos: var(--mg-pos);
+	--color-pos-soft: var(--mg-pos-soft);
+	--color-neg: var(--mg-neg);
+	--color-neg-soft: var(--mg-neg-soft);
+	--color-gold: var(--mg-gold);
+
+	--shadow-xs: var(--mg-shadow);
+}
+
+@layer base {
+	html {
+		font-feature-settings: 'cv11', 'ss01';
+	}
+	body {
+		@apply bg-canvas text-fg text-sm antialiased;
+	}
+	/* One focus ring for keyboard users, everywhere. */
+	:focus-visible {
+		outline: 2px solid var(--mg-accent);
+		outline-offset: 2px;
+	}
+	/* Money and quantities line up in columns everywhere. */
+	table,
+	.num {
+		font-variant-numeric: tabular-nums;
+	}
+}
+
+/*
+ * @tailwindcss/forms paints inputs white with attribute selectors that
+ * outrank anything in the base layer; the components layer wins by order
+ * instead, while utilities on the element still override it.
+ */
+@layer components {
+	input:where(:not([type='checkbox'], [type='radio'], [type='file'])),
+	select,
+	textarea {
+		@apply rounded-lg border-line bg-surface text-sm text-fg placeholder:text-muted focus:border-accent focus:ring-accent;
+	}
+	input[type='checkbox'] {
+		@apply rounded border-line-strong bg-surface text-accent focus:ring-accent;
+	}
+}

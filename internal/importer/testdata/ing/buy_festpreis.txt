@@ -1,0 +1,29 @@
+                     ING-DiBa AG · 60628 Frankfurt am Main
+
+
+
+                                                                                                                      Depotinhaber:                        Max Mustermann
+                     Max Mustermann                                                                                   Direkt-Depot Nr.:                    123456789
+                     Musterstraße 1                                                                                   Datum:                               18.07.2022
+                     12345 Musterstadt                                                                                Seite:                               1 von 1
+
+
+
+
+                     Wertpapierabrechnung                                          Kauf aus Wiederanlage Fondsausschüttung
+                     Ordernummer                                                   261178541.001
+                     ISIN (WKN)                                                    DE0000000099 (000099)
+                     Wertpapierbezeichnung                                         Muster DivDAX UCITS ETF DE
+                                                                                   Inhaber-Anteile
+
+                     Nominale                                                      Stück                    7,41413
+                     Kurs (Festpreisgeschäft)                                      EUR                         16,42
+                     Handelsplatz                                                  Direktgeschäft Inl.
+                     Ausführungstag / -zeit                                        18.07.2022 um 09:04:23 Uhr
+                     Kurswert                                                      EUR                                               121,74
+                     Zwischensumme                                                 EUR                                               121,74
+                     Endbetrag zu Ihren Lasten                                     EUR                                              121,74
+
+                     Abrechnungs-IBAN                                              DE12 3456 7890 1234 5678 90
+                     Valuta                                                        20.07.2022
+                     Wertpapiere zugunsten Girosammelverwahrung.
