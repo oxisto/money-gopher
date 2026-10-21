@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/oxisto/money-gopher/internal/fx"
 	"github.com/oxisto/money-gopher/internal/persistence"
 )
 
@@ -15,18 +16,28 @@ import (
 type Updater struct {
 	DB       *persistence.DB
 	Registry *Registry
+	// FX, when set, is refreshed along with the quotes: a price is only as
+	// useful as the rate that values it in the portfolio's currency.
+	FX *fx.Updater
 }
 
-// UpdateAll updates every listing that has a quote provider. It returns the
-// number of listings that got a new quote and the collected errors of the
-// ones that failed; one broken provider does not stop the others.
+// UpdateAll updates every listing that has a quote provider, and the
+// exchange rates. It returns the number of listings that got a new quote
+// and the collected errors of the ones that failed; one broken provider
+// does not stop the others.
 func (u *Updater) UpdateAll(ctx context.Context) (int, error) {
 	listings, err := u.DB.ListListingsWithProvider(ctx)
 	if err != nil {
 		return 0, err
 	}
 
-	return u.update(ctx, listings)
+	updated, errs := u.update(ctx, listings)
+	if u.FX != nil {
+		if _, err := u.FX.UpdateAll(ctx); err != nil {
+			errs = errors.Join(errs, fmt.Errorf("fx rates: %w", err))
+		}
+	}
+	return updated, errs
 }
 
 // UpdateSecurities updates all provider-backed listings of the given

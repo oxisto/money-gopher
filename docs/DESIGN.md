@@ -310,6 +310,17 @@ deferred.
   data in ordinary `+page.ts` load functions, and `refreshAll()` after a
   mutation. View state that should reload data lives in the URL
   (`/?range=1Y`, `/income?year=2025`).
+- **Currencies.** A security has no currency; its listings do, and that is
+  the currency of their quotes. The finance engine works in the currency the
+  transactions settle in: a foreign-currency purchase (a US Treasury bought
+  in USD with euros) is booked at `price / fx_rate`, the bank's own rate,
+  and quotes are requested in the settlement currency. `internal/fx` keeps
+  the ECB's euro reference rates in `fx_rates` (full history on first sight
+  of a currency, the 90-day file afterwards; refreshed with the quotes) and
+  converts via the euro. A quote with no usable rate falls back to the
+  purchase price rather than mixing currencies. The import's "Create
+  security" dialog makes a listing (ticker = ISIN, the document's price
+  currency, ING quotes), so this works without a trip to the Securities page.
 
 **Where M4 landed:**
 

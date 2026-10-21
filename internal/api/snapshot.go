@@ -10,6 +10,7 @@ import (
 	"github.com/graph-gophers/graphql-go"
 
 	"github.com/oxisto/money-gopher/internal/finance"
+	"github.com/oxisto/money-gopher/internal/fx"
 	"github.com/oxisto/money-gopher/internal/persistence"
 )
 
@@ -51,10 +52,13 @@ func (r *PortfolioResolver) Snapshot(ctx context.Context, args struct{ Time *gra
 
 // latestQuote returns a finance.QuoteFunc backed by the quotes table: the
 // newest quote of the security's first listing at or before the requested
-// time. Securities without listings or quotes report ok == false, making
-// calculations fall back to the purchase price.
+// time, converted from the listing's currency to the requested one at the
+// exchange rate of that time. Securities without listings or quotes, and
+// quotes in a currency no rate is known for, report ok == false, making
+// calculations fall back to the purchase price rather than mixing
+// currencies.
 func latestQuote(ctx context.Context, db *persistence.DB) finance.QuoteFunc {
-	return func(securityID string, at time.Time) (persistence.Decimal, bool) {
+	return func(securityID, currency string, at time.Time) (persistence.Decimal, bool) {
 		listings, err := db.ListListings(ctx, securityID)
 		if err != nil || len(listings) == 0 {
 			return persistence.Decimal{}, false
@@ -68,7 +72,11 @@ func latestQuote(ctx context.Context, db *persistence.DB) finance.QuoteFunc {
 			return persistence.Decimal{}, false
 		}
 
-		return quote.Price, true
+		price, err := fx.Convert(ctx, db, quote.Price, listings[0].Currency, currency, at)
+		if err != nil {
+			return persistence.Decimal{}, false
+		}
+		return price, true
 	}
 }
 

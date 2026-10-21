@@ -43,7 +43,7 @@ func quotes(m map[string][]struct {
 	at    time.Time
 	price int64
 }) QuoteFunc {
-	return func(securityID string, at time.Time) (persistence.Decimal, bool) {
+	return func(securityID, _ string, at time.Time) (persistence.Decimal, bool) {
 		var (
 			price persistence.Decimal
 			ok    bool
@@ -135,6 +135,49 @@ func TestSnapshotAt_WithQuotes(t *testing.T) {
 	// A snapshot before the quote falls back to the purchase price.
 	if snap := SnapshotAt(txs, t1, q); snap.Positions[0].MarketPrice.StringPrec(2) != "100.00" {
 		t.Errorf("market price before quote = %s, want 100.00", snap.Positions[0].MarketPrice.StringPrec(2))
+	}
+}
+
+// TestSnapshotAt_ForeignCurrencyPurchase books a US Treasury bought with
+// euros: the price is in USD and the bank's rate says what the euros
+// bought, so the cost basis is in euros — and so is the quote the
+// snapshot asks for.
+func TestSnapshotAt_ForeignCurrencyPurchase(t *testing.T) {
+	buy := tx("BUY", t1, "tsy", 300, 9811, -2806961) // 300 × 98.11 USD at 1.0518
+	buy.PriceCurrency = sql.NullString{String: "USD", Valid: true}
+	buy.FxRate, _ = persistence.NewDecimal("1.0518")
+	txs := []*persistence.Transaction{buy}
+
+	var askedFor string
+	quote := func(_, currency string, _ time.Time) (persistence.Decimal, bool) {
+		askedFor = currency
+		return persistence.Decimal{}, false
+	}
+	snap := SnapshotAt(txs, t2, quote)
+
+	pos := snap.Positions[0]
+	if pos.PurchaseValue != 2798346 {
+		t.Errorf("PurchaseValue = %d, want 2798346 (29433 USD at 1.0518)", pos.PurchaseValue)
+	}
+	if got := pos.PurchasePrice().StringPrec(2); got != "93.28" {
+		t.Errorf("PurchasePrice = %s EUR, want 93.28", got)
+	}
+	if askedFor != "EUR" {
+		t.Errorf("quote asked for %q, want the settlement currency EUR", askedFor)
+	}
+
+	// Selling 20 at par realizes the gain against the euro cost basis.
+	sell := tx("SELL", t3, "tsy", 20, 10000, 188350)
+	sell.ID = "redemption"
+	sell.PriceCurrency = sql.NullString{String: "USD", Valid: true}
+	sell.FxRate, _ = persistence.NewDecimal("1.0554")
+	gain, ok := RealizedGainOf(append(txs, sell), sell.ID)
+	if !ok {
+		t.Fatal("RealizedGainOf() not ok")
+	}
+	// 1883.50 EUR proceeds − 20 × 93.28 EUR basis.
+	if gain != 188350-186556 {
+		t.Errorf("realized gain = %d, want %d", gain, 188350-186556)
 	}
 }
 
@@ -244,8 +287,8 @@ func TestTimeWeightedReturn(t *testing.T) {
 
 func TestRealizedGains(t *testing.T) {
 	txs := []*persistence.Transaction{
-		tx("BUY", t0, "msci", 10, 10000, -100000),      // 10 @ 100.00
-		tx("SELL", t1, "msci", 4, 12000, 47600),         // sell 4 @ 120.00, net 476.00
+		tx("BUY", t0, "msci", 10, 10000, -100000), // 10 @ 100.00
+		tx("SELL", t1, "msci", 4, 12000, 47600),   // sell 4 @ 120.00, net 476.00
 		tx("DIVIDEND", t1, "msci", 0, 0, 5000),
 		{Type: "INTEREST", Time: t2, CashDelta: 700, Currency: "EUR"},
 		tx("SELL", t3, "msci", 2, 11000, 21800), // outside the [t0,t3) window below
