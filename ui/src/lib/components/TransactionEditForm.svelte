@@ -114,7 +114,7 @@
 		<button
 			type="button"
 			onclick={oncancel}
-			class="rounded-md px-3 py-1.5 text-sm text-gray-500 hover:text-gray-800"
+			class="rounded-md px-3 py-1.5 text-sm text-muted hover:text-fg"
 		>
 			Cancel
 		</button>

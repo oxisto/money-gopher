@@ -12,9 +12,9 @@
 </script>
 
 {#if persons.length === 0}
-	<p class="text-sm text-gray-500">No persons yet.</p>
+	<p class="text-sm text-muted">No persons yet.</p>
 {:else}
-	<ul class="divide-y divide-gray-200 rounded-md border border-gray-200 bg-white">
+	<ul class="divide-y divide-line rounded-md border border-line bg-surface">
 		{#each persons as person (person.id)}
 			<PersonRow {person} {allUsers} />
 		{/each}

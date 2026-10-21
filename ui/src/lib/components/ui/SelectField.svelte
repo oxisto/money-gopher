@@ -16,12 +16,12 @@
 
 <label class="block text-sm">
 	{#if label}
-		<span class="mb-1 block font-medium text-gray-700">{label}</span>
+		<span class="mb-1 block text-xs font-medium text-muted">{label}</span>
 	{/if}
 	<select
 		{required}
 		bind:value
-		class="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm"
+		class="h-9 w-full px-3 py-1.5"
 	>
 		{@render children()}
 	</select>

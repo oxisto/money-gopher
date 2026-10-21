@@ -5,6 +5,6 @@
 </script>
 
 <section>
-	<h2 class="mb-3 text-lg font-semibold">{title}</h2>
+	<h2 class="mb-3 text-sm font-semibold">{title}</h2>
 	{@render children()}
 </section>

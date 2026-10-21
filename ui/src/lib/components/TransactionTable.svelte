@@ -101,12 +101,12 @@
 </script>
 
 {#if transactions.length === 0}
-	<p class="text-sm text-gray-500">No transactions yet.</p>
+	<p class="text-sm text-muted">No transactions yet.</p>
 {:else}
 	<div class="mb-3 flex flex-wrap items-center gap-2">
 		<select
 			bind:value={typeFilter}
-			class="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700"
+			class="rounded-md border border-line-strong bg-surface px-2 py-1 text-xs text-fg"
 		>
 			<option value="all">All types</option>
 			{#each types as t (t)}
@@ -116,7 +116,7 @@
 		{#if securityOptions.length > 0}
 			<select
 				bind:value={securityFilter}
-				class="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700"
+				class="rounded-md border border-line-strong bg-surface px-2 py-1 text-xs text-fg"
 			>
 				<option value="all">All securities</option>
 				{#each securityOptions as s (s.id)}
@@ -130,21 +130,21 @@
 					typeFilter = 'all';
 					securityFilter = 'all';
 				}}
-				class="text-xs text-gray-400 hover:text-gray-700"
+				class="text-xs text-muted hover:text-fg"
 			>
 				Clear filters
 			</button>
-			<span class="text-xs text-gray-400">{filteredRows.length} of {transactions.length}</span>
+			<span class="text-xs text-muted">{filteredRows.length} of {transactions.length}</span>
 		{/if}
 	</div>
 
 	{#if filteredRows.length === 0}
-		<p class="text-sm text-gray-500">No transactions match the current filter.</p>
+		<p class="text-sm text-muted">No transactions match the current filter.</p>
 	{:else}
-		<div class="overflow-x-auto rounded-md border border-gray-200 bg-white">
+		<div class="overflow-x-auto rounded-md border border-line bg-surface">
 			<table class="w-full text-sm">
 				<thead>
-					<tr class="border-b border-gray-200 text-left text-xs text-gray-500 uppercase">
+					<tr class="border-b border-line text-left text-xs text-muted uppercase">
 						<th class="px-4 py-2 font-medium">Date</th>
 						<th class="px-4 py-2 font-medium">Type</th>
 						<th class="px-4 py-2 font-medium">Security</th>
@@ -157,19 +157,19 @@
 						<th class="px-4 py-2"></th>
 					</tr>
 				</thead>
-				<tbody class="divide-y divide-gray-100">
+				<tbody class="divide-y divide-line">
 					{#each filteredRows as { tx, balance } (tx.id)}
 					<tr
 						id={`tx-${tx.id}`}
 						class={editingID === tx.id
-							? 'bg-gray-50'
+							? 'bg-raised'
 							: highlightedID === tx.id
-								? 'bg-amber-50 transition-colors duration-1000'
+								? 'bg-gold/10 transition-colors duration-1000'
 								: ''}
 					>
 						<td class="px-4 py-2 whitespace-nowrap">{formatDate(tx.time)}</td>
 						<td class="px-4 py-2">
-							<span class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-mono">{tx.type}</span>
+							<span class="rounded bg-hover px-1.5 py-0.5 text-xs font-mono">{tx.type}</span>
 						</td>
 						<td class="px-4 py-2">{tx.security?.displayName ?? '—'}</td>
 						<td class="px-4 py-2 text-right tabular-nums">{tx.units || '—'}</td>
@@ -177,18 +177,18 @@
 							{tx.price ? formatPrice(tx.price) : '—'}
 							{#if tx.fxRate}
 								<div
-									class="text-xs text-gray-400"
+									class="text-xs text-muted"
 									title={`1 ${tx.cashDelta.currency} = ${tx.fxRate} ${tx.price?.currency}`}
 								>
 									FX {tx.fxRate}
 								</div>
 							{/if}
 						</td>
-						<td class="px-4 py-2 text-right tabular-nums {tx.cashDelta.amount < 0 ? 'text-red-600' : 'text-green-700'}">
+						<td class="px-4 py-2 text-right tabular-nums {tx.cashDelta.amount < 0 ? 'text-neg' : 'text-pos'}">
 							{formatMoney(tx.cashDelta)}
 						</td>
 						{#if showBalance}
-							<td class="px-4 py-2 text-right tabular-nums text-gray-600">
+							<td class="px-4 py-2 text-right tabular-nums text-muted">
 								{formatMoney({ amount: balance, currency: tx.cashDelta.currency })}
 							</td>
 						{/if}
@@ -196,19 +196,19 @@
 							<a
 								href={`/transactions/${tx.id}`}
 								title="View transaction details"
-								class="rounded px-2 py-1 text-xs text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+								class="rounded px-2 py-1 text-xs text-muted hover:text-fg hover:bg-hover"
 							>
 								Details
 							</a>
 							<button
 								onclick={() => (editingID = editingID === tx.id ? null : tx.id)}
-								class="rounded px-2 py-1 text-xs text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+								class="rounded px-2 py-1 text-xs text-muted hover:text-fg hover:bg-hover"
 							>
 								{editingID === tx.id ? 'Cancel' : 'Edit'}
 							</button>
 							<button
 								onclick={() => del(tx.id)}
-								class="rounded px-2 py-1 text-xs text-gray-400 hover:text-red-600 hover:bg-red-50"
+								class="rounded px-2 py-1 text-xs text-muted hover:text-neg hover:bg-neg-soft"
 							>
 								Delete
 							</button>
@@ -216,12 +216,12 @@
 					</tr>
 					{#if deleteErrors[tx.id]}
 						<tr>
-							<td colspan={columnCount} class="px-4 pb-2 text-xs text-red-600">{deleteErrors[tx.id]}</td>
+							<td colspan={columnCount} class="px-4 pb-2 text-xs text-neg">{deleteErrors[tx.id]}</td>
 						</tr>
 					{/if}
 					{#if editingID === tx.id}
 						<tr>
-							<td colspan={columnCount} class="px-4 py-3 bg-gray-50 border-b border-gray-200">
+							<td colspan={columnCount} class="px-4 py-3 bg-raised border-b border-line">
 								<TransactionEditForm
 									transaction={tx}
 									{securities}

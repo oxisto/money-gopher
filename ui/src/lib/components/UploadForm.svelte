@@ -54,14 +54,14 @@
 	}
 </script>
 
-<form onsubmit={submit} class="rounded-md border border-gray-200 bg-white p-4">
+<form onsubmit={submit} class="rounded-md border border-line bg-surface p-4">
 	<div class="flex items-center gap-4">
 		<input
 			type="file"
 			multiple
 			bind:this={fileInput}
 			accept=".csv,.pdf,text/csv,application/pdf"
-			class="block text-sm text-gray-700 file:mr-4 file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-gray-200"
+			class="block text-sm text-fg file:mr-4 file:rounded file:border-0 file:bg-hover file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-line"
 			required
 		/>
 		<Button type="submit" disabled={uploading}>
@@ -72,7 +72,7 @@
 			{/if}
 		</Button>
 	</div>
-	<p class="mt-2 text-xs text-gray-400">
+	<p class="mt-2 text-xs text-muted">
 		Supported: CSV (money-gopher format) and PDF bank statements. Select multiple files to upload
 		them all at once.
 	</p>

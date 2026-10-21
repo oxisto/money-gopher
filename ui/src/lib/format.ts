@@ -75,3 +75,13 @@ export function formatPercent(fraction: number): string {
 		signDisplay: 'exceptZero'
 	}).format(fraction);
 }
+
+/** Formats a Money value compactly for tight spaces, e.g. "€342.1K". */
+export function formatMoneyCompact(money: Money): string {
+	return new Intl.NumberFormat(undefined, {
+		style: 'currency',
+		currency: money.currency,
+		notation: 'compact',
+		maximumFractionDigits: 1
+	}).format(money.amount / 100);
+}

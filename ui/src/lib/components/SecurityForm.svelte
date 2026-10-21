@@ -51,7 +51,7 @@
 	}
 </script>
 
-<form onsubmit={submit} class="rounded-md border border-gray-200 bg-white p-4">
+<form onsubmit={submit} class="rounded-md border border-line bg-surface p-4">
 	<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		<TextField bind:value={name} label="Name" placeholder="e.g. iShares Core MSCI World" required />
 		<TextField bind:value={isin} label="ISIN" placeholder="e.g. IE00B4L5Y983" maxlength={12} />

@@ -166,10 +166,10 @@
 <div class="flex flex-col gap-4">
 	<!-- PDF toggle (visible on narrow screens; on wide screens pane is always shown) -->
 	<div class="flex items-center justify-between xl:hidden">
-		<span class="text-xs text-gray-500">Source document</span>
+		<span class="text-xs text-muted">Source document</span>
 		<button
 			onclick={() => (showPDF = !showPDF)}
-			class="text-xs text-blue-600 hover:underline"
+			class="text-xs text-accent-fg hover:underline"
 		>
 			{showPDF ? 'Hide PDF' : 'Show PDF'}
 		</button>
@@ -180,16 +180,16 @@
 		{#if showPDF}
 			<div class="flex-1 min-w-0 xl:flex-none xl:w-[540px] xl:flex xl:flex-col">
 				<div class="hidden xl:flex items-center justify-between mb-1">
-					<span class="text-xs text-gray-500">Source document</span>
-					<a href={pdfURL} target="_blank" class="text-xs text-blue-600 hover:underline">Open in new tab ↗</a>
+					<span class="text-xs text-muted">Source document</span>
+					<a href={pdfURL} target="_blank" class="text-xs text-accent-fg hover:underline">Open in new tab ↗</a>
 				</div>
 				<embed
 					src={pdfURL}
 					type="application/pdf"
-					class="w-full flex-1 rounded-md border border-gray-200"
+					class="w-full flex-1 rounded-md border border-line"
 					style="height: min(65vh, 820px);"
 				/>
-				<a href={pdfURL} target="_blank" class="mt-1 block text-xs text-blue-600 hover:underline xl:hidden">Open in new tab ↗</a>
+				<a href={pdfURL} target="_blank" class="mt-1 block text-xs text-accent-fg hover:underline xl:hidden">Open in new tab ↗</a>
 			</div>
 		{/if}
 
@@ -215,9 +215,9 @@
 						{/each}
 					</SelectField>
 					{#if suggestedCashAccount && suggestedCashAccount.id === cashAccountID}
-						<p class="mt-1 text-xs text-green-700">✓ Auto-matched from document IBAN</p>
+						<p class="mt-1 text-xs text-pos">✓ Auto-matched from document IBAN</p>
 					{:else if suggestedCashAccount}
-						<p class="mt-1 text-xs text-amber-600">
+						<p class="mt-1 text-xs text-gold">
 							Suggested: {suggestedCashAccount.displayName} —
 							<button class="underline" onclick={() => (cashAccountID = suggestedCashAccount!.id)}>
 								use it
@@ -228,9 +228,9 @@
 			</div>
 
 			<!-- Staged transactions table -->
-			<div class="overflow-x-auto rounded-md border border-gray-200">
+			<div class="overflow-x-auto rounded-md border border-line">
 				<table class="min-w-full text-sm">
-					<thead class="bg-gray-50 text-xs text-gray-500">
+					<thead class="bg-raised text-xs text-muted">
 						<tr>
 							<th class="px-2 py-1.5 text-left font-medium">Date</th>
 							<th class="px-2 py-1.5 text-left font-medium">Type</th>
@@ -242,28 +242,28 @@
 							<th class="px-2 py-1.5 text-right font-medium">Cash Δ</th>
 						</tr>
 					</thead>
-					<tbody class="divide-y divide-gray-100 bg-white">
+					<tbody class="divide-y divide-line bg-surface">
 						{#each doc.stagedTransactions as tx (tx.id)}
 							<tr>
-								<td class="px-2 py-1.5 text-gray-600 whitespace-nowrap">{formatDate(tx.time)}</td>
+								<td class="px-2 py-1.5 text-muted whitespace-nowrap">{formatDate(tx.time)}</td>
 								<td class="px-2 py-1.5">
-									<span class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-mono">{tx.type}</span>
+									<span class="rounded bg-hover px-1.5 py-0.5 text-xs font-mono">{tx.type}</span>
 								</td>
 								<td class="px-2 py-1.5 max-w-[220px]">
 									{#if tx.security}
-										<span class="text-gray-900">{tx.security.displayName}</span>
+										<span class="text-fg">{tx.security.displayName}</span>
 										{#if tx.isin}
-											<span class="ml-1 text-xs text-gray-400">{tx.isin}</span>
+											<span class="ml-1 text-xs text-muted">{tx.isin}</span>
 										{/if}
 									{:else if tx.securityHint || tx.isin}
 										<div class="flex flex-col gap-1">
 											{#if tx.securityHint}
-												<span class="text-xs text-gray-400 italic truncate">"{tx.securityHint}"</span>
+												<span class="text-xs text-muted italic truncate">"{tx.securityHint}"</span>
 											{/if}
 											<div class="flex items-center gap-1">
 												<select
 													bind:value={securityOverrides[tx.id]}
-													class="min-w-0 flex-1 rounded border border-gray-200 px-1.5 py-0.5 text-xs"
+													class="min-w-0 flex-1 rounded border border-line px-1.5 py-0.5 text-xs"
 												>
 													<option value="">— unmatched —</option>
 													{#each allSecurities as s (s.id)}
@@ -273,7 +273,7 @@
 												{#if tx.isin && !securityOverrides[tx.id]}
 													<button
 														onclick={() => openCreateDialog(tx)}
-														class="shrink-0 rounded border border-blue-200 bg-blue-50 px-1.5 py-0.5 text-xs text-blue-700 hover:bg-blue-100"
+														class="shrink-0 rounded border border-accent/30 bg-accent-soft px-1.5 py-0.5 text-xs text-accent-fg hover:bg-accent-soft"
 													>
 														Create
 													</button>
@@ -281,37 +281,37 @@
 											</div>
 										</div>
 									{:else}
-										<span class="text-xs text-gray-400">—</span>
+										<span class="text-xs text-muted">—</span>
 									{/if}
 								</td>
-								<td class="px-2 py-1.5 text-right tabular-nums text-gray-700">
+								<td class="px-2 py-1.5 text-right tabular-nums text-fg">
 									{tx.units > 0 ? tx.units.toLocaleString() : '—'}
 								</td>
-								<td class="px-2 py-1.5 text-right tabular-nums text-gray-700">
+								<td class="px-2 py-1.5 text-right tabular-nums text-fg">
 									{tx.price ? formatPrice(tx.price) : '—'}
 									{#if tx.fxRate}
 										<div
-											class="text-xs text-gray-400"
+											class="text-xs text-muted"
 											title={`1 ${tx.currency} = ${tx.fxRate} ${tx.price?.currency}`}
 										>
 											FX {tx.fxRate}
 										</div>
 									{/if}
 								</td>
-								<td class="px-2 py-1.5 text-right tabular-nums text-gray-700">
+								<td class="px-2 py-1.5 text-right tabular-nums text-fg">
 									{tx.fees.amount !== 0 ? formatMoney(tx.fees) : '—'}
 								</td>
-								<td class="px-2 py-1.5 text-right tabular-nums text-gray-700">
+								<td class="px-2 py-1.5 text-right tabular-nums text-fg">
 									{tx.taxes.amount !== 0 ? formatMoney(tx.taxes) : '—'}
 								</td>
 								<td class="px-2 py-1.5 text-right tabular-nums">
-									<div class={tx.cashDelta.amount >= 0 ? 'text-green-700' : 'text-red-700'}>
+									<div class={tx.cashDelta.amount >= 0 ? 'text-pos' : 'text-neg'}>
 										{tx.cashDelta.amount !== 0 ? formatMoney(tx.cashDelta) : '—'}
 									</div>
 									{#if tx.calculatedCashDelta}
 										{@const mismatch = tx.calculatedCashDelta.amount !== tx.cashDelta.amount}
 										<div
-											class="text-xs {mismatch ? 'font-medium text-amber-700' : 'text-gray-400'}"
+											class="text-xs {mismatch ? 'font-medium text-gold' : 'text-muted'}"
 											title={mismatch
 												? `Parsed value differs by ${formatMoney({ amount: tx.cashDelta.amount - tx.calculatedCashDelta.amount, currency: tx.cashDelta.currency })} — likely an uncaptured line item on the document (a fee, a foreign tax, accrued interest).`
 												: 'Matches the parsed value.'}
@@ -342,30 +342,30 @@
 		onclick={() => (createDialog = null)}
 	>
 		<div
-			class="w-full max-w-sm rounded-lg bg-white p-5 shadow-xl"
+			class="w-full max-w-sm rounded-lg bg-surface p-5 shadow-xl"
 			onclick={(e) => e.stopPropagation()}
 		>
-			<h3 class="mb-4 text-sm font-semibold text-gray-800">Add security</h3>
+			<h3 class="mb-4 text-sm font-semibold text-fg">Add security</h3>
 			<div class="flex flex-col gap-3">
 				<div>
-					<label class="mb-1 block text-xs text-gray-500">Name</label>
+					<label class="mb-1 block text-xs text-muted">Name</label>
 					<input
 						bind:value={createDialog.name}
-						class="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:border-blue-400 focus:outline-none"
+						class="w-full rounded border border-line px-3 py-1.5 text-sm focus:border-accent focus:outline-none"
 						placeholder="Security name"
 					/>
 				</div>
 				{#if createDialog.isin}
 					<div>
-						<label class="mb-1 block text-xs text-gray-500">ISIN</label>
-						<p class="font-mono text-sm text-gray-700">{createDialog.isin}</p>
+						<label class="mb-1 block text-xs text-muted">ISIN</label>
+						<p class="font-mono text-sm text-fg">{createDialog.isin}</p>
 					</div>
 				{/if}
 			</div>
 			<div class="mt-5 flex items-center justify-end gap-2">
 				<button
 					onclick={() => (createDialog = null)}
-					class="rounded px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-50"
+					class="rounded px-3 py-1.5 text-sm text-muted hover:bg-raised"
 				>
 					Cancel
 				</button>

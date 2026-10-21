@@ -98,7 +98,7 @@
 	}
 </script>
 
-<form onsubmit={submit} class="rounded-md border border-gray-200 bg-white p-4">
+<form onsubmit={submit} class="rounded-md border border-line bg-surface p-4">
 	<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		<SelectField bind:value={type} label="Type" required>
 			{#each Object.values(TransactionType) as option (option)}
@@ -126,9 +126,9 @@
 			<TextField bind:value={gross} label="Gross amount" placeholder="0.00" />
 			<TextField bind:value={taxes} label="Taxes withheld" placeholder="0.00" />
 			<div class="flex flex-col justify-end pb-1.5">
-				<span class="mb-1 block text-sm font-medium text-gray-700">Cash delta</span>
+				<span class="mb-1 block text-sm font-medium text-fg">Cash delta</span>
 				<span
-					class="tabular-nums {derivedCashDelta < 0 ? 'text-red-600' : 'text-green-700'}"
+					class="tabular-nums {derivedCashDelta < 0 ? 'text-neg' : 'text-pos'}"
 				>
 					{formatMoney({ amount: derivedCashDelta, currency: currency.toUpperCase() || 'EUR' })}
 				</span>

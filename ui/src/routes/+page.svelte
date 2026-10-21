@@ -9,9 +9,9 @@
 </script>
 
 {#if $Dashboard.fetching && !$Dashboard.data}
-	<p class="text-sm text-gray-500">Loading…</p>
+	<p class="text-sm text-muted">Loading…</p>
 {:else if $Dashboard.errors?.length}
-	<p class="text-sm text-red-600">Failed to load: {$Dashboard.errors[0].message}</p>
+	<p class="text-sm text-neg">Failed to load: {$Dashboard.errors[0].message}</p>
 {:else if $Dashboard.data}
 	<div class="grid gap-8 md:grid-cols-2">
 		<Section title="Portfolios">

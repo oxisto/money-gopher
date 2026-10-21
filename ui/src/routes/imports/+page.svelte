@@ -13,9 +13,9 @@
 </script>
 
 {#if $Imports.fetching && !$Imports.data}
-	<p class="text-sm text-gray-500">Loading…</p>
+	<p class="text-sm text-muted">Loading…</p>
 {:else if $Imports.errors?.length}
-	<p class="text-sm text-red-600">Failed to load: {$Imports.errors[0].message}</p>
+	<p class="text-sm text-neg">Failed to load: {$Imports.errors[0].message}</p>
 {:else if $Imports.data}
 	<div class="flex flex-col gap-8">
 		<Section title="Upload document">

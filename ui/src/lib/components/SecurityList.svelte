@@ -119,23 +119,23 @@
 </script>
 
 {#if securities.length === 0}
-	<p class="text-sm text-gray-500">No securities yet.</p>
+	<p class="text-sm text-muted">No securities yet.</p>
 {:else}
-	<ul class="divide-y divide-gray-200 rounded-md border border-gray-200 bg-white">
+	<ul class="divide-y divide-line rounded-md border border-line bg-surface">
 		{#each securities as security (security.id)}
 			<li class="px-4 py-3">
 				<div class="flex items-center justify-between">
 					<span class="text-sm font-medium">
 						{security.displayName}
 						{#if security.underlyingSecurity}
-							<span class="ml-1 text-xs font-normal text-gray-400">
+							<span class="ml-1 text-xs font-normal text-muted">
 								→ {security.underlyingSecurity.displayName}
 							</span>
 						{/if}
 					</span>
 					<span class="flex gap-1">
 						{#each security.identifiers as identifier (identifier.kind)}
-							<span class="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
+							<span class="rounded bg-hover px-1.5 py-0.5 text-xs text-muted">
 								{identifier.kind}: {identifier.value}
 							</span>
 						{/each}
@@ -143,7 +143,7 @@
 				</div>
 
 				{#if security.listings.length > 0}
-					<div class="mt-1 flex flex-col gap-0.5 text-xs text-gray-500">
+					<div class="mt-1 flex flex-col gap-0.5 text-xs text-muted">
 						{#each security.listings as listing (listing.id)}
 							<div class="flex items-center justify-between">
 								<span>
@@ -156,14 +156,14 @@
 									{#if listing.latestQuote}
 										<span class="tabular-nums">
 											{formatPrice(listing.latestQuote.price)}
-											<span class="text-gray-400">({formatDate(listing.latestQuote.time)})</span>
+											<span class="text-muted">({formatDate(listing.latestQuote.time)})</span>
 										</span>
 									{:else}
-										<span class="text-gray-400">no quote yet</span>
+										<span class="text-muted">no quote yet</span>
 									{/if}
 									<button
 										onclick={() => (editingKey === listing.id ? cancel() : startEdit(listing))}
-										class="rounded px-1.5 py-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+										class="rounded px-1.5 py-0.5 text-muted hover:bg-hover hover:text-fg"
 									>
 										{editingKey === listing.id ? 'Cancel' : 'Edit'}
 									</button>
@@ -174,7 +174,7 @@
 				{:else if editingKey !== `new:${security.id}`}
 					<button
 						onclick={() => startAdd(security.id)}
-						class="mt-1 text-xs text-gray-400 hover:text-gray-700"
+						class="mt-1 text-xs text-muted hover:text-fg"
 					>
 						+ Add listing
 					</button>
@@ -182,7 +182,7 @@
 
 				{#if security.listings.some((l) => l.id === editingKey) || editingKey === `new:${security.id}`}
 					{@const editingListingID = editingKey?.startsWith('new:') ? null : editingKey}
-					<div class="mt-2 grid gap-2 rounded-md bg-gray-50 p-3 sm:grid-cols-4">
+					<div class="mt-2 grid gap-2 rounded-md bg-raised p-3 sm:grid-cols-4">
 						<TextField bind:value={ticker} label="Ticker" placeholder="e.g. EUNL" />
 						<TextField bind:value={exchange} label="Exchange (MIC)" placeholder="e.g. XETR" />
 						<TextField bind:value={currency} label="Currency" maxlength={3} />
@@ -199,7 +199,7 @@
 						>
 							Save
 						</Button>
-						<button onclick={cancel} class="text-xs text-gray-500 hover:text-gray-700">Cancel</button>
+						<button onclick={cancel} class="text-xs text-muted hover:text-fg">Cancel</button>
 					</div>
 					<ErrorNote message={error} />
 				{/if}

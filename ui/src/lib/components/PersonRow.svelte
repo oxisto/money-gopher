@@ -96,7 +96,7 @@
 			<span class="text-sm font-medium">{person.displayName}</span>
 			<button
 				onclick={() => (editing = true)}
-				class="text-xs text-gray-400 hover:text-gray-700"
+				class="text-xs text-muted hover:text-fg"
 			>
 				Rename
 			</button>
@@ -106,14 +106,14 @@
 	<div class="mt-2 flex flex-wrap items-center gap-1.5">
 		{#each person.users as user (user.id)}
 			<span
-				class="flex items-center gap-1 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600"
+				class="flex items-center gap-1 rounded bg-hover px-1.5 py-0.5 text-xs text-muted"
 			>
 				{user.displayName}
 				{#if person.users.length > 1}
 					<button
 						onclick={() => revoke(user.id)}
 						title="Revoke access"
-						class="text-gray-400 hover:text-red-600"
+						class="text-muted hover:text-neg"
 					>
 						×
 					</button>

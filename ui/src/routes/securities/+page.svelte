@@ -16,9 +16,9 @@
 <!-- Only the initial load blanks the page; refetches keep the old data
      (and the components' state) on screen. -->
 {#if $Securities.fetching && !$Securities.data}
-	<p class="text-sm text-gray-500">Loading…</p>
+	<p class="text-sm text-muted">Loading…</p>
 {:else if $Securities.errors?.length}
-	<p class="text-sm text-red-600">Failed to load: {$Securities.errors[0].message}</p>
+	<p class="text-sm text-neg">Failed to load: {$Securities.errors[0].message}</p>
 {:else if $Securities.data}
 	<div class="flex flex-col gap-8">
 		<Section title="Securities">

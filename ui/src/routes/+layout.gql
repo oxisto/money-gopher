@@ -11,4 +11,26 @@ query Layout {
 			displayName
 		}
 	}
+	# For the sidebar's account list and import badge.
+	portfolios {
+		id
+		displayName
+		snapshot {
+			totalMarketValue {
+				amount
+				currency
+			}
+		}
+	}
+	cashAccounts {
+		id
+		displayName
+		balance {
+			amount
+			currency
+		}
+	}
+	documents(state: PARSED) {
+		id
+	}
 }

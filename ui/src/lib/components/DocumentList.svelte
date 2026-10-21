@@ -171,11 +171,11 @@
 	}
 
 	const stateBadge: Record<string, string> = {
-		UPLOADED: 'bg-yellow-100 text-yellow-800',
-		PARSED: 'bg-blue-100 text-blue-800',
-		FAILED: 'bg-red-100 text-red-800',
-		SKIPPED: 'bg-gray-100 text-gray-500',
-		IMPORTED: 'bg-green-100 text-green-800'
+		UPLOADED: 'bg-gold/15 text-gold',
+		PARSED: 'bg-accent-soft text-accent-fg',
+		FAILED: 'bg-neg-soft text-neg',
+		SKIPPED: 'bg-hover text-muted',
+		IMPORTED: 'bg-pos-soft text-pos'
 	};
 	const stateLabel: Record<string, string> = {
 		UPLOADED: 'Processing…',
@@ -187,17 +187,17 @@
 </script>
 
 {#if documents.length === 0}
-	<p class="text-sm text-gray-400">No documents yet. Upload a bank statement or CSV to get started.</p>
+	<p class="text-sm text-muted">No documents yet. Upload a bank statement or CSV to get started.</p>
 {:else}
-	<label class="mb-3 flex w-fit items-center gap-2 text-sm text-gray-600">
-		<input type="checkbox" bind:checked={hideImported} class="rounded border-gray-300" />
+	<label class="mb-3 flex w-fit items-center gap-2 text-sm text-muted">
+		<input type="checkbox" bind:checked={hideImported} class="rounded border-line-strong" />
 		Hide imported
 	</label>
 
 	{#if visibleDocuments.length === 0}
-		<p class="text-sm text-gray-400">
+		<p class="text-sm text-muted">
 			All documents are imported.
-			<button class="text-blue-600 hover:underline" onclick={() => (hideImported = false)}>
+			<button class="text-accent-fg hover:underline" onclick={() => (hideImported = false)}>
 				Show them
 			</button>
 		</p>
@@ -205,61 +205,61 @@
 
 	<div class="flex flex-col gap-4">
 		{#each visibleDocuments as doc (doc.id)}
-			<div class="rounded-md border border-gray-200 bg-white p-4">
+			<div class="rounded-md border border-line bg-surface p-4">
 				<div class="flex items-start justify-between gap-4">
 					<div class="flex-1 min-w-0">
 						<div class="flex items-center gap-2 flex-wrap">
-							<span class="rounded-full px-2 py-0.5 text-xs font-medium {stateBadge[doc.state] ?? 'bg-gray-100 text-gray-600'}">
+							<span class="rounded-full px-2 py-0.5 text-xs font-medium {stateBadge[doc.state] ?? 'bg-hover text-muted'}">
 								{stateLabel[doc.state] ?? doc.state}
 							</span>
 							{#if doc.detectedBank}
-								<span class="text-xs text-gray-400">{doc.detectedBank}</span>
+								<span class="text-xs text-muted">{doc.detectedBank}</span>
 							{/if}
 						</div>
 
 						{#if doc.stagedTransactions.length > 0}
 							{@const tx = doc.stagedTransactions[0]}
 							<div class="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-								<span class="text-sm font-medium text-gray-800">{formatDate(tx.time)}</span>
-								<span class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-mono">{tx.type}</span>
+								<span class="text-sm font-medium text-fg">{formatDate(tx.time)}</span>
+								<span class="rounded bg-hover px-1.5 py-0.5 text-xs font-mono">{tx.type}</span>
 								{#if tx.security}
-									<span class="text-sm text-gray-700">{tx.security.displayName}</span>
+									<span class="text-sm text-fg">{tx.security.displayName}</span>
 								{:else if tx.securityHint}
-									<span class="text-sm text-gray-500 italic">{tx.securityHint}</span>
+									<span class="text-sm text-muted italic">{tx.securityHint}</span>
 								{:else if tx.isin}
-									<span class="text-sm text-gray-500 font-mono">{tx.isin}</span>
+									<span class="text-sm text-muted font-mono">{tx.isin}</span>
 								{/if}
 								{#if tx.units > 0}
-									<span class="text-sm text-gray-600 tabular-nums">{tx.units.toLocaleString()} units</span>
+									<span class="text-sm text-muted tabular-nums">{tx.units.toLocaleString()} units</span>
 								{/if}
 								{#if tx.price}
-									<span class="text-sm text-gray-600 tabular-nums">@ {formatPrice(tx.price)}</span>
+									<span class="text-sm text-muted tabular-nums">@ {formatPrice(tx.price)}</span>
 								{/if}
 								{#if tx.taxes.amount !== 0}
-									<span class="text-xs text-gray-500 tabular-nums">tax {formatMoney(tx.taxes)}</span>
+									<span class="text-xs text-muted tabular-nums">tax {formatMoney(tx.taxes)}</span>
 								{/if}
 								{#if tx.cashDelta.amount !== 0}
-									<span class="text-sm font-medium {tx.cashDelta.amount >= 0 ? 'text-green-700' : 'text-red-700'}">
+									<span class="text-sm font-medium {tx.cashDelta.amount >= 0 ? 'text-pos' : 'text-neg'}">
 										{formatMoney(tx.cashDelta)}
 									</span>
 								{/if}
 								{#if tx.calculatedCashDelta}
 									<span
 										class="text-xs {tx.calculatedCashDelta.amount !== tx.cashDelta.amount
-											? 'font-medium text-amber-700'
-											: 'text-gray-400'}"
+											? 'font-medium text-gold'
+											: 'text-muted'}"
 									>
 										calc: {formatMoney(tx.calculatedCashDelta)}
 									</span>
 								{/if}
 							</div>
 						{:else if doc.state === 'FAILED' && doc.error}
-							<p class="mt-1 text-xs text-red-600">{doc.error}</p>
+							<p class="mt-1 text-xs text-neg">{doc.error}</p>
 						{:else if doc.transactionDate}
-							<p class="mt-1 text-sm text-gray-500">{formatDate(doc.transactionDate)}</p>
+							<p class="mt-1 text-sm text-muted">{formatDate(doc.transactionDate)}</p>
 						{/if}
 
-						<p class="mt-0.5 text-xs text-gray-400 truncate">{doc.filename}</p>
+						<p class="mt-0.5 text-xs text-muted truncate">{doc.filename}</p>
 					</div>
 					<div class="flex items-center gap-2 flex-shrink-0">
 						{#if doc.state === 'PARSED'}
@@ -268,7 +268,7 @@
 								<button
 									onclick={() => quickImport(doc, match)}
 									disabled={quickImporting[doc.id]}
-									class="rounded-md border border-green-200 bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700 hover:bg-green-100 disabled:opacity-50"
+									class="rounded-md border border-pos/30 bg-pos-soft px-3 py-1.5 text-sm font-medium text-pos hover:bg-pos-soft disabled:opacity-50"
 									title="Every field on this document was auto-matched — import without reviewing"
 								>
 									{quickImporting[doc.id] ? 'Importing…' : '✓ Quick import'}
@@ -282,7 +282,7 @@
 							<button
 								onclick={() => reanalyze(doc.id)}
 								disabled={reprocessing[doc.id]}
-								class="rounded px-2 py-1.5 text-xs text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+								class="rounded px-2 py-1.5 text-xs text-muted hover:text-fg hover:bg-hover disabled:opacity-50"
 								title="Re-run extraction and parsing with the current importer code"
 							>
 								{reprocessing[doc.id] ? 'Re-analyzing…' : 'Re-analyze'}
@@ -290,7 +290,7 @@
 						{/if}
 						<button
 							onclick={() => del(doc.id)}
-							class="rounded px-2 py-1.5 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50"
+							class="rounded px-2 py-1.5 text-xs text-muted hover:text-neg hover:bg-neg-soft"
 						>
 							Delete
 						</button>
@@ -298,7 +298,7 @@
 				</div>
 
 				{#if doc.transactions.length > 0}
-					<p class="mt-2 rounded bg-blue-50 px-2 py-1.5 text-xs text-blue-800">
+					<p class="mt-2 rounded bg-accent-soft px-2 py-1.5 text-xs text-accent-fg">
 						Already has {doc.transactions.length} committed transaction{doc.transactions.length === 1
 							? ''
 							: 's'} from this document. Confirming the staged transactions below will update
@@ -318,7 +318,7 @@
 				{/if}
 
 				{#if reviewDocID === doc.id}
-					<div class="mt-4 border-t border-gray-100 pt-4">
+					<div class="mt-4 border-t border-line pt-4">
 						<DocumentReview
 							document={doc}
 							suggestedCashAccount={doc.suggestedCashAccount}

@@ -17,15 +17,15 @@
 <!-- Only the initial load blanks the page; refetches keep the old data
      (and the components' state) on screen. -->
 {#if $PortfolioDetail.fetching && !$PortfolioDetail.data}
-	<p class="text-sm text-gray-500">Loading…</p>
+	<p class="text-sm text-muted">Loading…</p>
 {:else if $PortfolioDetail.errors?.length}
-	<p class="text-sm text-red-600">Failed to load: {$PortfolioDetail.errors[0].message}</p>
+	<p class="text-sm text-neg">Failed to load: {$PortfolioDetail.errors[0].message}</p>
 {:else if $PortfolioDetail.data}
 	{@const portfolio = $PortfolioDetail.data.portfolio}
 	{#if portfolio}
 		<div class="mb-6">
 			<h1 class="text-2xl font-semibold">{portfolio.displayName}</h1>
-			<p class="mt-1 text-sm text-gray-500">
+			<p class="mt-1 text-sm text-muted">
 				Settlement account: <span class="font-medium">{portfolio.cashAccount.displayName}</span>
 			</p>
 		</div>
@@ -57,6 +57,6 @@
 			</Section>
 		</div>
 	{:else}
-		<p class="text-sm text-gray-500">Portfolio not found.</p>
+		<p class="text-sm text-muted">Portfolio not found.</p>
 	{/if}
 {/if}

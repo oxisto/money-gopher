@@ -3,22 +3,32 @@
 
 	let {
 		type = 'button',
+		variant = 'primary',
 		disabled = false,
 		onclick,
 		children
 	}: {
 		type?: 'button' | 'submit';
+		variant?: 'primary' | 'secondary' | 'danger';
 		disabled?: boolean;
 		onclick?: () => void;
 		children: Snippet;
 	} = $props();
+
+	const variants = {
+		primary: 'border-transparent bg-accent text-on-accent hover:bg-accent-hover',
+		secondary: 'border-line bg-surface text-fg shadow-xs hover:bg-raised',
+		danger: 'border-line bg-surface text-neg shadow-xs hover:bg-neg-soft'
+	};
 </script>
 
 <button
 	{type}
 	{disabled}
 	{onclick}
-	class="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+	class="inline-flex h-8.5 items-center justify-center gap-1.5 rounded-lg border px-3 text-sm font-medium disabled:opacity-50 {variants[
+		variant
+	]}"
 >
 	{@render children()}
 </button>

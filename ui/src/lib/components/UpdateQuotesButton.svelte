@@ -47,7 +47,7 @@
 		{busy ? 'Updating…' : 'Update quotes'}
 	</Button>
 	{#if message}
-		<span class="text-sm text-gray-500">{message}</span>
+		<span class="text-sm text-muted">{message}</span>
 	{/if}
 </div>
 <ErrorNote message={error} />

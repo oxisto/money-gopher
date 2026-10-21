@@ -43,14 +43,14 @@
 </script>
 
 {#if portfolios.length === 0}
-	<p class="text-sm text-gray-500">No portfolios yet.</p>
+	<p class="text-sm text-muted">No portfolios yet.</p>
 {:else}
-	<ul class="divide-y divide-gray-200 rounded-md border border-gray-200 bg-white">
+	<ul class="divide-y divide-line rounded-md border border-line bg-surface">
 		{#each portfolios as portfolio (portfolio.id)}
 			<li>
 				<a
 					href="/portfolios/{portfolio.id}"
-					class="flex items-center justify-between px-4 py-3 text-sm hover:bg-gray-50"
+					class="flex items-center justify-between px-4 py-3 text-sm hover:bg-raised"
 				>
 					<span class="font-medium">{portfolio.displayName}</span>
 					<span class="flex items-center gap-2 tabular-nums">

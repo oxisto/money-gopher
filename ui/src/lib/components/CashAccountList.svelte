@@ -40,14 +40,14 @@
 </script>
 
 {#if accounts.length === 0}
-	<p class="text-sm text-gray-500">No cash accounts yet.</p>
+	<p class="text-sm text-muted">No cash accounts yet.</p>
 {:else}
-	<ul class="divide-y divide-gray-200 rounded-md border border-gray-200 bg-white">
+	<ul class="divide-y divide-line rounded-md border border-line bg-surface">
 		{#each accounts as account (account.id)}
 			<li>
 				<a
 					href={`/cash-accounts/${account.id}`}
-					class="flex items-center justify-between px-4 py-3 text-sm hover:bg-gray-50"
+					class="flex items-center justify-between px-4 py-3 text-sm hover:bg-raised"
 				>
 					<span class="font-medium">{account.displayName}</span>
 					<span class="tabular-nums">{formatMoney(account.balance)}</span>

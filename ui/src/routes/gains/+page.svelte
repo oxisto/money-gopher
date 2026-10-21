@@ -29,7 +29,7 @@
 <div class="mb-6 flex items-center justify-between">
 	<h1 class="text-2xl font-semibold">Realized Gains</h1>
 	<select
-		class="rounded-md border border-gray-300 px-2 py-1 text-sm"
+		class="rounded-md border border-line-strong px-2 py-1 text-sm"
 		value={selectedYear}
 		onchange={(e) => loadYear(Number(e.currentTarget.value))}
 	>
@@ -40,37 +40,37 @@
 </div>
 
 {#if $RealizedGains.fetching && !$RealizedGains.data}
-	<p class="text-sm text-gray-500">Loading…</p>
+	<p class="text-sm text-muted">Loading…</p>
 {:else if $RealizedGains.errors?.length}
-	<p class="text-sm text-red-600">Failed to load: {$RealizedGains.errors[0].message}</p>
+	<p class="text-sm text-neg">Failed to load: {$RealizedGains.errors[0].message}</p>
 {:else if $RealizedGains.data}
 	{@const gains = $RealizedGains.data.realizedGains}
 
 	<div class="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-		<div class="rounded-lg border border-gray-200 p-4">
-			<p class="text-xs font-medium text-gray-500 uppercase">Dividends</p>
+		<div class="rounded-lg border border-line p-4">
+			<p class="text-xs font-medium text-muted uppercase">Dividends</p>
 			<p class="mt-1 text-xl font-semibold tabular-nums">{formatMoney(gains.dividends)}</p>
 		</div>
-		<div class="rounded-lg border border-gray-200 p-4">
-			<p class="text-xs font-medium text-gray-500 uppercase">Interest</p>
+		<div class="rounded-lg border border-line p-4">
+			<p class="text-xs font-medium text-muted uppercase">Interest</p>
 			<p class="mt-1 text-xl font-semibold tabular-nums">{formatMoney(gains.interest)}</p>
 		</div>
-		<div class="rounded-lg border border-gray-200 p-4">
-			<p class="text-xs font-medium text-gray-500 uppercase">Trading gains</p>
+		<div class="rounded-lg border border-line p-4">
+			<p class="text-xs font-medium text-muted uppercase">Trading gains</p>
 			<p
 				class="mt-1 text-xl font-semibold tabular-nums {gains.tradingGains.amount < 0
-					? 'text-red-600'
+					? 'text-neg'
 					: ''}"
 			>
 				{formatMoney(gains.tradingGains)}
 			</p>
 		</div>
-		<div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
-			<p class="text-xs font-medium text-gray-500 uppercase">Total</p>
+		<div class="rounded-lg border border-line bg-raised p-4">
+			<p class="text-xs font-medium text-muted uppercase">Total</p>
 			<p
 				class="mt-1 text-xl font-semibold tabular-nums {gains.total.amount < 0
-					? 'text-red-600'
-					: 'text-green-700'}"
+					? 'text-neg'
+					: 'text-pos'}"
 			>
 				{formatMoney(gains.total)}
 			</p>
@@ -91,34 +91,34 @@
 
 		<Section title="Events">
 			{#if gains.entries.length === 0}
-				<p class="text-sm text-gray-500">No realized gains in {selectedYear}.</p>
+				<p class="text-sm text-muted">No realized gains in {selectedYear}.</p>
 			{:else}
-				<div class="overflow-x-auto rounded-md border border-gray-200 bg-white">
+				<div class="overflow-x-auto rounded-md border border-line bg-surface">
 					<table class="w-full text-sm">
 						<thead>
-							<tr class="border-b border-gray-200 text-left text-xs text-gray-500 uppercase">
+							<tr class="border-b border-line text-left text-xs text-muted uppercase">
 								<th class="px-4 py-2 font-medium">Date</th>
 								<th class="px-4 py-2 font-medium">Type</th>
 								<th class="px-4 py-2 font-medium">Security</th>
 								<th class="px-4 py-2 text-right font-medium">Amount</th>
 							</tr>
 						</thead>
-						<tbody class="divide-y divide-gray-100">
+						<tbody class="divide-y divide-line">
 							{#each gains.entries as entry (entry.id)}
-								<tr class="hover:bg-gray-50">
+								<tr class="hover:bg-raised">
 									<td class="px-4 py-2 whitespace-nowrap">
-										<a href={entryHref(entry)} class="text-gray-900 hover:underline"
+										<a href={entryHref(entry)} class="text-fg hover:underline"
 											>{formatDate(entry.time)}</a
 										>
 									</td>
 									<td class="px-4 py-2">
-										<span class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-mono">{entry.type}</span>
+										<span class="rounded bg-hover px-1.5 py-0.5 text-xs font-mono">{entry.type}</span>
 									</td>
 									<td class="px-4 py-2">{entry.security?.displayName ?? '—'}</td>
 									<td
 										class="px-4 py-2 text-right tabular-nums {entry.amount.amount < 0
-											? 'text-red-600'
-											: 'text-green-700'}"
+											? 'text-neg'
+											: 'text-pos'}"
 									>
 										{formatMoney(entry.amount)}
 									</td>

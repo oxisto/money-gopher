@@ -16,9 +16,9 @@
 <!-- Only the initial load blanks the page; refetches keep the old data
      (and the components' state) on screen. -->
 {#if $CashAccountDetail.fetching && !$CashAccountDetail.data}
-	<p class="text-sm text-gray-500">Loading…</p>
+	<p class="text-sm text-muted">Loading…</p>
 {:else if $CashAccountDetail.errors?.length}
-	<p class="text-sm text-red-600">Failed to load: {$CashAccountDetail.errors[0].message}</p>
+	<p class="text-sm text-neg">Failed to load: {$CashAccountDetail.errors[0].message}</p>
 {:else if $CashAccountDetail.data}
 	{@const account = $CashAccountDetail.data.cashAccount}
 	{#if account}
@@ -26,7 +26,7 @@
 			<div>
 				<h1 class="text-2xl font-semibold">{account.displayName}</h1>
 				{#if account.iban}
-					<p class="mt-1 font-mono text-sm text-gray-500">{account.iban}</p>
+					<p class="mt-1 font-mono text-sm text-muted">{account.iban}</p>
 				{/if}
 			</div>
 			<span class="text-xl font-semibold tabular-nums">{formatMoney(account.balance)}</span>
@@ -54,6 +54,6 @@
 			</Section>
 		</div>
 	{:else}
-		<p class="text-sm text-gray-500">Cash account not found.</p>
+		<p class="text-sm text-muted">Cash account not found.</p>
 	{/if}
 {/if}

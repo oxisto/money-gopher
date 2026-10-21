@@ -10,9 +10,9 @@
 </script>
 
 {#if $People.fetching && !$People.data}
-	<p class="text-sm text-gray-500">Loading…</p>
+	<p class="text-sm text-muted">Loading…</p>
 {:else if $People.errors?.length}
-	<p class="text-sm text-red-600">Failed to load: {$People.errors[0].message}</p>
+	<p class="text-sm text-neg">Failed to load: {$People.errors[0].message}</p>
 {:else if $People.data}
 	<div class="flex flex-col gap-8">
 		<Section title="People">

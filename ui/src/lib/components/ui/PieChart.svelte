@@ -37,7 +37,7 @@
 		style={gradient ? `background: ${gradient}` : 'background: #e5e7eb'}
 	>
 		<div
-			class="m-[22%] flex h-[56%] w-[56%] items-center justify-center rounded-full bg-white text-center text-xs text-gray-400"
+			class="m-[22%] flex h-[56%] w-[56%] items-center justify-center rounded-full bg-surface text-center text-xs text-muted"
 		>
 			{#if total <= 0}
 				No gains
@@ -48,10 +48,10 @@
 		{#each segments as s (s.label)}
 			<li class="flex items-center gap-2">
 				<span class="h-2.5 w-2.5 shrink-0 rounded-full" style={`background: ${s.color}`}></span>
-				<span class="text-gray-600">{s.label}</span>
+				<span class="text-muted">{s.label}</span>
 				<span class="ml-auto font-medium tabular-nums">{formatValue(s.value)}</span>
 				{#if s.value > 0 && total > 0}
-					<span class="w-10 text-right text-xs text-gray-400">
+					<span class="w-10 text-right text-xs text-muted">
 						{Math.round((s.value / total) * 100)}%
 					</span>
 				{/if}
