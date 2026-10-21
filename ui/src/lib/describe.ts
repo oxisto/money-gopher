@@ -39,6 +39,23 @@ export function describeTransaction(tx: DescribableTransaction): { title: string
 	}
 }
 
+/** A short label for a transaction type, e.g. "Buy" or "Tax refund". */
+export function labelOf(type: string): string {
+	const labels: Record<string, string> = {
+		BUY: 'Buy',
+		SELL: 'Sell',
+		DELIVERY_INBOUND: 'Transfer in',
+		DELIVERY_OUTBOUND: 'Transfer out',
+		DIVIDEND: 'Dividend',
+		INTEREST: 'Interest',
+		DEPOSIT_CASH: 'Deposit',
+		WITHDRAW_CASH: 'Withdrawal',
+		ACCOUNT_FEES: 'Fees',
+		TAX_REFUND: 'Tax refund'
+	};
+	return labels[type] ?? type;
+}
+
 /** Units without trailing zeros: 25, 4.71, 0.0532. */
 export function formatUnits(units: number): string {
 	return new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 }).format(units);

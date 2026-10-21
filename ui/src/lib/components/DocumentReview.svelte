@@ -1,9 +1,13 @@
 <script lang="ts">
 	import { graphql } from '$houdini';
-	import { formatMoney, formatPrice, formatDate } from '$lib/format';
+	import { describeTransaction, formatUnits, labelOf } from '$lib/describe';
+	import { formatMoney, formatPrice, formatDate, formatSignedMoney } from '$lib/format';
 	import Button from './ui/Button.svelte';
+	import Dialog from './ui/Dialog.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
+	import Icon from './ui/Icon.svelte';
 	import SelectField from './ui/SelectField.svelte';
+	import TextField from './ui/TextField.svelte';
 
 	interface StagedTx {
 		id: string;
@@ -165,36 +169,37 @@
 <!-- Split-pane: PDF on the left, review form on the right -->
 <div class="flex flex-col gap-4">
 	<!-- PDF toggle (visible on narrow screens; on wide screens pane is always shown) -->
-	<div class="flex items-center justify-between xl:hidden">
+	<div class="flex items-center justify-between 2xl:hidden">
 		<span class="text-xs text-muted">Source document</span>
 		<button
 			onclick={() => (showPDF = !showPDF)}
-			class="text-xs text-accent-fg hover:underline"
+			class="text-xs text-muted hover:text-fg"
 		>
 			{showPDF ? 'Hide PDF' : 'Show PDF'}
 		</button>
 	</div>
 
-	<div class="flex flex-col gap-6 xl:flex-row xl:gap-4 xl:h-[min(65vh,820px)]">
+	<div class="flex flex-col gap-6 2xl:flex-row 2xl:gap-4 2xl:h-[min(65vh,820px)]">
 		<!-- PDF pane -->
 		{#if showPDF}
-			<div class="flex-1 min-w-0 xl:flex-none xl:w-[540px] xl:flex xl:flex-col">
-				<div class="hidden xl:flex items-center justify-between mb-1">
+			<!-- Stacked, the form comes first and the PDF below it. -->
+			<div class="order-last flex-1 min-w-0 2xl:order-first 2xl:flex-none 2xl:w-[540px] 2xl:flex 2xl:flex-col">
+				<div class="hidden 2xl:flex items-center justify-between mb-1">
 					<span class="text-xs text-muted">Source document</span>
-					<a href={pdfURL} target="_blank" class="text-xs text-accent-fg hover:underline">Open in new tab ↗</a>
+					<a href={pdfURL} target="_blank" rel="noopener" class="text-xs text-muted hover:text-fg">Open in new tab ↗</a>
 				</div>
 				<embed
 					src={pdfURL}
 					type="application/pdf"
-					class="w-full flex-1 rounded-md border border-line"
+					class="w-full flex-1 rounded-lg border border-line"
 					style="height: min(65vh, 820px);"
 				/>
-				<a href={pdfURL} target="_blank" class="mt-1 block text-xs text-accent-fg hover:underline xl:hidden">Open in new tab ↗</a>
+				<a href={pdfURL} target="_blank" rel="noopener" class="mt-1 block text-xs text-muted hover:text-fg 2xl:hidden">Open in new tab ↗</a>
 			</div>
 		{/if}
 
 		<!-- Review form -->
-		<div class="flex-1 min-w-0 flex flex-col gap-4 xl:overflow-y-auto">
+		<div class="flex-1 min-w-0 flex flex-col gap-4 2xl:overflow-y-auto">
 			<!-- Global account selectors -->
 			<div class="flex flex-wrap gap-4">
 				{#if portfolioRequired}
@@ -217,7 +222,7 @@
 					{#if suggestedCashAccount && suggestedCashAccount.id === cashAccountID}
 						<p class="mt-1 text-xs text-pos">✓ Auto-matched from document IBAN</p>
 					{:else if suggestedCashAccount}
-						<p class="mt-1 text-xs text-gold">
+						<p class="mt-1 text-xs text-muted">
 							Suggested: {suggestedCashAccount.displayName} —
 							<button class="underline" onclick={() => (cashAccountID = suggestedCashAccount!.id)}>
 								use it
@@ -228,28 +233,31 @@
 			</div>
 
 			<!-- Staged transactions table -->
-			<div class="overflow-x-auto rounded-md border border-line">
-				<table class="min-w-full text-sm">
+			<div class="overflow-x-auto rounded-xl border border-line">
+				<table class="num min-w-full text-[13px]">
 					<thead class="bg-raised text-xs text-muted">
 						<tr>
-							<th class="px-2 py-1.5 text-left font-medium">Date</th>
-							<th class="px-2 py-1.5 text-left font-medium">Type</th>
-							<th class="px-2 py-1.5 text-left font-medium">Security</th>
-							<th class="px-2 py-1.5 text-right font-medium">Units</th>
-							<th class="px-2 py-1.5 text-right font-medium">Price</th>
-							<th class="px-2 py-1.5 text-right font-medium">Fees</th>
-							<th class="px-2 py-1.5 text-right font-medium">Taxes</th>
-							<th class="px-2 py-1.5 text-right font-medium">Cash Δ</th>
+							<th class="py-2 pr-2 pl-3 text-left font-medium">Date</th>
+							<th class="px-2 py-2 text-left font-medium">Event</th>
+							<th class="px-2 py-2 text-left font-medium">Security</th>
+							<th class="px-2 py-2 text-right font-medium">Units</th>
+							<th class="px-2 py-2 text-right font-medium">Price</th>
+							<th class="px-2 py-2 text-right font-medium">Fees</th>
+							<th class="px-2 py-2 text-right font-medium">Taxes</th>
+							<th class="py-2 pr-3 pl-2 text-right font-medium">Cash</th>
 						</tr>
 					</thead>
-					<tbody class="divide-y divide-line bg-surface">
+					<tbody class="divide-y divide-line">
 						{#each doc.stagedTransactions as tx (tx.id)}
 							<tr>
-								<td class="px-2 py-1.5 text-muted whitespace-nowrap">{formatDate(tx.time)}</td>
-								<td class="px-2 py-1.5">
-									<span class="rounded bg-hover px-1.5 py-0.5 text-xs font-mono">{tx.type}</span>
+								<td class="py-2 pr-2 pl-3 text-muted whitespace-nowrap">{formatDate(tx.time)}</td>
+								<td class="px-2 py-2 whitespace-nowrap">
+									<span class="flex items-center gap-1.5">
+										<span class="text-muted"><Icon name={describeTransaction(tx).icon} size={13} /></span>
+										{labelOf(tx.type)}
+									</span>
 								</td>
-								<td class="px-2 py-1.5 max-w-[220px]">
+								<td class="px-2 py-2 max-w-[220px]">
 									{#if tx.security}
 										<span class="text-fg">{tx.security.displayName}</span>
 										{#if tx.isin}
@@ -263,7 +271,7 @@
 											<div class="flex items-center gap-1">
 												<select
 													bind:value={securityOverrides[tx.id]}
-													class="min-w-0 flex-1 rounded border border-line px-1.5 py-0.5 text-xs"
+													class="h-7 min-w-0 flex-1 py-0 pr-7 pl-2 text-xs"
 												>
 													<option value="">— unmatched —</option>
 													{#each allSecurities as s (s.id)}
@@ -273,7 +281,7 @@
 												{#if tx.isin && !securityOverrides[tx.id]}
 													<button
 														onclick={() => openCreateDialog(tx)}
-														class="shrink-0 rounded border border-accent/30 bg-accent-soft px-1.5 py-0.5 text-xs text-accent-fg hover:bg-accent-soft"
+														class="h-7 shrink-0 rounded-md border border-accent/30 bg-accent-soft px-2 text-xs font-medium text-accent-fg"
 													>
 														Create
 													</button>
@@ -284,10 +292,10 @@
 										<span class="text-xs text-muted">—</span>
 									{/if}
 								</td>
-								<td class="px-2 py-1.5 text-right tabular-nums text-fg">
-									{tx.units > 0 ? tx.units.toLocaleString() : '—'}
+								<td class="px-2 py-2 text-right tabular-nums text-fg">
+									{tx.units > 0 ? formatUnits(tx.units) : '—'}
 								</td>
-								<td class="px-2 py-1.5 text-right tabular-nums text-fg">
+								<td class="px-2 py-2 text-right tabular-nums text-fg">
 									{tx.price ? formatPrice(tx.price) : '—'}
 									{#if tx.fxRate}
 										<div
@@ -298,25 +306,25 @@
 										</div>
 									{/if}
 								</td>
-								<td class="px-2 py-1.5 text-right tabular-nums text-fg">
+								<td class="px-2 py-2 text-right tabular-nums text-fg">
 									{tx.fees.amount !== 0 ? formatMoney(tx.fees) : '—'}
 								</td>
-								<td class="px-2 py-1.5 text-right tabular-nums text-fg">
+								<td class="px-2 py-2 text-right tabular-nums text-fg">
 									{tx.taxes.amount !== 0 ? formatMoney(tx.taxes) : '—'}
 								</td>
-								<td class="px-2 py-1.5 text-right tabular-nums">
-									<div class={tx.cashDelta.amount >= 0 ? 'text-pos' : 'text-neg'}>
-										{tx.cashDelta.amount !== 0 ? formatMoney(tx.cashDelta) : '—'}
+								<td class="py-2 pr-3 pl-2 text-right">
+									<div class="font-medium {tx.cashDelta.amount > 0 ? 'text-pos' : ''}">
+										{tx.cashDelta.amount !== 0 ? formatSignedMoney(tx.cashDelta) : '—'}
 									</div>
 									{#if tx.calculatedCashDelta}
-										{@const mismatch = tx.calculatedCashDelta.amount !== tx.cashDelta.amount}
+										{@const diff = tx.cashDelta.amount - tx.calculatedCashDelta.amount}
 										<div
-											class="text-xs {mismatch ? 'font-medium text-gold' : 'text-muted'}"
-											title={mismatch
-												? `Parsed value differs by ${formatMoney({ amount: tx.cashDelta.amount - tx.calculatedCashDelta.amount, currency: tx.cashDelta.currency })} — likely an uncaptured line item on the document (a fee, a foreign tax, accrued interest).`
-												: 'Matches the parsed value.'}
+											class="text-[11px] {diff ? 'font-medium text-neg' : 'text-pos'}"
+											title={diff
+												? `The document says ${formatMoney(tx.cashDelta)}, units × price ± fees and taxes give ${formatMoney(tx.calculatedCashDelta)}. Usually a line item that isn't captured yet (a fee, a foreign tax, accrued interest).`
+												: 'Matches units × price ± fees and taxes.'}
 										>
-											calc: {formatMoney(tx.calculatedCashDelta)}
+											{diff ? `differs by ${formatMoney({ amount: Math.abs(diff), currency: tx.cashDelta.currency })}` : '✓ matches'}
 										</div>
 									{/if}
 								</td>
@@ -336,43 +344,26 @@
 	</div>
 </div>
 
-{#if createDialog}
-	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-		onclick={() => (createDialog = null)}
-	>
-		<div
-			class="w-full max-w-sm rounded-lg bg-surface p-5 shadow-xl"
-			onclick={(e) => e.stopPropagation()}
-		>
-			<h3 class="mb-4 text-sm font-semibold text-fg">Add security</h3>
-			<div class="flex flex-col gap-3">
+<Dialog
+	open={createDialog !== null}
+	title="Add security"
+	onclose={() => (createDialog = null)}
+>
+	{#if createDialog}
+		<div class="flex flex-col gap-3">
+			<TextField label="Name" bind:value={createDialog.name} placeholder="Security name" required />
+			{#if createDialog.isin}
 				<div>
-					<label class="mb-1 block text-xs text-muted">Name</label>
-					<input
-						bind:value={createDialog.name}
-						class="w-full rounded border border-line px-3 py-1.5 text-sm focus:border-accent focus:outline-none"
-						placeholder="Security name"
-					/>
+					<span class="mb-1 block text-xs font-medium text-muted">ISIN</span>
+					<p class="num text-sm">{createDialog.isin}</p>
 				</div>
-				{#if createDialog.isin}
-					<div>
-						<label class="mb-1 block text-xs text-muted">ISIN</label>
-						<p class="font-mono text-sm text-fg">{createDialog.isin}</p>
-					</div>
-				{/if}
-			</div>
-			<div class="mt-5 flex items-center justify-end gap-2">
-				<button
-					onclick={() => (createDialog = null)}
-					class="rounded px-3 py-1.5 text-sm text-muted hover:bg-raised"
-				>
-					Cancel
-				</button>
+			{/if}
+			<div class="mt-2 flex justify-end gap-2">
+				<Button variant="secondary" onclick={() => (createDialog = null)}>Cancel</Button>
 				<Button onclick={confirmCreateSecurity} disabled={creatingDialog || !createDialog.name}>
 					{creatingDialog ? 'Creating…' : 'Create security'}
 				</Button>
 			</div>
 		</div>
-	</div>
-{/if}
+	{/if}
+</Dialog>
