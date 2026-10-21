@@ -10,48 +10,13 @@ after it landed in `d250a48`, to describe what is rather than what to do.
 
 ## Outstanding
 
-Two things, unrelated to each other.
+Nothing. Both items that were listed here are done:
 
-### Multi-write operations without a transaction
-
-Reviewed separately in [TRANSACTIONS.md](TRANSACTIONS.md). The short version:
-`db.Tx` exists and is used twice, and there are three places that need it and do
-not have it. `ConfirmImport` is the one worth fixing first, because a partial
-failure there duplicates financial records on the next attempt without saying so.
-
-### The lightsql version
-
-`go.mod` pins **`v0.4.0`**. Move it to `v0.6.0`:
-
-```sh
-go get github.com/oxisto/lightsql@v0.6.0
-```
-
-Two of the releases in between matter here:
-
-- **v0.5.1** fixes `BYTEA` literals. `documents.data` is the one `BYTEA` column,
-  and `CreateDocument` writes it as a **bound parameter**, which has stored real
-  bytes correctly on every version — so nothing on disk is wrong. The fix only
-  changes literals written inside SQL text, which this codebase does not do.
-  Worth taking anyway, along with `length(bytea)` and `octet_length`.
-- **v0.6.0** makes `NUMERIC` exact, and changes one thing: a numeric column
-  scanned into an `any` is now a string rather than a `float64`. Scanning into a
-  concrete `float64` or `string` is unaffected, and this schema has no `NUMERIC`
-  column today — see below for why it might want one.
-- **v0.5.0** adds a shell, which is the reason to bump beyond curiosity:
-
-  ```sh
-  go install github.com/oxisto/lightsql/cmd/lightsql@v0.5.1
-  lightsql ./money.db
-  lightsql> .schema documents
-  ```
-
-  Being able to open the directory `moneyd` wrote and ask what the migrations
-  actually did is worth more than any amount of reasoning about them.
-
-Also note `CURRENT_TIMESTAMP` works as of v0.3.0. `sessions.sql` was changed to
-`now()` because it had to be at the time; both are correct now and there is no
-reason to change it back.
+- **Multi-write operations without a transaction** — every finding in
+  [TRANSACTIONS.md](TRANSACTIONS.md) is fixed.
+- **The lightsql version** — `go.mod` is on `v0.7.0`, past the `v0.6.0` this
+  asked for, so the `BYTEA` literal fix, exact `NUMERIC` and the shell
+  (`go install github.com/oxisto/lightsql/cmd/lightsql@v0.7.0`) are all in.
 
 ## Worth considering: units is a REAL
 

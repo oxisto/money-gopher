@@ -1,8 +1,11 @@
 # Multi-write operations that are not in a transaction
 
 A review of transaction use in `moneyd`, done from the lightsql side on
-2026-08-22 against `d250a48`. Nothing here has been changed; this is a list of
-findings with a suggested order.
+2026-08-22 against `d250a48`, as a list of findings with a suggested order.
+
+**All four have since been fixed** (2026-10-21, `4aeb8e1`..). The findings are
+kept below because they explain why the code looks the way it does; line
+numbers in them refer to `d250a48`.
 
 `internal/persistence.(*DB).Tx` already exists and does the right thing —
 rollback if `fn` returns an error, commit otherwise, with sqlc's `WithTx`
@@ -133,8 +136,10 @@ code is not lightsql-specific.
 
 ## Suggested order
 
-> Retry on `40001` is **done**: `db.Tx` re-runs `fn` up to three times;
-> covered by `TestTx_RetriesWriteConflict` in `internal/persistence`.
+> All done. Retry on `40001`: `db.Tx` re-runs `fn` up to three times, covered
+> by `TestTx_RetriesWriteConflict`. Isolation: `db.TxWith` takes
+> `sql.TxOptions`, and the security update runs at `LevelRepeatableRead`,
+> covered by `TestTxWith_RepeatableReadRetriesStaleRead`.
 
 1. `ConfirmImport` (#1) — silent duplicates, real money.
 2. Retry on `40001` in `db.Tx` (#3) — cheap, and wanted before more callers use it.
