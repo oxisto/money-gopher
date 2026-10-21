@@ -82,7 +82,13 @@
 	let cashAccountID = $state(suggestedCashAccount?.id ?? cashAccounts[0]?.id ?? '');
 	let securityOverrides = $state<Record<string, string>>({});
 	let localSecurities = $state<Security[]>([]);
-	let createDialog = $state<{ txId: string; name: string; isin: string } | null>(null);
+	let createDialog = $state<{
+		txId: string;
+		name: string;
+		isin: string;
+		currency: string;
+		quoteProvider: string;
+	} | null>(null);
 	let creatingDialog = $state(false);
 
 	const allSecurities = $derived([...securities, ...localSecurities]);
@@ -105,7 +111,13 @@
 		createDialog = {
 			txId: tx.id,
 			name: tx.securityHint ?? tx.isin ?? '',
-			isin: tx.isin ?? ''
+			isin: tx.isin ?? '',
+			// The document says what the security trades in: a foreign bond's
+			// price is in its own currency, everything else in the settlement
+			// currency. Quotes by ISIN need no ticker, so an ISIN is enough
+			// to get them.
+			currency: tx.price?.currency ?? tx.currency,
+			quoteProvider: tx.isin ? 'ing' : ''
 		};
 	}
 
@@ -115,7 +127,16 @@
 		const result = await mutate(createSecurityMutation, {
 			input: {
 				displayName: createDialog.name,
-				identifiers: createDialog.isin ? [{ kind: 'ISIN', value: createDialog.isin }] : []
+				identifiers: createDialog.isin ? [{ kind: 'ISIN', value: createDialog.isin }] : [],
+				listings: createDialog.isin
+					? [
+							{
+								ticker: createDialog.isin,
+								currency: createDialog.currency.toUpperCase(),
+								quoteProvider: createDialog.quoteProvider || undefined
+							}
+						]
+					: []
 			}
 		});
 		creatingDialog = false;
@@ -357,10 +378,31 @@
 					<span class="mb-1 block text-xs font-medium text-muted">ISIN</span>
 					<p class="num text-sm">{createDialog.isin}</p>
 				</div>
+				<div class="grid grid-cols-2 gap-3">
+					<TextField
+						label="Listing currency"
+						bind:value={createDialog.currency}
+						maxlength={3}
+						required
+					/>
+					<SelectField bind:value={createDialog.quoteProvider} label="Quote provider">
+						<option value="">None</option>
+						<option value="ing">ING (by ISIN)</option>
+					</SelectField>
+				</div>
+				<p class="text-xs text-muted">
+					The currency the security is quoted in, as the document states it. Quotes are converted
+					into the portfolio's currency when they differ.
+				</p>
 			{/if}
 			<div class="mt-2 flex justify-end gap-2">
 				<Button variant="secondary" onclick={() => (createDialog = null)}>Cancel</Button>
-				<Button onclick={confirmCreateSecurity} disabled={creatingDialog || !createDialog.name}>
+				<Button
+					onclick={confirmCreateSecurity}
+					disabled={creatingDialog ||
+						!createDialog.name ||
+						(!!createDialog.isin && createDialog.currency.trim().length !== 3)}
+				>
 					{creatingDialog ? 'Creating…' : 'Create security'}
 				</Button>
 			</div>

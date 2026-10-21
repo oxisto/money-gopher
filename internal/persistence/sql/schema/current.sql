@@ -86,6 +86,15 @@ CREATE TABLE quotes (
     PRIMARY KEY (listing_id, time)
 );
 
+-- ECB reference rates: how many units of currency one euro buys at time
+-- (the reference date, midnight UTC). See migration 0008.
+CREATE TABLE fx_rates (
+    currency TEXT      NOT NULL,
+    time     TIMESTAMP NOT NULL,
+    rate     DECIMAL(19,4) NOT NULL,
+    PRIMARY KEY (currency, time)
+);
+
 CREATE TABLE documents (
     id              TEXT     PRIMARY KEY,
     -- Superseded by person_id. Kept only because lightsql cannot DROP

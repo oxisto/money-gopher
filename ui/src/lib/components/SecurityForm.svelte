@@ -20,13 +20,17 @@
 	let isin = $state('');
 	let ticker = $state('');
 	let exchange = $state('');
-	let currency = $state('EUR');
+	let currency = $state('');
 	let quoteProvider = $state('');
 	let error = $state<string | null>(null);
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
 		if (!name.trim()) return;
+		if (ticker.trim() && currency.trim().length !== 3) {
+			error = 'A listing needs the currency it is quoted in.';
+			return;
+		}
 
 		const result = await mutate(createSecurity, {
 			input: {
@@ -62,7 +66,13 @@
 		<TextField bind:value={isin} label="ISIN" placeholder="e.g. IE00B4L5Y983" maxlength={12} />
 		<TextField bind:value={ticker} label="Ticker" placeholder="e.g. EUNL" />
 		<TextField bind:value={exchange} label="Exchange (MIC)" placeholder="e.g. XETR" />
-		<TextField bind:value={currency} label="Listing currency" maxlength={3} />
+		<TextField
+			bind:value={currency}
+			label="Listing currency"
+			placeholder="What it is quoted in, e.g. USD"
+			maxlength={3}
+			required={!!ticker.trim()}
+		/>
 		<SelectField bind:value={quoteProvider} label="Quote provider">
 			<option value="">None</option>
 			<option value="yf">Yahoo Finance (by ticker)</option>

@@ -35,6 +35,12 @@ type Document struct {
 	PersonID        string
 }
 
+type FxRate struct {
+	Currency string
+	Time     time.Time
+	Rate     Decimal
+}
+
 type Listing struct {
 	ID            string
 	SecurityID    string

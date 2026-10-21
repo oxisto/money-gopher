@@ -21,6 +21,7 @@ import (
 
 	"github.com/oxisto/money-gopher/internal/api"
 	"github.com/oxisto/money-gopher/internal/auth"
+	"github.com/oxisto/money-gopher/internal/fx"
 	"github.com/oxisto/money-gopher/internal/importer"
 	"github.com/oxisto/money-gopher/internal/persistence"
 	"github.com/oxisto/money-gopher/internal/quotes"
@@ -67,7 +68,11 @@ func run(addr string, dbPath string, quoteInterval time.Duration) error {
 		slog.Info("imported data from SQLite", "source", *importSQLite, "rows", n)
 	}
 
-	updater := &quotes.Updater{DB: db, Registry: quotes.DefaultRegistry()}
+	updater := &quotes.Updater{
+		DB:       db,
+		Registry: quotes.DefaultRegistry(),
+		FX:       &fx.Updater{DB: db, Source: fx.NewECB()},
+	}
 	if quoteInterval > 0 {
 		go updater.Run(context.Background(), quoteInterval)
 	}

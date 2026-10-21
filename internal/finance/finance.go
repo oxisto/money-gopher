@@ -3,8 +3,11 @@
 // values, and time-weighted returns over a period.
 //
 // All monetary values are integer minor units (e.g. euro cents), matching
-// the persistence layer. The calculations assume a single currency per
-// portfolio; currency conversion is a future problem.
+// the persistence layer, and are in the currency the transactions settle
+// in. A purchase priced in another currency (a US Treasury bought in USD
+// with euros) is booked at its price converted with the transaction's own
+// FX rate, and quotes are requested in the settlement currency, so a
+// portfolio's figures all share one currency even when its holdings don't.
 package finance
 
 import (
@@ -16,14 +19,17 @@ import (
 )
 
 // QuoteFunc looks up the market price (an exact per-unit Decimal) of a
-// security at the given time, typically from the latest quote at or before
-// that time. It reports ok == false when no quote is known, in which case
-// calculations fall back to the purchase price.
-type QuoteFunc func(securityID string, at time.Time) (price persistence.Decimal, ok bool)
+// security at the given time, expressed in the given currency, typically
+// from the latest quote at or before that time. It reports ok == false when
+// no quote is known (or it cannot be converted), in which case calculations
+// fall back to the purchase price.
+type QuoteFunc func(securityID, currency string, at time.Time) (price persistence.Decimal, ok bool)
 
 // NoQuotes is a QuoteFunc that knows no quotes at all; every position is
 // valued at its purchase price.
-func NoQuotes(string, time.Time) (persistence.Decimal, bool) { return persistence.Decimal{}, false }
+func NoQuotes(string, string, time.Time) (persistence.Decimal, bool) {
+	return persistence.Decimal{}, false
+}
 
 // Position is the holding of one security at the snapshot time.
 type Position struct {
@@ -135,7 +141,7 @@ func (b *book) purchaseValue() (v int64) {
 func (b *book) apply(tx *persistence.Transaction) {
 	switch tx.Type {
 	case "BUY", "DELIVERY_INBOUND":
-		b.lots = append(b.lots, &lot{units: tx.Units, ppu: tx.Price})
+		b.lots = append(b.lots, &lot{units: tx.Units, ppu: purchasePrice(tx)})
 	case "SELL", "DELIVERY_OUTBOUND":
 		// Sold shares leave the book first-in-first-out.
 		sold := tx.Units
@@ -148,6 +154,19 @@ func (b *book) apply(tx *persistence.Transaction) {
 			sold -= n
 		}
 	}
+}
+
+// purchasePrice is the price of one unit in the currency the transaction
+// settles in. A foreign-currency purchase carries its price in the
+// security's own currency and the rate the bank converted at: how many
+// units of that currency one unit of the settlement currency bought. So
+// dividing by it is the conversion, and it uses the very rate the money
+// actually moved at.
+func purchasePrice(tx *persistence.Transaction) persistence.Decimal {
+	if tx.FxRate.Valid && tx.FxRate.Sign() > 0 {
+		return tx.Price.Div(tx.FxRate)
+	}
+	return tx.Price
 }
 
 // SnapshotAt computes the portfolio snapshot at the given time from the
@@ -174,7 +193,7 @@ func SnapshotAt(txs []*persistence.Transaction, at time.Time, quote QuoteFunc) *
 			PurchaseValue: b.purchaseValue(),
 		}
 
-		if price, ok := quote(b.securityID, at); ok {
+		if price, ok := quote(b.securityID, b.currency, at); ok {
 			pos.MarketPrice = price
 		} else {
 			pos.MarketPrice = pos.PurchasePrice()
@@ -393,7 +412,7 @@ func marketValue(bs []*securityBook, at time.Time, quote QuoteFunc) (v int64) {
 			continue
 		}
 
-		price, ok := quote(b.securityID, at)
+		price, ok := quote(b.securityID, b.currency, at)
 		if !ok {
 			// Fall back to the average purchase price, like SnapshotAt.
 			// purchaseValue() is minor units (cents); price is major units.
