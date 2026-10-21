@@ -1,5 +1,5 @@
-import { graphql, query } from '$lib/graphql/client';
-import { ActivityTransaction } from '$lib/graphql/documents';
+import { graphql, query } from '#lib/graphql/client.js';
+import { ActivityTransaction } from '#lib/graphql/documents.js';
 import type { PageLoad } from './$types';
 
 const CashAccountDetail = graphql(

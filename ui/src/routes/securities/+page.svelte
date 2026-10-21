@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
-	import SecurityForm from '$lib/components/SecurityForm.svelte';
-	import SecurityList from '$lib/components/SecurityList.svelte';
-	import UpdateQuotesButton from '$lib/components/UpdateQuotesButton.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
-	import Dialog from '$lib/components/ui/Dialog.svelte';
-	import Icon from '$lib/components/ui/Icon.svelte';
+	import { refreshAll } from '$app/navigation';
+	import SecurityForm from '#lib/components/SecurityForm.svelte';
+	import SecurityList from '#lib/components/SecurityList.svelte';
+	import UpdateQuotesButton from '#lib/components/UpdateQuotesButton.svelte';
+	import Button from '#lib/components/ui/Button.svelte';
+	import Dialog from '#lib/components/ui/Dialog.svelte';
+	import Icon from '#lib/components/ui/Icon.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -13,7 +13,7 @@
 	let addOpen = $state(false);
 
 	function refresh() {
-		invalidateAll();
+		refreshAll();
 	}
 </script>
 

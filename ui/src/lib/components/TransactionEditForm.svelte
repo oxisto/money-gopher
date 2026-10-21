@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { graphql, mutate } from '$lib/graphql/client';
-	import { TRANSACTION_TYPES, type TransactionType } from '$lib/transaction-types';
-	import { labelOf } from '$lib/describe';
-	import { parseAmount, parsePrice } from '$lib/format';
-	import type { TransactionRow, SecurityOption, CashAccountOption } from '$lib/transaction-types';
+	import { graphql, mutate } from '#lib/graphql/client.js';
+	import { TRANSACTION_TYPES, type TransactionType } from '#lib/transaction-types.js';
+	import { labelOf } from '#lib/describe.js';
+	import { parseAmount, parsePrice } from '#lib/format.js';
+	import type { TransactionRow, SecurityOption, CashAccountOption } from '#lib/transaction-types.js';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import SelectField from './ui/SelectField.svelte';

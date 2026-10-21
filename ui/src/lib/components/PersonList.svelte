@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PeopleResult } from '$lib/graphql/documents';
+	import type { PeopleResult } from '#lib/graphql/documents.js';
 	import PersonRow from './PersonRow.svelte';
 
 	let {

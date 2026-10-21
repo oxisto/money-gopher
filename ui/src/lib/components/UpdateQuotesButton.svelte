@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { graphql, mutate } from '$lib/graphql/client';
+	import { graphql, mutate } from '#lib/graphql/client.js';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
 

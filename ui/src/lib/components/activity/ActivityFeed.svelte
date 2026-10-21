@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { graphql, mutate } from '$lib/graphql/client';
-	import TransactionEditForm from '$lib/components/TransactionEditForm.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
-	import Dialog from '$lib/components/ui/Dialog.svelte';
-	import ErrorNote from '$lib/components/ui/ErrorNote.svelte';
-	import Icon from '$lib/components/ui/Icon.svelte';
-	import { describeTransaction, formatUnits } from '$lib/describe';
-	import { formatDate, formatMoney, formatPrice, formatSignedMoney, toneOf } from '$lib/format';
-	import type { CashAccountOption, FeedTransaction, SecurityOption } from '$lib/transaction-types';
+	import { graphql, mutate } from '#lib/graphql/client.js';
+	import TransactionEditForm from '#lib/components/TransactionEditForm.svelte';
+	import Button from '#lib/components/ui/Button.svelte';
+	import Dialog from '#lib/components/ui/Dialog.svelte';
+	import ErrorNote from '#lib/components/ui/ErrorNote.svelte';
+	import Icon from '#lib/components/ui/Icon.svelte';
+	import { describeTransaction, formatUnits } from '#lib/describe.js';
+	import { formatDate, formatMoney, formatPrice, formatSignedMoney, toneOf } from '#lib/format.js';
+	import type { CashAccountOption, FeedTransaction, SecurityOption } from '#lib/transaction-types.js';
 
 	let {
 		transactions,

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { graphql, mutate } from '$lib/graphql/client';
-	import { invalidateAll } from '$app/navigation';
+	import { graphql, mutate } from '#lib/graphql/client.js';
+	import { refreshAll } from '$app/navigation';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import Segmented from './ui/Segmented.svelte';
@@ -64,7 +64,7 @@
 		iban = '';
 		cashAccountID = '';
 		// Reloads the page and the sidebar's account list alike.
-		await invalidateAll();
+		await refreshAll();
 		oncreated?.();
 	}
 </script>

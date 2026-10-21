@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { Money, Price } from '$lib/format';
+	import type { Money, Price } from '#lib/format.js';
 
 	export interface Holding {
 		securityId: string;
@@ -65,9 +65,9 @@
 </script>
 
 <script lang="ts">
-	import Icon from '$lib/components/ui/Icon.svelte';
-	import { formatUnits } from '$lib/describe';
-	import { formatMoney, formatPercent, formatPrice, formatSignedMoney, toneOf } from '$lib/format';
+	import Icon from '#lib/components/ui/Icon.svelte';
+	import { formatUnits } from '#lib/describe.js';
+	import { formatMoney, formatPercent, formatPrice, formatSignedMoney, toneOf } from '#lib/format.js';
 
 	let { holdings }: { holdings: Holding[] } = $props();
 

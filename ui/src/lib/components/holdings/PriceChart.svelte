@@ -1,6 +1,6 @@
 <script lang="ts">
-	import Segmented from '$lib/components/ui/Segmented.svelte';
-	import { formatPrice } from '$lib/format';
+	import Segmented from '#lib/components/ui/Segmented.svelte';
+	import { formatPrice } from '#lib/format.js';
 
 	interface Observation {
 		time: Date;

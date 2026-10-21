@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
-	import { graphql, mutate } from '$lib/graphql/client';
-	import type { PeopleResult } from '$lib/graphql/documents';
+	import { refreshAll } from '$app/navigation';
+	import { graphql, mutate } from '#lib/graphql/client.js';
+	import type { PeopleResult } from '#lib/graphql/documents.js';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import TextField from './ui/TextField.svelte';
@@ -62,7 +62,7 @@
 		error = result.error;
 		if (!error) {
 			editing = false;
-			await invalidateAll();
+			await refreshAll();
 		}
 	}
 
@@ -81,14 +81,14 @@
 		error = result.error;
 		if (!error) {
 			grantUserID = '';
-			await invalidateAll();
+			await refreshAll();
 		}
 	}
 
 	async function revoke(userID: string) {
 		const result = await mutate(revokePersonAccess, { personID: person.id, userID });
 		error = result.error;
-		if (!error) await invalidateAll();
+		if (!error) await refreshAll();
 	}
 </script>
 

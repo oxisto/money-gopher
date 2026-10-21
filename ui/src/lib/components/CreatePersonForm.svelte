@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
-	import { graphql, mutate } from '$lib/graphql/client';
+	import { refreshAll } from '$app/navigation';
+	import { graphql, mutate } from '#lib/graphql/client.js';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import TextField from './ui/TextField.svelte';
@@ -27,7 +27,7 @@
 		if (!error) {
 			name = '';
 			// Reloads this page's list and the sidebar's person switcher.
-			await invalidateAll();
+			await refreshAll();
 			oncreated?.();
 		}
 	}

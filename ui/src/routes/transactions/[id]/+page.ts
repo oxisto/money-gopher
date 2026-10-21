@@ -1,4 +1,4 @@
-import { graphql, query } from '$lib/graphql/client';
+import { graphql, query } from '#lib/graphql/client.js';
 import type { PageLoad } from './$types';
 
 const TransactionDetail = graphql(`

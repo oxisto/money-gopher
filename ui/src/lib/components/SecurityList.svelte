@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
-	import { graphql, mutate } from '$lib/graphql/client';
-	import type { SecuritiesResult } from '$lib/graphql/documents';
-	import { formatDate, formatPrice } from '$lib/format';
+	import { refreshAll } from '$app/navigation';
+	import { graphql, mutate } from '#lib/graphql/client.js';
+	import type { SecuritiesResult } from '#lib/graphql/documents.js';
+	import { formatDate, formatPrice } from '#lib/format.js';
 	import Button from './ui/Button.svelte';
 	import Icon from './ui/Icon.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
@@ -117,7 +117,7 @@
 			return;
 		}
 		editingKey = null;
-		await invalidateAll();
+		await refreshAll();
 	}
 
 	let query = $state('');

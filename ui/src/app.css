@@ -8,7 +8,7 @@
  * colors, so light and dark only differ here.
  *
  * The theme follows the OS unless data-theme on <html> pins it; see
- * $lib/theme.ts.
+ * #lib/theme.ts.
  */
 :root {
 	color-scheme: light;

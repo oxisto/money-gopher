@@ -1,9 +1,9 @@
 <script lang="ts">
-	import CreatePersonForm from '$lib/components/CreatePersonForm.svelte';
-	import PersonList from '$lib/components/PersonList.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
-	import Dialog from '$lib/components/ui/Dialog.svelte';
-	import Icon from '$lib/components/ui/Icon.svelte';
+	import CreatePersonForm from '#lib/components/CreatePersonForm.svelte';
+	import PersonList from '#lib/components/PersonList.svelte';
+	import Button from '#lib/components/ui/Button.svelte';
+	import Dialog from '#lib/components/ui/Dialog.svelte';
+	import Icon from '#lib/components/ui/Icon.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();

@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
-	import ActivityFeed from '$lib/components/activity/ActivityFeed.svelte';
-	import TransactionForm from '$lib/components/TransactionForm.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
-	import Dialog from '$lib/components/ui/Dialog.svelte';
-	import Icon from '$lib/components/ui/Icon.svelte';
-	import type { FeedTransaction } from '$lib/transaction-types';
+	import { refreshAll } from '$app/navigation';
+	import ActivityFeed from '#lib/components/activity/ActivityFeed.svelte';
+	import TransactionForm from '#lib/components/TransactionForm.svelte';
+	import Button from '#lib/components/ui/Button.svelte';
+	import Dialog from '#lib/components/ui/Dialog.svelte';
+	import Icon from '#lib/components/ui/Icon.svelte';
+	import type { FeedTransaction } from '#lib/transaction-types.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -22,7 +22,7 @@
 	let addOpen = $state(false);
 
 	function refresh() {
-		invalidateAll();
+		refreshAll();
 	}
 </script>
 

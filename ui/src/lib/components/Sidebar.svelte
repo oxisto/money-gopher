@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { invalidateAll } from '$app/navigation';
-	import { graphql, mutate } from '$lib/graphql/client';
-	import type { LayoutResult } from '$lib/graphql/documents';
-	import { formatMoneyCompact } from '$lib/format';
-	import { applyTheme, loadTheme, type ThemePreference } from '$lib/theme';
+	import { refreshAll } from '$app/navigation';
+	import { graphql, mutate } from '#lib/graphql/client.js';
+	import type { LayoutResult } from '#lib/graphql/documents.js';
+	import { formatMoneyCompact } from '#lib/format.js';
+	import { applyTheme, loadTheme, type ThemePreference } from '#lib/theme.js';
 
 	interface Props {
 		data: LayoutResult | null;
@@ -57,7 +57,7 @@
 		open = false;
 		await mutate(SwitchPerson, { personID: id });
 		// Everything on screen belongs to the active person; reload it all.
-		await invalidateAll();
+		await refreshAll();
 	}
 
 	let theme = $state<ThemePreference>(loadTheme());

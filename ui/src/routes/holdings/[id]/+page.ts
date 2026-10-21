@@ -1,5 +1,5 @@
-import { graphql, query } from '$lib/graphql/client';
-import { HoldingPosition } from '$lib/graphql/documents';
+import { graphql, query } from '#lib/graphql/client.js';
+import { HoldingPosition } from '#lib/graphql/documents.js';
 import type { PageLoad } from './$types';
 
 const HoldingDetail = graphql(

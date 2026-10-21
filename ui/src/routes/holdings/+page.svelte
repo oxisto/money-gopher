@@ -1,7 +1,7 @@
 <script lang="ts">
-	import HoldingsTable, { holdingsOf } from '$lib/components/holdings/HoldingsTable.svelte';
-	import StatStrip from '$lib/components/ui/StatStrip.svelte';
-	import { formatMoney, formatPercent, formatSignedMoney, toneOf, type Money } from '$lib/format';
+	import HoldingsTable, { holdingsOf } from '#lib/components/holdings/HoldingsTable.svelte';
+	import StatStrip from '#lib/components/ui/StatStrip.svelte';
+	import { formatMoney, formatPercent, formatSignedMoney, toneOf, type Money } from '#lib/format.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();

@@ -300,7 +300,7 @@ v0.3.0 waits for.
   Now: documents are `graphql()` calls typed from `api/schema.graphql`
   (`ui/src/lib/graphql/graphql-env.d.ts`, refreshed by `npm run generate`
   and checked in CI), `query()`/`mutate()` in `ui/src/lib/graphql/client.ts`,
-  data in ordinary `+page.ts` load functions, and `invalidateAll()` after a
+  data in ordinary `+page.ts` load functions, and `refreshAll()` after a
   mutation. View state that should reload data lives in the URL
   (`/?range=1Y`, `/income?year=2025`).
 

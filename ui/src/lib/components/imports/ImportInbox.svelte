@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { graphql, mutate } from '$lib/graphql/client';
-	import DocumentReview from '$lib/components/DocumentReview.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
-	import ErrorNote from '$lib/components/ui/ErrorNote.svelte';
-	import Icon from '$lib/components/ui/Icon.svelte';
-	import { describeTransaction } from '$lib/describe';
-	import { formatDate, formatSignedMoney } from '$lib/format';
+	import { graphql, mutate } from '#lib/graphql/client.js';
+	import DocumentReview from '#lib/components/DocumentReview.svelte';
+	import Button from '#lib/components/ui/Button.svelte';
+	import ErrorNote from '#lib/components/ui/ErrorNote.svelte';
+	import Icon from '#lib/components/ui/Icon.svelte';
+	import { describeTransaction } from '#lib/describe.js';
+	import { formatDate, formatSignedMoney } from '#lib/format.js';
 
 	interface StagedTx {
 		id: string;

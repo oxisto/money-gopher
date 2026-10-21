@@ -1,15 +1,15 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
-	import HoldingsTable, { holdingsOf } from '$lib/components/holdings/HoldingsTable.svelte';
-	import TransactionForm from '$lib/components/TransactionForm.svelte';
-	import ActivityFeed from '$lib/components/activity/ActivityFeed.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
-	import Dialog from '$lib/components/ui/Dialog.svelte';
-	import Icon from '$lib/components/ui/Icon.svelte';
-	import Segmented from '$lib/components/ui/Segmented.svelte';
-	import StatStrip from '$lib/components/ui/StatStrip.svelte';
-	import { formatMoney, formatPercent, formatSignedMoney, toneOf } from '$lib/format';
-	import type { FeedTransaction } from '$lib/transaction-types';
+	import { refreshAll } from '$app/navigation';
+	import HoldingsTable, { holdingsOf } from '#lib/components/holdings/HoldingsTable.svelte';
+	import TransactionForm from '#lib/components/TransactionForm.svelte';
+	import ActivityFeed from '#lib/components/activity/ActivityFeed.svelte';
+	import Button from '#lib/components/ui/Button.svelte';
+	import Dialog from '#lib/components/ui/Dialog.svelte';
+	import Icon from '#lib/components/ui/Icon.svelte';
+	import Segmented from '#lib/components/ui/Segmented.svelte';
+	import StatStrip from '#lib/components/ui/StatStrip.svelte';
+	import { formatMoney, formatPercent, formatSignedMoney, toneOf } from '#lib/format.js';
+	import type { FeedTransaction } from '#lib/transaction-types.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -20,7 +20,7 @@
 	const portfolio = $derived(data.portfolio);
 
 	function refresh() {
-		invalidateAll();
+		refreshAll();
 	}
 </script>
 
