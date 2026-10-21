@@ -253,9 +253,12 @@ Deleted from v1: all buf/proto/Connect artifacts (`buf*.yaml`, `mgo.proto`, `gen
   migration `0004_sessions.sql`), TTL 30 days.
 - `cmd/moneyd/main.go`: three auth modes via `--auth` flag:
   - `dev` (default): fixed dev user, no credentials needed.
-  - `builtin`: embedded `oauth2go` authorization server starts on `--builtin-auth-addr`
-    (default `:8081`) with `--auth-user` / `--auth-password`. The OIDC client points at
-    it as the issuer — no external IdP required for self-hosting.
+  - `builtin`: embedded `oauth2go` authorization server, mounted on moneyd's own
+    listener under `/auth/builtin/` with `--auth-user` / `--auth-password`, so one
+    port and one `--public-url` cover the app and its login page — no external IdP
+    required for self-hosting. The browser is sent to `<public-url>/auth/builtin/authorize`;
+    the code exchange goes to the local listener directly. Users are provisioned under
+    the fixed issuer `urn:money-gopher:builtin`, so changing the public URL keeps them.
   - `oidc`: external provider via `--oidc-issuer`, `--oidc-client-id`,
     `--oidc-client-secret`.
   All protected routes are wrapped with `SessionMiddleware`; OIDC routes

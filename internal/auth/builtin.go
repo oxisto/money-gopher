@@ -14,6 +14,12 @@ import (
 
 const builtinStateCookie = "mg_builtin_state"
 
+// BuiltinIssuer is the issuer users of the embedded authorization server
+// are provisioned under. It is a fixed name rather than the server's URL, so
+// changing -public-url (or moving from one host to another) keeps every user
+// and their data.
+const BuiltinIssuer = "urn:money-gopher:builtin"
+
 // BuiltinConfig configures authentication against the embedded oauth2go
 // authorization server (see cmd/moneyd's -auth=builtin mode).
 //
@@ -24,9 +30,14 @@ const builtinStateCookie = "mg_builtin_state"
 // directly from that token's ES256 signature instead of going through
 // OIDC id_token validation.
 type BuiltinConfig struct {
-	Issuer       string
 	ClientID     string
 	ClientSecret string
+	// AuthURL is the authorization endpoint the browser is redirected to,
+	// so it must be reachable under moneyd's public URL.
+	AuthURL string
+	// TokenURL is the token endpoint moneyd exchanges the code at. The
+	// request never involves the browser, so a local address is fine.
+	TokenURL string
 	// RedirectURL is the full URL of /auth/callback.
 	RedirectURL string
 	// PublicKeys returns the authorization server's current signing keys,
@@ -52,8 +63,8 @@ func NewBuiltinHandler(db *persistence.DB, cfg BuiltinConfig) *BuiltinHandler {
 			ClientSecret: cfg.ClientSecret,
 			RedirectURL:  cfg.RedirectURL,
 			Endpoint: oauth2.Endpoint{
-				AuthURL:  cfg.Issuer + "/authorize",
-				TokenURL: cfg.Issuer + "/token",
+				AuthURL:  cfg.AuthURL,
+				TokenURL: cfg.TokenURL,
 			},
 		},
 	}
@@ -91,7 +102,7 @@ func (h *BuiltinHandler) CallbackHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	user, err := provisionUser(r.Context(), h.db, h.cfg.Issuer, subject, subject)
+	user, err := provisionUser(r.Context(), h.db, BuiltinIssuer, subject, subject)
 	if err != nil {
 		http.Error(w, "user provisioning failed: "+err.Error(), http.StatusInternalServerError)
 		return
