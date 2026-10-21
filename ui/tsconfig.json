@@ -10,7 +10,16 @@
 		"skipLibCheck": true,
 		"sourceMap": true,
 		"strict": true,
-		"moduleResolution": "bundler"
+		"moduleResolution": "bundler",
+		// Types for GraphQL documents come from the backend's schema; run
+		// `npm run generate` after changing api/schema.graphql.
+		"plugins": [
+			{
+				"name": "gql.tada/ts-plugin",
+				"schema": "../api/schema.graphql",
+				"tadaOutputLocation": "./src/lib/graphql/graphql-env.d.ts"
+			}
+		]
 	}
 	// Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias
 	// except $lib which is handled by https://svelte.dev/docs/kit/configuration#files

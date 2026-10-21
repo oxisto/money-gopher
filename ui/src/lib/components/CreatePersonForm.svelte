@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
-	import { cache, graphql } from '$houdini';
+	import { graphql, mutate } from '$lib/graphql/client';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import TextField from './ui/TextField.svelte';
@@ -10,7 +10,7 @@
 	const createPerson = graphql(`
 		mutation CreatePerson($displayName: String!) {
 			createPerson(displayName: $displayName) {
-				...All_Persons_insert
+				id
 			}
 		}
 	`);
@@ -22,15 +22,11 @@
 		event.preventDefault();
 		if (!name.trim()) return;
 
-		const result = await createPerson.mutate({ displayName: name.trim() });
-		error = result.errors?.[0]?.message ?? null;
+		const result = await mutate(createPerson, { displayName: name.trim() });
+		error = result.error;
 		if (!error) {
 			name = '';
-			// The new person needs to show up in the sidebar's switcher too, which
-			// reads from the root layout's `me.persons` — a separate query
-			// from this page's `All_Persons` list, so the ...All_Persons_insert
-			// fragment above doesn't reach it. Same fix as switchPerson's.
-			cache.markStale();
+			// Reloads this page's list and the sidebar's person switcher.
 			await invalidateAll();
 			oncreated?.();
 		}

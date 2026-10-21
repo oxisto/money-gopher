@@ -6,7 +6,6 @@
 	import type { LayoutProps } from './$types';
 
 	let { children, data }: LayoutProps = $props();
-	const Layout = $derived(data.Layout);
 
 	// Below md the sidebar is a drawer behind the top bar's menu button.
 	let menuOpen = $state(false);
@@ -47,7 +46,7 @@
 				? 'fixed inset-x-0 top-14 bottom-0 z-30 overflow-y-auto bg-canvas'
 				: 'hidden'} md:sticky md:top-0 md:block md:h-screen md:w-62 md:shrink-0 md:overflow-y-auto"
 		>
-			<Sidebar data={$Layout.data} onnavigate={() => (menuOpen = false)} />
+			<Sidebar data={data.shell} onnavigate={() => (menuOpen = false)} />
 		</aside>
 
 		<main

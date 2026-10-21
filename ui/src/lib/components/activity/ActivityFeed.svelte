@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { graphql } from '$houdini';
+	import { graphql, mutate } from '$lib/graphql/client';
 	import TransactionEditForm from '$lib/components/TransactionEditForm.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
@@ -139,9 +139,9 @@
 	`);
 
 	async function del(id: string) {
-		const result = await deleteTransaction.mutate({ id });
-		if (result.errors?.length) {
-			deleteError = result.errors[0].message;
+		const result = await mutate(deleteTransaction, { id });
+		if (result.error) {
+			deleteError = result.error;
 			return;
 		}
 		confirmingDelete = false;

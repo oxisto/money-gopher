@@ -5,9 +5,8 @@
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
-	const Holdings = $derived(data.Holdings);
 
-	const portfolios = $derived($Holdings.data?.portfolios ?? []);
+	const portfolios = $derived(data.portfolios ?? []);
 	const holdings = $derived(holdingsOf(portfolios.flatMap((p) => p.snapshot.positions)));
 
 	const sum = (values: Money[]): Money => ({
@@ -48,13 +47,7 @@
 	<h1 class="flex-1 text-lg font-semibold">Holdings</h1>
 </div>
 
-{#if $Holdings.fetching && !$Holdings.data}
-	<p class="text-sm text-muted">Loading…</p>
-{:else if $Holdings.errors?.length}
-	<p class="text-sm text-neg">Failed to load: {$Holdings.errors[0].message}</p>
-{:else}
-	<div class="flex flex-col gap-6">
-		<StatStrip {stats} />
-		<HoldingsTable {holdings} />
-	</div>
-{/if}
+<div class="flex flex-col gap-6">
+	<StatStrip {stats} />
+	<HoldingsTable {holdings} />
+</div>

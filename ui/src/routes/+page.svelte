@@ -9,21 +9,22 @@
 	import StatStrip from '$lib/components/ui/StatStrip.svelte';
 	import { describeTransaction } from '$lib/describe';
 	import { formatDate, formatMoney, formatPercent, formatSignedMoney, toneOf, type Money } from '$lib/format';
-	import type { Period$options } from '$houdini';
+	import { goto } from '$app/navigation';
+	import { navigating } from '$app/state';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
-	const Dashboard = $derived(data.Dashboard);
-	const History = $derived(data.NetWorthHistory);
 
-	let period = $state<Period$options>('YEAR_TO_DATE');
-	const periods: { value: Period$options; label: string; since: string }[] = [
-		{ value: 'ONE_MONTH', label: '1M', since: 'past month' },
-		{ value: 'SIX_MONTHS', label: '6M', since: 'past 6 months' },
-		{ value: 'YEAR_TO_DATE', label: 'YTD', since: 'since Jan 1' },
-		{ value: 'ONE_YEAR', label: '1Y', since: 'past year' },
-		{ value: 'ALL_TIME', label: 'Max', since: 'since the first transaction' }
+	// The range lives in the URL (?range=1Y), so changing it reloads the page
+	// data through +page.ts and the view can be bookmarked.
+	const periods = [
+		{ value: '1M', label: '1M', since: 'past month' },
+		{ value: '6M', label: '6M', since: 'past 6 months' },
+		{ value: 'YTD', label: 'YTD', since: 'since Jan 1' },
+		{ value: '1Y', label: '1Y', since: 'past year' },
+		{ value: 'Max', label: 'Max', since: 'since the first transaction' }
 	];
+	let period = $derived(data.range);
 
 	let newAccountOpen = $state(false);
 
@@ -36,18 +37,16 @@
 	const signed = formatSignedMoney;
 	const tone = toneOf;
 
-	const d = $derived($Dashboard.data);
-	const portfolios = $derived(d?.portfolios ?? []);
-	const cashAccounts = $derived(d?.cashAccounts ?? []);
-	const empty = $derived(d !== null && d !== undefined && portfolios.length === 0 && cashAccounts.length === 0);
+	const d = $derived(data.dashboard);
+	const portfolios = $derived(d.portfolios);
+	const cashAccounts = $derived(d.cashAccounts);
+	const empty = $derived(portfolios.length === 0 && cashAccounts.length === 0);
 
 	const invested = $derived(sum(portfolios.map((p) => p.snapshot.totalMarketValue)));
 	const cash = $derived(sum(cashAccounts.map((a) => a.balance)));
 	const netWorth = $derived(sum([invested, cash]));
 
-	const history = $derived(
-		($History.data?.netWorthHistory ?? []).map((p) => ({ ...p, time: p.time as Date }))
-	);
+	const history = $derived(data.history);
 	const change = $derived.by(() => {
 		if (history.length < 2) return null;
 		const first = history[0];
@@ -61,12 +60,11 @@
 		};
 	});
 
-	function pickPeriod(value: Period$options) {
-		History.fetch({ variables: { period: value } });
+	function pickPeriod(value: string) {
+		goto(`?range=${value}`, { noScroll: true, keepFocus: true, replaceState: true });
 	}
 
 	const tiles = $derived.by(() => {
-		if (!d) return [];
 		const pol = sum(portfolios.map((p) => p.snapshot.totalProfitOrLoss));
 		const cost = sum(portfolios.map((p) => p.snapshot.totalPurchaseValue));
 		// With several portfolios, weight each one's return by its value — an
@@ -144,16 +142,16 @@
 
 	const income = $derived.by(() => {
 		const months = Array.from({ length: 12 }, () => 0);
-		for (const e of d?.realizedGains.entries ?? []) {
+		for (const e of d.realizedGains.entries) {
 			if (e.type === 'DIVIDEND' || e.type === 'INTEREST') {
-				months[(e.time as Date).getMonth()] += e.amount.amount;
+				months[e.time.getMonth()] += e.amount.amount;
 			}
 		}
 		const max = Math.max(...months, 1);
 		const now = new Date().getMonth();
 		const fmt = new Intl.DateTimeFormat(undefined, { month: 'narrow' });
 		return {
-			total: sum(d ? [d.realizedGains.dividends, d.realizedGains.interest] : []),
+			total: sum([d.realizedGains.dividends, d.realizedGains.interest]),
 			bars: months.map((v, i) => ({
 				label: fmt.format(new Date(2000, i, 1)),
 				title: `${new Intl.DateTimeFormat(undefined, { month: 'long' }).format(new Date(2000, i, 1))}: ${formatMoney({ amount: v, currency: cash.currency })}`,
@@ -168,7 +166,7 @@
 		for (const p of portfolios) for (const t of p.transactions) seen.set(t.id, t);
 		for (const a of cashAccounts) for (const t of a.transactions) seen.set(t.id, t);
 		return [...seen.values()]
-			.sort((a, b) => (b.time as Date).getTime() - (a.time as Date).getTime())
+			.sort((a, b) => b.time.getTime() - a.time.getTime())
 			.slice(0, 6)
 			.map((t) => ({
 				...t,
@@ -178,7 +176,7 @@
 	});
 
 	const inbox = $derived(
-		(d?.documents ?? []).slice(0, 3).map((doc) => {
+		d.documents.slice(0, 3).map((doc) => {
 			const staged = doc.stagedTransactions;
 			const first = staged[0];
 			const matches = staged.every(
@@ -191,7 +189,7 @@
 						? describeTransaction({ ...first, security: first.security ?? (first.securityHint ? { displayName: first.securityHint } : null) }).title
 						: `${staged.length} transactions`
 					: doc.filename,
-				meta: [doc.transactionDate ? formatDate(doc.transactionDate as Date) : null, doc.suggestedCashAccount?.displayName]
+				meta: [doc.transactionDate ? formatDate(doc.transactionDate) : null, doc.suggestedCashAccount?.displayName]
 					.filter(Boolean)
 					.join(' · '),
 				amount: sum(staged.map((s) => s.cashDelta)),
@@ -218,11 +216,7 @@
 	<NewAccountForm {cashAccounts} oncreated={() => (newAccountOpen = false)} />
 </Dialog>
 
-{#if $Dashboard.fetching && !$Dashboard.data}
-	<p class="text-sm text-muted">Loading…</p>
-{:else if $Dashboard.errors?.length}
-	<p class="text-sm text-neg">Failed to load: {$Dashboard.errors[0].message}</p>
-{:else if empty}
+{#if empty}
 	{@render header()}
 	<div class="mx-auto mt-10 max-w-md rounded-xl border border-line p-8 text-center">
 		<img src="/gopher.png" alt="" class="mx-auto mb-4 h-16 object-contain" />
@@ -235,7 +229,7 @@
 			<Button onclick={() => (newAccountOpen = true)}>Create an account</Button>
 		</div>
 	</div>
-{:else if d}
+{:else}
 	{@render header()}
 
 	<div class="flex flex-col gap-7">
@@ -264,12 +258,12 @@
 			</div>
 
 			{#if history.length > 1}
-				<div class={$History.fetching ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
+				<div class="transition-opacity {navigating.to?.route.id === '/' ? 'opacity-60' : ''}">
 					<NetWorthChart points={history} />
 				</div>
 			{:else}
 				<div class="grid h-[260px] place-items-center rounded-xl border border-dashed border-line text-sm text-muted">
-					{$History.fetching ? 'Loading…' : 'Not enough history yet.'}
+					Not enough history yet.
 				</div>
 			{/if}
 		</section>
@@ -330,7 +324,7 @@
 									</span>
 									<span class="min-w-0">
 										<span class="block truncate">{tx.title}</span>
-										<span class="block text-xs text-muted">{formatDate(tx.time as Date)} · {tx.account}</span>
+										<span class="block text-xs text-muted">{formatDate(tx.time)} · {tx.account}</span>
 									</span>
 									<span class="font-medium {tx.cashDelta.amount > 0 ? 'text-pos' : ''}">
 										{tx.cashDelta.amount === 0 ? '—' : signed(tx.cashDelta)}

@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { graphql, type People$result } from '$houdini';
+	import { invalidateAll } from '$app/navigation';
+	import { graphql, mutate } from '$lib/graphql/client';
+	import type { PeopleResult } from '$lib/graphql/documents';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import TextField from './ui/TextField.svelte';
@@ -8,8 +10,8 @@
 		person,
 		allUsers
 	}: {
-		person: People$result['persons'][number];
-		allUsers: People$result['users'];
+		person: PeopleResult['persons'][number];
+		allUsers: PeopleResult['users'];
 	} = $props();
 
 	const updatePerson = graphql(`
@@ -56,9 +58,12 @@
 
 	async function saveName() {
 		if (!name.trim()) return;
-		const result = await updatePerson.mutate({ id: person.id, displayName: name.trim() });
-		error = result.errors?.[0]?.message ?? null;
-		if (!error) editing = false;
+		const result = await mutate(updatePerson, { id: person.id, displayName: name.trim() });
+		error = result.error;
+		if (!error) {
+			editing = false;
+			await invalidateAll();
+		}
 	}
 
 	function cancelEdit() {
@@ -69,17 +74,21 @@
 
 	async function grant() {
 		if (!grantUserID) return;
-		const result = await grantPersonAccess.mutate({
+		const result = await mutate(grantPersonAccess, {
 			personID: person.id,
 			userID: grantUserID
 		});
-		error = result.errors?.[0]?.message ?? null;
-		if (!error) grantUserID = '';
+		error = result.error;
+		if (!error) {
+			grantUserID = '';
+			await invalidateAll();
+		}
 	}
 
 	async function revoke(userID: string) {
-		const result = await revokePersonAccess.mutate({ personID: person.id, userID });
-		error = result.errors?.[0]?.message ?? null;
+		const result = await mutate(revokePersonAccess, { personID: person.id, userID });
+		error = result.error;
+		if (!error) await invalidateAll();
 	}
 </script>
 

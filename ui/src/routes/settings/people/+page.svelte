@@ -7,7 +7,6 @@
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
-	const People = $derived(data.People);
 
 	let addOpen = $state(false);
 </script>
@@ -26,23 +25,17 @@
 	<CreatePersonForm oncreated={() => (addOpen = false)} />
 </Dialog>
 
-{#if $People.fetching && !$People.data}
-	<p class="text-sm text-muted">Loading…</p>
-{:else if $People.errors?.length}
-	<p class="text-sm text-neg">Failed to load: {$People.errors[0].message}</p>
-{:else if $People.data}
-	<div class="flex flex-col gap-6">
-		<PersonList persons={$People.data.persons} allUsers={$People.data.users} />
+<div class="flex flex-col gap-6">
+	<PersonList persons={data.persons} allUsers={data.users} />
 
-		<section class="flex flex-col gap-2">
-			<h2 class="text-sm font-semibold">Logins</h2>
-			<p class="text-[13px] text-muted">
-				<span class="text-fg">{$People.data.users.map((u) => u.displayName).join(', ')}</span>
-				{#if $People.data.users.length === 1}
-					— the only login, so it sees every person above. Other logins show up here after their first sign-in, and
-					each person can then be shared with them.
-				{/if}
-			</p>
-		</section>
-	</div>
-{/if}
+	<section class="flex flex-col gap-2">
+		<h2 class="text-sm font-semibold">Logins</h2>
+		<p class="text-[13px] text-muted">
+			<span class="text-fg">{data.users.map((u) => u.displayName).join(', ')}</span>
+			{#if data.users.length === 1}
+				— the only login, so it sees every person above. Other logins show up here after their first sign-in, and
+				each person can then be shared with them.
+			{/if}
+		</p>
+	</section>
+</div>

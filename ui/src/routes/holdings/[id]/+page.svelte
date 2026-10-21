@@ -15,24 +15,22 @@
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
-	const HoldingDetail = $derived(data.HoldingDetail);
-
-	const d = $derived($HoldingDetail.data);
-	const security = $derived(d?.security ?? null);
+	const d = $derived(data);
+	const security = $derived(d.security);
 	const listing = $derived(security?.listings[0] ?? null);
 	const isin = $derived(security?.identifiers.find((i) => i.kind === 'ISIN')?.value ?? null);
 
 	const holding = $derived.by(() => {
-		if (!d || !security) return null;
+		if (!security) return null;
 		const positions = d.portfolios.flatMap((p) => p.snapshot.positions).filter((p) => p.security.id === security.id);
 		return positions.length ? holdingsOf(positions)[0] : null;
 	});
 
 	const history = $derived(
-		(d?.portfolios ?? [])
+		d.portfolios
 			.flatMap((p) => p.transactions.map((t) => ({ ...t, portfolio: p.displayName })))
 			.filter((t) => t.security?.id === security?.id)
-			.sort((a, b) => (b.time as Date).getTime() - (a.time as Date).getTime())
+			.sort((a, b) => b.time.getTime() - a.time.getTime())
 	);
 
 	const currency = $derived(holding?.marketValue.currency ?? listing?.currency ?? 'EUR');
@@ -46,7 +44,7 @@
 		amount: (holding?.profitOrLoss.amount ?? 0) + realized.amount + dividends.amount,
 		currency
 	});
-	const portfolioValue = $derived((d?.portfolios ?? []).reduce((s, p) => s + p.snapshot.totalMarketValue.amount, 0));
+	const portfolioValue = $derived(d.portfolios.reduce((s, p) => s + p.snapshot.totalMarketValue.amount, 0));
 
 	const position = $derived.by(() => {
 		const rows: { label: string; value: string; sub?: string; tone?: string }[] = [];
@@ -88,16 +86,16 @@
 	});
 
 	const chart = $derived({
-		quotes: (listing?.quotes ?? []).map((q) => ({ time: q.time as Date, price: Number(q.price.amount) })),
+		quotes: (listing?.quotes ?? []).map((q) => ({ time: q.time, price: Number(q.price.amount) })),
 		trades: history
 			.filter((t) => (t.type === 'BUY' || t.type === 'SELL') && t.price)
 			.map((t) => ({
-				time: t.time as Date,
+				time: t.time,
 				price: Number(t.price!.amount),
 				kind: t.type === 'BUY' ? ('buy' as const) : ('sell' as const),
-				label: `${describeTransaction(t).title} @ ${formatPrice(t.price!, 4)} · ${formatDate(t.time as Date)}`
+				label: `${describeTransaction(t).title} @ ${formatPrice(t.price!, 4)} · ${formatDate(t.time)}`
 			})),
-		dividends: history.filter((t) => t.type === 'DIVIDEND').map((t) => t.time as Date)
+		dividends: history.filter((t) => t.type === 'DIVIDEND').map((t) => t.time)
 	});
 
 	let filter = $state<'all' | 'trades' | 'dividends'>('all');
@@ -108,11 +106,7 @@
 	);
 </script>
 
-{#if $HoldingDetail.fetching && !d}
-	<p class="text-sm text-muted">Loading…</p>
-{:else if $HoldingDetail.errors?.length}
-	<p class="text-sm text-neg">Failed to load: {$HoldingDetail.errors[0].message}</p>
-{:else if !security}
+{#if !security}
 	<p class="text-sm text-muted">Security not found.</p>
 {:else}
 	<nav aria-label="Breadcrumb" class="mb-4 flex gap-1.5 text-[13px] text-muted">
@@ -147,7 +141,7 @@
 					<span class="text-3xl font-semibold tracking-tight">{formatPrice(listing.latestQuote.price, 4)}</span>
 					<span class="text-xs text-muted">
 						as of {new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(
-							listing.latestQuote.time as Date
+							listing.latestQuote.time
 						)}
 					</span>
 				</div>
@@ -225,7 +219,7 @@
 							{#each shownHistory as t (t.id)}
 								{@const feesAndTax = t.fees.amount + t.taxes.amount}
 								<tr class="border-t border-line hover:bg-raised">
-									<td class="py-2 pr-3 pl-4 whitespace-nowrap">{formatDate(t.time as Date)}</td>
+									<td class="py-2 pr-3 pl-4 whitespace-nowrap">{formatDate(t.time)}</td>
 									<td class="px-3 py-2">
 										<span class="flex items-center gap-2">
 											<span class="text-muted"><Icon name={describeTransaction(t).icon} size={14} /></span>

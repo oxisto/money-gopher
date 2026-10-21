@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { graphql, TransactionType } from '$houdini';
-	import type { TransactionType$options } from '$houdini';
+	import { graphql, mutate } from '$lib/graphql/client';
+	import { TRANSACTION_TYPES, type TransactionType } from '$lib/transaction-types';
 	import { labelOf } from '$lib/describe';
 	import { parseAmount, parsePrice } from '$lib/format';
 	import type { TransactionRow, SecurityOption, CashAccountOption } from '$lib/transaction-types';
@@ -44,7 +44,7 @@
 		return (amount / 100).toFixed(2);
 	}
 
-	let type = $state<TransactionType$options>(tx.type as TransactionType$options);
+	let type = $state<TransactionType>(tx.type as TransactionType);
 	let time = $state(toDatetimeLocal(tx.time));
 	let securityID = $state(tx.security?.id ?? '');
 	let cashAccountID = $state(tx.cashAccount?.id ?? '');
@@ -59,7 +59,7 @@
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
 
-		const result = await updateTransaction.mutate({
+		const result = await mutate(updateTransaction, {
 			id: tx.id,
 			input: {
 				type,
@@ -75,14 +75,14 @@
 			}
 		});
 
-		error = result.errors?.[0]?.message ?? null;
+		error = result.error;
 		if (!error) onsaved();
 	}
 </script>
 
 <form onsubmit={submit} class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
 	<SelectField bind:value={type} label="Type" required>
-		{#each Object.values(TransactionType) as option (option)}
+		{#each TRANSACTION_TYPES as option (option)}
 			<option value={option}>{labelOf(option)}</option>
 		{/each}
 	</SelectField>

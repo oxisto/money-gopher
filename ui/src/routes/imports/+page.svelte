@@ -1,13 +1,13 @@
 <script lang="ts">
+	import { invalidateAll } from '$app/navigation';
 	import DropZone from '$lib/components/imports/DropZone.svelte';
 	import ImportInbox from '$lib/components/imports/ImportInbox.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
-	const Imports = $derived(data.Imports);
 
 	function refresh() {
-		Imports.fetch({ policy: 'NetworkOnly' });
+		invalidateAll();
 	}
 </script>
 
@@ -19,19 +19,13 @@
 	</p>
 </div>
 
-{#if $Imports.fetching && !$Imports.data}
-	<p class="text-sm text-muted">Loading…</p>
-{:else if $Imports.errors?.length}
-	<p class="text-sm text-neg">Failed to load: {$Imports.errors[0].message}</p>
-{:else if $Imports.data}
-	<div class="flex flex-col gap-6">
-		<DropZone onuploaded={refresh} />
-		<ImportInbox
-			documents={$Imports.data.documents}
-			portfolios={$Imports.data.portfolios}
-			cashAccounts={$Imports.data.cashAccounts}
-			securities={$Imports.data.securities}
-			onchanged={refresh}
-		/>
-	</div>
-{/if}
+<div class="flex flex-col gap-6">
+	<DropZone onuploaded={refresh} />
+	<ImportInbox
+		documents={data.documents}
+		portfolios={data.portfolios}
+		cashAccounts={data.cashAccounts}
+		securities={data.securities}
+		onchanged={refresh}
+	/>
+</div>

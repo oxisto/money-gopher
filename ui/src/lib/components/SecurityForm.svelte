@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { graphql } from '$houdini';
+	import { invalidateAll } from '$app/navigation';
+	import { graphql, mutate } from '$lib/graphql/client';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import SelectField from './ui/SelectField.svelte';
@@ -10,7 +11,7 @@
 	const createSecurity = graphql(`
 		mutation CreateSecurity($input: CreateSecurityInput!) {
 			createSecurity(input: $input) {
-				...All_Securities_insert
+				id
 			}
 		}
 	`);
@@ -27,7 +28,7 @@
 		event.preventDefault();
 		if (!name.trim()) return;
 
-		const result = await createSecurity.mutate({
+		const result = await mutate(createSecurity, {
 			input: {
 				displayName: name.trim(),
 				identifiers: isin.trim() ? [{ kind: 'ISIN', value: isin.trim().toUpperCase() }] : [],
@@ -43,12 +44,13 @@
 					: []
 			}
 		});
-		error = result.errors?.[0]?.message ?? null;
+		error = result.error;
 		if (!error) {
 			name = '';
 			isin = '';
 			ticker = '';
 			exchange = '';
+			await invalidateAll();
 			oncreated?.();
 		}
 	}

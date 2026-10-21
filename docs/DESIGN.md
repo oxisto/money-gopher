@@ -31,7 +31,7 @@
 | API | **GraphQL** via [`graph-gophers/graphql-go`](https://github.com/graph-gophers/graphql-go) | schema-first `.graphql` file, handwritten resolver structs, schema↔resolver match verified at startup. Chosen deliberately over REST/huma — nested parameterized reads fit the domain, and giving GraphQL a real try is an explicit goal. |
 | Uploads | Plain `POST /upload` REST endpoint | GraphQL multipart is not worth it; documents go through a normal endpoint, results are queried via GraphQL. |
 | Frontend | SvelteKit **SPA** (`adapter-static`, SSR off) + **Tailwind CSS 4** | lives in `ui/`; embedded into `moneyd` via `go:embed` in a later milestone |
-| GraphQL client | [Houdini](https://houdinigraph.org) | generates typed Svelte stores from queries + the introspected schema |
+| GraphQL client | [gql.tada](https://gql-tada.0no.co) + `fetch` | typed documents inferred from the schema, loaded in SvelteKit `load` functions (replaced Houdini in October 2026, see Status) |
 | Go GraphQL client (CLI) | [`Khan/genqlient`](https://github.com/Khan/genqlient) | typed Go client for `mgo` from the same schema |
 | Persistence | SQLite + [sqlc](https://sqlc.dev) | typed query code generated from SQL; migrations via goose (as in v1) |
 | PDF extraction | poppler `pdftotext -layout` (external binary) + per-bank Go parsers | LLM-based extraction (Claude API) as optional fallback for unknown formats |
@@ -97,7 +97,7 @@ money surfaces as a `Money { amount, currency }` type.
 ## GraphQL schema (sketch)
 
 `api/schema.graphql`, embedded via `go:embed`, is the single source of truth.
-Houdini (frontend) and genqlient (CLI) both generate from it.
+gql.tada (frontend) and genqlient (CLI) both derive their types from it.
 
 ```graphql
 scalar Time
@@ -180,7 +180,7 @@ internal/persistence/  sqlc output, migrations (goose), db bootstrap
 internal/finance/      snapshot & performance calculations
 internal/quotes/       QuoteProvider interface + implementations
 internal/importer/     extract/, banks/, llm/, staging
-ui/                    SvelteKit SPA (Tailwind 4, Houdini)
+ui/                    SvelteKit SPA (Tailwind 4, gql.tada)
 img/gopher.png         the one survivor
 docs/                  this file, ADRs as needed
 ```
@@ -294,6 +294,15 @@ v0.3.0 waits for.
   Open: ⌘K palette, a combined household view (needs backend support),
   closed positions on Holdings, a daily-change column (needs
   previous-day quotes).
+- **Houdini replaced by gql.tada.** Houdini tied the SvelteKit version to
+  its own (it blocked SvelteKit 3), ran a second codegen beside kit's, and
+  its normalized cache was mostly worked around with forced refetches.
+  Now: documents are `graphql()` calls typed from `api/schema.graphql`
+  (`ui/src/lib/graphql/graphql-env.d.ts`, refreshed by `npm run generate`
+  and checked in CI), `query()`/`mutate()` in `ui/src/lib/graphql/client.ts`,
+  data in ordinary `+page.ts` load functions, and `invalidateAll()` after a
+  mutation. View state that should reload data lives in the URL
+  (`/?range=1Y`, `/income?year=2025`).
 
 **Where M4 landed:**
 
@@ -388,24 +397,7 @@ v0.3.0 waits for.
 
 **Gotchas learned so far:**
 
-- Houdini 2 / houdini-svelte 3 differ from the 1.x docs:
-  - Codegen output goes to `.houdini/`, not `$houdini/` (gitignore
-    accordingly). The `$houdini` import alias must be added to the kit
-    `alias` config as *both* `$houdini` and `$houdini/*` — kit only emits
-    the wildcard tsconfig path if you spell it out, and without it
-    svelte-check can't resolve the generated stores' base classes.
-  - `new HoudiniClient({ url })` is gone; `url` ('/graphql') lives in
-    `houdini.config.js`. Set `watchSchema: null` there so dev mode doesn't
-    poll the endpoint for introspection (the schema comes from
-    `schemaPath: '../api/schema.graphql'`).
-  - There is no automatic per-route load generation from inline `graphql()`
-    queries anymore; use the generated `load_<Query>` helpers in `+page.ts`
-    (pass `event` and `variables`). Route-param → variable inference does
-    not happen either.
-  - Set `framework: 'kit'` and `forceRunesMode: true` in the houdini-svelte
-    plugin config — there is no `svelte.config.js` for it to detect kit.
-  - `houdini-svelte` ships platform binaries via optionalDependencies; the
-    (blockable) postinstall script is only a fallback downloader.
+- (Houdini gotchas removed with Houdini; see the October 2026 status note.)
 - sqlc's SQLite engine silently drops `@name` params it cannot parse (e.g.
   inside `IN (...)`) — always eyeball the generated SQL when using named
   params. GetTransaction ownership is checked in Go for this reason.

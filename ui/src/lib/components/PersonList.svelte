@@ -1,13 +1,13 @@
 <script lang="ts">
-	import type { People$result } from '$houdini';
+	import type { PeopleResult } from '$lib/graphql/documents';
 	import PersonRow from './PersonRow.svelte';
 
 	let {
 		persons,
 		allUsers
 	}: {
-		persons: People$result['persons'];
-		allUsers: People$result['users'];
+		persons: PeopleResult['persons'];
+		allUsers: PeopleResult['users'];
 	} = $props();
 </script>
 

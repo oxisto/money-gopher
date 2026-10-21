@@ -38,3 +38,18 @@ export interface FeedTransaction extends Omit<TransactionRow, 'cashAccount'> {
 	cashAccount: { id: string; displayName: string } | null;
 	document: { id: string; filename: string } | null;
 }
+
+/** Every TransactionType in api/schema.graphql, in its order. */
+export const TRANSACTION_TYPES = [
+	'BUY',
+	'SELL',
+	'DELIVERY_INBOUND',
+	'DELIVERY_OUTBOUND',
+	'DIVIDEND',
+	'INTEREST',
+	'DEPOSIT_CASH',
+	'WITHDRAW_CASH',
+	'ACCOUNT_FEES',
+	'TAX_REFUND'
+] as const;
+export type TransactionType = (typeof TRANSACTION_TYPES)[number];
