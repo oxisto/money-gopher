@@ -494,6 +494,13 @@ func (r *StagedTransactionResolver) Isin() *string {
 	return &r.tx.Isin.String
 }
 
+func (r *StagedTransactionResolver) SecurityKindHint() *string {
+	if !r.tx.SecurityKind.Valid {
+		return nil
+	}
+	return &r.tx.SecurityKind.String
+}
+
 func (r *StagedTransactionResolver) Security(ctx context.Context) (*SecurityResolver, error) {
 	if r.tx.SecurityID.Valid {
 		security, err := r.db.GetSecurity(ctx, r.tx.SecurityID.String)

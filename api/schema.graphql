@@ -220,10 +220,20 @@ type QuoteUpdateResult {
   errors: [String!]!
 }
 
+"What a security is. Null until someone says."
+enum SecurityKind {
+  STOCK
+  ETF
+  FUND
+  BOND
+  OTHER
+}
+
 "Security is a tradable security, shared across all users."
 type Security {
   id: ID!
   displayName: String!
+  kind: SecurityKind
   identifiers: [SecurityIdentifier!]!
   listings: [Listing!]!
   """
@@ -396,6 +406,12 @@ type StagedTransaction {
   securityHint: String
   "The ISIN printed on the document."
   isin: String
+  """
+  What the document suggests the security is, for one that doesn't exist
+  yet: a face value and a percentage price make it a bond, "ETF" in the
+  name an ETF. A suggestion for the review dialog, not a fact.
+  """
+  securityKindHint: SecurityKind
   "The security matched by ISIN, if any."
   security: Security
 }
@@ -474,6 +490,7 @@ input ListingInput {
 
 input CreateSecurityInput {
   displayName: String!
+  kind: SecurityKind
   identifiers: [SecurityIdentifierInput!]
   listings: [ListingInput!]
   "The security this one derives from; see Security.underlyingSecurity."
@@ -490,6 +507,7 @@ new listing, and an existing listing missing from the input set is removed
 """
 input UpdateSecurityInput {
   displayName: String
+  kind: SecurityKind
   identifiers: [SecurityIdentifierInput!]
   listings: [ListingInput!]
   "The security this one derives from; see Security.underlyingSecurity."

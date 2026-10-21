@@ -5,6 +5,7 @@
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import SelectField from './ui/SelectField.svelte';
 	import TextField from './ui/TextField.svelte';
+	import { asKind, securityKinds } from '#lib/securities.js';
 
 	let { oncreated }: { oncreated?: () => void } = $props();
 
@@ -17,6 +18,7 @@
 	`);
 
 	let name = $state('');
+	let kind = $state('');
 	let isin = $state('');
 	let ticker = $state('');
 	let exchange = $state('');
@@ -35,6 +37,7 @@
 		const result = await mutate(createSecurity, {
 			input: {
 				displayName: name.trim(),
+				kind: asKind(kind),
 				identifiers: isin.trim() ? [{ kind: 'ISIN', value: isin.trim().toUpperCase() }] : [],
 				listings: ticker.trim()
 					? [
@@ -63,6 +66,12 @@
 <form onsubmit={submit}>
 	<div class="grid gap-3 sm:grid-cols-2">
 		<TextField bind:value={name} label="Name" placeholder="e.g. iShares Core MSCI World" required />
+		<SelectField bind:value={kind} label="Kind">
+			<option value="">Not set</option>
+			{#each securityKinds as [value, label] (value)}
+				<option {value}>{label}</option>
+			{/each}
+		</SelectField>
 		<TextField bind:value={isin} label="ISIN" placeholder="e.g. IE00B4L5Y983" maxlength={12} />
 		<TextField bind:value={ticker} label="Ticker" placeholder="e.g. EUNL" />
 		<TextField bind:value={exchange} label="Exchange (MIC)" placeholder="e.g. XETR" />

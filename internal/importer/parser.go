@@ -38,6 +38,10 @@ type StagedTransaction struct {
 	SecurityHint string
 	// ISIN as printed on the document.
 	ISIN string
+	// SecurityKind is what the document suggests the security is (STOCK,
+	// ETF, FUND, BOND), for a security that doesn't exist yet. Empty when
+	// the parser can't tell.
+	SecurityKind string
 	// SettlementIBAN is the bank account IBAN the settlement goes against.
 	// Used to auto-match the import to a portfolio's linked cash account.
 	SettlementIBAN string

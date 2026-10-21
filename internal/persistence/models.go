@@ -75,6 +75,7 @@ type Security struct {
 	ID                   string
 	DisplayName          string
 	UnderlyingSecurityID sql.NullString
+	Kind                 sql.NullString
 }
 
 type SecurityIdentifier struct {
@@ -108,6 +109,7 @@ type StagedTransaction struct {
 	CreatedAt     time.Time
 	PriceCurrency sql.NullString
 	FxRate        Decimal
+	SecurityKind  sql.NullString
 }
 
 type Transaction struct {

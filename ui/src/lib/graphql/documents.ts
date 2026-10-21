@@ -72,6 +72,7 @@ export const SecuritiesQuery = graphql(`
 		securities {
 			id
 			displayName
+			kind
 			identifiers { kind value }
 			underlyingSecurity { id displayName }
 			listings {

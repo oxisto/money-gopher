@@ -30,6 +30,7 @@ const Imports = graphql(`
 				currency
 				securityHint
 				isin
+				securityKindHint
 				security { id displayName }
 			}
 		}

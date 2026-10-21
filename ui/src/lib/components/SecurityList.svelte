@@ -8,6 +8,7 @@
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import SelectField from './ui/SelectField.svelte';
 	import TextField from './ui/TextField.svelte';
+	import { kindLabel } from '#lib/securities.js';
 
 	let { securities }: { securities: SecuritiesResult['securities'] } = $props();
 
@@ -189,6 +190,9 @@
 							<td class="py-2.5 pr-3 pl-4">
 								<a href="/holdings/{security.id}" class="font-medium hover:underline">{security.displayName}</a>
 								<div class="text-[11px] text-muted">
+									{#if security.kind}
+										{kindLabel[security.kind]} ·
+									{/if}
 									{security.identifiers.map((i) => (i.kind === 'ISIN' ? i.value : `${i.kind} ${i.value}`)).join(' · ')}
 									{#if security.underlyingSecurity}
 										· derives from {security.underlyingSecurity.displayName}

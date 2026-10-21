@@ -20,6 +20,7 @@
 		fxRate: string | null;
 		currency: string;
 		securityHint: string | null;
+		securityKindHint: string | null;
 		isin: string | null;
 		security: { id: string; displayName: string } | null;
 	}

@@ -70,10 +70,11 @@ INSERT INTO
         isin,
         security_id,
         price_currency,
-        fx_rate
+        fx_rate,
+        security_kind
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, document_id, type, time, units, price, fees, taxes, cash_delta, currency, security_hint, isin, security_id, created_at, price_currency, fx_rate
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, document_id, type, time, units, price, fees, taxes, cash_delta, currency, security_hint, isin, security_id, created_at, price_currency, fx_rate, security_kind
 `
 
 type CreateStagedTransactionParams struct {
@@ -92,6 +93,7 @@ type CreateStagedTransactionParams struct {
 	SecurityID    sql.NullString
 	PriceCurrency sql.NullString
 	FxRate        Decimal
+	SecurityKind  sql.NullString
 }
 
 func (q *Queries) CreateStagedTransaction(ctx context.Context, arg CreateStagedTransactionParams) (*StagedTransaction, error) {
@@ -111,6 +113,7 @@ func (q *Queries) CreateStagedTransaction(ctx context.Context, arg CreateStagedT
 		arg.SecurityID,
 		arg.PriceCurrency,
 		arg.FxRate,
+		arg.SecurityKind,
 	)
 	var i StagedTransaction
 	err := row.Scan(
@@ -130,6 +133,7 @@ func (q *Queries) CreateStagedTransaction(ctx context.Context, arg CreateStagedT
 		&i.CreatedAt,
 		&i.PriceCurrency,
 		&i.FxRate,
+		&i.SecurityKind,
 	)
 	return &i, err
 }
@@ -203,7 +207,7 @@ func (q *Queries) GetDocument(ctx context.Context, arg GetDocumentParams) (*Docu
 
 const getStagedTransaction = `-- name: GetStagedTransaction :one
 SELECT
-    id, document_id, type, time, units, price, fees, taxes, cash_delta, currency, security_hint, isin, security_id, created_at, price_currency, fx_rate
+    id, document_id, type, time, units, price, fees, taxes, cash_delta, currency, security_hint, isin, security_id, created_at, price_currency, fx_rate, security_kind
 FROM
     staged_transactions
 WHERE
@@ -230,6 +234,7 @@ func (q *Queries) GetStagedTransaction(ctx context.Context, id string) (*StagedT
 		&i.CreatedAt,
 		&i.PriceCurrency,
 		&i.FxRate,
+		&i.SecurityKind,
 	)
 	return &i, err
 }
@@ -338,7 +343,7 @@ func (q *Queries) ListDocumentsByState(ctx context.Context, arg ListDocumentsByS
 
 const listStagedTransactions = `-- name: ListStagedTransactions :many
 SELECT
-    id, document_id, type, time, units, price, fees, taxes, cash_delta, currency, security_hint, isin, security_id, created_at, price_currency, fx_rate
+    id, document_id, type, time, units, price, fees, taxes, cash_delta, currency, security_hint, isin, security_id, created_at, price_currency, fx_rate, security_kind
 FROM
     staged_transactions
 WHERE
@@ -373,6 +378,7 @@ func (q *Queries) ListStagedTransactions(ctx context.Context, documentID string)
 			&i.CreatedAt,
 			&i.PriceCurrency,
 			&i.FxRate,
+			&i.SecurityKind,
 		); err != nil {
 			return nil, err
 		}
