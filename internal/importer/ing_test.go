@@ -372,3 +372,37 @@ func TestING_ParseTrade_ForeignTransactionTax(t *testing.T) {
 		t.Errorf("CashDelta = %d, want -211620", tx.CashDelta)
 	}
 }
+
+// TestING_SecurityKind checks the kind the parser suggests for a security
+// that doesn't exist yet: bonds by their face value, ETFs by name,
+// everything else a stock.
+func TestING_SecurityKind(t *testing.T) {
+	tests := map[string]string{
+		"buy":                      "STOCK",
+		"sell":                     "STOCK",
+		"buy_bond":                 "BOND",
+		"buy_bond_fx":              "BOND",
+		"buy_festpreis":            "ETF", // "Muster DivDAX UCITS ETF DE"
+		"etf_distribution":         "ETF", // "iSh.ST.Euro.600 Banks U.ETF DE"
+		"dividend":                 "STOCK",
+		"interest":                 "BOND", // a Zinsgutschrift is a coupon
+		"repayment_bond":           "BOND",
+		"repayment_bond_fx":        "BOND",
+		"sell_subscription_rights": "STOCK",
+	}
+	for fixture, want := range tests {
+		t.Run(fixture, func(t *testing.T) {
+			text, err := os.ReadFile(filepath.Join("testdata/ing", fixture+".txt"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			txs, err := ING{}.Parse(string(text))
+			if err != nil {
+				t.Fatalf("Parse() error = %v", err)
+			}
+			if got := txs[0].SecurityKind; got != want {
+				t.Errorf("SecurityKind = %q, want %q (%s)", got, want, txs[0].SecurityHint)
+			}
+		})
+	}
+}

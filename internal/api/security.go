@@ -83,6 +83,7 @@ type ListingInput struct {
 // CreateSecurityInput is the input for Mutation.createSecurity.
 type CreateSecurityInput struct {
 	DisplayName          string
+	Kind                 *string
 	Identifiers          *[]SecurityIdentifierInput
 	Listings             *[]ListingInput
 	UnderlyingSecurityID *graphql.ID
@@ -94,9 +95,10 @@ func (r *RootResolver) CreateSecurity(ctx context.Context, args struct{ Input Cr
 
 	err := r.db.Tx(ctx, func(q *persistence.Queries) (err error) {
 		security, err = q.CreateSecurity(ctx, persistence.CreateSecurityParams{
-			ID:                    uuid.NewString(),
-			DisplayName:           args.Input.DisplayName,
-			UnderlyingSecurityID:  idToNullString(args.Input.UnderlyingSecurityID),
+			ID:                   uuid.NewString(),
+			DisplayName:          args.Input.DisplayName,
+			Kind:                 nullString(args.Input.Kind),
+			UnderlyingSecurityID: idToNullString(args.Input.UnderlyingSecurityID),
 		})
 		if err != nil {
 			return err
@@ -126,6 +128,7 @@ func (r *RootResolver) CreateSecurity(ctx context.Context, args struct{ Input Cr
 // identifiers or listings replace the existing set entirely.
 type UpdateSecurityInput struct {
 	DisplayName          *string
+	Kind                 *string
 	Identifiers          *[]SecurityIdentifierInput
 	Listings             *[]ListingInput
 	UnderlyingSecurityID *graphql.ID
@@ -149,10 +152,14 @@ func (r *RootResolver) UpdateSecurity(ctx context.Context, args struct {
 			return err
 		}
 
-		if args.Input.DisplayName != nil || args.Input.UnderlyingSecurityID != nil {
+		if args.Input.DisplayName != nil || args.Input.Kind != nil || args.Input.UnderlyingSecurityID != nil {
 			displayName := security.DisplayName
 			if args.Input.DisplayName != nil {
 				displayName = *args.Input.DisplayName
+			}
+			kind := security.Kind
+			if args.Input.Kind != nil {
+				kind = nullString(args.Input.Kind)
 			}
 			underlying := security.UnderlyingSecurityID
 			if args.Input.UnderlyingSecurityID != nil {
@@ -162,6 +169,7 @@ func (r *RootResolver) UpdateSecurity(ctx context.Context, args struct {
 			security, err = q.UpdateSecurity(ctx, persistence.UpdateSecurityParams{
 				DisplayName:          displayName,
 				UnderlyingSecurityID: underlying,
+				Kind:                 kind,
 				ID:                   string(args.ID),
 			})
 			if err != nil {
@@ -303,6 +311,13 @@ func (r *SecurityResolver) ID() graphql.ID {
 
 func (r *SecurityResolver) DisplayName() string {
 	return r.security.DisplayName
+}
+
+func (r *SecurityResolver) Kind() *string {
+	if !r.security.Kind.Valid {
+		return nil
+	}
+	return &r.security.Kind.String
 }
 
 // Identifiers resolves Security.identifiers.

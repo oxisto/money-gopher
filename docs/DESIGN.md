@@ -321,6 +321,13 @@ deferred.
   purchase price rather than mixing currencies. The import's "Create
   security" dialog makes a listing (ticker = ISIN, the document's price
   currency, ING quotes), so this works without a trip to the Securities page.
+- **Security kind.** `securities.kind` (STOCK, ETF, FUND, BOND, OTHER; null
+  until set) and `SecurityKind` in the schema. The ING parser suggests one
+  per staged transaction (`security_kind`: a face value and a percentage
+  price make it a bond, a Zinsgutschrift a bond coupon, "ETF"/"ETC"/"ETN" in
+  the name an ETF, "Fonds"/"Fund" a fund, anything else a stock); the import
+  dialog preselects it. Nothing computes on it yet — an allocation by asset
+  class is the obvious consumer.
 
 **Where M4 landed:**
 

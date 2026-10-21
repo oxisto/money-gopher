@@ -324,6 +324,7 @@ func ingParseTrade(text string) (StagedTransaction, error) {
 		FxRate:         fxRate,
 		SecurityHint:   strings.TrimSpace(name),
 		ISIN:           isin,
+		SecurityKind:   ingSecurityKind(name, isBond),
 		SettlementIBAN: iban,
 	}, nil
 }
@@ -396,6 +397,7 @@ func ingParseIncome(text string) (StagedTransaction, error) {
 		Currency:       currency,
 		SecurityHint:   strings.TrimSpace(name),
 		ISIN:           isin,
+		SecurityKind:   ingSecurityKind(name, strings.Contains(text, "Zinsgutschrift")),
 		SettlementIBAN: iban,
 	}, nil
 }
@@ -423,6 +425,7 @@ func ingParseRepayment(text string) (StagedTransaction, error) {
 	var price persistence.Decimal
 	var priceCurrency string
 	var fxRate persistence.Decimal
+	isBond := false
 	if unitsStr, uerr := ingFind(ingUnitsStk, text, ""); uerr == nil {
 		units, err = ingFloat(unitsStr)
 		if err != nil {
@@ -440,6 +443,7 @@ func ingParseRepayment(text string) (StagedTransaction, error) {
 			return StagedTransaction{}, fmt.Errorf("units: %w", err)
 		}
 		units /= 100
+		isBond = true
 
 		if pctStr, perr := ingFind(ingEinloesungPercent, text, "Einlösung zum Kurs von"); perr == nil {
 			price, err = ingDecimal(pctStr)
@@ -503,6 +507,7 @@ func ingParseRepayment(text string) (StagedTransaction, error) {
 		FxRate:         fxRate,
 		SecurityHint:   strings.TrimSpace(name),
 		ISIN:           isin,
+		SecurityKind:   ingSecurityKind(name, isBond),
 		SettlementIBAN: iban,
 	}, nil
 }
@@ -555,6 +560,7 @@ func ingParseDelivery(text string) (StagedTransaction, error) {
 		Currency:     "EUR",
 		SecurityHint: strings.TrimSpace(name),
 		ISIN:         isin,
+		SecurityKind: ingSecurityKind(name, false),
 	}, nil
 }
 
@@ -571,6 +577,28 @@ func ingParseDelivery(text string) (StagedTransaction, error) {
 // substring match also catches the help-text sentence mentioning
 // "Finanztransaktionssteuer", but that line has no trailing decimal amount,
 // so the empty-matches guard below skips it.
+
+// ingKindETF spots exchange-traded products by name: "iShares Core MSCI
+// World UCITS ETF", "WisdomTree Physical Gold ETC".
+var ingKindETF = regexp.MustCompile(`(?i)\b(ETF|ETC|ETN)S?\b`)
+
+// ingSecurityKind guesses what the security is from what the document
+// shows: a face value and a percentage price make it a bond, "ETF" in the
+// name an ETF, "Fonds" or "Fund" a fund, anything else a stock. It is a
+// suggestion for the review dialog to preselect, not a fact.
+func ingSecurityKind(name string, bond bool) string {
+	switch upper := strings.ToUpper(name); {
+	case bond:
+		return "BOND"
+	case ingKindETF.MatchString(name):
+		return "ETF"
+	case strings.Contains(upper, "FONDS") || strings.Contains(upper, "FUND"):
+		return "FUND"
+	default:
+		return "STOCK"
+	}
+}
+
 func ingTaxSum(text string) int64 {
 	var total int64
 	for _, line := range strings.Split(text, "\n") {

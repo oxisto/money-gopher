@@ -8,6 +8,7 @@
 	import Icon from './ui/Icon.svelte';
 	import SelectField from './ui/SelectField.svelte';
 	import TextField from './ui/TextField.svelte';
+	import { asKind, securityKinds } from '#lib/securities.js';
 
 	interface StagedTx {
 		id: string;
@@ -23,6 +24,7 @@
 		currency: string;
 		securityHint: string | null;
 		isin: string | null;
+		securityKindHint: string | null;
 		security: { id: string; displayName: string } | null;
 	}
 	interface Document {
@@ -86,6 +88,7 @@
 		txId: string;
 		name: string;
 		isin: string;
+		kind: string;
 		currency: string;
 		quoteProvider: string;
 	} | null>(null);
@@ -112,6 +115,7 @@
 			txId: tx.id,
 			name: tx.securityHint ?? tx.isin ?? '',
 			isin: tx.isin ?? '',
+			kind: tx.securityKindHint ?? '',
 			// The document says what the security trades in: a foreign bond's
 			// price is in its own currency, everything else in the settlement
 			// currency. Quotes by ISIN need no ticker, so an ISIN is enough
@@ -127,6 +131,7 @@
 		const result = await mutate(createSecurityMutation, {
 			input: {
 				displayName: createDialog.name,
+				kind: asKind(createDialog.kind),
 				identifiers: createDialog.isin ? [{ kind: 'ISIN', value: createDialog.isin }] : [],
 				listings: createDialog.isin
 					? [
@@ -373,6 +378,12 @@
 	{#if createDialog}
 		<div class="flex flex-col gap-3">
 			<TextField label="Name" bind:value={createDialog.name} placeholder="Security name" required />
+			<SelectField bind:value={createDialog.kind} label="Kind">
+				<option value="">Not set</option>
+				{#each securityKinds as [value, label] (value)}
+					<option {value}>{label}</option>
+				{/each}
+			</SelectField>
 			{#if createDialog.isin}
 				<div>
 					<span class="mb-1 block text-xs font-medium text-muted">ISIN</span>

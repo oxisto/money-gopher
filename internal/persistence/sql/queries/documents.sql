@@ -69,10 +69,11 @@ INSERT INTO
         isin,
         security_id,
         price_currency,
-        fx_rate
+        fx_rate,
+        security_kind
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *;
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *;
 
 -- name: ListStagedTransactions :many
 SELECT

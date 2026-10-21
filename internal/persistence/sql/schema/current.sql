@@ -59,7 +59,9 @@ CREATE TABLE securities (
     display_name TEXT NOT NULL,
     -- The security this one derives from (a right, option or warrant's
     -- underlying stock); see migrations/0007_underlying_security.sql.
-    underlying_security_id TEXT REFERENCES securities(id) ON DELETE SET NULL
+    underlying_security_id TEXT REFERENCES securities(id) ON DELETE SET NULL,
+    -- STOCK, ETF, FUND, BOND or OTHER; see migrations/0009_security_kind.sql.
+    kind         TEXT CHECK (kind IN ('STOCK', 'ETF', 'FUND', 'BOND', 'OTHER'))
 );
 
 CREATE TABLE security_identifiers (
@@ -153,7 +155,9 @@ CREATE TABLE staged_transactions (
     security_id   TEXT     REFERENCES securities(id) ON DELETE SET NULL,
     created_at    TIMESTAMP NOT NULL,
     price_currency TEXT,
-    fx_rate       DECIMAL(19,4)
+    fx_rate       DECIMAL(19,4),
+    -- The kind the parser suggests for a security yet to be created.
+    security_kind TEXT
 );
 
 CREATE TABLE sessions (
