@@ -68,6 +68,11 @@ outlives the transaction and must read through the pool.
 
 ## 2. First-login provisioning leaves an account permanently broken
 
+> **Done.** All three sites now call `db.CreatePersonWithAccess`, which does
+> both writes in one `db.Tx`; covered by
+> `TestCreatePersonWithAccess_RollsBackOnFailedGrant`. Accounts already left
+> without a grant are not repaired by this.
+
 `EnsureDevUser` at `internal/auth/auth.go:81` (writes at `:87`, `:100`, `:107`),
 `EnsurePersonForUser` at `:121` (writes at `:130`, `:137`), and
 `RootResolver.CreatePerson` at `internal/api/person.go:50` (writes at `:56`,

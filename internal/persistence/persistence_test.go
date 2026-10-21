@@ -2,6 +2,8 @@ package persistence
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"testing"
 	"time"
 )
@@ -149,5 +151,27 @@ func TestTx_RetriesWriteConflict(t *testing.T) {
 	}
 	if got.DisplayName != "After" {
 		t.Errorf("DisplayName = %q, want %q", got.DisplayName, "After")
+	}
+}
+
+// TestCreatePersonWithAccess_RollsBackOnFailedGrant makes the grant fail —
+// the user doesn't exist, so the foreign key rejects it — and checks the
+// person was not left behind without access.
+func TestCreatePersonWithAccess_RollsBackOnFailedGrant(t *testing.T) {
+	ctx := context.Background()
+
+	db, err := OpenDB(":memory:")
+	if err != nil {
+		t.Fatalf("OpenDB() error = %v", err)
+	}
+	defer db.Close()
+
+	_, err = db.CreatePersonWithAccess(ctx, CreatePersonParams{ID: "person-1", DisplayName: "Orphan"}, "no-such-user")
+	if err == nil {
+		t.Fatal("CreatePersonWithAccess() error = nil, want a foreign key violation")
+	}
+
+	if _, err := db.GetPerson(ctx, "person-1"); !errors.Is(err, sql.ErrNoRows) {
+		t.Errorf("GetPerson() error = %v, want sql.ErrNoRows (rolled back)", err)
 	}
 }

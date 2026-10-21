@@ -53,18 +53,11 @@ func (r *RootResolver) CreatePerson(ctx context.Context, args struct{ DisplayNam
 		return nil, err
 	}
 
-	person, err := r.db.CreatePerson(ctx, persistence.CreatePersonParams{
+	person, err := r.db.CreatePersonWithAccess(ctx, persistence.CreatePersonParams{
 		ID:          uuid.NewString(),
 		DisplayName: args.DisplayName,
-	})
+	}, user.ID)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := r.db.GrantPersonAccess(ctx, persistence.GrantPersonAccessParams{
-		UserID:   user.ID,
-		PersonID: person.ID,
-	}); err != nil {
 		return nil, err
 	}
 

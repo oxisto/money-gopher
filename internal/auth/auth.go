@@ -97,17 +97,10 @@ func EnsureDevUser(ctx context.Context, db *persistence.DB) (*persistence.User, 
 
 	person, err := db.GetPerson(ctx, devID)
 	if errors.Is(err, sql.ErrNoRows) {
-		person, err = db.CreatePerson(ctx, persistence.CreatePersonParams{
+		person, err = db.CreatePersonWithAccess(ctx, persistence.CreatePersonParams{
 			ID:          devID,
 			DisplayName: "Development User",
-		})
-		if err != nil {
-			return nil, nil, err
-		}
-		err = db.GrantPersonAccess(ctx, persistence.GrantPersonAccessParams{
-			UserID:   devID,
-			PersonID: devID,
-		})
+		}, devID)
 	}
 	if err != nil {
 		return nil, nil, err
@@ -127,18 +120,8 @@ func EnsurePersonForUser(ctx context.Context, db *persistence.DB, user *persiste
 		return persons[0], nil
 	}
 
-	person, err := db.CreatePerson(ctx, persistence.CreatePersonParams{
+	return db.CreatePersonWithAccess(ctx, persistence.CreatePersonParams{
 		ID:          uuid.NewString(),
 		DisplayName: user.DisplayName,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if err := db.GrantPersonAccess(ctx, persistence.GrantPersonAccessParams{
-		UserID:   user.ID,
-		PersonID: person.ID,
-	}); err != nil {
-		return nil, err
-	}
-	return person, nil
+	}, user.ID)
 }

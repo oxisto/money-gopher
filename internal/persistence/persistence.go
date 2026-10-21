@@ -114,3 +114,21 @@ func (db *DB) tx(ctx context.Context, fn func(q *Queries) error) error {
 
 	return tx.Commit()
 }
+
+// CreatePersonWithAccess creates a person and grants userID access to it in
+// one transaction. Done as two separate writes, a failed grant left a person
+// nobody could reach — and since the next login found the person and skipped
+// creating it, it never got the grant on retry either.
+func (db *DB) CreatePersonWithAccess(ctx context.Context, arg CreatePersonParams, userID string) (person *Person, err error) {
+	err = db.Tx(ctx, func(q *Queries) (err error) {
+		person, err = q.CreatePerson(ctx, arg)
+		if err != nil {
+			return err
+		}
+		return q.GrantPersonAccess(ctx, GrantPersonAccessParams{
+			UserID:   userID,
+			PersonID: person.ID,
+		})
+	})
+	return person, err
+}
