@@ -23,6 +23,9 @@ have to succeed or fail together and do not.
 
 ## 1. `ConfirmImport` — the one worth fixing first
 
+> **Done.** Wrapped in `db.Tx` as described below; covered by
+> `TestConfirmImport_RollsBackOnFailure` in `internal/api/documents_test.go`.
+
 `internal/api/documents.go:93`, loop at `:128`, state update at `:207`.
 
 ```

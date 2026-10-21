@@ -272,6 +272,53 @@ func TestConfirmImport_ReconcilesReprocessedDocument(t *testing.T) {
 	}
 }
 
+// TestConfirmImport_RollsBackOnFailure verifies that a confirm failing partway
+// through commits nothing: the rows before the failing one must not be left
+// behind, or confirming again after fixing the input would duplicate them.
+func TestConfirmImport_RollsBackOnFailure(t *testing.T) {
+	schema, ctx, db, person := newTestEnv(t)
+
+	data := exec(t, schema, ctx, `mutation {
+		createCashAccount(input: { displayName: "Giro", currency: "EUR" }) { id }
+	}`, nil)
+	accountID := data["createCashAccount"].(map[string]any)["id"].(string)
+
+	// The DEPOSIT_CASH is valid; the BUY is not, because no portfolio is given.
+	const sampleCSV = "Date,Type,Security,ISIN,Units,Price,Fees,Taxes,CashDelta,Currency\n" +
+		"2026-01-03,DEPOSIT_CASH,,,,,0,0,200.00,EUR\n" +
+		"2026-01-04,BUY,iShares Core MSCI World,IE00B4L5Y983,10,100.50,1.50,0,,EUR\n"
+
+	svc := importer.NewService(db)
+	doc, err := svc.Upload(ctx, person.ID, "test.csv", "text/csv", []byte(sampleCSV))
+	if err != nil {
+		t.Fatalf("Upload() error = %v", err)
+	}
+	if err := svc.Process(ctx, doc.ID, person.ID); err != nil {
+		t.Fatalf("Process() error = %v", err)
+	}
+
+	execExpectError(t, schema, ctx, `mutation ($docID: ID!, $account: ID!) {
+		confirmImport(documentID: $docID, input: { cashAccountID: $account, transactions: [] })
+		{ id }
+	}`, map[string]any{"docID": doc.ID, "account": accountID})
+
+	txs, err := db.ListTransactionsByDocument(ctx, sql.NullString{String: doc.ID, Valid: true})
+	if err != nil {
+		t.Fatalf("ListTransactionsByDocument() error = %v", err)
+	}
+	if len(txs) != 0 {
+		t.Errorf("transactions linked to document = %d, want 0 (rolled back)", len(txs))
+	}
+
+	got, err := db.GetDocument(ctx, persistence.GetDocumentParams{ID: doc.ID, PersonID: person.ID})
+	if err != nil {
+		t.Fatalf("GetDocument() error = %v", err)
+	}
+	if got.State != "PARSED" {
+		t.Errorf("state = %v, want PARSED", got.State)
+	}
+}
+
 // TestConfirmImportNotFound verifies that confirmImport returns an error for
 // unknown or foreign documents.
 func TestConfirmImportNotFound(t *testing.T) {

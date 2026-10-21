@@ -137,102 +137,131 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 		return nil, err
 	}
 
-	// Re-processing (see reprocessDocument) regenerates staged transactions
-	// for a document that may already have committed ones from an earlier
-	// confirm — reprocessDocument never touches those. Matching each staged
-	// row against them here (by type/time/units/cashDelta, i.e. "the same
-	// real-world event") lets confirming safely reconcile a transaction
-	// in place — picking up whatever the newer parser now gets right, e.g.
-	// FX precision or a security match — instead of creating a duplicate.
-	existingForDoc, err := r.db.ListTransactionsByDocument(ctx, sql.NullString{String: doc.ID, Valid: true})
-	if err != nil {
-		return nil, err
-	}
-	consumed := make(map[string]bool, len(existingForDoc))
-	matchExisting := func(d *txData) *persistence.Transaction {
-		for _, ex := range existingForDoc {
-			if consumed[ex.ID] {
+	// Everything from here on commits together. Without this, a failure
+	// partway through left some transactions committed while the document
+	// stayed STAGED. The resolvers keep r.db, not q: they outlive the
+	// transaction and read through the pool.
+	var created []*TransactionResolver
+	err = r.db.Tx(ctx, func(q *persistence.Queries) error {
+		// Re-processing (see reprocessDocument) regenerates staged transactions
+		// for a document that may already have committed ones from an earlier
+		// confirm — reprocessDocument never touches those. Matching each staged
+		// row against them here (by type/time/units/cashDelta, i.e. "the same
+		// real-world event") lets confirming safely reconcile a transaction
+		// in place — picking up whatever the newer parser now gets right, e.g.
+		// FX precision or a security match — instead of creating a duplicate.
+		existingForDoc, err := q.ListTransactionsByDocument(ctx, sql.NullString{String: doc.ID, Valid: true})
+		if err != nil {
+			return err
+		}
+		consumed := make(map[string]bool, len(existingForDoc))
+		matchExisting := func(d *txData) *persistence.Transaction {
+			for _, ex := range existingForDoc {
+				if consumed[ex.ID] {
+					continue
+				}
+				if ex.Type == d.Type && ex.Time.Equal(d.Time) && ex.Units == d.Units && ex.CashDelta == d.CashDelta {
+					consumed[ex.ID] = true
+					return ex
+				}
+			}
+			return nil
+		}
+
+		overrides := make(map[string]StagedTransactionConfirmInput, len(args.Input.Transactions))
+		for _, ov := range args.Input.Transactions {
+			overrides[string(ov.ID)] = ov
+		}
+
+		source := "import"
+		if doc.DetectedBank.Valid {
+			source = "import:" + doc.DetectedBank.String
+		}
+
+		for _, stx := range staged {
+			ov := overrides[stx.ID]
+
+			d := txData{
+				Type:      stx.Type,
+				Time:      stx.Time,
+				Units:     stx.Units,
+				Fees:      stx.Fees,
+				Taxes:     stx.Taxes,
+				CashDelta: stx.CashDelta,
+				Currency:  stx.Currency,
+			}
+			d.Price = stx.Price
+			if stx.PriceCurrency.Valid {
+				d.PriceCurrency = stx.PriceCurrency.String
+			}
+			d.FxRate = stx.FxRate
+
+			// Apply portfolio default only for types that use a portfolio; pure cash
+			// events (DEPOSIT_CASH, WITHDRAW_CASH, INTEREST, etc.) must not have one.
+			if isCashOnlyType(stx.Type) {
+				d.PortfolioID = idPtr(ov.PortfolioID)
+			} else {
+				d.PortfolioID = firstID(ov.PortfolioID, args.Input.PortfolioID)
+			}
+			d.CashAccountID = firstID(ov.CashAccountID, args.Input.CashAccountID)
+
+			if ov.SecurityID != nil {
+				s := string(*ov.SecurityID)
+				d.SecurityID = &s
+			} else if stx.SecurityID.Valid {
+				d.SecurityID = &stx.SecurityID.String
+			} else if stx.Isin.Valid && stx.Isin.String != "" {
+				// Live ISIN lookup for documents processed before the security existed.
+				sec, err := q.FindSecurityByIdentifier(ctx, persistence.FindSecurityByIdentifierParams{
+					Kind:  "ISIN",
+					Value: stx.Isin.String,
+				})
+				if err == nil {
+					d.SecurityID = &sec.ID
+				} else if !errors.Is(err, sql.ErrNoRows) {
+					return err
+				}
+			}
+
+			// Derive cashDelta when not staged and not overridden.
+			if ov.CashDelta != nil {
+				d.CashDelta = int64(*ov.CashDelta)
+			} else if stx.CashDelta == 0 {
+				if delta, ok := deriveCashDelta(&d); ok {
+					d.CashDelta = delta
+				}
+			}
+
+			if err := d.validate(ctx, r.db, person); err != nil {
+				return fmt.Errorf("staged transaction %q: %w", stx.ID, err)
+			}
+
+			if match := matchExisting(&d); match != nil {
+				tx, err := q.UpdateTransactionFromImport(ctx, persistence.UpdateTransactionFromImportParams{
+					Type:          d.Type,
+					Time:          d.Time,
+					PortfolioID:   nullString(d.PortfolioID),
+					SecurityID:    nullString(d.SecurityID),
+					CashAccountID: nullString(d.CashAccountID),
+					Units:         d.Units,
+					Price:         d.Price,
+					Fees:          d.Fees,
+					Taxes:         d.Taxes,
+					CashDelta:     d.CashDelta,
+					Currency:      d.Currency,
+					PriceCurrency: sql.NullString{String: d.PriceCurrency, Valid: d.PriceCurrency != ""},
+					FxRate:        d.FxRate,
+					ID:            match.ID,
+				})
+				if err != nil {
+					return err
+				}
+				created = append(created, &TransactionResolver{db: r.db, transaction: tx})
 				continue
 			}
-			if ex.Type == d.Type && ex.Time.Equal(d.Time) && ex.Units == d.Units && ex.CashDelta == d.CashDelta {
-				consumed[ex.ID] = true
-				return ex
-			}
-		}
-		return nil
-	}
 
-	overrides := make(map[string]StagedTransactionConfirmInput, len(args.Input.Transactions))
-	for _, ov := range args.Input.Transactions {
-		overrides[string(ov.ID)] = ov
-	}
-
-	source := "import"
-	if doc.DetectedBank.Valid {
-		source = "import:" + doc.DetectedBank.String
-	}
-
-	var created []*TransactionResolver
-	for _, stx := range staged {
-		ov := overrides[stx.ID]
-
-		d := txData{
-			Type:      stx.Type,
-			Time:      stx.Time,
-			Units:     stx.Units,
-			Fees:      stx.Fees,
-			Taxes:     stx.Taxes,
-			CashDelta: stx.CashDelta,
-			Currency:  stx.Currency,
-		}
-		d.Price = stx.Price
-		if stx.PriceCurrency.Valid {
-			d.PriceCurrency = stx.PriceCurrency.String
-		}
-		d.FxRate = stx.FxRate
-
-		// Apply portfolio default only for types that use a portfolio; pure cash
-		// events (DEPOSIT_CASH, WITHDRAW_CASH, INTEREST, etc.) must not have one.
-		if isCashOnlyType(stx.Type) {
-			d.PortfolioID = idPtr(ov.PortfolioID)
-		} else {
-			d.PortfolioID = firstID(ov.PortfolioID, args.Input.PortfolioID)
-		}
-		d.CashAccountID = firstID(ov.CashAccountID, args.Input.CashAccountID)
-
-		if ov.SecurityID != nil {
-			s := string(*ov.SecurityID)
-			d.SecurityID = &s
-		} else if stx.SecurityID.Valid {
-			d.SecurityID = &stx.SecurityID.String
-		} else if stx.Isin.Valid && stx.Isin.String != "" {
-			// Live ISIN lookup for documents processed before the security existed.
-			sec, err := r.db.FindSecurityByIdentifier(ctx, persistence.FindSecurityByIdentifierParams{
-				Kind:  "ISIN",
-				Value: stx.Isin.String,
-			})
-			if err == nil {
-				d.SecurityID = &sec.ID
-			} else if !errors.Is(err, sql.ErrNoRows) {
-				return nil, err
-			}
-		}
-
-		// Derive cashDelta when not staged and not overridden.
-		if ov.CashDelta != nil {
-			d.CashDelta = int64(*ov.CashDelta)
-		} else if stx.CashDelta == 0 {
-			if delta, ok := deriveCashDelta(&d); ok {
-				d.CashDelta = delta
-			}
-		}
-
-		if err := d.validate(ctx, r.db, person); err != nil {
-			return nil, fmt.Errorf("staged transaction %q: %w", stx.ID, err)
-		}
-
-		if match := matchExisting(&d); match != nil {
-			tx, err := r.db.UpdateTransactionFromImport(ctx, persistence.UpdateTransactionFromImportParams{
+			tx, err := q.CreateTransaction(ctx, persistence.CreateTransactionParams{
+				ID:            uuid.NewString(),
 				Type:          d.Type,
 				Time:          d.Time,
 				PortfolioID:   nullString(d.PortfolioID),
@@ -244,50 +273,31 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 				Taxes:         d.Taxes,
 				CashDelta:     d.CashDelta,
 				Currency:      d.Currency,
+				Source:        source,
+				DocumentID:    sql.NullString{String: doc.ID, Valid: true},
 				PriceCurrency: sql.NullString{String: d.PriceCurrency, Valid: d.PriceCurrency != ""},
 				FxRate:        d.FxRate,
-				ID:            match.ID,
 			})
 			if err != nil {
-				return nil, err
+				return err
 			}
+
 			created = append(created, &TransactionResolver{db: r.db, transaction: tx})
-			continue
 		}
 
-		tx, err := r.db.CreateTransaction(ctx, persistence.CreateTransactionParams{
-			ID:            uuid.NewString(),
-			Type:          d.Type,
-			Time:          d.Time,
-			PortfolioID:   nullString(d.PortfolioID),
-			SecurityID:    nullString(d.SecurityID),
-			CashAccountID: nullString(d.CashAccountID),
-			Units:         d.Units,
-			Price:         d.Price,
-			Fees:          d.Fees,
-			Taxes:         d.Taxes,
-			CashDelta:     d.CashDelta,
-			Currency:      d.Currency,
-			Source:        source,
-			DocumentID:    sql.NullString{String: doc.ID, Valid: true},
-			PriceCurrency: sql.NullString{String: d.PriceCurrency, Valid: d.PriceCurrency != ""},
-			FxRate:        d.FxRate,
-		})
-		if err != nil {
-			return nil, err
+		if _, err := q.UpdateDocumentState(ctx, persistence.UpdateDocumentStateParams{
+			State:           "IMPORTED",
+			DetectedBank:    doc.DetectedBank,
+			ExtractedText:   doc.ExtractedText,
+			SettlementIban:  doc.SettlementIban,
+			TransactionDate: doc.TransactionDate,
+			ID:              doc.ID,
+		}); err != nil {
+			return err
 		}
-
-		created = append(created, &TransactionResolver{db: r.db, transaction: tx})
-	}
-
-	if _, err := r.db.UpdateDocumentState(ctx, persistence.UpdateDocumentStateParams{
-		State:           "IMPORTED",
-		DetectedBank:    doc.DetectedBank,
-		ExtractedText:   doc.ExtractedText,
-		SettlementIban:  doc.SettlementIban,
-		TransactionDate: doc.TransactionDate,
-		ID:              doc.ID,
-	}); err != nil {
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
 
