@@ -22,7 +22,7 @@ import (
 // security at the given time, expressed in the given currency, typically
 // from the latest quote at or before that time. It reports ok == false when
 // no quote is known (or it cannot be converted), in which case calculations
-// fall back to the purchase price.
+// fall back to the last trade's price.
 type QuoteFunc func(securityID, currency string, at time.Time) (price persistence.Decimal, ok bool)
 
 // NoQuotes is a QuoteFunc that knows no quotes at all; every position is
@@ -43,7 +43,8 @@ type Position struct {
 	// and taxes.
 	PurchaseValue int64
 	// MarketPrice is the price of one share: the latest quote if one is
-	// known, the average purchase price otherwise. An exact Decimal, unlike
+	// known, otherwise the last trade's price, otherwise the average
+	// purchase price. An exact Decimal, unlike
 	// the rest of this struct's minor-units Money fields — see
 	// persistence.Decimal for why per-unit prices need more precision.
 	MarketPrice persistence.Decimal
@@ -121,6 +122,10 @@ func (l *lot) value() int64 {
 type book struct {
 	currency string
 	lots     []*lot
+	// lastPrice is the price of the most recent trade, in the settlement
+	// currency: the best price known when no quote is. A bond that left
+	// the quote feed is still worth what it last changed hands at.
+	lastPrice persistence.Decimal
 }
 
 func (b *book) units() (u float64) {
@@ -137,8 +142,30 @@ func (b *book) purchaseValue() (v int64) {
 	return
 }
 
+// fallbackPrice is the price of one unit when no quote is known: the last
+// trade's, or the average purchase price before any trade carried one (a
+// delivery from another broker, say).
+func (b *book) fallbackPrice() persistence.Decimal {
+	if b.lastPrice.Valid && b.lastPrice.Sign() > 0 {
+		return b.lastPrice
+	}
+	units := b.units()
+	if units == 0 {
+		return persistence.Decimal{}
+	}
+	// purchaseValue() is minor units (cents); Decimal prices are major units.
+	return persistence.NewDecimalFromInt64(b.purchaseValue()).DivFloat(units).DivInt(100)
+}
+
 // apply adjusts the book for one transaction.
 func (b *book) apply(tx *persistence.Transaction) {
+	if price := purchasePrice(tx); price.Valid && price.Sign() > 0 {
+		switch tx.Type {
+		case "BUY", "SELL", "DELIVERY_INBOUND", "DELIVERY_OUTBOUND":
+			b.lastPrice = price
+		}
+	}
+
 	switch tx.Type {
 	case "BUY", "DELIVERY_INBOUND":
 		b.lots = append(b.lots, &lot{units: tx.Units, ppu: purchasePrice(tx)})
@@ -196,7 +223,7 @@ func SnapshotAt(txs []*persistence.Transaction, at time.Time, quote QuoteFunc) *
 		if price, ok := quote(b.securityID, b.currency, at); ok {
 			pos.MarketPrice = price
 		} else {
-			pos.MarketPrice = pos.PurchasePrice()
+			pos.MarketPrice = b.fallbackPrice()
 		}
 		pos.MarketValue = pos.MarketPrice.MulFloat(pos.Units).MulInt(100).RoundToInt64()
 
@@ -414,9 +441,7 @@ func marketValue(bs []*securityBook, at time.Time, quote QuoteFunc) (v int64) {
 
 		price, ok := quote(b.securityID, b.currency, at)
 		if !ok {
-			// Fall back to the average purchase price, like SnapshotAt.
-			// purchaseValue() is minor units (cents); price is major units.
-			price = persistence.NewDecimalFromInt64(b.purchaseValue()).DivFloat(units).DivInt(100)
+			price = b.fallbackPrice()
 		}
 		v += price.MulFloat(units).MulInt(100).RoundToInt64()
 	}

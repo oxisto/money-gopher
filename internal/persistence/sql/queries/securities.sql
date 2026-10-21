@@ -90,12 +90,35 @@ ORDER BY
     ticker;
 
 -- name: ListListingsWithProvider :many
+-- Listings worth fetching quotes for: those with a provider, except of
+-- securities that were held once and are sold out or redeemed. Quote feeds
+-- drop those (a matured bond is gone from ING's site) and a fresh price
+-- would not change any figure. A security with no transactions at all is
+-- fetched: it was just created, and a purchase is probably on its way.
 SELECT
     *
 FROM
     listings
 WHERE
     quote_provider IS NOT NULL
+    AND security_id NOT IN (
+        SELECT
+            security_id
+        FROM
+            transactions
+        WHERE
+            security_id IS NOT NULL
+        GROUP BY
+            security_id
+        HAVING
+            SUM(
+                CASE
+                    WHEN type IN ('BUY', 'DELIVERY_INBOUND') THEN units
+                    WHEN type IN ('SELL', 'DELIVERY_OUTBOUND') THEN - units
+                    ELSE 0
+                END
+            ) <= 0.000001
+    )
 ORDER BY
     security_id,
     ticker;

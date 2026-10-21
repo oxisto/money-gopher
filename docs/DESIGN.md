@@ -318,7 +318,14 @@ deferred.
   the ECB's euro reference rates in `fx_rates` (full history on first sight
   of a currency, the 90-day file afterwards; refreshed with the quotes) and
   converts via the euro. A quote with no usable rate falls back to the
-  purchase price rather than mixing currencies. The import's "Create
+  purchase price rather than mixing currencies. Without any quote, a
+  position is valued at the price it last changed hands at (buy or sell,
+  in the settlement currency), so a bond that has left its quote feed
+  still carries a sensible value through the history; the average purchase
+  price is the fallback only before any trade carried a price. The
+  scheduled quote refresh skips securities that are sold out or redeemed
+  (`ListListingsWithProvider`); an explicit `triggerQuoteUpdate` with IDs
+  still fetches them. The import's "Create
   security" dialog makes a listing (ticker = ISIN, the document's price
   currency, ING quotes), so this works without a trip to the Securities page.
 - **Security kind.** `securities.kind` (STOCK, ETF, FUND, BOND, OTHER; null
