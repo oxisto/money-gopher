@@ -1,13 +1,14 @@
 <script lang="ts">
 	import HoldingsTable, { holdingsOf } from '$lib/components/holdings/HoldingsTable.svelte';
 	import TransactionForm from '$lib/components/TransactionForm.svelte';
-	import TransactionTable from '$lib/components/TransactionTable.svelte';
+	import ActivityFeed from '$lib/components/activity/ActivityFeed.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import Segmented from '$lib/components/ui/Segmented.svelte';
 	import StatStrip from '$lib/components/ui/StatStrip.svelte';
 	import { formatMoney, formatPercent, formatSignedMoney, toneOf } from '$lib/format';
+	import type { FeedTransaction } from '$lib/transaction-types';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -93,8 +94,8 @@
 			{#if tab === 'holdings'}
 				<HoldingsTable holdings={holdingsOf(snap.positions)} />
 			{:else}
-				<TransactionTable
-					transactions={portfolio.transactions}
+				<ActivityFeed
+					transactions={portfolio.transactions as FeedTransaction[]}
 					securities={$PortfolioDetail.data.securities}
 					cashAccounts={$PortfolioDetail.data.cashAccounts}
 					onchanged={refresh}

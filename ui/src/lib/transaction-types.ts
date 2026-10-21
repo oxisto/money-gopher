@@ -1,9 +1,8 @@
 /**
- * Shared shapes for TransactionTable/TransactionEditForm/TransactionForm,
- * used both on a portfolio's detail page and a cash account's — both pages
- * query the same Transaction fields, just scoped differently, so the
- * components take this structural type instead of one tied to a single
- * generated query.
+ * Shared shapes for ActivityFeed/TransactionEditForm/TransactionForm, used
+ * on the activity, portfolio and cash account pages — all query the same
+ * Transaction fields, just scoped differently, so the components take this
+ * structural type instead of one tied to a single generated query.
  */
 export interface TransactionRow {
 	id: string;
@@ -27,4 +26,15 @@ export interface SecurityOption {
 export interface CashAccountOption {
 	id: string;
 	displayName: string;
+}
+
+/**
+ * A TransactionRow as the activity feed shows it: with the accounts it
+ * touches by name, the realized gain of a sale, and its source document.
+ */
+export interface FeedTransaction extends Omit<TransactionRow, 'cashAccount'> {
+	gain: { amount: number; currency: string } | null;
+	portfolio: { id: string; displayName: string } | null;
+	cashAccount: { id: string; displayName: string } | null;
+	document: { id: string; filename: string } | null;
 }

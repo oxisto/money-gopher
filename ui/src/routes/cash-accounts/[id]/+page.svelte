@@ -1,16 +1,43 @@
 <script lang="ts">
-	import { formatMoney } from '$lib/format';
+	import ActivityFeed from '$lib/components/activity/ActivityFeed.svelte';
 	import TransactionForm from '$lib/components/TransactionForm.svelte';
-	import TransactionTable from '$lib/components/TransactionTable.svelte';
-	import Section from '$lib/components/ui/Section.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import Dialog from '$lib/components/ui/Dialog.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
+	import StatStrip from '$lib/components/ui/StatStrip.svelte';
+	import { formatMoney, formatSignedMoney, toneOf } from '$lib/format';
+	import type { FeedTransaction } from '$lib/transaction-types';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 	const CashAccountDetail = $derived(data.CashAccountDetail);
 
+	let addOpen = $state(false);
+
 	function refresh() {
 		CashAccountDetail.fetch({ policy: 'NetworkOnly' });
 	}
+
+	const account = $derived($CashAccountDetail.data?.cashAccount ?? null);
+	const transactions = $derived((account?.transactions ?? []) as FeedTransaction[]);
+
+	const stats = $derived.by(() => {
+		if (!account) return [];
+		const year = new Date().getFullYear();
+		const thisYear = transactions.filter((t) => t.time.getFullYear() === year);
+		const money = (amount: number) => ({ amount, currency: account.currency });
+		const sum = (f: (t: FeedTransaction) => boolean) =>
+			thisYear.filter(f).reduce((s, t) => s + t.cashDelta.amount, 0);
+		const inflow = sum((t) => t.cashDelta.amount > 0);
+		const outflow = sum((t) => t.cashDelta.amount < 0);
+		const interest = sum((t) => t.type === 'INTEREST');
+		return [
+			{ label: 'Balance', value: formatMoney(account.balance), sub: `${transactions.length} transactions` },
+			{ label: `In ${year}`, value: formatSignedMoney(money(inflow)), tone: toneOf(inflow) },
+			{ label: `Out ${year}`, value: formatSignedMoney(money(outflow)) },
+			{ label: `Interest ${year}`, value: formatSignedMoney(money(interest)), tone: toneOf(interest) }
+		];
+	});
 </script>
 
 <!-- Only the initial load blanks the page; refetches keep the old data
@@ -20,38 +47,40 @@
 {:else if $CashAccountDetail.errors?.length}
 	<p class="text-sm text-neg">Failed to load: {$CashAccountDetail.errors[0].message}</p>
 {:else if $CashAccountDetail.data}
-	{@const account = $CashAccountDetail.data.cashAccount}
 	{#if account}
-		<div class="mb-6 flex items-baseline justify-between">
-			<div>
-				<h1 class="text-2xl font-semibold">{account.displayName}</h1>
-				{#if account.iban}
-					<p class="mt-1 font-mono text-sm text-muted">{account.iban}</p>
-				{/if}
+		<div class="mb-6 flex flex-wrap items-center gap-3">
+			<div class="flex-1">
+				<h1 class="text-lg font-semibold">{account.displayName}</h1>
+				<p class="num text-[13px] text-muted">
+					Cash account · {account.currency}{#if account.iban}
+						· {account.iban}{/if}
+				</p>
 			</div>
-			<span class="text-xl font-semibold tabular-nums">{formatMoney(account.balance)}</span>
+			<Button onclick={() => (addOpen = true)}><Icon name="plus" size={15} /> Add transaction</Button>
 		</div>
 
-		<div class="flex flex-col gap-8">
-			<Section title="Transactions">
-				<TransactionTable
-					transactions={account.transactions}
-					securities={$CashAccountDetail.data.securities}
-					cashAccounts={$CashAccountDetail.data.cashAccounts}
-					showBalance
-					onchanged={refresh}
-				/>
-			</Section>
+		<Dialog bind:open={addOpen} title="Add transaction" wide>
+			<TransactionForm
+				defaultCashAccountID={account.id}
+				defaultType="DEPOSIT_CASH"
+				securities={$CashAccountDetail.data.securities}
+				cashAccounts={$CashAccountDetail.data.cashAccounts}
+				oncreated={() => {
+					addOpen = false;
+					refresh();
+				}}
+			/>
+		</Dialog>
 
-			<Section title="Add transaction">
-				<TransactionForm
-					defaultCashAccountID={account.id}
-					defaultType="DEPOSIT_CASH"
-					securities={$CashAccountDetail.data.securities}
-					cashAccounts={$CashAccountDetail.data.cashAccounts}
-					oncreated={refresh}
-				/>
-			</Section>
+		<div class="flex flex-col gap-6">
+			<StatStrip {stats} />
+			<ActivityFeed
+				{transactions}
+				securities={$CashAccountDetail.data.securities}
+				cashAccounts={$CashAccountDetail.data.cashAccounts}
+				showBalance
+				onchanged={refresh}
+			/>
 		</div>
 	{:else}
 		<p class="text-sm text-muted">Cash account not found.</p>

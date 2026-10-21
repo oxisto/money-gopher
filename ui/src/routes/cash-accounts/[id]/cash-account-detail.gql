@@ -9,34 +9,7 @@ query CashAccountDetail($id: ID!) {
 			currency
 		}
 		transactions {
-			id
-			type
-			time
-			units
-			price {
-				amount
-				currency
-			}
-			fees {
-				amount
-				currency
-			}
-			taxes {
-				amount
-				currency
-			}
-			cashDelta {
-				amount
-				currency
-			}
-			fxRate
-			security {
-				id
-				displayName
-			}
-			cashAccount {
-				id
-			}
+			...ActivityTransaction @mask_disable
 		}
 	}
 	securities {

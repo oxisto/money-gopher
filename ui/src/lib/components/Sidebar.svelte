@@ -20,6 +20,7 @@
 	const nav = $derived([
 		{ href: '/', label: 'Overview', icon: 'M3 12l9-8 9 8M5 10v10h5v-6h4v6h5V10' },
 		{ href: '/holdings', label: 'Holdings', icon: 'M4 20V10M10 20V4M16 20v-7M22 20H2' },
+		{ href: '/activity', label: 'Activity', icon: 'M3 6h18M3 12h18M3 18h12' },
 		{
 			href: '/gains',
 			label: 'Income',
