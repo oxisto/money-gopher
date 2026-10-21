@@ -1,6 +1,5 @@
-import { load_Securities } from '$houdini';
+import { query } from '$lib/graphql/client';
+import { SecuritiesQuery } from '$lib/graphql/documents';
 import type { PageLoad } from './$types';
 
-export const load: PageLoad = async (event) => {
-	return await load_Securities({ event });
-};
+export const load: PageLoad = async ({ fetch }) => query(SecuritiesQuery, {}, fetch);

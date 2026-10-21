@@ -1,0 +1,103 @@
+import { graphql, type ResultOf } from './client';
+
+// Documents used by more than one route or by components that need their
+// result types. A page's own query lives in its +page.ts instead.
+
+// @_unmask: the fields are read directly where the fragment is spread,
+// rather than through readFragment().
+
+/** Everything ActivityFeed shows and TransactionEditForm edits. */
+export const ActivityTransaction = graphql(`
+	fragment ActivityTransaction on Transaction @_unmask {
+		id
+		type
+		time
+		units
+		price { amount currency }
+		fees { amount currency }
+		taxes { amount currency }
+		cashDelta { amount currency }
+		gain { amount currency }
+		fxRate
+		security { id displayName }
+		portfolio { id displayName }
+		cashAccount { id displayName }
+		document { id filename }
+	}
+`);
+
+/** A portfolio position as HoldingsTable and the holding page need it. */
+export const HoldingPosition = graphql(`
+	fragment HoldingPosition on Position @_unmask {
+		security {
+			id
+			displayName
+			identifiers { kind value }
+		}
+		units
+		purchasePrice { amount currency }
+		marketPrice { amount currency }
+		purchaseValue { amount currency }
+		marketValue { amount currency }
+		profitOrLoss { amount currency }
+	}
+`);
+
+/** The shell: person switcher, account list and the import badge. */
+export const LayoutQuery = graphql(`
+	query Layout {
+		me {
+			id
+			displayName
+			activePerson { id displayName }
+			persons { id displayName }
+		}
+		portfolios {
+			id
+			displayName
+			snapshot { totalMarketValue { amount currency } }
+		}
+		cashAccounts {
+			id
+			displayName
+			balance { amount currency }
+		}
+		documents(state: PARSED) { id }
+	}
+`);
+export type LayoutResult = ResultOf<typeof LayoutQuery>;
+
+export const SecuritiesQuery = graphql(`
+	query Securities {
+		securities {
+			id
+			displayName
+			identifiers { kind value }
+			underlyingSecurity { id displayName }
+			listings {
+				id
+				ticker
+				exchange
+				currency
+				quoteProvider
+				latestQuote {
+					time
+					price { amount currency }
+				}
+			}
+		}
+	}
+`);
+export type SecuritiesResult = ResultOf<typeof SecuritiesQuery>;
+
+export const PeopleQuery = graphql(`
+	query People {
+		persons {
+			id
+			displayName
+			users { id displayName }
+		}
+		users { id displayName }
+	}
+`);
+export type PeopleResult = ResultOf<typeof PeopleQuery>;

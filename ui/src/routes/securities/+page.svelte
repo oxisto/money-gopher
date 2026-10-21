@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { invalidateAll } from '$app/navigation';
 	import SecurityForm from '$lib/components/SecurityForm.svelte';
 	import SecurityList from '$lib/components/SecurityList.svelte';
 	import UpdateQuotesButton from '$lib/components/UpdateQuotesButton.svelte';
@@ -8,12 +9,11 @@
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
-	const Securities = $derived(data.Securities);
 
 	let addOpen = $state(false);
 
 	function refresh() {
-		Securities.fetch({ policy: 'NetworkOnly' });
+		invalidateAll();
 	}
 </script>
 
@@ -30,12 +30,4 @@
 	<SecurityForm oncreated={() => (addOpen = false)} />
 </Dialog>
 
-<!-- Only the initial load blanks the page; refetches keep the old data
-     (and the components' state) on screen. -->
-{#if $Securities.fetching && !$Securities.data}
-	<p class="text-sm text-muted">Loading…</p>
-{:else if $Securities.errors?.length}
-	<p class="text-sm text-neg">Failed to load: {$Securities.errors[0].message}</p>
-{:else if $Securities.data}
-	<SecurityList securities={$Securities.data.securities} />
-{/if}
+<SecurityList securities={data.securities} />

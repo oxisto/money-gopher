@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { graphql } from '$houdini';
+	import { graphql, mutate } from '$lib/graphql/client';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
 
@@ -23,11 +23,11 @@
 		message = null;
 		error = null;
 
-		const result = await triggerQuoteUpdate.mutate(null);
+		const result = await mutate(triggerQuoteUpdate, {});
 		busy = false;
 
-		if (result.errors?.length) {
-			error = result.errors[0].message;
+		if (result.error) {
+			error = result.error;
 			return;
 		}
 

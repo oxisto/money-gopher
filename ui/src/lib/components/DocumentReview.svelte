@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { graphql } from '$houdini';
+	import { graphql, mutate } from '$lib/graphql/client';
 	import { describeTransaction, formatUnits, labelOf } from '$lib/describe';
 	import { formatMoney, formatPrice, formatDate, formatSignedMoney } from '$lib/format';
 	import Button from './ui/Button.svelte';
@@ -112,15 +112,15 @@
 	async function confirmCreateSecurity() {
 		if (!createDialog) return;
 		creatingDialog = true;
-		const result = await createSecurityMutation.mutate({
+		const result = await mutate(createSecurityMutation, {
 			input: {
 				displayName: createDialog.name,
 				identifiers: createDialog.isin ? [{ kind: 'ISIN', value: createDialog.isin }] : []
 			}
 		});
 		creatingDialog = false;
-		if (result.errors?.length) {
-			error = result.errors[0].message;
+		if (result.error) {
+			error = result.error;
 			return;
 		}
 		const newSec = result.data?.createSecurity;
@@ -148,7 +148,7 @@
 			.filter(([, secID]) => secID)
 			.map(([id, secID]) => ({ id, securityID: secID }));
 
-		const result = await confirmImport.mutate({
+		const result = await mutate(confirmImport, {
 			documentID: doc.id,
 			input: {
 				portfolioID: portfolioRequired ? portfolioID : null,
@@ -158,8 +158,8 @@
 		});
 
 		confirming = false;
-		if (result.errors?.length) {
-			error = result.errors[0].message;
+		if (result.error) {
+			error = result.error;
 		} else {
 			onimported();
 		}

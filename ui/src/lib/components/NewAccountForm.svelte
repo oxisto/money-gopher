@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { cache, graphql } from '$houdini';
+	import { graphql, mutate } from '$lib/graphql/client';
 	import { invalidateAll } from '$app/navigation';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
@@ -22,7 +22,7 @@
 	const createCashAccount = graphql(`
 		mutation CreateCashAccount($input: CreateCashAccountInput!) {
 			createCashAccount(input: $input) {
-				...All_CashAccounts_insert
+				id
 			}
 		}
 	`);
@@ -30,7 +30,7 @@
 	const createPortfolio = graphql(`
 		mutation CreatePortfolio($input: CreatePortfolioInput!) {
 			createPortfolio(input: $input) {
-				...All_Portfolios_insert
+				id
 			}
 		}
 	`);
@@ -47,24 +47,23 @@
 
 		const result =
 			kind === 'cash'
-				? await createCashAccount.mutate({
+				? await mutate(createCashAccount, {
 						input: {
 							displayName: name.trim(),
 							currency: currency.toUpperCase(),
 							iban: iban.trim() || null
 						}
 					})
-				: await createPortfolio.mutate({
+				: await mutate(createPortfolio, {
 						input: { displayName: name.trim(), cashAccountID }
 					});
-		error = result.errors?.[0]?.message ?? null;
+		error = result.error;
 		if (error) return;
 
 		name = '';
 		iban = '';
 		cashAccountID = '';
-		// The sidebar's account list is its own query; refetch it too.
-		cache.markStale();
+		// Reloads the page and the sidebar's account list alike.
 		await invalidateAll();
 		oncreated?.();
 	}

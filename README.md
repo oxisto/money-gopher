@@ -19,8 +19,8 @@ served from a single binary on your own machine.
   [graph-gophers/graphql-go](https://github.com/graph-gophers/graphql-go) —
   schema-first, see [api/schema.graphql](api/schema.graphql)
 - **Frontend**: SvelteKit SPA with Tailwind CSS 4 and
-  [Houdini](https://houdinigraph.org); embedding it into the server binary is
-  still to come
+  [gql.tada](https://gql-tada.0no.co) for typed GraphQL documents; embedding
+  it into the server binary is still to come
 - **Imports**: bank PDFs via poppler's `pdftotext` and per-bank parsers
 
 ## Getting started

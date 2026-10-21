@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { graphql, TransactionType } from '$houdini';
-	import type { TransactionType$options } from '$houdini';
+	import { graphql, mutate } from '$lib/graphql/client';
+	import { TRANSACTION_TYPES, type TransactionType } from '$lib/transaction-types';
 	import { labelOf } from '$lib/describe';
 	import { formatMoney, parseAmount, parsePrice } from '$lib/format';
 	import type { SecurityOption, CashAccountOption } from '$lib/transaction-types';
@@ -19,7 +19,7 @@
 	}: {
 		portfolioID?: string;
 		defaultCashAccountID?: string;
-		defaultType?: TransactionType$options;
+		defaultType?: TransactionType;
 		securities: SecurityOption[];
 		cashAccounts: CashAccountOption[];
 		oncreated: () => void;
@@ -40,7 +40,7 @@
 		return now.toISOString().slice(0, 16);
 	}
 
-	let type = $state<TransactionType$options>(defaultType);
+	let type = $state<TransactionType>(defaultType);
 	let time = $state(nowLocal());
 	let securityID = $state('');
 	let cashAccountID = $state(defaultCashAccountID);
@@ -71,7 +71,7 @@
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
 
-		const result = await createTransaction.mutate({
+		const result = await mutate(createTransaction, {
 			input: {
 				type,
 				time: new Date(time),
@@ -86,7 +86,7 @@
 				cashDelta: isGrossDerived ? derivedCashDelta : (parseAmount(cashDelta) ?? undefined)
 			}
 		});
-		error = result.errors?.[0]?.message ?? null;
+		error = result.error;
 		if (!error) {
 			units = '';
 			price = '';
@@ -102,7 +102,7 @@
 <form onsubmit={submit}>
 	<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		<SelectField bind:value={type} label="Type" required>
-			{#each Object.values(TransactionType) as option (option)}
+			{#each TRANSACTION_TYPES as option (option)}
 				<option value={option}>{labelOf(option)}</option>
 			{/each}
 		</SelectField>

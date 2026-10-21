@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { graphql } from '$houdini';
-	import type { Securities$result } from '$houdini';
+	import { invalidateAll } from '$app/navigation';
+	import { graphql, mutate } from '$lib/graphql/client';
+	import type { SecuritiesResult } from '$lib/graphql/documents';
 	import { formatDate, formatPrice } from '$lib/format';
 	import Button from './ui/Button.svelte';
 	import Icon from './ui/Icon.svelte';
@@ -8,9 +9,9 @@
 	import SelectField from './ui/SelectField.svelte';
 	import TextField from './ui/TextField.svelte';
 
-	let { securities }: { securities: Securities$result['securities'] } = $props();
+	let { securities }: { securities: SecuritiesResult['securities'] } = $props();
 
-	type Listing = Securities$result['securities'][number]['listings'][number];
+	type Listing = SecuritiesResult['securities'][number]['listings'][number];
 
 	const updateSecurity = graphql(`
 		mutation UpdateSecurityListing($id: ID!, $listings: [ListingInput!]!) {
@@ -110,12 +111,13 @@
 			});
 		}
 
-		const result = await updateSecurity.mutate({ id: securityID, listings: input });
-		if (result.errors?.length) {
-			error = result.errors[0].message;
+		const result = await mutate(updateSecurity, { id: securityID, listings: input });
+		if (result.error) {
+			error = result.error;
 			return;
 		}
 		editingKey = null;
+		await invalidateAll();
 	}
 
 	let query = $state('');
@@ -205,10 +207,10 @@
 							</td>
 							<td class="px-3 py-2.5 text-right">
 								{#if listing?.latestQuote}
-									{@const stale = isStale(listing.latestQuote.time as Date)}
+									{@const stale = isStale(listing.latestQuote.time)}
 									<div>{formatPrice(listing.latestQuote.price, 4)}</div>
 									<div class="text-[11px] {stale ? 'text-gold' : 'text-muted'}" title={stale ? 'No new quote for a while' : ''}>
-										{formatDate(listing.latestQuote.time as Date)}{stale ? ' · stale' : ''}
+										{formatDate(listing.latestQuote.time)}{stale ? ' · stale' : ''}
 									</div>
 								{:else if listing?.quoteProvider}
 									<span class="text-gold">no quote yet</span>

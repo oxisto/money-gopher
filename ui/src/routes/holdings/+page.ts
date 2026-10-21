@@ -1,6 +1,24 @@
-import { load_Holdings } from '$houdini';
+import { graphql, query } from '$lib/graphql/client';
+import { HoldingPosition } from '$lib/graphql/documents';
 import type { PageLoad } from './$types';
 
-export const load: PageLoad = async (event) => {
-	return await load_Holdings({ event });
-};
+const Holdings = graphql(
+	`
+		query Holdings {
+			portfolios {
+				id
+				displayName
+				snapshot {
+					totalMarketValue { amount currency }
+					totalPurchaseValue { amount currency }
+					totalProfitOrLoss { amount currency }
+					performance(period: ALL_TIME) { timeWeightedReturn }
+					positions { ...HoldingPosition }
+				}
+			}
+		}
+	`,
+	[HoldingPosition]
+);
+
+export const load: PageLoad = async ({ fetch }) => query(Holdings, {}, fetch);

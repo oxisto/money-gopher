@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { cache, graphql, type Layout$result } from '$houdini';
 	import { invalidateAll } from '$app/navigation';
+	import { graphql, mutate } from '$lib/graphql/client';
+	import type { LayoutResult } from '$lib/graphql/documents';
 	import { formatMoneyCompact } from '$lib/format';
 	import { applyTheme, loadTheme, type ThemePreference } from '$lib/theme';
 
 	interface Props {
-		data: Layout$result | null;
+		data: LayoutResult | null;
 		onnavigate?: () => void;
 	}
 
@@ -42,11 +43,10 @@
 		return href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href);
 	}
 
-	const switchPersonMutation = graphql(`
+	const SwitchPerson = graphql(`
 		mutation SwitchPerson($personID: ID!) {
 			switchPerson(personID: $personID) {
 				id
-				displayName
 			}
 		}
 	`);
@@ -55,13 +55,8 @@
 
 	async function switchTo(id: string) {
 		open = false;
-		await switchPersonMutation.mutate({ personID: id });
-		// switchPerson's response only carries the newly active Person, not
-		// every other person-scoped query already cached (activePerson,
-		// portfolios, cashAccounts, ...) — Houdini has no way to know those
-		// need refetching just because the mutation ran, so mark the whole
-		// cache stale before re-running load functions.
-		cache.markStale();
+		await mutate(SwitchPerson, { personID: id });
+		// Everything on screen belongs to the active person; reload it all.
 		await invalidateAll();
 	}
 

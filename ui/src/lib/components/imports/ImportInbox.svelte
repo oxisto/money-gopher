@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { graphql } from '$houdini';
+	import { graphql, mutate } from '$lib/graphql/client';
 	import DocumentReview from '$lib/components/DocumentReview.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import ErrorNote from '$lib/components/ui/ErrorNote.svelte';
@@ -99,25 +99,25 @@
 	let reviewing = $state<string | null>(null);
 	let confirmingDelete = $state<string | null>(null);
 
-	async function run(id: string, label: string, action: () => Promise<{ errors?: { message: string }[] | null }>) {
+	async function run(id: string, label: string, action: () => Promise<{ error: string | null }>) {
 		busy = { ...busy, [id]: label };
 		errors = { ...errors, [id]: '' };
 		const result = await action();
 		busy = { ...busy, [id]: '' };
-		if (result.errors?.length) {
-			errors = { ...errors, [id]: result.errors[0].message };
+		if (result.error) {
+			errors = { ...errors, [id]: result.error };
 			return false;
 		}
 		return true;
 	}
 
 	async function reanalyze(id: string) {
-		if (await run(id, 'Re-analyzing…', () => reprocessDocument.mutate({ id }))) onchanged();
+		if (await run(id, 'Re-analyzing…', () => mutate(reprocessDocument, { id }))) onchanged();
 	}
 
 	async function del(id: string) {
 		confirmingDelete = null;
-		if (await run(id, 'Deleting…', () => deleteDocument.mutate({ id }))) onchanged();
+		if (await run(id, 'Deleting…', () => mutate(deleteDocument, { id }))) onchanged();
 	}
 
 	function needsPortfolio(type: string): boolean {
@@ -152,7 +152,7 @@
 
 	function quickImport(doc: Document, match: NonNullable<ReturnType<typeof autoMatch>>) {
 		return run(doc.id, 'Importing…', () =>
-			confirmImport.mutate({
+			mutate(confirmImport, {
 				documentID: doc.id,
 				input: { portfolioID: match.portfolioID, cashAccountID: match.cashAccountID, transactions: [] }
 			})

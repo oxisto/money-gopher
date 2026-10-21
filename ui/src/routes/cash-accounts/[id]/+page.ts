@@ -1,9 +1,24 @@
-import { load_CashAccountDetail } from '$houdini';
+import { graphql, query } from '$lib/graphql/client';
+import { ActivityTransaction } from '$lib/graphql/documents';
 import type { PageLoad } from './$types';
 
-export const load: PageLoad = async (event) => {
-	return await load_CashAccountDetail({
-		event,
-		variables: { id: event.params.id }
-	});
-};
+const CashAccountDetail = graphql(
+	`
+		query CashAccountDetail($id: ID!) {
+			cashAccount(id: $id) {
+				id
+				displayName
+				currency
+				iban
+				balance { amount currency }
+				transactions { ...ActivityTransaction }
+			}
+			securities { id displayName }
+			cashAccounts { id displayName currency }
+		}
+	`,
+	[ActivityTransaction]
+);
+
+export const load: PageLoad = async ({ fetch, params }) =>
+	query(CashAccountDetail, { id: params.id }, fetch);

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { invalidateAll } from '$app/navigation';
 	import ActivityFeed from '$lib/components/activity/ActivityFeed.svelte';
 	import TransactionForm from '$lib/components/TransactionForm.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -10,15 +11,14 @@
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
-	const CashAccountDetail = $derived(data.CashAccountDetail);
 
 	let addOpen = $state(false);
 
 	function refresh() {
-		CashAccountDetail.fetch({ policy: 'NetworkOnly' });
+		invalidateAll();
 	}
 
-	const account = $derived($CashAccountDetail.data?.cashAccount ?? null);
+	const account = $derived(data.cashAccount ?? null);
 	const transactions = $derived((account?.transactions ?? []) as FeedTransaction[]);
 
 	const stats = $derived.by(() => {
@@ -40,49 +40,41 @@
 	});
 </script>
 
-<!-- Only the initial load blanks the page; refetches keep the old data
-     (and the components' state) on screen. -->
-{#if $CashAccountDetail.fetching && !$CashAccountDetail.data}
-	<p class="text-sm text-muted">Loading…</p>
-{:else if $CashAccountDetail.errors?.length}
-	<p class="text-sm text-neg">Failed to load: {$CashAccountDetail.errors[0].message}</p>
-{:else if $CashAccountDetail.data}
-	{#if account}
-		<div class="mb-6 flex flex-wrap items-center gap-3">
-			<div class="flex-1">
-				<h1 class="text-lg font-semibold">{account.displayName}</h1>
-				<p class="num text-[13px] text-muted">
-					Cash account · {account.currency}{#if account.iban}
-						· {account.iban}{/if}
-				</p>
-			</div>
-			<Button onclick={() => (addOpen = true)}><Icon name="plus" size={15} /> Add transaction</Button>
+{#if account}
+	<div class="mb-6 flex flex-wrap items-center gap-3">
+		<div class="flex-1">
+			<h1 class="text-lg font-semibold">{account.displayName}</h1>
+			<p class="num text-[13px] text-muted">
+				Cash account · {account.currency}{#if account.iban}
+					· {account.iban}{/if}
+			</p>
 		</div>
+		<Button onclick={() => (addOpen = true)}><Icon name="plus" size={15} /> Add transaction</Button>
+	</div>
 
-		<Dialog bind:open={addOpen} title="Add transaction" wide>
-			<TransactionForm
-				defaultCashAccountID={account.id}
-				defaultType="DEPOSIT_CASH"
-				securities={$CashAccountDetail.data.securities}
-				cashAccounts={$CashAccountDetail.data.cashAccounts}
-				oncreated={() => {
-					addOpen = false;
-					refresh();
-				}}
-			/>
-		</Dialog>
+	<Dialog bind:open={addOpen} title="Add transaction" wide>
+		<TransactionForm
+			defaultCashAccountID={account.id}
+			defaultType="DEPOSIT_CASH"
+			securities={data.securities}
+			cashAccounts={data.cashAccounts}
+			oncreated={() => {
+				addOpen = false;
+				refresh();
+			}}
+		/>
+	</Dialog>
 
-		<div class="flex flex-col gap-6">
-			<StatStrip {stats} />
-			<ActivityFeed
-				{transactions}
-				securities={$CashAccountDetail.data.securities}
-				cashAccounts={$CashAccountDetail.data.cashAccounts}
-				showBalance
-				onchanged={refresh}
-			/>
-		</div>
-	{:else}
-		<p class="text-sm text-muted">Cash account not found.</p>
-	{/if}
+	<div class="flex flex-col gap-6">
+		<StatStrip {stats} />
+		<ActivityFeed
+			{transactions}
+			securities={data.securities}
+			cashAccounts={data.cashAccounts}
+			showBalance
+			onchanged={refresh}
+		/>
+	</div>
+{:else}
+	<p class="text-sm text-muted">Cash account not found.</p>
 {/if}
