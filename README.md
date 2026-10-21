@@ -39,6 +39,23 @@ signs everyone in as a development user. PDF import needs poppler's
 A `go build` without the npm step still works; the server then says so at `/`
 instead of serving the UI.
 
+### Docker
+
+Releases are published as `ghcr.io/oxisto/money-gopher` (linux/amd64 and
+arm64), with `pdftotext` included. Data lives in `/data`:
+
+```sh
+docker run -d --name money-gopher -p 8080:8080 -v money-gopher:/data \
+  ghcr.io/oxisto/money-gopher:0.3 \
+  -auth builtin -auth-password change-me -public-url http://localhost:8080
+```
+
+Without `-auth`, the server runs in development mode and signs everyone in
+as the same user — fine on your own machine, not for anything reachable by
+others. `-auth builtin` runs a small login server inside `moneyd`;
+`-auth oidc` with `-oidc-issuer`, `-oidc-client-id` and `-oidc-client-secret`
+uses an external identity provider. `moneyd -help` lists everything.
+
 `mgo`, the command-line client, is not functional yet.
 
 ## Development
