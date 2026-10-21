@@ -1,6 +1,10 @@
-# Money Gopher v2 — Redesign
+# Money Gopher — Redesign
 
-> Status: draft, decided 2026-07-04. This document captures the ground-up redesign of
+> Status: decided 2026-07-04; M0–M6 done, see "Status" below. Developed as
+> "v2" on a branch, merged into `main` in October 2026; releases continue
+> as v0.x, the next being v0.3.0.
+>
+> This document captures the ground-up redesign of
 > money-gopher. Everything from v1 is replaced except the gopher logo (`img/gopher.png`)
 > and the domain knowledge encoded in the old code.
 
@@ -265,9 +269,31 @@ Deleted from v1: all buf/proto/Connect artifacts (`buf*.yaml`, `mgo.proto`, `gen
 - AppNav: "Sign out" link to `/auth/logout` always visible; in dev mode it just
   calls the logout handler which clears the dev session cookie (harmless).
 
-## Status / handoff notes (updated 2026-07-04)
+## Status / handoff notes (updated 2026-10-21)
 
-Work happens on the `v2` branch. M0–M4 are done; M5 (PDF import) is next.
+Work happens on `main`. M0–M6 are done; M7 (ship it: embedded SPA, single
+binary, Dockerfile, a release workflow that matches) is next, and is what
+v0.3.0 waits for.
+
+**Since M6 (August–October 2026):**
+
+- Persistence moved from SQLite to lightsql — see `PORTING-LIGHTSQL.md`;
+  multi-write operations run in `db.Tx`, which retries write conflicts —
+  see `TRANSACTIONS.md`.
+- ING Kontoauszug (bank statement) importer, FX for foreign-currency bonds,
+  re-analysis of documents with reconciliation of already-imported rows.
+- `Query.netWorthHistory` for the overview chart (net worth against
+  invested capital over a `Period`).
+- **UI redesign** ("calm & dense"): design tokens with light/dark theme in
+  `ui/src/app.css`, a sidebar shell, and rebuilt pages — Overview,
+  Holdings (+ a page per holding with trades on the price chart),
+  Activity (one feed across accounts; also on cash account and portfolio
+  pages), Import inbox, Income (`/gains` redirects), Securities, People.
+  Shared pieces: `ui/StatStrip`, `Panel`, `Segmented`, `Dialog`, `Icon`,
+  `describeTransaction`/`labelOf`, `formatSignedMoney`/`toneOf`.
+  Open: ⌘K palette, a combined household view (needs backend support),
+  closed positions on Holdings, a daily-change column (needs
+  previous-day quotes).
 
 **Where M4 landed:**
 

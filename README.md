@@ -7,31 +7,35 @@ securities, transactions and performance over time — for the whole household,
 served from a single binary on your own machine.
 
 > [!NOTE]
-> This is version 2, a ground-up rewrite. The previous ConnectRPC/Next.js
-> implementation lives in the git history and the `v0.x` releases. The
-> redesign is documented in [docs/DESIGN.md](docs/DESIGN.md).
+> This is a ground-up rewrite. The previous ConnectRPC/Next.js implementation
+> lives in the git history and the `v0.2.x` releases. The design is documented
+> in [docs/DESIGN.md](docs/DESIGN.md).
 
 ## Tech stack
 
-- **Backend**: Go, SQLite ([sqlc](https://sqlc.dev) +
-  [goose](https://github.com/pressly/goose))
+- **Backend**: Go, [lightsql](https://github.com/oxisto/lightsql)
+  ([sqlc](https://sqlc.dev) + [goose](https://github.com/pressly/goose))
 - **API**: GraphQL via
   [graph-gophers/graphql-go](https://github.com/graph-gophers/graphql-go) —
   schema-first, see [api/schema.graphql](api/schema.graphql)
 - **Frontend**: SvelteKit SPA with Tailwind CSS 4 and
-  [Houdini](https://houdinigraph.org), embedded into the server binary
+  [Houdini](https://houdinigraph.org); embedding it into the server binary is
+  still to come
 - **Imports**: bank PDFs via poppler's `pdftotext` and per-bank parsers
 
 ## Getting started
 
 ```sh
-go run ./cmd/moneyd
+go run ./cmd/moneyd        # API on :8080, data in ./moneyd-data
+cd ui && npm install && npm run dev   # UI on :5173, proxies to moneyd
 ```
 
-`moneyd` listens on `:8080` and creates a `money.db` SQLite database in the
-working directory. The GraphQL API is served at `/graphql`.
+`moneyd` stores its data in the `moneyd-data` directory (`-db` to change it)
+and serves the GraphQL API at `/graphql`. Without `-auth`, it signs everyone
+in as a development user. PDF import needs poppler's `pdftotext` on the
+`PATH`.
 
-`mgo`, the command-line client, is not functional yet in v2.
+`mgo`, the command-line client, is not functional yet.
 
 ## Development
 
@@ -42,6 +46,6 @@ go test ./...
 
 ## Status
 
-Version 2 is under heavy construction; see the milestones in
+Under heavy construction; see the milestones in
 [docs/DESIGN.md](docs/DESIGN.md). Expect breaking changes, including to the
-database schema, until the first v2 release.
+database schema, until v0.3.0 ships as a single binary.
