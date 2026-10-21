@@ -220,6 +220,47 @@ func TestING_ParseTrade_ForeignBond(t *testing.T) {
 	}
 }
 
+// TestING_ParseTrade_ForeignBondSale: on a sale the accrued interest is
+// received, not paid, so it enters Fees with the opposite sign — Fees go
+// negative — and gross − Fees − Taxes must reproduce the Endbetrag.
+func TestING_ParseTrade_ForeignBondSale(t *testing.T) {
+	text, err := os.ReadFile("testdata/ing/sell_bond_fx.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	txs, err := ING{}.Parse(string(text))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	tx := txs[0]
+
+	if tx.Type != "SELL" || tx.Units != 1500 || tx.PriceCurrency != "USD" {
+		t.Errorf("Type/Units/PriceCurrency = %s/%v/%s, want SELL/1500/USD", tx.Type, tx.Units, tx.PriceCurrency)
+	}
+	if got := tx.FxRate.StringPrec(4); got != "1.0308" {
+		t.Errorf("FxRate = %s, want 1.0308", got)
+	}
+	// KapSt 552.70 + KiSt 44.21 + Soli 30.39.
+	if tx.Taxes != 62730 {
+		t.Errorf("Taxes = %d, want 62730", tx.Taxes)
+	}
+	// Provision 69.90 minus the Stückzinsen received: 147,900.37 (ING's
+	// converted Zwischensumme) − 149,983.50 USD / 1.0308 = 2,398.33 EUR,
+	// which is what page 2 prints as "Erhaltene Kapst-pflichtige Stückzinsen".
+	if tx.Fees != 6990-239833 {
+		t.Errorf("Fees = %d, want %d", tx.Fees, 6990-239833)
+	}
+	if tx.CashDelta != 14720317 {
+		t.Errorf("CashDelta = %d, want 14720317", tx.CashDelta)
+	}
+
+	grossEUR := tx.Price.MulFloat(tx.Units).Div(tx.FxRate).MulInt(100).RoundToInt64()
+	if got, want := grossEUR-tx.Fees-tx.Taxes, int64(14720317); got != want {
+		t.Errorf("gross(EUR)−Fees−Taxes = %d, want %d (Endbetrag)", got, want)
+	}
+}
+
 // TestING_ParseTrade_ForeignBondRoundingBoundary covers a real-world case
 // where converting Kurswert and Stückzinsen to EUR separately (each rounded
 // to the cent) lands a cent away from converting their combined Zwischensumme

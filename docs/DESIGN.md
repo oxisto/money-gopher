@@ -333,6 +333,13 @@ deferred.
   which `/upload` answers with 409 and a message naming the earlier file.
   Documents from before the column are hashed at moneyd startup
   (`Service.BackfillHashes`).
+- **Accrued interest on bond trades.** ING folds Stückzinsen into the
+  Zwischensumme. The parser keeps it in Fees so that Kurswert ± Fees ± Taxes
+  reproduces the Endbetrag: paid on a purchase (positive), received on a
+  sale (negative — Fees can go below zero). It is therefore part of the
+  sale's realized gain rather than interest income on the Income page; a
+  separate INTEREST transaction would classify it better but would have to
+  split the document's taxes by guesswork.
 - **Security kind.** `securities.kind` (STOCK, ETF, FUND, BOND, OTHER; null
   until set) and `SecurityKind` in the schema. The ING parser suggests one
   per staged transaction (`security_kind`: a face value and a percentage

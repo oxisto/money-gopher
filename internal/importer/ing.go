@@ -262,6 +262,18 @@ func ingParseTrade(text string) (StagedTransaction, error) {
 	}
 	fees += ingFeeSum(text, currency)
 
+	// Stückzinsen is accrued interest: paid on top of the price on a
+	// purchase, received on top of it on a sale. ING folds it into the
+	// Zwischensumme, so it lives in Fees with the direction's sign —
+	// negative on a sale — which keeps Kurswert ± Fees ± Taxes equal to the
+	// Endbetrag. A foreign-currency bond's Stückzinsen is in its own
+	// currency and is covered by the conversion residual below instead.
+	if accrued := ingAccruedInterest(text, currency); txType == "SELL" {
+		fees -= accrued
+	} else {
+		fees += accrued
+	}
+
 	// A foreign bond's accrued interest (Stückzinsen) is quoted in its own
 	// currency and has no dedicated field — same as the EUR-bond case, it's
 	// folded into Fees. Rather than parsing Stückzinsen and converting it
@@ -278,7 +290,11 @@ func ingParseTrade(text string) (StagedTransaction, error) {
 	if priceCurrency != "" {
 		kurswertEUR := price.MulFloat(units).Div(fxRate).MulInt(100).RoundToInt64()
 		fxConvertedEURMinor := fxConvertedEUR.MulInt(100).RoundToInt64()
-		fees += fxConvertedEURMinor - kurswertEUR
+		if accrued := fxConvertedEURMinor - kurswertEUR; txType == "SELL" {
+			fees -= accrued
+		} else {
+			fees += accrued
+		}
 	}
 
 	// Taxes (optional – only on sell with a realised gain).
@@ -640,8 +656,7 @@ func ingFeeSum(text, currency string) int64 {
 	for _, line := range strings.Split(text, "\n") {
 		isFee := strings.Contains(line, "Handelsplatzgebühr") ||
 			strings.Contains(line, "Variables Transaktionsentgelt") ||
-			strings.Contains(line, "Handelsentgelt") ||
-			strings.Contains(line, "Stückzinsen")
+			strings.Contains(line, "Handelsentgelt")
 		if !isFee || !strings.Contains(line, currency) {
 			continue
 		}
@@ -654,6 +669,27 @@ func ingFeeSum(text, currency string) int64 {
 		}
 	}
 	return total
+}
+
+// ingStueckzinsen is the Stückzinsen line of a trade: "Stückzinsen   EUR
+// 51,23 (Zinsvaluta 23.03.2026 143 Tage)". Anchored to the line start so
+// that page 2's tax summary ("Gezahlte Stückzinsen 51,23 EUR", "Erhaltene
+// Kapst-pflichtige Stückzinsen ...") is not counted again.
+var ingStueckzinsen = regexp.MustCompile(`(?m)^\s*Stückzinsen\s+([A-Z]{3})\s+([\d.]+,\d+)`)
+
+// ingAccruedInterest returns the trade's Stückzinsen in minor units when
+// it is stated in currency, and 0 when there is none (a stock) or it is
+// in another currency (a foreign bond, handled via the FX residual).
+func ingAccruedInterest(text, currency string) int64 {
+	m := ingStueckzinsen.FindStringSubmatch(text)
+	if m == nil || m[1] != currency {
+		return 0
+	}
+	v, err := ingMinor(m[2])
+	if err != nil {
+		return 0
+	}
+	return v
 }
 
 // ingFindLineAmount finds the first line containing label (and optionally also
