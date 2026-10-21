@@ -1,0 +1,13 @@
+.git
+.github
+legacy
+docs
+img
+*.md
+moneyd
+moneyd-data*
+money.db*
+moneyd.db
+ui/node_modules
+ui/build
+ui/.svelte-kit
