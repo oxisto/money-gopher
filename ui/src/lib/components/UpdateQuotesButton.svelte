@@ -43,11 +43,11 @@
 </script>
 
 <div class="flex items-center gap-3">
-	<Button type="button" disabled={busy} onclick={update}>
+	{#if message}
+		<span class="text-[13px] text-muted">{message}</span>
+	{/if}
+	<Button variant="secondary" disabled={busy} onclick={update}>
 		{busy ? 'Updating…' : 'Update quotes'}
 	</Button>
-	{#if message}
-		<span class="text-sm text-muted">{message}</span>
-	{/if}
 </div>
 <ErrorNote message={error} />

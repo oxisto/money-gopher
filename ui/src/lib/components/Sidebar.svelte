@@ -22,7 +22,7 @@
 		{ href: '/holdings', label: 'Holdings', icon: 'M4 20V10M10 20V4M16 20v-7M22 20H2' },
 		{ href: '/activity', label: 'Activity', icon: 'M3 6h18M3 12h18M3 18h12' },
 		{
-			href: '/gains',
+			href: '/income',
 			label: 'Income',
 			icon: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 7v10M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4'
 		},

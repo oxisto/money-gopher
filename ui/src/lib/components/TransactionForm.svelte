@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { graphql, TransactionType } from '$houdini';
 	import type { TransactionType$options } from '$houdini';
+	import { labelOf } from '$lib/describe';
 	import { formatMoney, parseAmount, parsePrice } from '$lib/format';
 	import type { SecurityOption, CashAccountOption } from '$lib/transaction-types';
 	import Button from './ui/Button.svelte';
@@ -98,11 +99,11 @@
 	}
 </script>
 
-<form onsubmit={submit} class="rounded-md border border-line bg-surface p-4">
+<form onsubmit={submit}>
 	<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		<SelectField bind:value={type} label="Type" required>
 			{#each Object.values(TransactionType) as option (option)}
-				<option value={option}>{option}</option>
+				<option value={option}>{labelOf(option)}</option>
 			{/each}
 		</SelectField>
 

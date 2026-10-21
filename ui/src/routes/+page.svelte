@@ -301,7 +301,7 @@
 
 			<Panel title="Income">
 				{#snippet aside()}
-					<a href="/gains" class="num text-xs text-muted hover:text-fg">
+					<a href="/income" class="num text-xs text-muted hover:text-fg">
 						{new Date().getFullYear()} · <strong class="font-semibold text-fg">{formatMoney(income.total)}</strong> dividends
 						&amp; interest →
 					</a>

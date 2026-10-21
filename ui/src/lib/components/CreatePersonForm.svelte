@@ -5,6 +5,8 @@
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import TextField from './ui/TextField.svelte';
 
+	let { oncreated }: { oncreated?: () => void } = $props();
+
 	const createPerson = graphql(`
 		mutation CreatePerson($displayName: String!) {
 			createPerson(displayName: $displayName) {
@@ -30,12 +32,16 @@
 			// fragment above doesn't reach it. Same fix as switchPerson's.
 			cache.markStale();
 			await invalidateAll();
+			oncreated?.();
 		}
 	}
 </script>
 
-<form onsubmit={submit} class="flex items-end gap-2 rounded-md border border-line bg-surface p-4">
+<form onsubmit={submit} class="flex flex-col gap-3">
+	<p class="text-xs text-muted">
+		A person is whose money it is — you, a partner, a child, or a shared household. Accounts belong to a person.
+	</p>
 	<TextField bind:value={name} label="Name" placeholder="e.g. Jane Doe" required />
-	<Button type="submit">Create person</Button>
+	<ErrorNote message={error} />
+	<div class="flex justify-end"><Button type="submit">Create person</Button></div>
 </form>
-<ErrorNote message={error} />

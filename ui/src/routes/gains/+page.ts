@@ -1,6 +1,6 @@
-import { load_RealizedGains } from '$houdini';
-import type { PageLoad } from './$types';
+import { redirect } from '@sveltejs/kit';
 
-export const load: PageLoad = async (event) => {
-	return await load_RealizedGains({ event });
+// Realized gains moved to /income; keep old links working.
+export const load = () => {
+	redirect(301, '/income');
 };

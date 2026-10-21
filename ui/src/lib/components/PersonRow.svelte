@@ -2,7 +2,6 @@
 	import { graphql, type People$result } from '$houdini';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
-	import SelectField from './ui/SelectField.svelte';
 	import TextField from './ui/TextField.svelte';
 
 	let {
@@ -84,55 +83,64 @@
 	}
 </script>
 
-<li class="px-4 py-3">
-	<div class="flex items-center justify-between gap-2">
+<li class="flex flex-wrap items-center gap-3 px-4 py-3">
+	<span class="grid size-8 shrink-0 place-items-center rounded-lg bg-accent-soft text-sm font-semibold text-accent-fg">
+		{person.displayName.charAt(0)}
+	</span>
+	<div class="min-w-0 flex-1">
 		{#if editing}
-			<div class="flex flex-1 items-center gap-2">
-				<TextField bind:value={name} />
-				<Button type="button" onclick={saveName}>Save</Button>
-				<Button type="button" onclick={cancelEdit}>Cancel</Button>
+			<div class="flex flex-wrap items-center gap-2">
+				<div class="min-w-48 flex-1"><TextField bind:value={name} /></div>
+				<Button onclick={saveName}>Save</Button>
+				<Button variant="secondary" onclick={cancelEdit}>Cancel</Button>
 			</div>
 		{:else}
-			<span class="text-sm font-medium">{person.displayName}</span>
-			<button
-				onclick={() => (editing = true)}
-				class="text-xs text-muted hover:text-fg"
-			>
-				Rename
-			</button>
+			<div class="font-medium">{person.displayName}</div>
 		{/if}
-	</div>
 
-	<div class="mt-2 flex flex-wrap items-center gap-1.5">
-		{#each person.users as user (user.id)}
-			<span
-				class="flex items-center gap-1 rounded bg-hover px-1.5 py-0.5 text-xs text-muted"
-			>
-				{user.displayName}
-				{#if person.users.length > 1}
-					<button
-						onclick={() => revoke(user.id)}
-						title="Revoke access"
-						class="text-muted hover:text-neg"
-					>
-						×
-					</button>
-				{/if}
-			</span>
-		{/each}
-	</div>
-
-	{#if availableUsers.length > 0}
-		<div class="mt-2 flex items-center gap-2">
-			<SelectField bind:value={grantUserID}>
-				<option value="">Grant access to…</option>
-				{#each availableUsers as user (user.id)}
-					<option value={user.id}>{user.displayName}</option>
+		<!-- With a single login, who has access is obvious and only noise. -->
+		{#if allUsers.length > 1}
+			<div class="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
+				<span class="text-muted">Access:</span>
+				{#each person.users as user (user.id)}
+					<span class="flex items-center gap-1 rounded-full border border-line bg-raised px-2 py-0.5">
+						{user.displayName}
+						{#if person.users.length > 1}
+							<button
+								type="button"
+								onclick={() => revoke(user.id)}
+								aria-label="Revoke access for {user.displayName}"
+								class="text-muted hover:text-neg"
+							>
+								×
+							</button>
+						{/if}
+					</span>
 				{/each}
-			</SelectField>
-			<Button type="button" onclick={grant}>Grant</Button>
-		</div>
+				{#if availableUsers.length > 0}
+					<select
+						bind:value={grantUserID}
+						onchange={grant}
+						aria-label="Grant access"
+						class="h-6.5 rounded-full py-0 pr-7 pl-2.5 text-xs"
+					>
+						<option value="">+ Share with…</option>
+						{#each availableUsers as user (user.id)}
+							<option value={user.id}>{user.displayName}</option>
+						{/each}
+					</select>
+				{/if}
+			</div>
+		{/if}
+		<ErrorNote message={error} />
+	</div>
+	{#if !editing}
+		<button
+			type="button"
+			onclick={() => (editing = true)}
+			class="rounded-md px-2 py-1 text-xs text-muted hover:bg-hover hover:text-fg"
+		>
+			Rename
+		</button>
 	{/if}
-
-	<ErrorNote message={error} />
 </li>

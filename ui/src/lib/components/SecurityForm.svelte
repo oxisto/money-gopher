@@ -5,6 +5,8 @@
 	import SelectField from './ui/SelectField.svelte';
 	import TextField from './ui/TextField.svelte';
 
+	let { oncreated }: { oncreated?: () => void } = $props();
+
 	const createSecurity = graphql(`
 		mutation CreateSecurity($input: CreateSecurityInput!) {
 			createSecurity(input: $input) {
@@ -47,12 +49,13 @@
 			isin = '';
 			ticker = '';
 			exchange = '';
+			oncreated?.();
 		}
 	}
 </script>
 
-<form onsubmit={submit} class="rounded-md border border-line bg-surface p-4">
-	<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+<form onsubmit={submit}>
+	<div class="grid gap-3 sm:grid-cols-2">
 		<TextField bind:value={name} label="Name" placeholder="e.g. iShares Core MSCI World" required />
 		<TextField bind:value={isin} label="ISIN" placeholder="e.g. IE00B4L5Y983" maxlength={12} />
 		<TextField bind:value={ticker} label="Ticker" placeholder="e.g. EUNL" />
@@ -65,8 +68,8 @@
 		</SelectField>
 	</div>
 
-	<div class="mt-4">
+	<ErrorNote message={error} />
+	<div class="mt-4 flex justify-end">
 		<Button type="submit">Create security</Button>
 	</div>
-	<ErrorNote message={error} />
 </form>

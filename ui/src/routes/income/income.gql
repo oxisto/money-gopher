@@ -31,6 +31,12 @@ query RealizedGains($from: Time, $to: Time) {
 				id
 				displayName
 			}
+			cashAccount {
+				displayName
+			}
+			portfolio {
+				displayName
+			}
 		}
 	}
 }
