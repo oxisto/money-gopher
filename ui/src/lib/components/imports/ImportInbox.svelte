@@ -44,7 +44,7 @@
 		onchanged
 	}: {
 		documents: Document[];
-		portfolios: { id: string; displayName: string }[];
+		portfolios: { id: string; displayName: string; snapshot?: { positions: { asset: { id: string } }[] } }[];
 		cashAccounts: { id: string; displayName: string; currency: string }[];
 		securities: { id: string; displayName: string }[];
 		onchanged: () => void;
@@ -150,7 +150,7 @@
 		if (!cashAccountID) return null;
 
 		const portfolioRequired = doc.stagedTransactions.some((tx) => needsPortfolio(tx.type));
-		const portfolioID = portfolioRequired ? (portfolios.length === 1 ? portfolios[0].id : null) : null;
+		const portfolioID = portfolioRequired ? portfolioFor(doc) : null;
 		if (portfolioRequired && !portfolioID) return null;
 
 		for (const tx of doc.stagedTransactions) {
@@ -158,6 +158,21 @@
 			if (tx.calculatedCashDelta && tx.calculatedCashDelta.amount !== tx.cashDelta.amount) return null;
 		}
 		return { cashAccountID, portfolioID };
+	}
+
+	// The portfolio a document's securities belong in: the only one there
+	// is, or the one that already holds every security the document names
+	// (a dividend or a further purchase of something held). A first
+	// purchase with several portfolios to choose from is left to review.
+	function portfolioFor(doc: Document): string | null {
+		if (portfolios.length === 1) return portfolios[0].id;
+		const assetIDs = doc.stagedTransactions.filter((tx) => tx.asset).map((tx) => tx.asset!.id);
+		if (assetIDs.length === 0) return null;
+		const holding = portfolios.filter((p) => {
+			const held = new Set(p.snapshot?.positions.map((pos) => pos.asset.id) ?? []);
+			return assetIDs.every((id) => held.has(id));
+		});
+		return holding.length === 1 ? holding[0].id : null;
 	}
 
 	function quickImport(doc: Document, match: NonNullable<ReturnType<typeof autoMatch>>) {
@@ -349,7 +364,7 @@
 									{:else if s.unmatched}
 										{s.unmatched} unknown {s.unmatched === 1 ? 'asset' : 'securities'}
 									{:else if !match}
-										amounts match · choose the account
+										amounts match · choose the {doc.suggestedCashAccount ? 'portfolio' : 'account'}
 									{:else}
 										✓ ready to import
 									{/if}
