@@ -416,6 +416,19 @@ deferred.
   line). Confirming a scheduled booking does not overwrite a note;
   re-importing after a re-analysis upgrades a note that is empty or a
   prefix of the parser's newer wording (`reconciledNote`).
+- **Suggested schedules.** `schedule.Suggest` reads what recurs off an
+  account's own deposits and withdrawals (transfer legs and scheduled
+  bookings left out): groups by counterparty (the note's head without the
+  Buchungsart, lower case, digits dropped), three occurrences in three
+  months or more, the median gap between neighbours deciding monthly,
+  quarterly or yearly (missing statements tolerated), the median day, and
+  the amounts split into steps where they change (runs within 3 %; a
+  final run of one is the newest amount); nothing stable means a variable
+  amount with one average. `CashAccount.suggestedSchedules` serves them,
+  `covered` when a schedule of that name exists; the account page lists
+  them under the schedules with "Create schedule", which opens the form
+  prefilled. The first task meant for the agent (M11): the arithmetic is
+  here, the conversation is not.
 - **Several documents per transaction.** `transaction_documents`
   (migration 0019, backfilled from `transactions.document_id`, which
   stays as the origin) holds every document describing a transaction:

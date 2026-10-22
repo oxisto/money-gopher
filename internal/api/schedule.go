@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -875,4 +876,59 @@ func (r *TransactionResolver) ScheduledFor() *graphql.Time {
 		return nil
 	}
 	return &graphql.Time{Time: r.transaction.ScheduledFor.Time}
+}
+
+// ScheduleSuggestionResolver resolves ScheduleSuggestion.
+type ScheduleSuggestionResolver struct {
+	s        schedule.Suggestion
+	currency string
+	covered  bool
+}
+
+func (r *ScheduleSuggestionResolver) Name() string           { return r.s.Name }
+func (r *ScheduleSuggestionResolver) Incoming() bool         { return r.s.Incoming }
+func (r *ScheduleSuggestionResolver) Interval() string       { return string(r.s.Recurrence) }
+func (r *ScheduleSuggestionResolver) DayOfMonth() int32      { return int32(r.s.DayOfMonth) }
+func (r *ScheduleSuggestionResolver) Start() graphql.Time    { return graphql.Time{Time: r.s.Start} }
+func (r *ScheduleSuggestionResolver) LastSeen() graphql.Time { return graphql.Time{Time: r.s.LastSeen} }
+func (r *ScheduleSuggestionResolver) Count() int32           { return int32(r.s.Count) }
+func (r *ScheduleSuggestionResolver) Variable() bool         { return r.s.Variable }
+func (r *ScheduleSuggestionResolver) Covered() bool          { return r.covered }
+func (r *ScheduleSuggestionResolver) Steps() []*ScheduleStepResolver {
+	out := make([]*ScheduleStepResolver, 0, len(r.s.Steps))
+	for _, st := range r.s.Steps {
+		out = append(out, &ScheduleStepResolver{step: &persistence.ScheduleStep{FromDate: st.From, Amount: st.Amount}, currency: r.currency})
+	}
+	return out
+}
+
+// SuggestedSchedules resolves CashAccount.suggestedSchedules.
+func (r *CashAccountResolver) SuggestedSchedules(ctx context.Context) ([]*ScheduleSuggestionResolver, error) {
+	txs, err := r.db.ListTransactionsByCashAccount(ctx, sql.NullString{String: r.account.ID, Valid: true})
+	if err != nil {
+		return nil, err
+	}
+	var ms []schedule.Movement
+	for _, tx := range txs {
+		if tx.ScheduleID.Valid || tx.TransferID.Valid || !tx.Note.Valid {
+			continue
+		}
+		if tx.Type != "DEPOSIT_CASH" && tx.Type != "WITHDRAW_CASH" {
+			continue
+		}
+		ms = append(ms, schedule.Movement{Time: tx.Time, Amount: tx.CashDelta, Note: tx.Note.String})
+	}
+	existing, err := r.Schedules(ctx)
+	if err != nil {
+		return nil, err
+	}
+	names := map[string]bool{}
+	for _, s := range existing {
+		names[strings.ToLower(s.s.DisplayName)] = true
+	}
+	out := []*ScheduleSuggestionResolver{}
+	for _, s := range schedule.Suggest(ms, 3) {
+		out = append(out, &ScheduleSuggestionResolver{s: s, currency: r.account.Currency, covered: names[strings.ToLower(s.Name)]})
+	}
+	return out, nil
 }

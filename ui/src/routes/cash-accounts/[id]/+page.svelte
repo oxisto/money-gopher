@@ -4,6 +4,7 @@
 	import TransactionForm from '#lib/components/TransactionForm.svelte';
 	import TransferForm from '#lib/components/TransferForm.svelte';
 	import ScheduleForm from '#lib/components/ScheduleForm.svelte';
+	type ScheduleFormPreset = { name: string; type: string; dayOfMonth: number; start: string; steps: { from: string; amount: string }[]; books: boolean };
 	import Panel from '#lib/components/ui/Panel.svelte';
 	import Checkbox from '#lib/components/ui/Checkbox.svelte';
 	import { intervalLabel, scheduleTypeLabel } from '#lib/describe.js';
@@ -29,6 +30,26 @@
 	type Schedule = NonNullable<typeof account>['schedules'][number];
 	let scheduleOpen = $state(false);
 	let editingSchedule = $state<Schedule | null>(null);
+	type Suggestion = NonNullable<typeof account>['suggestedSchedules'][number];
+	let preset = $state<ScheduleFormPreset | null>(null);
+	const suggestions = $derived((data.cashAccount?.suggestedSchedules ?? []).filter((s) => !s.covered));
+	function dateOnly(t: Date | string): string {
+		return new Date(t).toISOString().slice(0, 10);
+	}
+	/** Opens the form for a new schedule shaped like the suggestion. An estimated account gets expectations only. */
+	function adopt(s: Suggestion) {
+		preset = {
+			name: s.name,
+			type: s.incoming ? 'DEPOSIT_CASH' : 'WITHDRAW_CASH',
+			dayOfMonth: s.dayOfMonth,
+			start: dateOnly(s.start),
+			steps: s.steps.map((st) => ({ from: dateOnly(st.from), amount: String(st.amount.amount / 100) })),
+			books: !data.cashAccount?.estimated
+		};
+		editingSchedule = null;
+		scheduleError = null;
+		scheduleOpen = true;
+	}
 	let deletingSchedule = $state<string | null>(null);
 	let scheduleError = $state<string | null>(null);
 	const deleteSchedule = graphql(`
@@ -43,6 +64,7 @@
 	`);
 	function openSchedule(s: Schedule | null) {
 		editingSchedule = s;
+		preset = null;
 		scheduleError = null;
 		scheduleOpen = true;
 	}
@@ -189,12 +211,13 @@
 	</div>
 
 	<Dialog bind:open={scheduleOpen} title={editingSchedule ? 'Edit schedule' : 'New schedule'}>
-		{#key editingSchedule?.id ?? 'new'}
+		{#key editingSchedule?.id ?? preset?.name ?? 'new'}
 			<ScheduleForm
 				{account}
 				cashAccounts={data.cashAccounts}
 				assets={[...data.securities, ...data.assets]}
 				schedule={editingSchedule}
+				{preset}
 				onsaved={() => {
 					scheduleOpen = false;
 					refresh();
@@ -319,6 +342,36 @@
 					</tbody>
 				</table>
 				<p class="text-xs text-muted">Booked transactions stay when a schedule is deleted.</p>
+			{/if}
+			{#if suggestions.length > 0}
+				<div class="mt-2 border-t border-line pt-3">
+					<p class="mb-2 text-xs font-medium text-muted" title="Read off the statements: a counterparty that recurs on a rhythm, with its amounts split where they changed">
+						Seen recurring on this account
+					</p>
+					<table class="num w-full text-[13px]">
+						<tbody class="divide-y divide-line">
+							{#each suggestions as s (s.name + s.incoming)}
+								{@const latest = s.steps[s.steps.length - 1]}
+								<tr>
+									<td class="py-1.5 pr-3">
+										<div class="truncate font-medium" title={s.name}>{s.name}</div>
+										<div class="text-xs text-muted">
+											{s.incoming ? 'in' : 'out'} · {intervalLabel(s.interval)} on the {s.dayOfMonth}. · {s.count}× since {formatDate(s.start)}{#if s.steps.length > 1}
+												· {s.steps.length} amounts{/if}{#if s.variable}
+												· varies{/if}
+										</div>
+									</td>
+									<td class="py-1.5 pr-3 text-right tabular-nums {s.incoming ? 'text-pos' : ''}">
+										{s.variable ? '≈ ' : ''}{formatSignedMoney({ amount: (s.incoming ? 1 : -1) * latest.amount.amount, currency: latest.amount.currency })}
+									</td>
+									<td class="py-1.5 text-right text-xs whitespace-nowrap">
+										<button class="text-accent-fg hover:underline" onclick={() => adopt(s)}>Create schedule</button>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
 			{/if}
 			<ErrorNote message={scheduleError} />
 		</Panel>

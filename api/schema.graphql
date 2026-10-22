@@ -121,6 +121,12 @@ type CashAccount {
   estimated: Boolean!
   "Recurring cash flows landing on this account, or paid from it."
   schedules: [Schedule!]!
+  """
+  What recurs among the account's own deposits and withdrawals, read off
+  the statements: proposals for schedules, three occurrences or more.
+  Transfer legs and scheduled bookings are left out.
+  """
+  suggestedSchedules: [ScheduleSuggestion!]!
   "The declared balance and when it was declared; null for a tracked account."
   declaredBalance: Money
   declaredAt: Time
@@ -578,6 +584,29 @@ type Schedule {
   unconfirmed: [Transaction!]!
   "Occurrences with from <= date < to, signed as they hit cashAccount."
   flows(from: Time!, to: Time!): [ExpectedFlow!]!
+}
+
+"""
+A recurring movement read off an account's transactions: a salary on the
+28th, a card bill on the 3rd, an insurance once a year. A proposal for a
+schedule, with the amounts split into steps where they changed.
+"""
+type ScheduleSuggestion {
+  "The counterparty as the statement prints it."
+  name: String!
+  incoming: Boolean!
+  interval: ScheduleInterval!
+  dayOfMonth: Int!
+  start: Time!
+  lastSeen: Time!
+  "How many occurrences were seen."
+  count: Int!
+  "The amounts in force from a date on, unsigned."
+  steps: [ScheduleStep!]!
+  "The amount changes from one occurrence to the next; steps holds one average."
+  variable: Boolean!
+  "A schedule of this name already exists on the account."
+  covered: Boolean!
 }
 
 "One occurrence of a schedule."
