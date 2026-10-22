@@ -180,9 +180,13 @@
 			(s) => s.calculatedCashDelta && s.calculatedCashDelta.amount !== s.cashDelta.amount
 		).length;
 		const unmatched = staged.filter((s) => !s.asset && (s.isin || s.assetHint)).length;
-		const amount = staged.length
-			? staged.reduce((s, t) => s + t.cashDelta.amount, 0)
-			: doc.transactions.reduce((s, t) => s + t.cashDelta.amount, 0);
+		const rows = staged.length ? staged : doc.transactions;
+		const amount = rows.reduce((s, t) => s + t.cashDelta.amount, 0);
+		// A statement nets many movements; the net alone reads as if only
+		// one direction had been counted, so say what went in and out.
+		const inflow = rows.reduce((s, t) => s + Math.max(t.cashDelta.amount, 0), 0);
+		const outflow = rows.reduce((s, t) => s + Math.min(t.cashDelta.amount, 0), 0);
+		const currency = rows[0]?.cashDelta.currency ?? 'EUR';
 		const d = first
 			? describeTransaction({
 					...first,
@@ -199,7 +203,11 @@
 			]
 				.filter(Boolean)
 				.join(' · '),
-			amount: { amount, currency: first?.cashDelta.currency ?? doc.transactions[0]?.cashDelta.currency ?? 'EUR' },
+			amount: { amount, currency },
+			flows:
+				rows.length > 1 && inflow && outflow
+					? { inflow: { amount: inflow, currency }, outflow: { amount: outflow, currency } }
+					: null,
 			mismatches,
 			unmatched
 		};
@@ -318,6 +326,11 @@
 							</div>
 							<div class="ml-auto text-right">
 								<div class="font-semibold {s.amount.amount > 0 ? 'text-pos' : ''}">{formatSignedMoney(s.amount)}</div>
+								{#if s.flows}
+									<div class="text-[11px] text-muted">
+										{formatSignedMoney(s.flows.inflow)} in · {formatSignedMoney(s.flows.outflow)} out
+									</div>
+								{/if}
 								<!-- Say what review is needed for, in the order it has to be fixed. -->
 								<div class="text-xs {s.mismatches || s.unmatched ? 'text-neg' : match ? 'text-pos' : 'text-muted'}">
 									{#if doc.state !== 'PARSED'}
