@@ -135,9 +135,9 @@
 				},
 				{
 					label: 'Return, all time',
-					value: formatPercent(snap.performance.timeWeightedReturn),
-					sub: 'time-weighted',
-					tone: toneOf(snap.performance.timeWeightedReturn)
+					value: formatSignedMoney(snap.allTime.total),
+					sub: `${formatPercent(snap.allTime.timeWeightedReturn)} time-weighted`,
+					tone: toneOf(snap.allTime.total.amount)
 				}
 			]}
 		/>
