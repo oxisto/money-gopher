@@ -258,8 +258,9 @@
 				{/each}
 			</SelectField>
 			<p class="text-xs text-muted">
-				The cost basis is the transfer-in in the history below; open it to change the amount or the
-				date. Valuations are recorded with the button next to this one.
+				The cost basis is the transfer-in transaction: open the "Other assets" portfolio from the
+				sidebar, pick it in the activity feed and press Edit to change the amount or the date.
+				Valuations are recorded with the button next to this one.
 			</p>
 			<ErrorNote message={editError} />
 			<div class="mt-2 flex justify-end gap-2">
