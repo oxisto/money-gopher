@@ -261,6 +261,25 @@
 		}));
 	});
 	let openGroup = $state<string | null>(null);
+
+	// The Imported tab grows with every statement: a search over the file
+	// name, the title, the bank and the date, and a bank filter.
+	let importedQuery = $state('');
+	let importedBank = $state('all');
+	const banks = $derived(
+		[...new Set(byTab.imported.map((d) => d.detectedBank).filter((b): b is string => !!b))].sort()
+	);
+	const importedFiltered = $derived.by(() => {
+		const q = importedQuery.trim().toLowerCase();
+		return byTab.imported.filter((doc) => {
+			if (importedBank !== 'all' && doc.detectedBank !== importedBank) return false;
+			if (!q) return true;
+			const s = summary(doc);
+			return [doc.filename, s.title, doc.detectedBank, doc.transactionDate ? formatDate(doc.transactionDate) : '']
+				.filter(Boolean)
+				.some((v) => String(v).toLowerCase().includes(q));
+		});
+	});
 </script>
 
 {#snippet secondaryActions(doc: Document)}
@@ -464,6 +483,31 @@
 			</section>
 		{/each}
 	{:else}
+		<div class="flex flex-wrap items-center gap-2.5">
+			<label class="relative block w-full max-w-64">
+				<span class="sr-only">Search imported documents</span>
+				<span class="pointer-events-none absolute inset-y-0 left-2.5 grid place-items-center text-muted">
+					<Icon name="search" size={15} />
+				</span>
+				<input type="search" bind:value={importedQuery} placeholder="Search file, title or date" class="h-9 w-full pl-8" />
+			</label>
+			{#if banks.length > 1}
+				<div role="radiogroup" aria-label="Bank" class="flex flex-wrap gap-1.5">
+					{#each ['all', ...banks] as b (b)}
+						<button
+							type="button"
+							role="radio"
+							aria-checked={importedBank === b}
+							onclick={() => (importedBank = b)}
+							class="rounded-full border px-2.5 py-1 text-xs {importedBank === b ? 'border-accent bg-accent-soft text-accent-fg' : 'border-line text-muted hover:text-fg'}"
+						>
+							{b === 'all' ? 'All' : b.toUpperCase()}
+						</button>
+					{/each}
+				</div>
+			{/if}
+			<span class="text-xs text-muted">{importedFiltered.length} of {byTab.imported.length}</span>
+		</div>
 		<div class="overflow-x-auto rounded-xl border border-line">
 			<table class="w-full min-w-[40rem] text-[13px]">
 				<thead class="bg-raised text-xs text-muted">
@@ -475,7 +519,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each byTab.imported as doc (doc.id)}
+					{#each importedFiltered as doc (doc.id)}
 						{@const s = summary(doc)}
 						<tr class="border-t border-line hover:bg-raised">
 							<td class="py-2 pr-3 pl-4 whitespace-nowrap text-muted">
