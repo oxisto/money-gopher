@@ -1,4 +1,8 @@
 <script lang="ts">
+	import { refreshAll } from '$app/navigation';
+	import TransactionEditForm from '#lib/components/TransactionEditForm.svelte';
+	import Button from '#lib/components/ui/Button.svelte';
+	import Dialog from '#lib/components/ui/Dialog.svelte';
 	import Icon from '#lib/components/ui/Icon.svelte';
 	import { describeTransaction, formatUnits } from '#lib/describe.js';
 	import { formatDate, formatMoney, formatPrice, formatSignedMoney, toneOf } from '#lib/format.js';
@@ -6,6 +10,8 @@
 
 	let { data }: PageProps = $props();
 	const tx = $derived(data.transaction);
+
+	let editOpen = $state(false);
 </script>
 
 {#if !tx}
@@ -35,6 +41,7 @@
 			<h1 class="text-lg font-semibold">{d.title}</h1>
 			<p class="text-[13px] text-muted">{formatDate(tx.time)}</p>
 		</div>
+		<Button variant="secondary" onclick={() => (editOpen = true)}>Edit</Button>
 		<div class="num text-right">
 			<div class="text-2xl font-semibold tracking-tight {tx.cashDelta.amount > 0 ? 'text-pos' : ''}">
 				{tx.cashDelta.amount ? formatSignedMoney(tx.cashDelta) : 'No cash movement'}
@@ -44,6 +51,21 @@
 			{/if}
 		</div>
 	</div>
+
+	<Dialog bind:open={editOpen} title="Edit transaction" wide>
+		{#if editOpen}
+			<TransactionEditForm
+				transaction={{ ...tx, cashAccount: tx.cashAccount ? { id: tx.cashAccount.id } : null }}
+				securities={data.securities}
+				cashAccounts={data.cashAccounts}
+				onsaved={() => {
+					editOpen = false;
+					refreshAll();
+				}}
+				oncancel={() => (editOpen = false)}
+			/>
+		{/if}
+	</Dialog>
 
 	<div class="flex flex-wrap items-start gap-5">
 		<div class="flex min-w-0 flex-[1_1_20rem] flex-col gap-5">
