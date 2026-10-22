@@ -346,8 +346,8 @@ func TestSchedule_PooledDebit(t *testing.T) {
 		t.Errorf("Giro after the statement = %v, want -116124 still (nothing doubled)", h.balance(giro))
 	}
 
-	// A second statement listing one of the legs again: the row is a
-	// duplicate of the now-confirmed booking.
+	// A second statement listing one of the legs again confirms it once
+	// more: the leg then carries both documents, and nothing is doubled.
 	doc2, err := svc.Upload(ctx, person.ID, "giro2.txt", "text/plain", []byte(statement("02.09.2026 Lastschrifteinzug LBS SUED Sparrate     -535,82\n")))
 	if err != nil {
 		t.Fatalf("Upload: %v", err)
@@ -356,7 +356,16 @@ func TestSchedule_PooledDebit(t *testing.T) {
 		t.Fatalf("Process: %v", err)
 	}
 	row = stagedOf(doc2.ID)
-	if dup, _ := row["duplicateOf"].(map[string]any); len(row["confirms"].([]any)) != 0 || dup == nil || dup["schedule"].(map[string]any)["displayName"] != "Sparrate" {
-		t.Errorf("second statement's hint = %v, want a duplicate of the confirmed Sparrate leg", row)
+	if c := row["confirms"].([]any); len(c) != 1 || c[0].(map[string]any)["schedule"].(map[string]any)["displayName"] != "Sparrate" || row["duplicateOf"] != nil {
+		t.Errorf("second statement's hint = %v, want the Sparrate leg confirmed again", row)
+	}
+	data = exec(t, schema, ctx, `mutation ($id: ID!, $acct: ID!) {
+		confirmImport(documentID: $id, input: { cashAccountID: $acct, transactions: [] }) { schedule { displayName } documents { id } }
+	}`, map[string]any{"id": doc2.ID, "acct": giro})
+	if got := data["confirmImport"].([]any); len(got) != 1 || len(got[0].(map[string]any)["documents"].([]any)) != 2 {
+		t.Errorf("after the second statement: %v, want the one leg with two documents", got)
+	}
+	if h.balance(giro) != -116124 {
+		t.Errorf("Giro after the second statement = %v, want -116124 still", h.balance(giro))
 	}
 }

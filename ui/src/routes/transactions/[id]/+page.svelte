@@ -9,6 +9,7 @@
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
+	let shownDocument = $state(0);
 	const tx = $derived(data.transaction);
 
 	let editOpen = $state(false);
@@ -18,6 +19,7 @@
 	<p class="text-sm text-muted">Transaction not found.</p>
 {:else}
 	{@const d = describeTransaction(tx)}
+	{@const document = tx.documents[shownDocument] ?? tx.documents[0] ?? null}
 	{@const fields = [
 		['Date', formatDate(tx.time)],
 		['Units', tx.units ? formatUnits(tx.units) : null],
@@ -120,10 +122,10 @@
 
 		<section class="min-w-0 flex-[2_1_28rem] rounded-xl border border-line p-4 lg:sticky lg:top-4">
 			<div class="mb-3 flex items-center gap-3">
-				<h2 class="text-sm font-semibold">Source document</h2>
-				{#if tx.document}
+				<h2 class="text-sm font-semibold">{tx.documents.length > 1 ? 'Documents' : 'Source document'}</h2>
+				{#if document}
 					<a
-						href="/documents/{tx.document.id}"
+						href="/documents/{document.id}"
 						target="_blank"
 						rel="noopener"
 						class="ml-auto text-[13px] text-muted hover:text-fg"
@@ -132,18 +134,34 @@
 					</a>
 				{/if}
 			</div>
-			{#if tx.document}
-				<p class="mb-3 truncate text-xs text-muted" title={tx.document.filename}>
-					{tx.document.filename}{tx.document.detectedBank ? ` · ${tx.document.detectedBank}` : ''}
+			{#if document}
+				{#if tx.documents.length > 1}
+					<div role="radiogroup" aria-label="Document" class="mb-3 flex flex-wrap gap-1.5">
+						{#each tx.documents as doc, i (doc.id)}
+							<button
+								type="button"
+								role="radio"
+								aria-checked={document.id === doc.id}
+								onclick={() => (shownDocument = i)}
+								title={doc.filename}
+								class="max-w-64 truncate rounded-full border px-2.5 py-1 text-xs {document.id === doc.id ? 'border-accent bg-accent-soft text-accent-fg' : 'border-line text-muted hover:text-fg'}"
+							>
+								{doc.filename}
+							</button>
+						{/each}
+					</div>
+				{/if}
+				<p class="mb-3 truncate text-xs text-muted" title={document.filename}>
+					{document.filename}{document.detectedBank ? ` · ${document.detectedBank}` : ''}
 				</p>
-				{#if tx.document.contentType === 'application/pdf'}
+				{#if document.contentType === 'application/pdf'}
 					<iframe
-						src="/documents/{tx.document.id}"
-						title={tx.document.filename}
+						src="/documents/{document.id}"
+						title={document.filename}
 						class="h-[calc(100vh-14rem)] min-h-96 w-full rounded-lg border border-line"
 					></iframe>
 				{:else}
-					<p class="text-sm text-muted">No preview for {tx.document.contentType || 'this file type'}.</p>
+					<p class="text-sm text-muted">No preview for {document.contentType || 'this file type'}.</p>
 				{/if}
 			{:else}
 				<p class="rounded-lg border border-dashed border-line px-4 py-6 text-center text-sm text-muted">

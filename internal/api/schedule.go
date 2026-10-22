@@ -330,13 +330,13 @@ func (r *ScheduleResolver) Booked(ctx context.Context) (int32, error) {
 // Unconfirmed lists the schedule's bookings on its cash account that no
 // statement has confirmed yet.
 func (r *ScheduleResolver) Unconfirmed(ctx context.Context) ([]*TransactionResolver, error) {
-	txs, err := r.db.ListTransactionsBySchedule(ctx, sql.NullString{String: r.s.ID, Valid: true})
+	txs, err := r.db.ListUnconfirmedBySchedule(ctx, sql.NullString{String: r.s.ID, Valid: true})
 	if err != nil {
 		return nil, err
 	}
 	var out []*TransactionResolver
 	for _, tx := range txs {
-		if tx.DocumentID.Valid || !tx.CashAccountID.Valid || tx.CashAccountID.String != r.s.CashAccountID {
+		if !tx.CashAccountID.Valid || tx.CashAccountID.String != r.s.CashAccountID {
 			continue
 		}
 		out = append(out, &TransactionResolver{db: r.db, transaction: tx})

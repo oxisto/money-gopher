@@ -168,6 +168,12 @@ type Transaction struct {
 	Note          sql.NullString
 }
 
+type TransactionDocument struct {
+	TransactionID string
+	DocumentID    string
+	LinkedAt      time.Time
+}
+
 type User struct {
 	ID          string
 	Issuer      string
