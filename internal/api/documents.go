@@ -495,6 +495,13 @@ func (r *StagedTransactionResolver) Isin() *string {
 	return &r.tx.Isin.String
 }
 
+func (r *StagedTransactionResolver) AccountHint() *string {
+	if !r.tx.AccountHint.Valid {
+		return nil
+	}
+	return &r.tx.AccountHint.String
+}
+
 func (r *StagedTransactionResolver) AssetKindHint() *string {
 	if !r.tx.SecurityKind.Valid {
 		return nil

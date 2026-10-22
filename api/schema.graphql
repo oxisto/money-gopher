@@ -465,6 +465,13 @@ type StagedTransaction {
   assetKindHint: AssetKind
   "The security matched by ISIN, if any."
   asset: Asset
+  """
+  Which of the document's accounts the row belongs to, when a document
+  carries more than one statement (an LBS year-end bundle lists the
+  Bausparvertrag and the loan under one contract number): e.g.
+  "Bausparvertrag 1234567890". Pick a cash account per hint on review.
+  """
+  accountHint: String
 }
 
 type Query {

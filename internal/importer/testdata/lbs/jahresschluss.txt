@@ -1,0 +1,48 @@
+                                                                                                     Sie haben Fragen zum Kontoauszug?
+LBS Süd · 80280 München
+
+Erika Mustermann
+Musterstraße 1
+12345 Musterstadt
+
+
+Kontoauszug 2025                                                                 Seite Nr. 1 von 1   Bausparvertrag
+                                                                                                     Nr. 1 234 567 890
+Buch.-     Wert         Buchungsvorgang                              Belastungen Gutschriften        Tarif LBS-Z5
+Datum                                                                          ¤            ¤
+                        Saldovortrag                                        800,00                   Bausparsumme                   50.000,00 ¤
+03.02.2025 03.02.2025 Lastschrifteinzug                                                    200,00    Bewertungszahl                        3,79
+03.03.2025 03.03.2025 Lastschrifteinzug                                                    200,00
+01.04.2025 01.04.2025 Lastschrifteinzug                                                    200,00    IBAN      DE89 3704 0044 0532 0130 00
+                                                                                                     BIC                     COBADEFFXXX
+01.07.2025 01.07.2025 Jahresentgelt                                          30,00
+01.07.2025 01.01.2024 f. 2023 Jahresentgelt                                   5,00
+31.12.2025 31.12.2025 Zinsen abgeltungsteuerpfl.                                             0,07
+31.12.2025 31.12.2025 Abgeltungsteuer Zinsen                                  0,02
+
+
+Ihr Bausparguthaben am 31.12.2025                                 234,95
+
+
+Kapitalerträge sind einkommensteuerpflichtig!
+
+Kontoauszug 2025                                                                 Seite Nr. 1 von 1   Vorfinanzierungskredit
+                                                                                                     Nr. 1 234 567 890
+Buch.-     Wert         Buchungsvorgang                              Belastungen Gutschriften        Sollzinssatz                        3,95 %
+Datum                                                                          ¤            ¤
+                        Saldovortrag                                          0,00
+31.10.2025 31.10.2025 Zinsausgl. für Bereithaltung                          125,00                   Finanzierungskostennachweis
+02.12.2025 02.12.2025 Lastschrifteinzug                                                    125,00    Belastete Schuldzinsen       270,46 ¤
+23.12.2025 27.12.2025 Auszahlung                                         50.000,00
+23.12.2025 27.12.2025 Zinsausgl. für Bereithaltung                          112,50
+31.12.2025 31.12.2025 Zinsen                                                 32,96
+
+
+Ihr Vorfinanzierungskredit am 31.12.2025                      50.000,00
+Rückständige Zinsen/Gebühren                                     145,46
+
+                                      Antrag auf Wohnungsbauprämie
+ 1 234 567 890                      10 / 2023                                                   0                                 600
+                                      Steuerbescheinigung
+ Höhe der Kapitalerträge
+ Zeile 7 Anlage KAP                                                                               0,07

@@ -117,6 +117,7 @@ type StagedTransaction struct {
 	PriceCurrency sql.NullString
 	FxRate        Decimal
 	SecurityKind  sql.NullString
+	AccountHint   sql.NullString
 }
 
 type Transaction struct {

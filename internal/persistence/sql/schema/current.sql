@@ -181,7 +181,10 @@ CREATE TABLE staged_transactions (
     price_currency TEXT,
     fx_rate       DECIMAL(19,4),
     -- The kind the parser suggests for a security yet to be created.
-    security_kind TEXT
+    security_kind TEXT,
+    -- Which of the document's accounts the row belongs to, when a document
+    -- carries more than one statement.
+    account_hint  TEXT
 );
 
 CREATE TABLE sessions (

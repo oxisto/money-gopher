@@ -32,6 +32,7 @@ const Imports = graphql(`
 				isin
 				assetKindHint
 				asset { id displayName }
+				accountHint
 			}
 		}
 		portfolios {
@@ -39,7 +40,7 @@ const Imports = graphql(`
 			displayName
 			snapshot { positions { asset { id } } }
 		}
-		cashAccounts { id displayName currency iban }
+		cashAccounts { id displayName currency iban kind }
 		securities { id displayName }
 		assets { id displayName }
 	}

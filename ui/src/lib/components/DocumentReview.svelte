@@ -26,6 +26,7 @@
 		isin: string | null;
 		assetKindHint: string | null;
 		asset: { id: string; displayName: string } | null;
+		accountHint?: string | null;
 	}
 	interface Document {
 		id: string;
@@ -39,6 +40,7 @@
 		id: string;
 		displayName: string;
 		currency: string;
+		kind?: string | null;
 	}
 	interface Security {
 		id: string;
@@ -82,6 +84,41 @@
 	// Pre-select the matched cash account if the server found one, otherwise fall back to first.
 	let portfolioID = $state(portfolios[0]?.id ?? '');
 	let cashAccountID = $state(suggestedCashAccount?.id ?? cashAccounts[0]?.id ?? '');
+
+	// A document that bundles several statements (an LBS year-end bundle:
+	// the Bausparvertrag and the loan) tags each row with the account it
+	// belongs to; then one cash account is picked per section instead.
+	const sections = $derived(
+		[...new Set(doc.stagedTransactions.map((tx) => tx.accountHint).filter((h): h is string => !!h))]
+	);
+	const rows = $derived(
+		sections.length > 0
+			? [...doc.stagedTransactions].sort(
+					(a, b) =>
+						sections.indexOf(a.accountHint ?? '') - sections.indexOf(b.accountHint ?? '') ||
+						a.time.getTime() - b.time.getTime()
+				)
+			: doc.stagedTransactions
+	);
+	// Guess from the account names and kinds: a section called
+	// "Vorfinanzierungskredit" wants a loan, a "Bausparvertrag" a savings
+	// account, and a name that contains the section's word wins.
+	function guessAccount(hint: string): string {
+		const word = hint.split(' ')[0].toLowerCase();
+		const byName = cashAccounts.find((a) => a.displayName.toLowerCase().includes(word));
+		if (byName) return byName.id;
+		const kind = /kredit|darlehen/.test(word) ? 'LOAN' : /bauspar|spar/.test(word) ? 'SAVINGS' : null;
+		return (kind && cashAccounts.find((a) => a.kind === kind)?.id) ?? '';
+	}
+	let sectionAccounts = $state<Record<string, string>>({});
+	$effect(() => {
+		for (const s of sections) {
+			if (sectionAccounts[s] === undefined) sectionAccounts[s] = guessAccount(s);
+		}
+	});
+	function accountName(id: string): string {
+		return cashAccounts.find((a) => a.id === id)?.displayName ?? '';
+	}
 	let assetOverrides = $state<Record<string, string>>({});
 	let localSecurities = $state<Security[]>([]);
 	let createDialog = $state<{
@@ -162,7 +199,13 @@
 			error = 'Please select a portfolio.';
 			return;
 		}
-		if (!cashAccountID) {
+		if (sections.length > 0) {
+			const missing = sections.find((s) => !sectionAccounts[s]);
+			if (missing) {
+				error = `Please select a cash account for ${missing}.`;
+				return;
+			}
+		} else if (!cashAccountID) {
 			error = 'Please select a cash account.';
 			return;
 		}
@@ -170,15 +213,19 @@
 		confirming = true;
 		error = null;
 
-		const txOverrides = Object.entries(assetOverrides)
-			.filter(([, secID]) => secID)
-			.map(([id, secID]) => ({ id, assetID: secID }));
+		const txOverrides = doc.stagedTransactions
+			.map((tx) => ({
+				id: tx.id,
+				assetID: assetOverrides[tx.id] || undefined,
+				cashAccountID: tx.accountHint ? sectionAccounts[tx.accountHint] : undefined
+			}))
+			.filter((ov) => ov.assetID || ov.cashAccountID);
 
 		const result = await mutate(confirmImport, {
 			documentID: doc.id,
 			input: {
 				portfolioID: portfolioRequired ? portfolioID : null,
-				cashAccountID,
+				cashAccountID: sections.length > 0 ? sectionAccounts[sections[0]] : cashAccountID,
 				transactions: txOverrides
 			}
 		});
@@ -238,7 +285,17 @@
 						</SelectField>
 					</div>
 				{/if}
-				<div class="flex-1 min-w-[180px]">
+				{#each sections as section (section)}
+					<div class="flex-1 min-w-[180px]">
+						<SelectField bind:value={sectionAccounts[section]} label="Cash account for {section}">
+							<option value="">— select —</option>
+							{#each cashAccounts as a (a.id)}
+								<option value={a.id}>{a.displayName} ({a.currency})</option>
+							{/each}
+						</SelectField>
+					</div>
+				{/each}
+				<div class="flex-1 min-w-[180px]" class:hidden={sections.length > 0}>
 					<SelectField bind:value={cashAccountID} label="Cash account">
 						<option value="">— select —</option>
 						{#each cashAccounts as a (a.id)}
@@ -274,7 +331,17 @@
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-line">
-						{#each doc.stagedTransactions as tx (tx.id)}
+						{#each rows as tx, i (tx.id)}
+							{#if sections.length > 0 && (i === 0 || rows[i - 1].accountHint !== tx.accountHint)}
+								<tr class="bg-raised">
+									<td colspan="7" class="px-3 py-1.5 text-xs font-medium text-muted">
+										{tx.accountHint}
+										{#if sectionAccounts[tx.accountHint ?? '']}
+											<span class="font-normal">→ {accountName(sectionAccounts[tx.accountHint ?? ''])}</span>
+										{/if}
+									</td>
+								</tr>
+							{/if}
 							<tr>
 								<td class="py-2 pr-2 pl-3 text-muted whitespace-nowrap">{formatDate(tx.time)}</td>
 								<td class="px-2 py-2 whitespace-nowrap">

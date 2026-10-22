@@ -2,7 +2,9 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/oxisto/money-gopher/internal/auth"
@@ -266,5 +268,79 @@ func TestImportNoIBANMatch(t *testing.T) {
 	docs := data["documents"].([]any)
 	if docs[0].(map[string]any)["suggestedCashAccount"] != nil {
 		t.Error("suggestedCashAccount should be nil when IBAN does not match any account")
+	}
+}
+
+// TestImportLBSBundle: one LBS year-end PDF carries the Bausparvertrag and
+// the Vorfinanzierungskredit statements. Rows arrive tagged with their
+// section, the confirm sends them to two accounts, and the loan's interest
+// lands as a charge on a LOAN account.
+func TestImportLBSBundle(t *testing.T) {
+	db, err := persistence.OpenDB(":memory:")
+	if err != nil {
+		t.Fatalf("OpenDB: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	user, person, err := auth.EnsureDevUser(context.Background(), db)
+	if err != nil {
+		t.Fatalf("EnsureDevUser: %v", err)
+	}
+	ctx := auth.WithPerson(auth.WithUser(context.Background(), user), person)
+	schema := NewSchema(db, &quotes.Updater{DB: db, Registry: quotes.NewRegistry()})
+
+	accountOf := func(name, kind string) string {
+		data := exec(t, schema, ctx, fmt.Sprintf(`mutation { createCashAccount(input: { displayName: %q, currency: "EUR", kind: %s }) { id } }`, name, kind), nil)
+		return data["createCashAccount"].(map[string]any)["id"].(string)
+	}
+	loan := accountOf("LBS Vorfinanzierung", "LOAN")
+	savings := accountOf("LBS Bausparvertrag", "SAVINGS")
+
+	text, err := os.ReadFile("../importer/testdata/lbs/jahresschluss.txt")
+	if err != nil {
+		t.Fatalf("fixture: %v", err)
+	}
+	svc := importer.NewService(db)
+	doc, err := svc.Upload(ctx, person.ID, "LBS_Jahresschlussdokumente.txt", "text/plain", text)
+	if err != nil {
+		t.Fatalf("Upload: %v", err)
+	}
+	if err := svc.Process(ctx, doc.ID, person.ID); err != nil {
+		t.Fatalf("Process: %v", err)
+	}
+
+	data := exec(t, schema, ctx, `{ documents { detectedBank suggestedCashAccount { id } stagedTransactions { id accountHint } } }`, nil)
+	d := data["documents"].([]any)[0].(map[string]any)
+	if d["detectedBank"] != "LBS" || d["suggestedCashAccount"] != nil {
+		t.Errorf("document = %v, want bank LBS and no suggested account (the printed IBAN is the LBS's own)", d)
+	}
+	var overrides []any
+	for _, raw := range d["stagedTransactions"].([]any) {
+		stx := raw.(map[string]any)
+		hint, _ := stx["accountHint"].(string)
+		target := savings
+		if strings.HasPrefix(hint, "Vorfinanzierungskredit") {
+			target = loan
+		}
+		overrides = append(overrides, map[string]any{"id": stx["id"], "cashAccountID": target})
+	}
+	if len(overrides) != 11 {
+		t.Fatalf("staged %d rows, want 11", len(overrides))
+	}
+
+	exec(t, schema, ctx, `mutation ($id: ID!, $acct: ID!, $tx: [StagedTransactionConfirmInput!]!) {
+		confirmImport(documentID: $id, input: { cashAccountID: $acct, transactions: $tx }) { id }
+	}`, map[string]any{"id": doc.ID, "acct": savings, "tx": overrides})
+
+	balance := func(id string) float64 {
+		data := exec(t, schema, ctx, `query ($id: ID!) { cashAccount(id: $id) { balance { amount } } }`, map[string]any{"id": id})
+		return data["cashAccount"].(map[string]any)["balance"].(map[string]any)["amount"].(float64)
+	}
+	// 3 × 200 in, 30 + 5 fees, 0.07 interest less 0.02 tax.
+	if got := balance(savings); got != 56505 {
+		t.Errorf("Bausparvertrag balance = %v, want 56505", got)
+	}
+	// 125 + 112.50 + 32.96 interest charged, 125 paid, 50,000 disbursed.
+	if got := balance(loan); got != -5014546 {
+		t.Errorf("loan balance = %v, want -5014546", got)
 	}
 }
