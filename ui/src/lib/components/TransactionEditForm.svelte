@@ -3,7 +3,7 @@
 	import { TRANSACTION_TYPES, type TransactionType } from '#lib/transaction-types.js';
 	import { labelOf } from '#lib/describe.js';
 	import { parseAmount, parsePrice } from '#lib/format.js';
-	import type { TransactionRow, SecurityOption, CashAccountOption } from '#lib/transaction-types.js';
+	import type { TransactionRow, AssetOption, CashAccountOption } from '#lib/transaction-types.js';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import SelectField from './ui/SelectField.svelte';
@@ -17,7 +17,7 @@
 		oncancel
 	}: {
 		transaction: TransactionRow;
-		securities: SecurityOption[];
+		securities: AssetOption[];
 		cashAccounts: CashAccountOption[];
 		onsaved: () => void;
 		oncancel: () => void;
@@ -46,7 +46,7 @@
 
 	let type = $state<TransactionType>(tx.type as TransactionType);
 	let time = $state(toDatetimeLocal(tx.time));
-	let securityID = $state(tx.security?.id ?? '');
+	let assetID = $state(tx.asset?.id ?? '');
 	let cashAccountID = $state(tx.cashAccount?.id ?? '');
 	let units = $state(tx.units ? String(tx.units) : '');
 	let price = $state(tx.price?.amount ?? '');
@@ -65,7 +65,7 @@
 				type,
 				time: new Date(time),
 				currency: currency.toUpperCase(),
-				securityID: securityID || undefined,
+				assetID: assetID || undefined,
 				cashAccountID: cashAccountID || undefined,
 				units: units ? parseFloat(units) : undefined,
 				price: parsePrice(price) ?? undefined,
@@ -89,7 +89,7 @@
 
 	<TextField bind:value={time} label="Date" type="datetime-local" required />
 
-	<SelectField bind:value={securityID} label="Security">
+	<SelectField bind:value={assetID} label="Asset">
 		<option value="">None</option>
 		{#each securities as s (s.id)}
 			<option value={s.id}>{s.displayName}</option>

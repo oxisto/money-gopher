@@ -53,7 +53,7 @@ func TestDocumentsLifecycle(t *testing.T) {
 	portfolioID := data["createPortfolio"].(map[string]any)["id"].(string)
 
 	exec(t, schema, ctx, `mutation {
-		createSecurity(input: {
+		createAsset(input: {
 			displayName: "iShares Core MSCI World"
 			identifiers: [{ kind: "ISIN", value: "IE00B4L5Y983" }]
 		}) { id }
@@ -78,7 +78,7 @@ func TestDocumentsLifecycle(t *testing.T) {
 		documents {
 			id filename state detectedBank
 			stagedTransactions {
-				id type isin security { id }
+				id type isin asset { id }
 				cashDelta { amount }
 				calculatedCashDelta { amount }
 			}
@@ -107,7 +107,7 @@ func TestDocumentsLifecycle(t *testing.T) {
 	if buy["type"] != "BUY" {
 		t.Errorf("staged[0].type = %v, want BUY", buy["type"])
 	}
-	if buy["security"] == nil {
+	if buy["asset"] == nil {
 		t.Error("staged[0].security is nil; expected auto-linked security")
 	}
 	buyID := buy["id"].(string)
@@ -121,7 +121,7 @@ func TestDocumentsLifecycle(t *testing.T) {
 	// DEPOSIT_CASH has no security, and no price to calculate a cash delta
 	// from — calculatedCashDelta must be nil, not a bogus 0-minus-fees value.
 	depositMap := staged[1].(map[string]any)
-	if depositMap["security"] != nil {
+	if depositMap["asset"] != nil {
 		t.Error("staged[1].security should be nil for DEPOSIT_CASH")
 	}
 	if depositMap["calculatedCashDelta"] != nil {

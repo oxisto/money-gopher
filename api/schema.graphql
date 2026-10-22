@@ -147,7 +147,7 @@ type NetWorthPoint {
 
 "Position is the holding of one security in a portfolio snapshot."
 type Position {
-  security: Security!
+  asset: Asset!
   units: Float!
   "The FIFO cost basis of the held shares, without fees and taxes."
   purchaseValue: Money!
@@ -183,10 +183,10 @@ type PortfolioSnapshot {
 }
 
 """
-SecurityIdentifier maps an external identifier scheme (e.g. 'ISIN', 'WKN',
+AssetIdentifier maps an external identifier scheme (e.g. 'ISIN', 'WKN',
 'TICKER') to its value for one security.
 """
-type SecurityIdentifier {
+type AssetIdentifier {
   kind: String!
   value: String!
 }
@@ -225,7 +225,7 @@ What an asset is. Null until someone says. A security is one kind of
 asset; the others have no quote feed and are valued by hand (recordQuote
 on a listing without a provider).
 """
-enum SecurityKind {
+enum AssetKind {
   STOCK
   ETF
   FUND
@@ -239,17 +239,17 @@ enum SecurityKind {
 }
 
 """
-Security is an asset: a listed instrument shared by everyone on this
+Asset is an asset: a listed instrument shared by everyone on this
 server, or — when it has an owner — a personal asset such as the office
 room rented out, visible to that person alone.
 """
-type Security {
+type Asset {
   id: ID!
   displayName: String!
-  kind: SecurityKind
+  kind: AssetKind
   "The person this asset belongs to. Null for a listed instrument, shared by everyone."
   owner: Person
-  identifiers: [SecurityIdentifier!]!
+  identifiers: [AssetIdentifier!]!
   listings: [Listing!]!
   """
   The security this one derives from — a subscription right or an
@@ -257,7 +257,7 @@ type Security {
   derivative of anything else tracked here (an ordinary stock, a bond, an
   ETF, ...).
   """
-  underlyingSecurity: Security
+  underlyingAsset: Asset
 }
 
 """
@@ -272,7 +272,7 @@ type Transaction {
   "The affected portfolio; null for pure cash events."
   portfolio: Portfolio
   "The affected security; null for pure cash events."
-  security: Security
+  asset: Asset
   "The settling cash account; null if nothing settles (e.g. deliveries)."
   cashAccount: CashAccount
   "The number of shares involved."
@@ -362,7 +362,7 @@ type RealizedGain {
   "DIVIDEND, INTEREST, or SELL."
   type: TransactionType!
   "The security this relates to; null for INTEREST."
-  security: Security
+  asset: Asset
   "The portfolio the underlying transaction belongs to; null for INTEREST."
   portfolio: Portfolio
   "The cash account the underlying transaction settles against."
@@ -418,7 +418,7 @@ type StagedTransaction {
   fxRate: Decimal
   currency: String!
   "The security name as printed on the document."
-  securityHint: String
+  assetHint: String
   "The ISIN printed on the document."
   isin: String
   """
@@ -426,9 +426,9 @@ type StagedTransaction {
   yet: a face value and a percentage price make it a bond, "ETF" in the
   name an ETF. A suggestion for the review dialog, not a fact.
   """
-  securityKindHint: SecurityKind
+  assetKindHint: AssetKind
   "The security matched by ISIN, if any."
-  security: Security
+  asset: Asset
 }
 
 type Query {
@@ -445,11 +445,11 @@ type Query {
   cashAccounts: [CashAccount!]!
   cashAccount(id: ID!): CashAccount
   "Listed instruments, shared by everyone on this server."
-  securities: [Security!]!
+  securities: [Asset!]!
   "The active person's own assets: the office room, the car, a loan given."
-  assets: [Security!]!
+  assets: [Asset!]!
   "A shared security, or one of the active person's own assets."
-  security(id: ID!): Security
+  asset(id: ID!): Asset
   transaction(id: ID!): Transaction
   "All documents uploaded by the current user, optionally filtered by state."
   documents(state: DocumentState): [Document!]!
@@ -488,7 +488,7 @@ input UpdateCashAccountInput {
   displayName: String
 }
 
-input SecurityIdentifierInput {
+input AssetIdentifierInput {
   kind: String!
   value: String!
 }
@@ -498,7 +498,7 @@ input ListingInput {
   Set to update that existing listing in place, preserving its quote
   history. Omitted (or an ID not found among the security's current
   listings) creates a new listing instead. Only meaningful for
-  updateSecurity — createSecurity has no existing listings to match.
+  updateAsset — createAsset has no existing listings to match.
   """
   id: ID
   exchange: String
@@ -515,7 +515,7 @@ against cashAccountID — and, when given, today's valuation.
 """
 input BookAssetInput {
   displayName: String!
-  kind: SecurityKind!
+  kind: AssetKind!
   "The ISO 4217 code the cost and every later valuation are in."
   currency: String!
   "When it became yours; the transfer-in is booked at this time."
@@ -531,30 +531,30 @@ input BookAssetInput {
   cashAccountID: ID
 }
 
-input CreateSecurityInput {
+input CreateAssetInput {
   displayName: String!
-  kind: SecurityKind
-  identifiers: [SecurityIdentifierInput!]
+  kind: AssetKind
+  identifiers: [AssetIdentifierInput!]
   listings: [ListingInput!]
-  "The security this one derives from; see Security.underlyingSecurity."
-  underlyingSecurityID: ID
+  "The security this one derives from; see Asset.underlyingAsset."
+  underlyingAssetID: ID
 }
 
 """
-UpdateSecurityInput updates a security. Identifiers, when provided, replace
+UpdateAssetInput updates a security. Identifiers, when provided, replace
 the existing set entirely. Listings, when provided, are reconciled by
 ListingInput.id instead: a matched listing is updated in place (its quote
 history stays intact), an input with no ID (or an unmatched one) creates a
 new listing, and an existing listing missing from the input set is removed
 (dropping its quote history too).
 """
-input UpdateSecurityInput {
+input UpdateAssetInput {
   displayName: String
-  kind: SecurityKind
-  identifiers: [SecurityIdentifierInput!]
+  kind: AssetKind
+  identifiers: [AssetIdentifierInput!]
   listings: [ListingInput!]
-  "The security this one derives from; see Security.underlyingSecurity."
-  underlyingSecurityID: ID
+  "The security this one derives from; see Asset.underlyingAsset."
+  underlyingAssetID: ID
 }
 
 """
@@ -567,7 +567,7 @@ input CreateTransactionInput {
   type: TransactionType!
   time: Time!
   portfolioID: ID
-  securityID: ID
+  assetID: ID
   cashAccountID: ID
   units: Float
   "The price per unit, in major units (e.g. \"8.2656\")."
@@ -587,7 +587,7 @@ is not provided explicitly, it is re-derived for trade and dividend types.
 input UpdateTransactionInput {
   type: TransactionType
   time: Time
-  securityID: ID
+  assetID: ID
   cashAccountID: ID
   units: Float
   price: Decimal
@@ -617,7 +617,7 @@ it is committed. Fields not provided fall back to the ConfirmImportInput default
 input StagedTransactionConfirmInput {
   id: ID!
   "Override the matched security."
-  securityID: ID
+  assetID: ID
   "Override the default portfolio."
   portfolioID: ID
   "Override the default cash account."
@@ -637,12 +637,12 @@ type Mutation {
   "Deletes the cash account and all its transactions. Returns the deleted ID."
   deleteCashAccount(id: ID!): ID!
 
-  createSecurity(input: CreateSecurityInput!): Security!
+  createAsset(input: CreateAssetInput!): Asset!
   "Books an asset you own: see BookAssetInput."
-  bookAsset(input: BookAssetInput!): Security!
-  updateSecurity(id: ID!, input: UpdateSecurityInput!): Security!
+  bookAsset(input: BookAssetInput!): Asset!
+  updateAsset(id: ID!, input: UpdateAssetInput!): Asset!
   "Deletes the security. Fails while transactions still reference it."
-  deleteSecurity(id: ID!): ID!
+  deleteAsset(id: ID!): ID!
 
   createTransaction(input: CreateTransactionInput!): Transaction!
   updateTransaction(id: ID!, input: UpdateTransactionInput!): Transaction!
@@ -652,7 +652,7 @@ type Mutation {
   Fetches fresh quotes from the configured quote providers — for the given
   securities, or for every listing with a provider when none are given.
   """
-  triggerQuoteUpdate(securityIDs: [ID!]): QuoteUpdateResult!
+  triggerQuoteUpdate(assetIDs: [ID!]): QuoteUpdateResult!
 
   """
   Stores a price by hand: a valuation of an asset without a quote feed, or

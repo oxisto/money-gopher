@@ -9,7 +9,7 @@
 	import TextField from '#lib/components/ui/TextField.svelte';
 	import { graphql, mutate } from '#lib/graphql/client.js';
 	import SelectField from '#lib/components/ui/SelectField.svelte';
-	import { asKind, handValuedKinds, kindLabel, type SecurityKind } from '#lib/securities.js';
+	import { asKind, handValuedKinds, kindLabel, type AssetKind } from '#lib/assets.js';
 	import { describeTransaction, formatUnits } from '#lib/describe.js';
 	import {
 		formatDate,
@@ -24,8 +24,8 @@
 
 	let { data }: PageProps = $props();
 	const d = $derived(data);
-	const security = $derived(d.security);
-	const listing = $derived(security?.listings[0] ?? null);
+	const asset = $derived(d.asset);
+	const listing = $derived(asset?.listings[0] ?? null);
 	// Without a provider, prices come from whoever owns the asset: a
 	// valuation of the office room, entered here.
 	const valuedByHand = $derived(!!listing && !listing.quoteProvider);
@@ -39,11 +39,11 @@
 	`);
 	// A personal asset is edited here, not on the Securities page, which
 	// lists the shared instruments only.
-	const owned = $derived(!!security?.owner);
+	const owned = $derived(!!asset?.owner);
 
 	const updateAsset = graphql(`
-		mutation UpdateAsset($id: ID!, $input: UpdateSecurityInput!) {
-			updateSecurity(id: $id, input: $input) {
+		mutation UpdateAsset($id: ID!, $input: UpdateAssetInput!) {
+			updateAsset(id: $id, input: $input) {
 				id
 			}
 		}
@@ -55,18 +55,18 @@
 	let savingEdit = $state(false);
 
 	function openEdit() {
-		editName = security?.displayName ?? '';
-		editKind = security?.kind ?? '';
+		editName = asset?.displayName ?? '';
+		editKind = asset?.kind ?? '';
 		editError = null;
 		editOpen = true;
 	}
 
 	async function saveEdit(event: SubmitEvent) {
 		event.preventDefault();
-		if (!security || !editName.trim()) return;
+		if (!asset || !editName.trim()) return;
 		savingEdit = true;
 		const result = await mutate(updateAsset, {
-			id: security.id,
+			id: asset.id,
 			input: { displayName: editName.trim(), kind: asKind(editKind) }
 		});
 		savingEdit = false;
@@ -100,18 +100,18 @@
 			await refreshAll();
 		}
 	}
-	const isin = $derived(security?.identifiers.find((i) => i.kind === 'ISIN')?.value ?? null);
+	const isin = $derived(asset?.identifiers.find((i) => i.kind === 'ISIN')?.value ?? null);
 
 	const holding = $derived.by(() => {
-		if (!security) return null;
-		const positions = d.portfolios.flatMap((p) => p.snapshot.positions).filter((p) => p.security.id === security.id);
+		if (!asset) return null;
+		const positions = d.portfolios.flatMap((p) => p.snapshot.positions).filter((p) => p.asset.id === asset.id);
 		return positions.length ? holdingsOf(positions)[0] : null;
 	});
 
 	const history = $derived(
 		d.portfolios
 			.flatMap((p) => p.transactions.map((t) => ({ ...t, portfolio: p.displayName })))
-			.filter((t) => t.security?.id === security?.id)
+			.filter((t) => t.asset?.id === asset?.id)
 			.sort((a, b) => b.time.getTime() - a.time.getTime())
 	);
 
@@ -188,22 +188,22 @@
 	);
 </script>
 
-{#if !security}
+{#if !asset}
 	<p class="text-sm text-muted">Security not found.</p>
 {:else}
 	<nav aria-label="Breadcrumb" class="mb-4 flex gap-1.5 text-[13px] text-muted">
 		<a href="/holdings" class="hover:text-fg">Holdings</a>
 		<span aria-hidden="true">/</span>
-		<span class="text-fg">{security.displayName}</span>
+		<span class="text-fg">{asset.displayName}</span>
 	</nav>
 
 	<div class="mb-6 flex flex-wrap items-end gap-4">
 		<div class="min-w-64 flex-1">
-			<h1 class="text-2xl font-semibold tracking-tight">{security.displayName}</h1>
+			<h1 class="text-2xl font-semibold tracking-tight">{asset.displayName}</h1>
 			<p class="mt-0.5 text-[13px] text-muted">
 				<!-- ING listings use the ISIN as their ticker; don't print it twice. -->
 				{[
-					security.kind ? kindLabel[security.kind as SecurityKind] : null,
+					asset.kind ? kindLabel[asset.kind as AssetKind] : null,
 					isin,
 					listing && !valuedByHand
 						? `${listing.exchange ?? (listing.ticker !== isin ? listing.ticker : 'traded')} in ${listing.currency}`
@@ -216,10 +216,10 @@
 				]
 					.filter(Boolean)
 					.join(' · ')}
-				{#if security.underlyingSecurity}
+				{#if asset.underlyingAsset}
 					· derives from
-					<a href="/holdings/{security.underlyingSecurity.id}" class="text-fg hover:underline">
-						{security.underlyingSecurity.displayName}
+					<a href="/holdings/{asset.underlyingAsset.id}" class="text-fg hover:underline">
+						{asset.underlyingAsset.displayName}
 					</a>
 				{/if}
 			</p>
@@ -244,7 +244,7 @@
 				href="/securities"
 				class="inline-flex h-8.5 items-center rounded-lg border border-line bg-surface px-3 text-sm font-medium shadow-xs hover:bg-raised"
 			>
-				Edit security
+				Edit asset
 			</a>
 		{/if}
 	</div>

@@ -9,7 +9,7 @@ const OverviewTransaction = graphql(`
 		units
 		cashDelta { amount currency }
 		gain { amount currency }
-		security { displayName }
+		asset { displayName }
 		portfolio { displayName }
 		cashAccount { displayName }
 	}
@@ -27,7 +27,7 @@ const Dashboard = graphql(`
 				totalGains
 				performance(period: YEAR_TO_DATE) { timeWeightedReturn }
 				positions {
-					security { id displayName }
+					asset { id displayName }
 					marketValue { amount currency }
 				}
 			}
@@ -62,8 +62,8 @@ const Dashboard = graphql(`
 				units
 				cashDelta { amount currency }
 				calculatedCashDelta { amount currency }
-				securityHint
-				security { displayName }
+				assetHint
+				asset { displayName }
 			}
 		}
 	}

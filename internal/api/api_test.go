@@ -83,13 +83,13 @@ func TestLifecycle(t *testing.T) {
 	portfolioID := data["createPortfolio"].(map[string]any)["id"].(string)
 
 	data = exec(t, schema, ctx, `mutation {
-		createSecurity(input: {
+		createAsset(input: {
 			displayName: "Vanguard FTSE All-World"
 			identifiers: [{ kind: "ISIN", value: "IE00BK5BQT80" }]
 			listings: [{ ticker: "VWCE", exchange: "XETR", currency: "EUR" }]
 		}) { id identifiers { kind value } listings { ticker } }
 	}`, nil)
-	securityID := data["createSecurity"].(map[string]any)["id"].(string)
+	assetID := data["createAsset"].(map[string]any)["id"].(string)
 
 	// Deposit cash, then buy: 10 x 95.00 EUR + 1.50 fees.
 	exec(t, schema, ctx, `mutation ($account: ID!) {
@@ -99,13 +99,13 @@ func TestLifecycle(t *testing.T) {
 		}) { id }
 	}`, map[string]any{"account": accountID})
 
-	data = exec(t, schema, ctx, `mutation ($portfolio: ID!, $security: ID!, $account: ID!) {
+	data = exec(t, schema, ctx, `mutation ($portfolio: ID!, $asset: ID!, $account: ID!) {
 		createTransaction(input: {
 			type: BUY, time: "2026-01-03T10:00:00Z", currency: "EUR"
-			portfolioID: $portfolio, securityID: $security, cashAccountID: $account
+			portfolioID: $portfolio, assetID: $asset, cashAccountID: $account
 			units: 10, price: "95.00", fees: 150
 		}) { id cashDelta { amount currency } document { id } }
-	}`, map[string]any{"portfolio": portfolioID, "security": securityID, "account": accountID})
+	}`, map[string]any{"portfolio": portfolioID, "asset": assetID, "account": accountID})
 	buy := data["createTransaction"].(map[string]any)
 	buyID := buy["id"].(string)
 	if got := buy["cashDelta"].(map[string]any)["amount"].(float64); got != -95150 {
@@ -130,7 +130,7 @@ func TestLifecycle(t *testing.T) {
 	}
 
 	data = exec(t, schema, ctx, `query ($id: ID!) {
-		portfolio(id: $id) { transactions { type security { displayName } } }
+		portfolio(id: $id) { transactions { type asset { displayName } } }
 	}`, map[string]any{"id": portfolioID})
 	transactions := data["portfolio"].(map[string]any)["transactions"].([]any)
 	if len(transactions) != 1 {
@@ -146,13 +146,13 @@ func TestLifecycle(t *testing.T) {
 	}
 
 	// Invalid transactions are rejected.
-	execExpectError(t, schema, ctx, `mutation ($portfolio: ID!, $security: ID!) {
+	execExpectError(t, schema, ctx, `mutation ($portfolio: ID!, $asset: ID!) {
 		createTransaction(input: {
 			type: BUY, time: "2026-01-03T10:00:00Z", currency: "EUR"
-			portfolioID: $portfolio, securityID: $security
+			portfolioID: $portfolio, assetID: $asset
 			units: 10, price: "95.00"
 		}) { id }
-	}`, map[string]any{"portfolio": portfolioID, "security": securityID})
+	}`, map[string]any{"portfolio": portfolioID, "asset": assetID})
 
 	execExpectError(t, schema, ctx, `mutation ($account: ID!) {
 		createTransaction(input: {
@@ -162,8 +162,8 @@ func TestLifecycle(t *testing.T) {
 	}`, map[string]any{"account": accountID})
 
 	// A security referenced by transactions cannot be deleted.
-	execExpectError(t, schema, ctx, `mutation ($id: ID!) { deleteSecurity(id: $id) }`,
-		map[string]any{"id": securityID})
+	execExpectError(t, schema, ctx, `mutation ($id: ID!) { deleteAsset(id: $id) }`,
+		map[string]any{"id": assetID})
 
 	// Deleting the transaction and portfolio works and restores the balance.
 	exec(t, schema, ctx, `mutation ($id: ID!) { deleteTransaction(id: $id) }`,
@@ -178,12 +178,12 @@ func TestLifecycle(t *testing.T) {
 	}
 }
 
-// TestUpdateSecurity_ListingReconciliation verifies that editing an
+// TestUpdateAsset_ListingReconciliation verifies that editing an
 // existing listing (matched by ListingInput.id) preserves its quote
 // history, while omitting a listing from the input set removes it (and its
 // quotes) — the whole reason reconcileListings replaced a blind
 // delete-all/recreate.
-func TestUpdateSecurity_ListingReconciliation(t *testing.T) {
+func TestUpdateAsset_ListingReconciliation(t *testing.T) {
 	db, err := persistence.OpenDB(":memory:")
 	if err != nil {
 		t.Fatalf("OpenDB() error = %v", err)
@@ -199,13 +199,13 @@ func TestUpdateSecurity_ListingReconciliation(t *testing.T) {
 	ctx := auth.WithPerson(auth.WithUser(context.Background(), user), person)
 
 	data := exec(t, schema, ctx, `mutation {
-		createSecurity(input: {
+		createAsset(input: {
 			displayName: "Test Corp"
 			listings: [{ ticker: "TST", currency: "EUR", quoteProvider: "yf" }]
 		}) { id listings { id } }
 	}`, nil)
-	sec := data["createSecurity"].(map[string]any)
-	securityID := sec["id"].(string)
+	sec := data["createAsset"].(map[string]any)
+	assetID := sec["id"].(string)
 	listingID := sec["listings"].([]any)[0].(map[string]any)["id"].(string)
 
 	if err := db.CreateQuote(ctx, persistence.CreateQuoteParams{
@@ -219,12 +219,12 @@ func TestUpdateSecurity_ListingReconciliation(t *testing.T) {
 	// Editing the listing (same ID, new ticker) must keep its ID — and so
 	// its quote history — intact, not delete-and-recreate it.
 	data = exec(t, schema, ctx, `mutation ($id: ID!, $listingID: ID!) {
-		updateSecurity(id: $id, input: {
+		updateAsset(id: $id, input: {
 			listings: [{ id: $listingID, ticker: "TST2", currency: "EUR", quoteProvider: "yf" }]
 		}) { listings { id ticker quotes(from: null, to: null) { price { amount } } } }
-	}`, map[string]any{"id": securityID, "listingID": listingID})
+	}`, map[string]any{"id": assetID, "listingID": listingID})
 
-	listings := data["updateSecurity"].(map[string]any)["listings"].([]any)
+	listings := data["updateAsset"].(map[string]any)["listings"].([]any)
 	if len(listings) != 1 {
 		t.Fatalf("len(listings) = %d, want 1", len(listings))
 	}
@@ -241,9 +241,9 @@ func TestUpdateSecurity_ListingReconciliation(t *testing.T) {
 
 	// Dropping the listing from the input set entirely must remove it.
 	data = exec(t, schema, ctx, `mutation ($id: ID!) {
-		updateSecurity(id: $id, input: { listings: [] }) { listings { id } }
-	}`, map[string]any{"id": securityID})
-	if got := data["updateSecurity"].(map[string]any)["listings"].([]any); len(got) != 0 {
+		updateAsset(id: $id, input: { listings: [] }) { listings { id } }
+	}`, map[string]any{"id": assetID})
+	if got := data["updateAsset"].(map[string]any)["listings"].([]any); len(got) != 0 {
 		t.Errorf("listings after removal = %v, want empty", got)
 	}
 }
@@ -288,56 +288,56 @@ func TestTaxRefundEitherSign(t *testing.T) {
 	}`, map[string]any{"account": accountID})
 }
 
-// TestSecurityUnderlying verifies linking a derivative security (e.g. a
+// TestAssetUnderlying verifies linking a derivative asset (e.g. a
 // subscription right) to the stock it derives from, both at creation and
 // via a later update, and that the link resolves both ways round-trip
 // (fetching it back by ID sees the same underlying).
-func TestSecurityUnderlying(t *testing.T) {
+func TestAssetUnderlying(t *testing.T) {
 	schema, ctx := newTestSchema(t)
 
 	data := exec(t, schema, ctx, `mutation {
-		createSecurity(input: { displayName: "Eutelsat Communications" }) { id }
+		createAsset(input: { displayName: "Eutelsat Communications" }) { id }
 	}`, nil)
-	stockID := data["createSecurity"].(map[string]any)["id"].(string)
+	stockID := data["createAsset"].(map[string]any)["id"].(string)
 
 	// Link at creation time.
 	data = exec(t, schema, ctx, `mutation ($underlying: ID!) {
-		createSecurity(input: {
+		createAsset(input: {
 			displayName: "Eutelsat Communications Anrechte"
-			underlyingSecurityID: $underlying
-		}) { id underlyingSecurity { id displayName } }
+			underlyingAssetID: $underlying
+		}) { id underlyingAsset { id displayName } }
 	}`, map[string]any{"underlying": stockID})
-	rights := data["createSecurity"].(map[string]any)
+	rights := data["createAsset"].(map[string]any)
 	rightsID := rights["id"].(string)
-	underlying := rights["underlyingSecurity"].(map[string]any)
+	underlying := rights["underlyingAsset"].(map[string]any)
 	if underlying["id"] != stockID {
-		t.Errorf("underlyingSecurity.id = %v, want %v", underlying["id"], stockID)
+		t.Errorf("underlyingAsset.id = %v, want %v", underlying["id"], stockID)
 	}
 	if underlying["displayName"] != "Eutelsat Communications" {
-		t.Errorf("underlyingSecurity.displayName = %v, want Eutelsat Communications", underlying["displayName"])
+		t.Errorf("underlyingAsset.displayName = %v, want Eutelsat Communications", underlying["displayName"])
 	}
 
-	// A plain security (no underlying) resolves it as null.
-	data = exec(t, schema, ctx, `query ($id: ID!) { security(id: $id) { underlyingSecurity { id } } }`,
+	// A plain asset (no underlying) resolves it as null.
+	data = exec(t, schema, ctx, `query ($id: ID!) { asset(id: $id) { underlyingAsset { id } } }`,
 		map[string]any{"id": stockID})
-	if got := data["security"].(map[string]any)["underlyingSecurity"]; got != nil {
-		t.Errorf("stock underlyingSecurity = %v, want nil", got)
+	if got := data["asset"].(map[string]any)["underlyingAsset"]; got != nil {
+		t.Errorf("stock underlyingAsset = %v, want nil", got)
 	}
 
 	// Link via a later update, e.g. fixing a security created without one —
 	// the exact scenario a misattributed DELIVERY_INBOUND needs.
 	data = exec(t, schema, ctx, `mutation {
-		createSecurity(input: { displayName: "Some Warrant" }) { id }
+		createAsset(input: { displayName: "Some Warrant" }) { id }
 	}`, nil)
-	warrantID := data["createSecurity"].(map[string]any)["id"].(string)
+	warrantID := data["createAsset"].(map[string]any)["id"].(string)
 
 	data = exec(t, schema, ctx, `mutation ($id: ID!, $underlying: ID!) {
-		updateSecurity(id: $id, input: { underlyingSecurityID: $underlying }) {
-			underlyingSecurity { id }
+		updateAsset(id: $id, input: { underlyingAssetID: $underlying }) {
+			underlyingAsset { id }
 		}
 	}`, map[string]any{"id": warrantID, "underlying": rightsID})
-	if got := data["updateSecurity"].(map[string]any)["underlyingSecurity"].(map[string]any)["id"]; got != rightsID {
-		t.Errorf("updateSecurity underlyingSecurity.id = %v, want %v", got, rightsID)
+	if got := data["updateAsset"].(map[string]any)["underlyingAsset"].(map[string]any)["id"]; got != rightsID {
+		t.Errorf("updateAsset underlyingAsset.id = %v, want %v", got, rightsID)
 	}
 }
 

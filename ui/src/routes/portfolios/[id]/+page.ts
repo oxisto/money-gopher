@@ -20,6 +20,7 @@ const PortfolioDetail = graphql(
 				transactions { ...ActivityTransaction }
 			}
 			securities { id displayName }
+			assets { id displayName }
 			cashAccounts { id displayName currency }
 		}
 	`,

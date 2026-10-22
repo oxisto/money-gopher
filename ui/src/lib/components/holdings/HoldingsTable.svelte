@@ -2,7 +2,7 @@
 	import type { Money, Price } from '#lib/format.js';
 
 	export interface Holding {
-		securityId: string;
+		assetId: string;
 		name: string;
 		isin: string | null;
 		kind: string | null;
@@ -17,7 +17,7 @@
 	}
 
 	interface Position {
-		security: {
+		asset: {
 			id: string;
 			displayName: string;
 			kind?: string | null;
@@ -36,15 +36,15 @@
 	 * security; units and values add up, the average cost is recomputed.
 	 */
 	export function holdingsOf(positions: Position[]): Holding[] {
-		const bySecurity = new Map<string, Holding>();
+		const byAsset = new Map<string, Holding>();
 		for (const p of positions) {
-			const h = bySecurity.get(p.security.id);
+			const h = byAsset.get(p.asset.id);
 			if (!h) {
-				bySecurity.set(p.security.id, {
-					securityId: p.security.id,
-					name: p.security.displayName,
-					isin: p.security.identifiers.find((i) => i.kind === 'ISIN')?.value ?? null,
-					kind: p.security.kind ?? null,
+				byAsset.set(p.asset.id, {
+					assetId: p.asset.id,
+					name: p.asset.displayName,
+					isin: p.asset.identifiers.find((i) => i.kind === 'ISIN')?.value ?? null,
+					kind: p.asset.kind ?? null,
 					units: p.units,
 					purchasePrice: p.purchasePrice,
 					marketPrice: p.marketPrice,
@@ -64,7 +64,7 @@
 				currency: h.purchasePrice.currency
 			};
 		}
-		return [...bySecurity.values()].map((h) => ({
+		return [...byAsset.values()].map((h) => ({
 			...h,
 			gains: h.purchaseValue.amount ? h.profitOrLoss.amount / h.purchaseValue.amount : 0
 		}));
@@ -73,7 +73,7 @@
 
 <script lang="ts">
 	import Icon from '#lib/components/ui/Icon.svelte';
-	import { isValuedByHand, kindLabel, type SecurityKind } from '#lib/securities.js';
+	import { isValuedByHand, kindLabel, type AssetKind } from '#lib/assets.js';
 	import { formatUnits } from '#lib/describe.js';
 	import { formatMoney, formatPercent, formatPrice, formatSignedMoney, toneOf } from '#lib/format.js';
 
@@ -152,7 +152,7 @@
 			<table class="w-full min-w-[52rem] text-[13px]">
 				<thead class="bg-raised text-xs text-muted">
 					<tr>
-						{@render header('name', 'Security', 'left')}
+						{@render header('name', 'Asset', 'left')}
 						<th scope="col" class="px-3 py-2.5 text-right font-medium">Units</th>
 						<th scope="col" class="px-3 py-2.5 text-right font-medium">Avg cost</th>
 						<th scope="col" class="px-3 py-2.5 text-right font-medium">Price</th>
@@ -162,16 +162,16 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each rows as h (h.securityId)}
+					{#each rows as h (h.assetId)}
 						{@const weight = h.marketValue.amount / total}
 						<tr class="border-t border-line hover:bg-raised">
 							<td class="py-2 pr-3 pl-4">
-								<a href="/holdings/{h.securityId}" class="font-medium hover:underline">{h.name}</a>
+								<a href="/holdings/{h.assetId}" class="font-medium hover:underline">{h.name}</a>
 								{#if h.isin}
 									<div class="text-[11px] text-muted">{h.isin}</div>
 								{:else if isValuedByHand(h.kind)}
 									<!-- A personal asset has no ISIN; say what it is instead. -->
-									<div class="text-[11px] text-muted">{kindLabel[h.kind as SecurityKind]} · valued by hand</div>
+									<div class="text-[11px] text-muted">{kindLabel[h.kind as AssetKind]} · valued by hand</div>
 								{/if}
 							</td>
 							<td class="px-3 py-2 text-right">{formatUnits(h.units)}</td>

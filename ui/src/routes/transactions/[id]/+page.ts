@@ -17,7 +17,7 @@ const TransactionDetail = graphql(`
 			source
 			portfolio { id displayName }
 			cashAccount { id displayName }
-			security {
+			asset {
 				id
 				displayName
 				identifiers { kind value }
@@ -32,6 +32,7 @@ const TransactionDetail = graphql(`
 			}
 		}
 		securities { id displayName }
+		assets { id displayName }
 		cashAccounts { id displayName }
 	}
 `);

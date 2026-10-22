@@ -176,11 +176,11 @@ func (r *RealizedGainResolver) ID() graphql.ID     { return graphql.ID(r.gain.Tr
 func (r *RealizedGainResolver) Time() graphql.Time { return graphql.Time{Time: r.gain.Time} }
 func (r *RealizedGainResolver) Type() string       { return r.gain.Type }
 
-func (r *RealizedGainResolver) Security() *SecurityResolver {
+func (r *RealizedGainResolver) Asset() *AssetResolver {
 	if r.security == nil {
 		return nil
 	}
-	return &SecurityResolver{db: r.db, security: r.security}
+	return &AssetResolver{db: r.db, security: r.security}
 }
 
 // Portfolio resolves RealizedGain.portfolio. Re-scoped to the active person

@@ -221,12 +221,34 @@ Deleted from v1: all buf/proto/Connect artifacts (`buf*.yaml`, `mgo.proto`, `gen
     visible to the owner alone, "shared or mine" in every lookup by ID or
     ISIN — the `bookAsset` mutation and the Assets page, with personal
     assets held in one "Other assets" portfolio per person
-    (`portfolios.purpose = 'ASSETS'`, created on first use). Next: the
-    "security" → "asset" naming across API and UI.
-11. **M10 — Recurring transactions.** A schedule (amount, interval, start,
-    optional end) expanded into expected cash flows: rent coming in, a
-    savings plan going out. Matched against imported statements so expected
-    and actual line up and a missed month shows. Needed by the plan in M12.
+    (`portfolios.purpose = 'ASSETS'`, created on first use); the naming:
+    the API type is `Asset` with `AssetKind`, `createAsset`/`updateAsset`/
+    `deleteAsset`, `asset` on positions, transactions and staged rows,
+    `assetID` in inputs; `securities` (shared, listed) and `assets` (own)
+    stay the two list queries, and the Securities page keeps its name. The
+    database keeps `securities`/`security_id` — renaming would churn every
+    foreign key and query for no behaviour.
+11. **M10 — Recurring transactions, accounts and cash flow.** Gets its own
+    planning pass before code. Three things that are one mechanism:
+    - *Schedules*: amount, interval, start, optional end, sign, optionally
+      the asset or account they belong to — rent coming in from the room, a
+      salary (Gehaltseingang), a savings plan going out, average living
+      costs (the credit card) as a rough outflow. Expanded into expected
+      cash flows and matched against imported statements, so expected and
+      actual line up and a missed month shows.
+    - *Accounts with kinds, which may go negative*: a loan is an account
+      whose balance is a ledger (disbursement, interest charged,
+      repayments); a Bausparvertrag is a savings account (Sparrate in,
+      interest credited). Net worth sums accounts with their sign plus the
+      holdings; equity in the house is its value minus the financing.
+      Transfers link a Giro withdrawal and a loan or savings deposit as one
+      event. The worked example is the user's Bausparvorfinanzierung: an
+      endfälliges Darlehen (interest only, principal at maturity) plus a
+      Bausparvertrag that at Zuteilung repays it, partly from its Guthaben
+      and partly as an amortising Bauspardarlehen — all ordinary events.
+    - *A rough cash-flow view*: expected in versus out per month. Rough by
+      design; the app must not become a household expense tracker.
+    Needed by the plan in M12.
 12. **M11 — Agent and chat.** A backend agent against an OpenAI-compatible
     model (self-hosted first): model client with tool calling and streaming,
     a tool registry (internal: holdings, performance, cash, net worth history,

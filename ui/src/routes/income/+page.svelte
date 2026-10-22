@@ -57,15 +57,15 @@
 	});
 
 	const payers = $derived.by(() => {
-		const bySecurity = new Map<string, { id: string; name: string; amount: number; count: number }>();
+		const byAsset = new Map<string, { id: string; name: string; amount: number; count: number }>();
 		for (const e of entries) {
-			if (e.type !== 'DIVIDEND' || !e.security) continue;
-			const p = bySecurity.get(e.security.id) ?? { id: e.security.id, name: e.security.displayName, amount: 0, count: 0 };
+			if (e.type !== 'DIVIDEND' || !e.asset) continue;
+			const p = byAsset.get(e.asset.id) ?? { id: e.asset.id, name: e.asset.displayName, amount: 0, count: 0 };
 			p.amount += e.amount.amount;
 			p.count += 1;
-			bySecurity.set(e.security.id, p);
+			byAsset.set(e.asset.id, p);
 		}
-		const sorted = [...bySecurity.values()].sort((a, b) => b.amount - a.amount).slice(0, 8);
+		const sorted = [...byAsset.values()].sort((a, b) => b.amount - a.amount).slice(0, 8);
 		const max = sorted[0]?.amount || 1;
 		return sorted.map((p) => ({ ...p, width: (p.amount / max) * 100 }));
 	});
@@ -84,8 +84,8 @@
 	});
 
 	function title(e: (typeof entries)[number]) {
-		if (e.type === 'SELL') return `Sold ${e.security?.displayName ?? ''}`;
-		return describeTransaction({ type: e.type, units: 0, security: e.security }).title;
+		if (e.type === 'SELL') return `Sold ${e.asset?.displayName ?? ''}`;
+		return describeTransaction({ type: e.type, units: 0, asset: e.asset }).title;
 	}
 </script>
 
@@ -167,7 +167,7 @@
 									{new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' }).format(e.time)}
 								</span>
 								<span class="grid size-7 place-items-center rounded-md border border-line bg-raised text-muted">
-									<Icon name={e.type === 'SELL' ? 'minus' : describeTransaction({ type: e.type, units: 0, security: null }).icon} size={14} />
+									<Icon name={e.type === 'SELL' ? 'minus' : describeTransaction({ type: e.type, units: 0, asset: null }).icon} size={14} />
 								</span>
 								<span class="min-w-0">
 									<span class="block truncate">{title(e)}</span>

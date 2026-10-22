@@ -103,7 +103,7 @@ type ConfirmImportInput struct {
 // confirmImport call.
 type StagedTransactionConfirmInput struct {
 	ID            graphql.ID
-	SecurityID    *graphql.ID
+	AssetID       *graphql.ID
 	PortfolioID   *graphql.ID
 	CashAccountID *graphql.ID
 	CashDelta     *int32
@@ -206,8 +206,8 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 			}
 			d.CashAccountID = firstID(ov.CashAccountID, args.Input.CashAccountID)
 
-			if ov.SecurityID != nil {
-				s := string(*ov.SecurityID)
+			if ov.AssetID != nil {
+				s := string(*ov.AssetID)
 				d.SecurityID = &s
 			} else if stx.SecurityID.Valid {
 				d.SecurityID = &stx.SecurityID.String
@@ -481,7 +481,7 @@ func (r *StagedTransactionResolver) CalculatedCashDelta() *Money {
 
 func (r *StagedTransactionResolver) Currency() string { return r.tx.Currency }
 
-func (r *StagedTransactionResolver) SecurityHint() *string {
+func (r *StagedTransactionResolver) AssetHint() *string {
 	if !r.tx.SecurityHint.Valid {
 		return nil
 	}
@@ -495,20 +495,20 @@ func (r *StagedTransactionResolver) Isin() *string {
 	return &r.tx.Isin.String
 }
 
-func (r *StagedTransactionResolver) SecurityKindHint() *string {
+func (r *StagedTransactionResolver) AssetKindHint() *string {
 	if !r.tx.SecurityKind.Valid {
 		return nil
 	}
 	return &r.tx.SecurityKind.String
 }
 
-func (r *StagedTransactionResolver) Security(ctx context.Context) (*SecurityResolver, error) {
+func (r *StagedTransactionResolver) Asset(ctx context.Context) (*AssetResolver, error) {
 	if r.tx.SecurityID.Valid {
 		security, err := r.db.GetSecurity(ctx, r.tx.SecurityID.String)
 		if err != nil {
 			return nil, err
 		}
-		return &SecurityResolver{db: r.db, security: security}, nil
+		return &AssetResolver{db: r.db, security: security}, nil
 	}
 	// Fall back to a live ISIN lookup so that securities created after this
 	// document was processed are still matched.
@@ -530,5 +530,5 @@ func (r *StagedTransactionResolver) Security(ctx context.Context) (*SecurityReso
 	if err != nil {
 		return nil, err
 	}
-	return &SecurityResolver{db: r.db, security: security}, nil
+	return &AssetResolver{db: r.db, security: security}, nil
 }

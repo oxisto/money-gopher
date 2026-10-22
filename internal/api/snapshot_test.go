@@ -30,14 +30,14 @@ func TestSnapshot(t *testing.T) {
 	// The cash account must be created first so its ID can be passed to createPortfolio.
 	data := exec(t, schema, ctx, `mutation {
 		createCashAccount(input: { displayName: "Giro", currency: "EUR" }) { id }
-		createSecurity(input: {
+		createAsset(input: {
 			displayName: "Vanguard FTSE All-World"
 			listings: [{ ticker: "VWCE", currency: "EUR" }]
 		}) { id listings { id } }
 	}`, nil)
 	accountID := data["createCashAccount"].(map[string]any)["id"].(string)
-	security := data["createSecurity"].(map[string]any)
-	securityID := security["id"].(string)
+	security := data["createAsset"].(map[string]any)
+	assetID := security["id"].(string)
 	listingID := security["listings"].([]any)[0].(map[string]any)["id"].(string)
 
 	data = exec(t, schema, ctx, `mutation ($account: ID!) {
@@ -45,13 +45,13 @@ func TestSnapshot(t *testing.T) {
 	}`, map[string]any{"account": accountID})
 	portfolioID := data["createPortfolio"].(map[string]any)["id"].(string)
 
-	exec(t, schema, ctx, `mutation ($portfolio: ID!, $security: ID!, $account: ID!) {
+	exec(t, schema, ctx, `mutation ($portfolio: ID!, $asset: ID!, $account: ID!) {
 		createTransaction(input: {
 			type: BUY, time: "2026-01-03T10:00:00Z", currency: "EUR"
-			portfolioID: $portfolio, securityID: $security, cashAccountID: $account
+			portfolioID: $portfolio, assetID: $asset, cashAccountID: $account
 			units: 10, price: "100.00"
 		}) { id }
-	}`, map[string]any{"portfolio": portfolioID, "security": securityID, "account": accountID})
+	}`, map[string]any{"portfolio": portfolioID, "asset": assetID, "account": accountID})
 
 	// No quotes yet: the market value falls back to the purchase value.
 	q := `query ($id: ID!, $time: Time) {
@@ -59,7 +59,7 @@ func TestSnapshot(t *testing.T) {
 			snapshot(time: $time) {
 				firstTransactionTime
 				positions {
-					security { displayName }
+					asset { displayName }
 					units
 					purchaseValue { amount currency }
 					marketValue { amount }

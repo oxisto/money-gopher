@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { refreshAll } from '$app/navigation';
 	import { graphql, mutate } from '#lib/graphql/client.js';
-	import { asKind, handValuedKinds } from '#lib/securities.js';
+	import { asKind, handValuedKinds } from '#lib/assets.js';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import SelectField from './ui/SelectField.svelte';

@@ -8,15 +8,15 @@
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import SelectField from './ui/SelectField.svelte';
 	import TextField from './ui/TextField.svelte';
-	import { kindLabel } from '#lib/securities.js';
+	import { kindLabel } from '#lib/assets.js';
 
 	let { securities }: { securities: SecuritiesResult['securities'] } = $props();
 
 	type Listing = SecuritiesResult['securities'][number]['listings'][number];
 
-	const updateSecurity = graphql(`
-		mutation UpdateSecurityListing($id: ID!, $listings: [ListingInput!]!) {
-			updateSecurity(id: $id, input: { listings: $listings }) {
+	const updateAsset = graphql(`
+		mutation UpdateAssetListing($id: ID!, $listings: [ListingInput!]!) {
+			updateAsset(id: $id, input: { listings: $listings }) {
 				id
 				listings {
 					id
@@ -36,7 +36,7 @@
 		}
 	`);
 
-	// Keyed by listing ID for an existing listing, or `new:<securityID>` for
+	// Keyed by listing ID for an existing listing, or `new:<assetID>` for
 	// the not-yet-created one — at most one editor open at a time.
 	let editingKey = $state<string | null>(null);
 	let ticker = $state('');
@@ -54,8 +54,8 @@
 		error = null;
 	}
 
-	function startAdd(securityID: string) {
-		editingKey = `new:${securityID}`;
+	function startAdd(assetID: string) {
+		editingKey = `new:${assetID}`;
 		ticker = '';
 		exchange = '';
 		currency = 'EUR';
@@ -76,11 +76,11 @@
 		quoteProvider?: string;
 	}
 
-	// updateSecurity's listings input is the *complete* desired set — send
+	// updateAsset's listings input is the *complete* desired set — send
 	// every other existing listing back unchanged (by ID, so its quote
 	// history is preserved too) alongside the one actually being edited or
 	// added.
-	async function save(securityID: string, listings: readonly Listing[], editingListingID: string | null) {
+	async function save(assetID: string, listings: readonly Listing[], editingListingID: string | null) {
 		if (!ticker.trim()) {
 			error = 'Ticker is required.';
 			return;
@@ -112,7 +112,7 @@
 			});
 		}
 
-		const result = await mutate(updateSecurity, { id: securityID, listings: input });
+		const result = await mutate(updateAsset, { id: assetID, listings: input });
 		if (result.error) {
 			error = result.error;
 			return;
@@ -139,7 +139,7 @@
 	const isStale = (time: Date) => Date.now() - time.getTime() > STALE_AFTER;
 </script>
 
-{#snippet editor(security: (typeof securities)[number])}
+{#snippet editor(asset: (typeof securities)[number])}
 	{@const editingListingID = editingKey?.startsWith('new:') ? null : editingKey}
 	<div class="grid gap-2 sm:grid-cols-4">
 		<TextField bind:value={ticker} label="Ticker" placeholder="e.g. EUNL" />
@@ -152,7 +152,7 @@
 		</SelectField>
 	</div>
 	<div class="mt-3 flex items-center gap-2">
-		<Button onclick={() => save(security.id, security.listings, editingListingID)}>Save listing</Button>
+		<Button onclick={() => save(asset.id, asset.listings, editingListingID)}>Save listing</Button>
 		<Button variant="secondary" onclick={cancel}>Cancel</Button>
 	</div>
 	<ErrorNote message={error} />
@@ -183,24 +183,24 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each shown as security (security.id)}
-						{@const isin = security.identifiers.find((i) => i.kind === 'ISIN')?.value}
-						{@const listing = security.listings[0]}
+					{#each shown as asset (asset.id)}
+						{@const isin = asset.identifiers.find((i) => i.kind === 'ISIN')?.value}
+						{@const listing = asset.listings[0]}
 						<tr class="border-t border-line align-top hover:bg-raised">
 							<td class="py-2.5 pr-3 pl-4">
-								<a href="/holdings/{security.id}" class="font-medium hover:underline">{security.displayName}</a>
+								<a href="/holdings/{asset.id}" class="font-medium hover:underline">{asset.displayName}</a>
 								<div class="text-[11px] text-muted">
-									{#if security.kind}
-										{kindLabel[security.kind]} ·
+									{#if asset.kind}
+										{kindLabel[asset.kind]} ·
 									{/if}
-									{security.identifiers.map((i) => (i.kind === 'ISIN' ? i.value : `${i.kind} ${i.value}`)).join(' · ')}
-									{#if security.underlyingSecurity}
-										· derives from {security.underlyingSecurity.displayName}
+									{asset.identifiers.map((i) => (i.kind === 'ISIN' ? i.value : `${i.kind} ${i.value}`)).join(' · ')}
+									{#if asset.underlyingAsset}
+										· derives from {asset.underlyingAsset.displayName}
 									{/if}
 								</div>
 							</td>
 							<td class="px-3 py-2.5">
-								{#each security.listings as l (l.id)}
+								{#each asset.listings as l (l.id)}
 									<div>
 										{l.ticker !== isin ? l.ticker : ''}{l.exchange ? ` ${l.exchange}` : ''}
 										<span class="text-muted">{l.currency} · {l.quoteProvider ? `quotes: ${l.quoteProvider}` : 'no quotes'}</span>
@@ -234,7 +234,7 @@
 								{:else}
 									<button
 										type="button"
-										onclick={() => startAdd(security.id)}
+										onclick={() => startAdd(asset.id)}
 										class="rounded-md px-2 py-1 text-xs text-muted hover:bg-hover hover:text-fg"
 									>
 										Add listing
@@ -242,9 +242,9 @@
 								{/if}
 							</td>
 						</tr>
-						{#if security.listings.some((l) => l.id === editingKey) || editingKey === `new:${security.id}`}
+						{#if asset.listings.some((l) => l.id === editingKey) || editingKey === `new:${asset.id}`}
 							<tr class="bg-raised">
-								<td colspan="4" class="px-4 py-3">{@render editor(security)}</td>
+								<td colspan="4" class="px-4 py-3">{@render editor(asset)}</td>
 							</tr>
 						{/if}
 					{/each}

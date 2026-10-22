@@ -57,6 +57,9 @@ CREATE TABLE portfolios (
     purpose         TEXT
 );
 
+-- The API calls these assets (a security is one kind); the table keeps its
+-- historical name, as do security_id columns elsewhere — renaming would
+-- churn every foreign key and query for no behaviour.
 CREATE TABLE securities (
     id           TEXT PRIMARY KEY,
     display_name TEXT NOT NULL,

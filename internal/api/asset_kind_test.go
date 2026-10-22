@@ -2,14 +2,14 @@ package api
 
 import "testing"
 
-// TestSecurityKind round-trips the kind: set on creation, changed on
+// TestAssetKind round-trips the kind: set on creation, changed on
 // update, and null when nobody said.
-func TestSecurityKind(t *testing.T) {
+func TestAssetKind(t *testing.T) {
 	schema, ctx := newTestSchema(t)
 
 	data := exec(t, schema, ctx, `mutation {
-		bond: createSecurity(input: { displayName: "4,125 % United States of America", kind: BOND }) { id kind }
-		unknown: createSecurity(input: { displayName: "Something" }) { id kind }
+		bond: createAsset(input: { displayName: "4,125 % United States of America", kind: BOND }) { id kind }
+		unknown: createAsset(input: { displayName: "Something" }) { id kind }
 	}`, nil)
 	bond := data["bond"].(map[string]any)
 	if bond["kind"] != "BOND" {
@@ -20,18 +20,18 @@ func TestSecurityKind(t *testing.T) {
 	}
 
 	data = exec(t, schema, ctx, `mutation ($id: ID!) {
-		updateSecurity(id: $id, input: { kind: ETF }) { kind displayName }
+		updateAsset(id: $id, input: { kind: ETF }) { kind displayName }
 	}`, map[string]any{"id": bond["id"]})
-	updated := data["updateSecurity"].(map[string]any)
+	updated := data["updateAsset"].(map[string]any)
 	if updated["kind"] != "ETF" || updated["displayName"] != "4,125 % United States of America" {
 		t.Errorf("updated = %v, want kind ETF with the name kept", updated)
 	}
 
 	// A name-only update leaves the kind alone.
 	data = exec(t, schema, ctx, `mutation ($id: ID!) {
-		updateSecurity(id: $id, input: { displayName: "Renamed" }) { kind }
+		updateAsset(id: $id, input: { displayName: "Renamed" }) { kind }
 	}`, map[string]any{"id": bond["id"]})
-	if kind := data["updateSecurity"].(map[string]any)["kind"]; kind != "ETF" {
+	if kind := data["updateAsset"].(map[string]any)["kind"]; kind != "ETF" {
 		t.Errorf("kind after a name-only update = %v, want ETF", kind)
 	}
 }
@@ -42,12 +42,12 @@ func TestValuedByHand(t *testing.T) {
 	schema, ctx := newTestSchema(t)
 
 	data := exec(t, schema, ctx, `mutation {
-		createSecurity(input: {
+		createAsset(input: {
 			displayName: "Office room", kind: PROPERTY
 			listings: [{ ticker: "OFFICE-ROOM", currency: "EUR" }]
 		}) { id kind listings { id quoteProvider latestQuote { price { amount } } } }
 	}`, nil)
-	room := data["createSecurity"].(map[string]any)
+	room := data["createAsset"].(map[string]any)
 	listing := room["listings"].([]any)[0].(map[string]any)
 	if room["kind"] != "PROPERTY" || listing["quoteProvider"] != nil || listing["latestQuote"] != nil {
 		t.Fatalf("created = %v, want a PROPERTY with an unquoted, providerless listing", room)
@@ -68,9 +68,9 @@ func TestValuedByHand(t *testing.T) {
 
 	latest := func() (string, int) {
 		data := exec(t, schema, ctx, `query ($id: ID!) {
-			security(id: $id) { listings { latestQuote { price { amount } } quotes { time } } }
+			asset(id: $id) { listings { latestQuote { price { amount } } quotes { time } } }
 		}`, map[string]any{"id": room["id"]})
-		l := data["security"].(map[string]any)["listings"].([]any)[0].(map[string]any)
+		l := data["asset"].(map[string]any)["listings"].([]any)[0].(map[string]any)
 		return l["latestQuote"].(map[string]any)["price"].(map[string]any)["amount"].(string), len(l["quotes"].([]any))
 	}
 	if price, n := latest(); price != "42500.00000000" || n != 2 {

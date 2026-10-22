@@ -19,7 +19,7 @@ export const ActivityTransaction = graphql(`
 		cashDelta { amount currency }
 		gain { amount currency }
 		fxRate
-		security { id displayName }
+		asset { id displayName }
 		portfolio { id displayName }
 		cashAccount { id displayName }
 		document { id filename }
@@ -29,7 +29,7 @@ export const ActivityTransaction = graphql(`
 /** A portfolio position as HoldingsTable and the holding page need it. */
 export const HoldingPosition = graphql(`
 	fragment HoldingPosition on Position @_unmask {
-		security {
+		asset {
 			id
 			displayName
 			kind
@@ -106,7 +106,7 @@ export const SecuritiesQuery = graphql(`
 			displayName
 			kind
 			identifiers { kind value }
-			underlyingSecurity { id displayName }
+			underlyingAsset { id displayName }
 			listings {
 				id
 				ticker

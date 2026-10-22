@@ -3,7 +3,7 @@ import type { IconName } from './icons';
 interface DescribableTransaction {
 	type: string;
 	units: number;
-	security: { displayName: string; kind?: string | null } | null;
+	asset: { displayName: string; kind?: string | null } | null;
 }
 
 /**
@@ -11,7 +11,7 @@ interface DescribableTransaction {
  * Allianz SE" — what activity lists show instead of the raw type code.
  */
 export function describeTransaction(tx: DescribableTransaction): { title: string; icon: IconName } {
-	const name = tx.security?.displayName ?? 'unknown security';
+	const name = tx.asset?.displayName ?? 'unknown asset';
 	const units = formatUnits(tx.units);
 	switch (tx.type) {
 		case 'BUY':
@@ -24,7 +24,7 @@ export function describeTransaction(tx: DescribableTransaction): { title: string
 			return { title: `Transferred out ${units} × ${name}`, icon: 'transferOut' };
 		case 'DIVIDEND':
 			// Income against a property is rent; the engine treats it alike.
-			return { title: `${tx.security?.kind === 'PROPERTY' ? 'Rent' : 'Dividend'} · ${name}`, icon: 'coin' };
+			return { title: `${tx.asset?.kind === 'PROPERTY' ? 'Rent' : 'Dividend'} · ${name}`, icon: 'coin' };
 		case 'INTEREST':
 			return { title: 'Interest', icon: 'percent' };
 		case 'DEPOSIT_CASH':

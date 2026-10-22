@@ -1,5 +1,5 @@
-/** What an asset is, as the API's SecurityKind enum, with its label. */
-export const securityKinds = [
+/** What an asset is, as the API's AssetKind enum, with its label. */
+export const assetKinds = [
 	['STOCK', 'Stock'],
 	['ETF', 'ETF'],
 	['FUND', 'Fund'],
@@ -10,13 +10,13 @@ export const securityKinds = [
 	['OTHER', 'Other']
 ] as const;
 
-export type SecurityKind = (typeof securityKinds)[number][0];
+export type AssetKind = (typeof assetKinds)[number][0];
 
-export const kindLabel = Object.fromEntries(securityKinds) as Record<SecurityKind, string>;
+export const kindLabel = Object.fromEntries(assetKinds) as Record<AssetKind, string>;
 
 /** Narrows a select's string value to the enum; undefined when unset. */
-export function asKind(value: string | null | undefined): SecurityKind | undefined {
-	return securityKinds.some(([kind]) => kind === value) ? (value as SecurityKind) : undefined;
+export function asKind(value: string | null | undefined): AssetKind | undefined {
+	return assetKinds.some(([kind]) => kind === value) ? (value as AssetKind) : undefined;
 }
 
 /**
@@ -28,7 +28,7 @@ export function isValuedByHand(kind: string | null | undefined): boolean {
 }
 
 /** The kinds a personal asset can be: those valued by hand. */
-export const handValuedKinds = securityKinds.filter(([kind]) => isValuedByHand(kind));
+export const handValuedKinds = assetKinds.filter(([kind]) => isValuedByHand(kind));
 
 /** A ticker-shaped name for a manual price series: "Office room" → "OFFICE-ROOM". */
 export function tickerFor(name: string): string {

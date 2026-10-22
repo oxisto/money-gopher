@@ -56,7 +56,7 @@
 		{#if editOpen}
 			<TransactionEditForm
 				transaction={{ ...tx, cashAccount: tx.cashAccount ? { id: tx.cashAccount.id } : null }}
-				securities={data.securities}
+				securities={[...data.securities, ...data.assets]}
 				cashAccounts={data.cashAccounts}
 				onsaved={() => {
 					editOpen = false;
@@ -84,13 +84,13 @@
 			<section class="rounded-xl border border-line p-4">
 				<h2 class="mb-2 text-sm font-semibold">Related</h2>
 				<ul class="flex flex-col gap-1 text-[13px]">
-					{#if tx.security}
+					{#if tx.asset}
 						<li>
-							<a href="/holdings/{tx.security.id}" class="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 hover:bg-raised">
+							<a href="/holdings/{tx.asset.id}" class="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 hover:bg-raised">
 								<span>
-									{tx.security.displayName}
+									{tx.asset.displayName}
 									<span class="block text-[11px] text-muted">
-										{tx.security.identifiers.map((i) => `${i.kind} ${i.value}`).join(' · ')}
+										{tx.asset.identifiers.map((i) => `${i.kind} ${i.value}`).join(' · ')}
 									</span>
 								</span>
 								<span class="text-muted">→</span>

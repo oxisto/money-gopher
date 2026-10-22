@@ -192,7 +192,7 @@ type CreateTransactionInput struct {
 	Type          string
 	Time          graphql.Time
 	PortfolioID   *graphql.ID
-	SecurityID    *graphql.ID
+	AssetID       *graphql.ID
 	CashAccountID *graphql.ID
 	Units         *float64
 	Price         *Decimal
@@ -216,7 +216,7 @@ func (r *RootResolver) CreateTransaction(ctx context.Context, args struct{ Input
 		// SQLite always sorts chronologically.
 		Time:          in.Time.Time.UTC(),
 		PortfolioID:   idPtr(in.PortfolioID),
-		SecurityID:    idPtr(in.SecurityID),
+		SecurityID:    idPtr(in.AssetID),
 		CashAccountID: idPtr(in.CashAccountID),
 		Fees:          int64Value(in.Fees),
 		Taxes:         int64Value(in.Taxes),
@@ -269,7 +269,7 @@ func (r *RootResolver) CreateTransaction(ctx context.Context, args struct{ Input
 type UpdateTransactionInput struct {
 	Type          *string
 	Time          *graphql.Time
-	SecurityID    *graphql.ID
+	AssetID       *graphql.ID
 	CashAccountID *graphql.ID
 	Units         *float64
 	Price         *Decimal
@@ -318,8 +318,8 @@ func (r *RootResolver) UpdateTransaction(ctx context.Context, args struct {
 	if in.Time != nil {
 		d.Time = in.Time.Time.UTC()
 	}
-	if in.SecurityID != nil {
-		d.SecurityID = idPtr(in.SecurityID)
+	if in.AssetID != nil {
+		d.SecurityID = idPtr(in.AssetID)
 	}
 	if in.CashAccountID != nil {
 		d.CashAccountID = idPtr(in.CashAccountID)
@@ -431,8 +431,8 @@ func (r *TransactionResolver) Portfolio(ctx context.Context) (*PortfolioResolver
 	return &PortfolioResolver{db: r.db, portfolio: portfolio}, nil
 }
 
-// Security resolves Transaction.security.
-func (r *TransactionResolver) Security(ctx context.Context) (*SecurityResolver, error) {
+// Security resolves Transaction.asset.
+func (r *TransactionResolver) Asset(ctx context.Context) (*AssetResolver, error) {
 	if !r.transaction.SecurityID.Valid {
 		return nil, nil
 	}
@@ -442,7 +442,7 @@ func (r *TransactionResolver) Security(ctx context.Context) (*SecurityResolver, 
 		return nil, err
 	}
 
-	return &SecurityResolver{db: r.db, security: security}, nil
+	return &AssetResolver{db: r.db, security: security}, nil
 }
 
 // CashAccount resolves Transaction.cashAccount.
