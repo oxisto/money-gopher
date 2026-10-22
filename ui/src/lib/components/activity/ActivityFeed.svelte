@@ -35,7 +35,7 @@
 		all: { label: 'All', types: null },
 		trades: { label: 'Trades', types: ['BUY', 'SELL', 'DELIVERY_INBOUND', 'DELIVERY_OUTBOUND'] },
 		income: { label: 'Income', types: ['DIVIDEND', 'INTEREST'] },
-		cash: { label: 'Deposits & withdrawals', types: ['DEPOSIT_CASH', 'WITHDRAW_CASH'] },
+		cash: { label: 'Cash & transfers', types: ['DEPOSIT_CASH', 'WITHDRAW_CASH'] },
 		fees: { label: 'Fees & taxes', types: ['ACCOUNT_FEES', 'TAX_REFUND'] }
 	} as const;
 	type Group = keyof typeof groups;
@@ -157,6 +157,7 @@
 		['Date', formatDate(t.time)],
 		['Portfolio', t.portfolio?.displayName],
 		['Cash account', t.cashAccount?.displayName],
+		[t.cashDelta.amount < 0 ? 'Transferred to' : 'Transferred from', t.counterpart?.cashAccount?.displayName],
 		['Units', t.units ? formatUnits(t.units) : null],
 		['Price', t.price ? formatPrice(t.price) : null],
 		['FX rate', t.fxRate ? `1 ${t.cashDelta.currency} = ${t.fxRate} ${t.price?.currency ?? ''}` : null],
@@ -193,7 +194,7 @@
 		<div class="flex gap-2">
 			<Button variant="secondary" onclick={() => (editOpen = true)}>Edit</Button>
 			{#if confirmingDelete}
-				<Button variant="danger" onclick={() => del(t.id)}>Really delete</Button>
+				<Button variant="danger" onclick={() => del(t.id)}>{t.transferID ? 'Really delete both legs' : 'Really delete'}</Button>
 				<Button variant="secondary" onclick={() => (confirmingDelete = false)}>Keep</Button>
 			{:else}
 				<Button variant="danger" onclick={() => (confirmingDelete = true)}>Delete</Button>

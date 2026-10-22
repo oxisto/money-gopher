@@ -308,6 +308,9 @@ func (r *RootResolver) UpdateTransaction(ctx context.Context, args struct {
 
 	// Merge the provided fields into the current values.
 	in := args.Input
+	if current.TransferID.Valid && (in.Type != nil || in.AssetID != nil || in.Units != nil || in.Price != nil || in.Fees != nil || in.Taxes != nil) {
+		return nil, errors.New("a transfer leg only takes time, cash account, cash delta and currency; delete the transfer to change more")
+	}
 	d := txData{
 		Type:          current.Type,
 		Time:          current.Time,
@@ -364,7 +367,7 @@ func (r *RootResolver) UpdateTransaction(ctx context.Context, args struct {
 		return nil, err
 	}
 
-	transaction, err := r.db.UpdateTransaction(ctx, persistence.UpdateTransactionParams{
+	params := persistence.UpdateTransactionParams{
 		Type:          d.Type,
 		Time:          d.Time,
 		PortfolioID:   nullString(d.PortfolioID),
@@ -377,11 +380,46 @@ func (r *RootResolver) UpdateTransaction(ctx context.Context, args struct {
 		CashDelta:     d.CashDelta,
 		Currency:      d.Currency,
 		ID:            string(args.ID),
+	}
+	if !current.TransferID.Valid {
+		transaction, err := r.db.UpdateTransaction(ctx, params)
+		if err != nil {
+			return nil, err
+		}
+		return &TransactionResolver{db: r.db, transaction: transaction}, nil
+	}
+
+	// The other leg of a transfer follows: same moment, same currency, the
+	// mirrored amount, its own account untouched.
+	other, err := r.db.GetTransferCounterpart(ctx, persistence.GetTransferCounterpartParams{TransferID: current.TransferID, ID: current.ID})
+	if err != nil {
+		return nil, err
+	}
+	var transaction *persistence.Transaction
+	err = r.db.Tx(ctx, func(q *persistence.Queries) error {
+		var err error
+		if transaction, err = q.UpdateTransaction(ctx, params); err != nil {
+			return err
+		}
+		_, err = q.UpdateTransaction(ctx, persistence.UpdateTransactionParams{
+			Type:          other.Type,
+			Time:          d.Time,
+			PortfolioID:   other.PortfolioID,
+			SecurityID:    other.SecurityID,
+			CashAccountID: other.CashAccountID,
+			Units:         other.Units,
+			Price:         other.Price,
+			Fees:          other.Fees,
+			Taxes:         other.Taxes,
+			CashDelta:     -d.CashDelta,
+			Currency:      d.Currency,
+			ID:            other.ID,
+		})
+		return err
 	})
 	if err != nil {
 		return nil, err
 	}
-
 	return &TransactionResolver{db: r.db, transaction: transaction}, nil
 }
 
@@ -393,13 +431,20 @@ func (r *RootResolver) DeleteTransaction(ctx context.Context, args struct{ ID gr
 	}
 
 	// The ownership check guards the unscoped delete.
-	_, err = r.getOwnedTransaction(ctx, person, string(args.ID))
+	current, err := r.getOwnedTransaction(ctx, person, string(args.ID))
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", fmt.Errorf("transaction %q not found", args.ID)
 	} else if err != nil {
 		return "", err
 	}
 
+	// A transfer is one event: its two legs go together.
+	if current.TransferID.Valid {
+		if _, err := r.db.DeleteTransfer(ctx, current.TransferID); err != nil {
+			return "", err
+		}
+		return args.ID, nil
+	}
 	if _, err := r.db.DeleteTransaction(ctx, string(args.ID)); err != nil {
 		return "", err
 	}

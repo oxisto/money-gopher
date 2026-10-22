@@ -301,6 +301,10 @@ type Transaction {
   id: ID!
   type: TransactionType!
   time: Time!
+  "Set on both legs of a transfer between own accounts; null otherwise."
+  transferID: ID
+  "The other leg of a transfer: the deposit for a withdrawal and vice versa."
+  counterpart: Transaction
   "The affected portfolio; null for pure cash events."
   portfolio: Portfolio
   "The affected security; null for pure cash events."
@@ -520,6 +524,32 @@ input CreateCashAccountInput {
   declaredBalance: Int
 }
 
+"""
+Transfer is money moved between two own accounts: one event, two legs —
+a WITHDRAW_CASH on the account it leaves and a DEPOSIT_CASH on the one it
+reaches. A loan's disbursement and its repayments, a Sparrate into a
+Bausparvertrag, money moved from the Giro to the Tagesgeld.
+"""
+type Transfer {
+  id: ID!
+  time: Time!
+  "Positive: what moved."
+  amount: Money!
+  "The leg on the account the money left."
+  from: Transaction!
+  "The leg on the account the money reached."
+  to: Transaction!
+}
+
+input CreateTransferInput {
+  time: Time!
+  fromCashAccountID: ID!
+  toCashAccountID: ID!
+  "Positive, in minor units."
+  amount: Int!
+  currency: String!
+}
+
 input UpdateCashAccountInput {
   displayName: String
   kind: AccountKind
@@ -691,8 +721,15 @@ type Mutation {
   deleteAsset(id: ID!): ID!
 
   createTransaction(input: CreateTransactionInput!): Transaction!
+  """
+  On a transfer leg only time, cash account, cash delta and currency may
+  change, and time, currency and the mirrored amount apply to both legs.
+  """
   updateTransaction(id: ID!, input: UpdateTransactionInput!): Transaction!
+  "Deleting a transfer leg deletes the other leg too."
   deleteTransaction(id: ID!): ID!
+  "Books both legs of a transfer in one go; see Transfer."
+  createTransfer(input: CreateTransferInput!): Transfer!
 
   """
   Fetches fresh quotes from the configured quote providers — for the given

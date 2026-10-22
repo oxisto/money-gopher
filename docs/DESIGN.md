@@ -394,6 +394,16 @@ deferred.
   from or to outside. The UI marks estimates with "≈" everywhere they
   appear: sidebar, overview headline and Cash tile, a band in the net worth
   chart, the account page.
+- **Transfers (M10, step 2).** `transactions.transfer_id` links two
+  ordinary legs: a WITHDRAW_CASH on the source and a DEPOSIT_CASH on the
+  target, written in one DB transaction by `createTransfer` (same owner,
+  same currency, amount > 0). Balances and net worth see two transactions
+  that net to zero; a leg on an estimated account is ignored like any other
+  cash event there, so a loan's disbursement to the Giro moves the loan
+  only. Editing a leg mirrors time, currency and the negated amount onto
+  the counterpart and refuses type/asset/price changes; deleting one leg
+  deletes both. The ING statement importer does not recognise a transfer
+  that has already been booked by hand (no cross-document matching).
 - **Duplicate uploads.** `documents.content_hash` (SHA-256) is checked per
   person at upload; the same bytes again return `importer.DuplicateError`,
   which `/upload` answers with 409 and a message naming the earlier file.

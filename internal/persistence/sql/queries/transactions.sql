@@ -16,10 +16,11 @@ INSERT INTO
         source,
         document_id,
         price_currency,
-        fx_rate
+        fx_rate,
+        transfer_id
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *;
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *;
 
 -- name: GetTransaction :one
 SELECT
@@ -100,3 +101,17 @@ WHERE
 DELETE FROM transactions
 WHERE
     id = ?;
+
+-- name: GetTransferCounterpart :one
+SELECT
+    *
+FROM
+    transactions
+WHERE
+    transfer_id = ?
+    AND id <> ?;
+
+-- name: DeleteTransfer :execrows
+DELETE FROM transactions
+WHERE
+    transfer_id = ?;

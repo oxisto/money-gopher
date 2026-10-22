@@ -12,6 +12,8 @@ const OverviewTransaction = graphql(`
 		asset { displayName }
 		portfolio { displayName }
 		cashAccount { displayName }
+		transferID
+		counterpart { id cashAccount { id displayName } }
 	}
 `);
 

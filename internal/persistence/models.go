@@ -137,6 +137,7 @@ type Transaction struct {
 	DocumentID    sql.NullString
 	PriceCurrency sql.NullString
 	FxRate        Decimal
+	TransferID    sql.NullString
 }
 
 type User struct {
