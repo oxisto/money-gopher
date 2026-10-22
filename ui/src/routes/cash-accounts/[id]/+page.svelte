@@ -5,6 +5,7 @@
 	import TransferForm from '#lib/components/TransferForm.svelte';
 	import ScheduleForm from '#lib/components/ScheduleForm.svelte';
 	import Panel from '#lib/components/ui/Panel.svelte';
+	import Checkbox from '#lib/components/ui/Checkbox.svelte';
 	import { intervalLabel, scheduleTypeLabel } from '#lib/describe.js';
 	import Button from '#lib/components/ui/Button.svelte';
 	import Dialog from '#lib/components/ui/Dialog.svelte';
@@ -230,10 +231,7 @@
 				<option value="SAVINGS">Savings account</option>
 				<option value="LOAN">Loan</option>
 			</SelectField>
-			<label class="flex items-center gap-2 text-sm">
-				<input type="checkbox" bind:checked={editEstimated} />
-				The balance is an estimate
-			</label>
+			<Checkbox bind:checked={editEstimated} label="The balance is an estimate" />
 			{#if editEstimated}
 				<TextField bind:value={editDeclared} label="Approximate balance" placeholder="e.g. 1500" required />
 				<p class="text-xs text-muted">

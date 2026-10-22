@@ -4,6 +4,7 @@
 	import type { ScheduleFields } from '#lib/graphql/documents.js';
 	import type { ResultOf } from 'gql.tada';
 	import Button from './ui/Button.svelte';
+	import Checkbox from './ui/Checkbox.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import Segmented from './ui/Segmented.svelte';
 	import SelectField from './ui/SelectField.svelte';
@@ -192,10 +193,7 @@
 		</SelectField>
 	{/if}
 	{#if type !== 'DIVIDEND'}
-		<label class="flex items-center gap-2 text-sm">
-			<input type="checkbox" bind:checked={books} />
-			Book automatically
-		</label>
+		<Checkbox bind:checked={books} label="Book automatically" />
 		<p class="text-xs text-muted">
 			Each occurrence is written as a transaction once its day has passed, past ones right away. A
 			statement that lists the same movement later confirms it instead of adding a second one.

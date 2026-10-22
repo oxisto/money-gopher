@@ -5,6 +5,7 @@
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import Segmented from './ui/Segmented.svelte';
+	import Checkbox from './ui/Checkbox.svelte';
 	import SelectField from './ui/SelectField.svelte';
 	import TextField from './ui/TextField.svelte';
 
@@ -106,10 +107,7 @@
 			<option value="SAVINGS">Savings account (Bausparvertrag, savings)</option>
 			<option value="LOAN">Loan (its balance is what you owe)</option>
 		</SelectField>
-		<label class="flex items-center gap-2 text-sm">
-			<input type="checkbox" bind:checked={estimated} />
-			I won't track this one; the balance is an estimate
-		</label>
+		<Checkbox bind:checked={estimated} label="I won't track this one; the balance is an estimate" />
 		{#if estimated}
 			<TextField label="Approximate balance" bind:value={declared} placeholder="e.g. 1500" required />
 		{/if}
