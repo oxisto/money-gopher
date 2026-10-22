@@ -868,6 +868,8 @@ input StagedTransactionConfirmInput {
   cashDelta: Int
   "For a DEPOSIT_CASH row: the account the money came from; see depositsFromCashAccountID."
   transferFromCashAccountID: ID
+  "Leave this row out: it is dropped from the staging and not imported."
+  skip: Boolean
 }
 
 type Mutation {

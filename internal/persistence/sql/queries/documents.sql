@@ -106,6 +106,12 @@ INSERT INTO
 VALUES
     (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *;
 
+-- name: DeleteStagedTransaction :exec
+DELETE FROM staged_transactions
+WHERE
+    id = ?
+    AND document_id = ?;
+
 -- name: ListStagedTransactions :many
 SELECT
     *

@@ -110,6 +110,7 @@ type StagedTransactionConfirmInput struct {
 	CashAccountID             *graphql.ID
 	CashDelta                 *int32
 	TransferFromCashAccountID *graphql.ID
+	Skip                      *bool
 }
 
 // ConfirmImport resolves Mutation.confirmImport. It commits all staged
@@ -184,6 +185,12 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 
 		for _, stx := range staged {
 			ov := overrides[stx.ID]
+			if ov.Skip != nil && *ov.Skip {
+				if err := q.DeleteStagedTransaction(ctx, persistence.DeleteStagedTransactionParams{ID: stx.ID, DocumentID: doc.ID}); err != nil {
+					return err
+				}
+				continue
+			}
 
 			d := txData{
 				Type:      stx.Type,
