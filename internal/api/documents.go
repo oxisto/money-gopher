@@ -272,35 +272,44 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 				if err != nil {
 					return err
 				}
-				var hit *persistence.Transaction
+				var near []*persistence.Transaction
 				for _, c := range candidates {
-					if consumed[c.ID] || c.CashDelta != d.CashDelta {
+					if consumed[c.ID] {
 						continue
 					}
 					if diff := c.Time.Sub(d.Time); diff < -7*24*time.Hour || diff > 7*24*time.Hour {
 						continue
 					}
-					hit = c
-					break
+					near = append(near, c)
 				}
-				if hit != nil {
-					consumed[hit.ID] = true
-					tx, err := q.ConfirmScheduledTransaction(ctx, persistence.ConfirmScheduledTransactionParams{
-						Time:       d.Time,
-						Fees:       d.Fees,
-						Taxes:      d.Taxes,
-						CashDelta:  d.CashDelta,
-						DocumentID: sql.NullString{String: doc.ID, Valid: true},
-						Source:     source,
-						ID:         hit.ID,
-					})
-					if err != nil {
-						return err
+				// One booking of the row's amount, or — a bank pooling
+				// several debits into one, as the LBS does with the Sparrate
+				// and the Zinsrate — a few bookings that add up to it.
+				hits := pooledBookings(near, d.CashDelta)
+				if len(hits) > 0 {
+					for _, hit := range hits {
+						consumed[hit.ID] = true
+						cashDelta := hit.CashDelta
+						if len(hits) == 1 {
+							cashDelta = d.CashDelta // the bank's amount wins
+						}
+						tx, err := q.ConfirmScheduledTransaction(ctx, persistence.ConfirmScheduledTransactionParams{
+							Time:       d.Time,
+							Fees:       hit.Fees,
+							Taxes:      hit.Taxes,
+							CashDelta:  cashDelta,
+							DocumentID: sql.NullString{String: doc.ID, Valid: true},
+							Source:     source,
+							ID:         hit.ID,
+						})
+						if err != nil {
+							return err
+						}
+						if err := mirrorOntoCounterpart(ctx, q, hit, d.Time, -cashDelta); err != nil {
+							return err
+						}
+						created = append(created, &TransactionResolver{db: r.db, transaction: tx})
 					}
-					if err := mirrorOntoCounterpart(ctx, q, hit, d.Time, -d.CashDelta); err != nil {
-						return err
-					}
-					created = append(created, &TransactionResolver{db: r.db, transaction: tx})
 					continue
 				}
 			}
@@ -408,6 +417,35 @@ func firstID(ids ...*graphql.ID) *string {
 		if id != nil {
 			s := string(*id)
 			return &s
+		}
+	}
+	return nil
+}
+
+// pooledBookings picks the bookings a statement row confirms: the first
+// one of exactly its amount, else the smallest set (up to three) whose
+// amounts add up to it, else none.
+func pooledBookings(candidates []*persistence.Transaction, amount int64) []*persistence.Transaction {
+	for _, c := range candidates {
+		if c.CashDelta == amount {
+			return []*persistence.Transaction{c}
+		}
+	}
+	n := len(candidates)
+	for i := 0; i < n; i++ {
+		for j := i + 1; j < n; j++ {
+			if candidates[i].CashDelta+candidates[j].CashDelta == amount {
+				return []*persistence.Transaction{candidates[i], candidates[j]}
+			}
+		}
+	}
+	for i := 0; i < n; i++ {
+		for j := i + 1; j < n; j++ {
+			for k := j + 1; k < n; k++ {
+				if candidates[i].CashDelta+candidates[j].CashDelta+candidates[k].CashDelta == amount {
+					return []*persistence.Transaction{candidates[i], candidates[j], candidates[k]}
+				}
+			}
 		}
 	}
 	return nil

@@ -267,3 +267,59 @@ func TestSchedule_Books(t *testing.T) {
 		}
 	}
 }
+
+// TestSchedule_PooledDebit: the LBS collects the Sparrate and the Zinsrate
+// in one direct debit, so the Giro statement shows 1,161.24 where the
+// schedules booked two legs of 535.82 and 625.42. The row confirms both.
+func TestSchedule_PooledDebit(t *testing.T) {
+	db, err := persistence.OpenDB(":memory:")
+	if err != nil {
+		t.Fatalf("OpenDB: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	user, person, err := auth.EnsureDevUser(context.Background(), db)
+	if err != nil {
+		t.Fatalf("EnsureDevUser: %v", err)
+	}
+	ctx := auth.WithPerson(auth.WithUser(context.Background(), user), person)
+	schema := NewSchema(db, &quotes.Updater{DB: db, Registry: quotes.NewRegistry()})
+	h := transferHelpers{t, schema, ctx}
+
+	giro := h.account("Giro", "CASH", nil)
+	bauspar := h.account("Bausparvertrag", "SAVINGS", nil)
+	loan := h.account("Vorfinanzierung", "LOAN", nil)
+	createSchedule(t, h, fmt.Sprintf(`displayName: "Sparrate", type: TRANSFER, interval: MONTHLY, dayOfMonth: 1,
+		start: "2026-09-01T00:00:00Z", end: "2026-09-30T00:00:00Z", cashAccountID: %q, counterpartAccountID: %q, books: true,
+		steps: [{ from: "2026-09-01T00:00:00Z", amount: 53582 }]`, bauspar, giro))
+	createSchedule(t, h, fmt.Sprintf(`displayName: "Zinszahlung", type: TRANSFER, interval: MONTHLY, dayOfMonth: 1,
+		start: "2026-09-01T00:00:00Z", end: "2026-09-30T00:00:00Z", cashAccountID: %q, counterpartAccountID: %q, books: true,
+		steps: [{ from: "2026-09-01T00:00:00Z", amount: 62542 }]`, loan, giro))
+	if h.balance(giro) != -116124 {
+		t.Fatalf("Giro after booking = %v, want -116124", h.balance(giro))
+	}
+
+	svc := importer.NewService(db)
+	doc, err := svc.Upload(ctx, person.ID, "giro.csv", "text/csv", []byte("Date,Type,Security,ISIN,Units,Price,Fees,Taxes,CashDelta,Currency\n2026-09-01,WITHDRAW_CASH,,,,,,,-1161.24,EUR\n"))
+	if err != nil {
+		t.Fatalf("Upload: %v", err)
+	}
+	if err := svc.Process(ctx, doc.ID, person.ID); err != nil {
+		t.Fatalf("Process: %v", err)
+	}
+	data := exec(t, schema, ctx, `mutation ($id: ID!, $acct: ID!) {
+		confirmImport(documentID: $id, input: { cashAccountID: $acct, transactions: [] }) { cashDelta { amount } schedule { displayName } document { id } }
+	}`, map[string]any{"id": doc.ID, "acct": giro})
+	confirmed := data["confirmImport"].([]any)
+	if len(confirmed) != 2 {
+		t.Fatalf("confirmed %d transactions, want the 2 pooled legs: %v", len(confirmed), confirmed)
+	}
+	for _, raw := range confirmed {
+		tx := raw.(map[string]any)
+		if tx["schedule"] == nil || tx["document"] == nil {
+			t.Errorf("%v: want a scheduled leg confirmed by the statement", tx)
+		}
+	}
+	if h.balance(giro) != -116124 {
+		t.Errorf("Giro after the statement = %v, want -116124 still (nothing doubled)", h.balance(giro))
+	}
+}
