@@ -97,7 +97,8 @@ func (r *RootResolver) CreatePortfolio(ctx context.Context, args struct{ Input C
 
 // UpdatePortfolioInput is the input for Mutation.updatePortfolio.
 type UpdatePortfolioInput struct {
-	DisplayName *string
+	DisplayName   *string
+	CashAccountID *graphql.ID
 }
 
 // UpdatePortfolio resolves Mutation.updatePortfolio.
@@ -124,11 +125,22 @@ func (r *RootResolver) UpdatePortfolio(ctx context.Context, args struct {
 	if args.Input.DisplayName != nil {
 		displayName = *args.Input.DisplayName
 	}
+	cashAccountID := current.CashAccountID
+	if args.Input.CashAccountID != nil {
+		cashAccountID = string(*args.Input.CashAccountID)
+		_, err := r.db.GetCashAccount(ctx, persistence.GetCashAccountParams{ID: cashAccountID, PersonID: person.ID})
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("cash account %q not found", cashAccountID)
+		} else if err != nil {
+			return nil, err
+		}
+	}
 
 	portfolio, err := r.db.UpdatePortfolio(ctx, persistence.UpdatePortfolioParams{
-		DisplayName: displayName,
-		ID:          string(args.ID),
-		PersonID:    person.ID,
+		DisplayName:   displayName,
+		CashAccountID: cashAccountID,
+		ID:            string(args.ID),
+		PersonID:      person.ID,
 	})
 	if err != nil {
 		return nil, err

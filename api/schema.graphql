@@ -652,6 +652,8 @@ input CreatePortfolioInput {
 
 input UpdatePortfolioInput {
   displayName: String
+  "Move settlement to another of your cash accounts; existing transactions keep theirs."
+  cashAccountID: ID
 }
 
 input CreateCashAccountInput {
