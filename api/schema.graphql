@@ -171,6 +171,34 @@ type Performance {
 }
 
 """
+Returns is what a portfolio earned over a period, in money. Four parts add
+up to the total: what completed sales realised, what the holdings paid
+out, what trades and payouts cost, and how the open positions moved in
+value. Realized and income are gross, costs stand on their own, so nothing
+is counted twice. For ALL_TIME the value change equals today's unrealized
+gain.
+"""
+type Returns {
+  "Null for a calendar year of returnsByYear."
+  period: Period
+  "The period, (from, to]: a transaction exactly at from belongs to the one before."
+  from: Time!
+  to: Time!
+  "The FIFO profit or loss of sales completed in the period, before their fees and taxes."
+  realized: Money!
+  "Dividends, coupons and rent received, before withholding."
+  income: Money!
+  "Every fee and tax paid in the period, on purchases, sales and payouts."
+  costs: Money!
+  "How the open positions moved in value, net of what was bought and sold."
+  valueChange: Money!
+  "realized + income − costs + valueChange."
+  total: Money!
+  "The time-weighted return over the same period as a fraction."
+  timeWeightedReturn: Float!
+}
+
+"""
 NetWorthPoint is everything the active person holds at one point in time,
 across all portfolios and cash accounts.
 """
@@ -227,6 +255,10 @@ type PortfolioSnapshot {
   "The relative unrealized gain over all positions."
   totalGains: Float!
   performance(period: Period!): Performance!
+  "What the portfolio earned over the period, in money; see Returns."
+  returns(period: Period!): Returns!
+  "The same per calendar year, from the first transaction's year to the snapshot's."
+  returnsByYear: [Returns!]!
 }
 
 """
