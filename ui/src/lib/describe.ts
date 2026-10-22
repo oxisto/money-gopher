@@ -22,14 +22,19 @@ export function describeTransaction(tx: DescribableTransaction): {
 	/** The generic description, when the title is a schedule's name. */
 	subtitle?: string;
 } {
-	// A note — the statement's wording, or the person's — is the title; so
-	// is a schedule's name ("Sparrate", "Zinsen"). The generic wording
-	// moves to the subtitle either way.
+	// A schedule's name ("Sparrate", "Miete Büro") is the title of its
+	// occurrences, over the statement's wording, which goes to the
+	// subtitle. Without a schedule, the note is the title: a statement's
+	// note is "Buchungsart counterparty · Verwendungszweck", so its first
+	// part names the row and the rest explains it. The generic wording
+	// comes last either way.
 	if (tx.note || tx.schedule) {
 		const generic = describeTransaction({ ...tx, schedule: null, note: null });
-		// A statement's note is "Buchungsart counterparty · Verwendungszweck":
-		// the first part names the row, the rest explains it.
-		const [head, ...rest] = (tx.note || tx.schedule!.displayName).split(' · ');
+		if (tx.schedule) {
+			const head = tx.note ? tx.note.split(' · ')[0] : null;
+			return { title: tx.schedule.displayName, icon: generic.icon, subtitle: [head, generic.title].filter(Boolean).join(' · ') };
+		}
+		const [head, ...rest] = tx.note!.split(' · ');
 		return { title: head, icon: generic.icon, subtitle: [...rest, generic.title].join(' · ') };
 	}
 	const name = tx.asset?.displayName ?? 'unknown asset';

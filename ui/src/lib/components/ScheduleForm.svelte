@@ -17,6 +17,7 @@
 		cashAccounts,
 		assets,
 		schedule = null,
+		preset = null,
 		onsaved
 	}: {
 		/** The account whose page the form sits on. */
@@ -25,6 +26,15 @@
 		assets: { id: string; displayName: string }[];
 		/** Editing an existing schedule; null creates one. */
 		schedule?: Schedule | null;
+		/** Defaults for a new schedule, e.g. from a suggestion. */
+		preset?: {
+			name: string;
+			type: string;
+			dayOfMonth: number;
+			start: string;
+			steps: { from: string; amount: string }[];
+			books: boolean;
+		} | null;
 		onsaved: () => void;
 	} = $props();
 
@@ -65,22 +75,21 @@
 		return new Date(`${s}T00:00:00Z`);
 	}
 
-	let name = $state(schedule?.displayName ?? '');
-	let type = $state(schedule?.type ?? 'TRANSFER');
+	let name = $state(schedule?.displayName ?? preset?.name ?? '');
+	let type = $state(schedule?.type ?? preset?.type ?? 'TRANSFER');
 	let direction = $state<'in' | 'out'>(editingOut ? 'out' : 'in');
 	let otherID = $state(
 		editingOut ? (schedule?.cashAccount.id ?? '') : (schedule?.counterpartAccount?.id ?? '')
 	);
 	let assetID = $state(schedule?.asset?.id ?? '');
 	let interval = $state(schedule?.interval ?? 'MONTHLY');
-	let day = $state(String(schedule?.dayOfMonth ?? 1));
-	let start = $state(dateOf(schedule?.start) || new Date().toISOString().slice(0, 10));
+	let day = $state(String(schedule?.dayOfMonth ?? preset?.dayOfMonth ?? 1));
+	let start = $state(dateOf(schedule?.start) || preset?.start || new Date().toISOString().slice(0, 10));
 	let end = $state(dateOf(schedule?.end));
-	let books = $state(schedule?.books ?? true);
+	let books = $state(schedule?.books ?? preset?.books ?? true);
 	let steps = $state<{ from: string; amount: string }[]>(
-		schedule?.steps.map((s) => ({ from: dateOf(s.from), amount: String(Math.abs(s.amount.amount) / 100) })) ?? [
-			{ from: start, amount: '' }
-		]
+		schedule?.steps.map((s) => ({ from: dateOf(s.from), amount: String(Math.abs(s.amount.amount) / 100) })) ??
+			preset?.steps ?? [{ from: start, amount: '' }]
 	);
 	// The first amount applies from the start unless its date was edited by
 	// hand: an amount dated later than the start would leave the earlier
@@ -137,7 +146,7 @@
 			start: dateInput(start),
 			end: end ? dateInput(end) : null,
 			steps: parsedSteps,
-			books: type === 'DIVIDEND' ? false : books
+			books
 		};
 		const result = schedule
 			? await mutate(updateSchedule, {
@@ -202,17 +211,17 @@
 			{/each}
 		</SelectField>
 	{/if}
-	{#if type !== 'DIVIDEND'}
-		<Checkbox bind:checked={books} label="Book automatically" />
-		<p class="text-xs text-muted">
+	<Checkbox bind:checked={books} label="Book automatically" />
+	<p class="text-xs text-muted">
+		{#if type === 'DIVIDEND'}
+			Each occurrence is written as income of the asset, in the portfolio that holds it, once its day
+			has passed. A statement row or a confirmation for the same payment later confirms it instead of
+			adding a second one; a deposit already in the books becomes the asset's income.
+		{:else}
 			Each occurrence is written as a transaction once its day has passed, past ones right away. A
 			statement that lists the same movement later confirms it instead of adding a second one.
-		</p>
-	{:else}
-		<p class="text-xs text-muted">
-			An expectation only: the dividend or rent confirmations book the real income.
-		</p>
-	{/if}
+		{/if}
+	</p>
 	<div class="grid grid-cols-2 gap-3">
 		<SelectField bind:value={interval} label="Every">
 			<option value="MONTHLY">Month</option>

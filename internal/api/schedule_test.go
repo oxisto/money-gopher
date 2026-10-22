@@ -369,3 +369,210 @@ func TestSchedule_PooledDebit(t *testing.T) {
 		t.Errorf("Giro after the second statement = %v, want -116124 still", h.balance(giro))
 	}
 }
+
+// TestSchedule_AdoptsByCounterparty: a salary month with a bonus has the
+// same payer and date but a different amount. The schedule adopts it all
+// the same, and an expectation booked before the statement arrived gives
+// way to the real row on the next booking run.
+func TestSchedule_AdoptsByCounterparty(t *testing.T) {
+	db, err := persistence.OpenDB(":memory:")
+	if err != nil {
+		t.Fatalf("OpenDB: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	user, person, err := auth.EnsureDevUser(context.Background(), db)
+	if err != nil {
+		t.Fatalf("EnsureDevUser: %v", err)
+	}
+	ctx := auth.WithPerson(auth.WithUser(context.Background(), user), person)
+	schema := NewSchema(db, &quotes.Updater{DB: db, Registry: quotes.NewRegistry()})
+	h := transferHelpers{t, schema, ctx}
+	giro := h.account("Giro", "CASH", nil)
+	exec(t, schema, ctx, `mutation ($id: ID!) { updateCashAccount(id: $id, input: { iban: "DE02120300000000202051" }) { id } }`, map[string]any{"id": giro})
+
+	statement := func(rows string) []byte {
+		return []byte("ING-DiBa AG\nKontoauszug 2026\nIBAN DE02 1203 0000 0000 2020 51\n" +
+			"Buchung      Buchung / Verwendungszweck                                     Betrag (EUR)\nValuta\n\n" + rows)
+	}
+	svc := importer.NewService(db)
+	importStatement := func(name, rows string) {
+		doc, err := svc.Upload(ctx, person.ID, name, "text/plain", statement(rows))
+		if err != nil {
+			t.Fatalf("Upload: %v", err)
+		}
+		if err := svc.Process(ctx, doc.ID, person.ID); err != nil {
+			t.Fatalf("Process: %v", err)
+		}
+		exec(t, schema, ctx, `mutation ($id: ID!, $acct: ID!) { confirmImport(documentID: $id, input: { cashAccountID: $acct, transactions: [] }) { id } }`, map[string]any{"id": doc.ID, "acct": giro})
+	}
+	// May and June at the usual amount, July with a bonus on top.
+	importStatement("q2.txt",
+		"28.05.2026                 Gehalt/Rente Musterfirma GmbH                                   4.850,00\n"+
+			"28.05.2026                 Lohn/Gehalt 05/2026\n"+
+			"26.06.2026                 Gehalt/Rente Musterfirma GmbH                                   4.850,00\n"+
+			"26.06.2026                 Lohn/Gehalt 06/2026\n"+
+			"28.07.2026                 Gehalt/Rente Musterfirma GmbH                                   7.850,00\n"+
+			"28.07.2026                 Lohn/Gehalt 07/2026 inkl. Bonus\n")
+	if h.balance(giro) != 1755000 {
+		t.Fatalf("Giro after the statement = %v, want 1755000", h.balance(giro))
+	}
+
+	// Named "Gehalt", not after the employer: the schedule learns the
+	// payer from the rows it adopts by amount.
+	gehalt := createSchedule(t, h, fmt.Sprintf(`displayName: "Gehalt", type: DEPOSIT_CASH, interval: MONTHLY, dayOfMonth: 28,
+		start: "2026-05-01T00:00:00Z", end: "2026-08-31T00:00:00Z", cashAccountID: %q, books: true,
+		steps: [{ from: "2026-05-01T00:00:00Z", amount: 485000 }]`, giro))
+	// May and June by amount, July by counterparty; August booked as usual.
+	if gehalt["booked"] != 4.0 || h.balance(giro) != 1755000+485000 {
+		t.Errorf("booked %v, Giro %v; want 4 and 2240000 (the July bonus month adopted, August booked)", gehalt["booked"], h.balance(giro))
+	}
+
+	// August's statement arrives: a bonus again, so the row cannot confirm
+	// the booking by amount and imports beside it. The next booking run
+	// adopts the real row and drops the expectation.
+	importStatement("aug.txt",
+		"28.08.2026                 Gehalt/Rente Musterfirma GmbH                                   5.350,00\n"+
+			"28.08.2026                 Lohn/Gehalt 08/2026 inkl. Praemie\n")
+	if h.balance(giro) != 1755000+485000+535000 {
+		t.Fatalf("Giro after August's statement = %v, want the expectation still beside the real row", h.balance(giro))
+	}
+	exec(t, schema, ctx, `mutation { bookSchedules(until: "2026-08-31T00:00:00Z") }`, nil)
+	if h.balance(giro) != 1755000+535000 {
+		t.Errorf("Giro after the booking run = %v, want 2290000: the real August row only", h.balance(giro))
+	}
+	data := exec(t, schema, ctx, `query ($id: ID!) { schedule(id: $id) { booked unconfirmed { id } } }`, map[string]any{"id": gehalt["id"]})
+	if s := data["schedule"].(map[string]any); s["booked"] != 4.0 || len(s["unconfirmed"].([]any)) != 0 {
+		t.Errorf("schedule after the run = %v, want 4 occurrences, none unconfirmed", s)
+	}
+}
+
+// TestSchedule_Rent: the rent an office room brings in is a DIVIDEND
+// schedule on the room, landing on the Giro. It books as the room's
+// income in the portfolio that holds the room, adopts a rent that a
+// statement had imported as a plain deposit, and a later statement row
+// confirms a booked month.
+func TestSchedule_Rent(t *testing.T) {
+	db, err := persistence.OpenDB(":memory:")
+	if err != nil {
+		t.Fatalf("OpenDB: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	user, person, err := auth.EnsureDevUser(context.Background(), db)
+	if err != nil {
+		t.Fatalf("EnsureDevUser: %v", err)
+	}
+	ctx := auth.WithPerson(auth.WithUser(context.Background(), user), person)
+	schema := NewSchema(db, &quotes.Updater{DB: db, Registry: quotes.NewRegistry()})
+	h := transferHelpers{t, schema, ctx}
+	giro := h.account("Giro", "CASH", nil)
+	exec(t, schema, ctx, `mutation ($id: ID!) { updateCashAccount(id: $id, input: { iban: "DE02120300000000202051" }) { id } }`, map[string]any{"id": giro})
+	room := exec(t, schema, ctx, `mutation ($acct: ID!) {
+		bookAsset(input: { displayName: "Office room", kind: PROPERTY, currency: "EUR", acquiredAt: "2023-01-02T12:00:00Z", cost: "200000", cashAccountID: $acct }) { id }
+	}`, map[string]any{"acct": giro})["bookAsset"].(map[string]any)["id"].(string)
+
+	statement := func(rows string) []byte {
+		return []byte("ING-DiBa AG\nKontoauszug 2026\nIBAN DE02 1203 0000 0000 2020 51\n" +
+			"Buchung      Buchung / Verwendungszweck                                     Betrag (EUR)\nValuta\n\n" + rows)
+	}
+	svc := importer.NewService(db)
+	importStatement := func(name, rows string) {
+		doc, err := svc.Upload(ctx, person.ID, name, "text/plain", statement(rows))
+		if err != nil {
+			t.Fatalf("Upload: %v", err)
+		}
+		if err := svc.Process(ctx, doc.ID, person.ID); err != nil {
+			t.Fatalf("Process: %v", err)
+		}
+		exec(t, schema, ctx, `mutation ($id: ID!, $acct: ID!) { confirmImport(documentID: $id, input: { cashAccountID: $acct, transactions: [] }) { id } }`, map[string]any{"id": doc.ID, "acct": giro})
+	}
+	// December's rent came with a statement before the schedule existed.
+	importStatement("dec.txt", "01.12.2025                 Gutschrift/Dauerauftrag Mieter GmbH                               500,00\n01.12.2025                 Miete Buero Dezember\n")
+
+	rent := createSchedule(t, h, fmt.Sprintf(`displayName: "Miete Büro", type: DIVIDEND, interval: MONTHLY, dayOfMonth: 1,
+		start: "2025-12-01T00:00:00Z", end: "2026-02-28T00:00:00Z", cashAccountID: %q, assetID: %q, books: true,
+		steps: [{ from: "2025-12-01T00:00:00Z", amount: 50000 }]`, giro, room))
+	if rent["booked"] != 3.0 {
+		t.Fatalf("booked = %v, want 3 (December adopted, January and February booked)", rent["booked"])
+	}
+	data := exec(t, schema, ctx, `query ($id: ID!) { cashAccount(id: $id) { balance { amount } transactions { type time cashDelta { amount } portfolio { displayName } asset { displayName } schedule { displayName } documents { id } } } }`, map[string]any{"id": giro})
+	acct := data["cashAccount"].(map[string]any)
+	rents := 0
+	for _, raw := range acct["transactions"].([]any) {
+		tx := raw.(map[string]any)
+		if tx["schedule"] == nil {
+			continue
+		}
+		rents++
+		if tx["type"] != "DIVIDEND" || tx["asset"].(map[string]any)["displayName"] != "Office room" || tx["portfolio"] == nil {
+			t.Errorf("rent row %v: want the room's income in its portfolio", tx)
+		}
+		if tx["time"].(string)[:7] == "2025-12" && len(tx["documents"].([]any)) != 1 {
+			t.Errorf("December's rent lost its statement: %v", tx)
+		}
+	}
+	if rents != 3 {
+		t.Errorf("%d rent rows, want 3", rents)
+	}
+	// 3 × 500 rent in (booking the room does not touch the Giro).
+	if got := acct["balance"].(map[string]any)["amount"]; got != 150000.0 {
+		t.Errorf("Giro = %v, want 150000", got)
+	}
+
+	// February's statement confirms the booked February rent.
+	importStatement("feb.txt", "02.02.2026                 Gutschrift/Dauerauftrag Mieter GmbH                               500,00\n02.02.2026                 Miete Buero Februar\n")
+	data = exec(t, schema, ctx, `query ($id: ID!, $acct: ID!) { schedule(id: $id) { booked unconfirmed { scheduledFor } } cashAccount(id: $acct) { balance { amount } } }`, map[string]any{"id": rent["id"], "acct": giro})
+	if s := data["schedule"].(map[string]any); s["booked"] != 3.0 || len(s["unconfirmed"].([]any)) != 1 || s["unconfirmed"].([]any)[0].(map[string]any)["scheduledFor"].(string)[:10] != "2026-01-01" {
+		t.Errorf("after February's statement: %v, want January the only unconfirmed month", s)
+	}
+	if got := data["cashAccount"].(map[string]any)["balance"].(map[string]any)["amount"]; got != 150000.0 {
+		t.Errorf("Giro after the statement = %v, want unchanged: the row confirmed, not doubled", got)
+	}
+}
+
+// TestSchedule_StartMovesLater: a schedule created with the wrong start
+// booked months that never were; moving the start later drops those
+// expectations, and keeps what a statement backs.
+func TestSchedule_StartMovesLater(t *testing.T) {
+	db, err := persistence.OpenDB(":memory:")
+	if err != nil {
+		t.Fatalf("OpenDB: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	user, person, err := auth.EnsureDevUser(context.Background(), db)
+	if err != nil {
+		t.Fatalf("EnsureDevUser: %v", err)
+	}
+	ctx := auth.WithPerson(auth.WithUser(context.Background(), user), person)
+	schema := NewSchema(db, &quotes.Updater{DB: db, Registry: quotes.NewRegistry()})
+	h := transferHelpers{t, schema, ctx}
+	giro := h.account("Giro", "CASH", nil)
+	exec(t, schema, ctx, `mutation ($id: ID!) { updateCashAccount(id: $id, input: { iban: "DE02120300000000202051" }) { id } }`, map[string]any{"id": giro})
+	svc := importer.NewService(db)
+	doc, err := svc.Upload(ctx, person.ID, "aug.txt", "text/plain", []byte("ING-DiBa AG\nKontoauszug 2026\nIBAN DE02 1203 0000 0000 2020 51\n"+
+		"Buchung      Buchung / Verwendungszweck                                     Betrag (EUR)\nValuta\n\n"+
+		"03.08.2026                 Gutschrift/Dauerauftrag Mieter GmbH                               500,00\n03.08.2026                 Miete August\n"))
+	if err != nil {
+		t.Fatalf("Upload: %v", err)
+	}
+	if err := svc.Process(ctx, doc.ID, person.ID); err != nil {
+		t.Fatalf("Process: %v", err)
+	}
+	exec(t, schema, ctx, `mutation ($id: ID!, $acct: ID!) { confirmImport(documentID: $id, input: { cashAccountID: $acct, transactions: [] }) { id } }`, map[string]any{"id": doc.ID, "acct": giro})
+
+	// 8 January instead of 1 August: February to October booked, August adopted.
+	rent := createSchedule(t, h, fmt.Sprintf(`displayName: "Miete", type: DEPOSIT_CASH, interval: MONTHLY, dayOfMonth: 1,
+		start: "2026-01-08T00:00:00Z", end: "2026-10-31T00:00:00Z", cashAccountID: %q, books: true,
+		steps: [{ from: "2026-01-08T00:00:00Z", amount: 50000 }]`, giro))
+	if rent["booked"] != 9.0 || h.balance(giro) != 450000 {
+		t.Fatalf("booked %v, Giro %v; want 9 and 450000", rent["booked"], h.balance(giro))
+	}
+
+	data := exec(t, schema, ctx, `mutation ($id: ID!) { updateSchedule(id: $id, input: { start: "2026-08-01T00:00:00Z", steps: [{ from: "2026-08-01T00:00:00Z", amount: 50000 }] }) { booked unconfirmed { scheduledFor } } }`, map[string]any{"id": rent["id"]})
+	s := data["updateSchedule"].(map[string]any)
+	if s["booked"] != 3.0 || h.balance(giro) != 150000 {
+		t.Errorf("after moving the start: booked %v, Giro %v; want 3 (August adopted, September and October booked) and 150000", s["booked"], h.balance(giro))
+	}
+	if u := s["unconfirmed"].([]any); len(u) != 2 {
+		t.Errorf("unconfirmed = %v, want September and October", u)
+	}
+}
