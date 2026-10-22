@@ -417,9 +417,13 @@ deferred.
   (stored without spaces); the review page asks for one cash account per
   hint, pre-picked by reference plus the kind the part implies (the
   Bausparvertrag and the loan against it share the number), then by name,
-  then by kind, and sends it as a per-row `cashAccountID` override. A Lastschrifteinzug
-  stages as a plain deposit, not a transfer leg: the Giro it came from is
-  an estimate, where the counter-leg would be ignored anyway.
+  then by kind, and sends it as a per-row `cashAccountID` override.
+  "Deposits paid from" (`ConfirmImportInput.depositsFromCashAccountID`,
+  per row `transferFromCashAccountID`) books each DEPOSIT_CASH row as a
+  transfer: a linked WITHDRAW_CASH on the chosen account, so a Sparrate or
+  a loan repayment reads "Transfer from Giro" and stays right should the
+  Giro ever be tracked. A re-confirm keeps an existing leg in step but does
+  not turn a plain deposit into a transfer.
 - **Duplicate uploads.** `documents.content_hash` (SHA-256) is checked per
   person at upload; the same bytes again return `importer.DuplicateError`,
   which `/upload` answers with 409 and a message naming the earlier file.
