@@ -7,7 +7,9 @@ package importer
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -48,13 +50,63 @@ func NewService(db *persistence.DB) *Service {
 // Upload stores a new document and returns it; call Process afterwards
 // (typically asynchronously) to run the pipeline.
 func (s *Service) Upload(ctx context.Context, personID, filename, contentType string, data []byte) (*persistence.Document, error) {
+	hash := contentHash(data)
+
+	// The same bytes again, for the same person, is the same statement: a
+	// second document would end in the same transactions twice.
+	existing, err := s.DB.GetDocumentByHash(ctx, persistence.GetDocumentByHashParams{
+		PersonID:    personID,
+		ContentHash: sql.NullString{String: hash, Valid: true},
+	})
+	if err == nil {
+		return nil, &DuplicateError{Existing: existing}
+	} else if !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
 	return s.DB.CreateDocument(ctx, persistence.CreateDocumentParams{
 		ID:          uuid.NewString(),
 		PersonID:    personID,
 		Filename:    filename,
 		ContentType: contentType,
 		Data:        data,
+		ContentHash: sql.NullString{String: hash, Valid: true},
 	})
+}
+
+// DuplicateError is returned by Upload for a document whose bytes are
+// already stored for the person.
+type DuplicateError struct {
+	Existing *persistence.Document
+}
+
+func (e *DuplicateError) Error() string {
+	return fmt.Sprintf("already imported on %s as %s", e.Existing.CreatedAt.Format("2006-01-02"), e.Existing.Filename)
+}
+
+// contentHash is the hex SHA-256 of a document's bytes.
+func contentHash(data []byte) string {
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
+}
+
+// BackfillHashes computes the content hash of documents stored before
+// hashes existed, so that they take part in duplicate detection. It is
+// cheap to call when there is nothing to do; moneyd runs it at startup.
+func (s *Service) BackfillHashes(ctx context.Context) (int, error) {
+	docs, err := s.DB.ListDocumentsWithoutHash(ctx)
+	if err != nil {
+		return 0, err
+	}
+	for _, doc := range docs {
+		if err := s.DB.SetDocumentHash(ctx, persistence.SetDocumentHashParams{
+			ContentHash: sql.NullString{String: contentHash(doc.Data), Valid: true},
+			ID:          doc.ID,
+		}); err != nil {
+			return 0, err
+		}
+	}
+	return len(docs), nil
 }
 
 // Process runs extraction, detection and parsing for a document and stores

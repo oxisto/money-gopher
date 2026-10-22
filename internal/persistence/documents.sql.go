@@ -13,9 +13,9 @@ import (
 
 const createDocument = `-- name: CreateDocument :one
 INSERT INTO
-    documents (id, person_id, filename, content_type, data)
+    documents (id, person_id, filename, content_type, data, content_hash)
 VALUES
-    (?, ?, ?, ?, ?) RETURNING id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at, person_id
+    (?, ?, ?, ?, ?, ?) RETURNING id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at, person_id, content_hash
 `
 
 type CreateDocumentParams struct {
@@ -24,6 +24,7 @@ type CreateDocumentParams struct {
 	Filename    string
 	ContentType string
 	Data        []byte
+	ContentHash sql.NullString
 }
 
 func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) (*Document, error) {
@@ -33,6 +34,7 @@ func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) 
 		arg.Filename,
 		arg.ContentType,
 		arg.Data,
+		arg.ContentHash,
 	)
 	var i Document
 	err := row.Scan(
@@ -49,6 +51,7 @@ func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) 
 		&i.TransactionDate,
 		&i.CreatedAt,
 		&i.PersonID,
+		&i.ContentHash,
 	)
 	return &i, err
 }
@@ -171,7 +174,7 @@ func (q *Queries) DeleteStagedTransactions(ctx context.Context, documentID strin
 
 const getDocument = `-- name: GetDocument :one
 SELECT
-    id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at, person_id
+    id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at, person_id, content_hash
 FROM
     documents
 WHERE
@@ -201,6 +204,48 @@ func (q *Queries) GetDocument(ctx context.Context, arg GetDocumentParams) (*Docu
 		&i.TransactionDate,
 		&i.CreatedAt,
 		&i.PersonID,
+		&i.ContentHash,
+	)
+	return &i, err
+}
+
+const getDocumentByHash = `-- name: GetDocumentByHash :one
+SELECT
+    id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at, person_id, content_hash
+FROM
+    documents
+WHERE
+    person_id = ?
+    AND content_hash = ?
+ORDER BY
+    created_at
+LIMIT
+    1
+`
+
+type GetDocumentByHashParams struct {
+	PersonID    string
+	ContentHash sql.NullString
+}
+
+func (q *Queries) GetDocumentByHash(ctx context.Context, arg GetDocumentByHashParams) (*Document, error) {
+	row := q.db.QueryRowContext(ctx, getDocumentByHash, arg.PersonID, arg.ContentHash)
+	var i Document
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Filename,
+		&i.ContentType,
+		&i.Data,
+		&i.State,
+		&i.DetectedBank,
+		&i.ExtractedText,
+		&i.Error,
+		&i.SettlementIban,
+		&i.TransactionDate,
+		&i.CreatedAt,
+		&i.PersonID,
+		&i.ContentHash,
 	)
 	return &i, err
 }
@@ -241,7 +286,7 @@ func (q *Queries) GetStagedTransaction(ctx context.Context, id string) (*StagedT
 
 const listDocuments = `-- name: ListDocuments :many
 SELECT
-    id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at, person_id
+    id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at, person_id, content_hash
 FROM
     documents
 WHERE
@@ -273,6 +318,7 @@ func (q *Queries) ListDocuments(ctx context.Context, personID string) ([]*Docume
 			&i.TransactionDate,
 			&i.CreatedAt,
 			&i.PersonID,
+			&i.ContentHash,
 		); err != nil {
 			return nil, err
 		}
@@ -289,7 +335,7 @@ func (q *Queries) ListDocuments(ctx context.Context, personID string) ([]*Docume
 
 const listDocumentsByState = `-- name: ListDocumentsByState :many
 SELECT
-    id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at, person_id
+    id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at, person_id, content_hash
 FROM
     documents
 WHERE
@@ -327,7 +373,46 @@ func (q *Queries) ListDocumentsByState(ctx context.Context, arg ListDocumentsByS
 			&i.TransactionDate,
 			&i.CreatedAt,
 			&i.PersonID,
+			&i.ContentHash,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDocumentsWithoutHash = `-- name: ListDocumentsWithoutHash :many
+SELECT
+    id,
+    data
+FROM
+    documents
+WHERE
+    content_hash IS NULL
+`
+
+type ListDocumentsWithoutHashRow struct {
+	ID   string
+	Data []byte
+}
+
+func (q *Queries) ListDocumentsWithoutHash(ctx context.Context) ([]*ListDocumentsWithoutHashRow, error) {
+	rows, err := q.db.QueryContext(ctx, listDocumentsWithoutHash)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*ListDocumentsWithoutHashRow
+	for rows.Next() {
+		var i ListDocumentsWithoutHashRow
+		if err := rows.Scan(&i.ID, &i.Data); err != nil {
 			return nil, err
 		}
 		items = append(items, &i)
@@ -393,6 +478,24 @@ func (q *Queries) ListStagedTransactions(ctx context.Context, documentID string)
 	return items, nil
 }
 
+const setDocumentHash = `-- name: SetDocumentHash :exec
+UPDATE documents
+SET
+    content_hash = ?
+WHERE
+    id = ?
+`
+
+type SetDocumentHashParams struct {
+	ContentHash sql.NullString
+	ID          string
+}
+
+func (q *Queries) SetDocumentHash(ctx context.Context, arg SetDocumentHashParams) error {
+	_, err := q.db.ExecContext(ctx, setDocumentHash, arg.ContentHash, arg.ID)
+	return err
+}
+
 const updateDocumentState = `-- name: UpdateDocumentState :one
 UPDATE documents
 SET
@@ -403,7 +506,7 @@ SET
     settlement_iban = ?,
     transaction_date = ?
 WHERE
-    id = ? RETURNING id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at, person_id
+    id = ? RETURNING id, user_id, filename, content_type, data, state, detected_bank, extracted_text, error, settlement_iban, transaction_date, created_at, person_id, content_hash
 `
 
 type UpdateDocumentStateParams struct {
@@ -441,6 +544,7 @@ func (q *Queries) UpdateDocumentState(ctx context.Context, arg UpdateDocumentSta
 		&i.TransactionDate,
 		&i.CreatedAt,
 		&i.PersonID,
+		&i.ContentHash,
 	)
 	return &i, err
 }

@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -78,6 +79,11 @@ func run(addr string, dbPath string, quoteInterval time.Duration) error {
 	}
 
 	svc := importer.NewService(db)
+	if n, err := svc.BackfillHashes(context.Background()); err != nil {
+		return fmt.Errorf("hashing stored documents: %w", err)
+	} else if n > 0 {
+		slog.Info("hashed stored documents for duplicate detection", "documents", n)
+	}
 	mux := http.NewServeMux()
 
 	var protect func(http.Handler) http.Handler
@@ -244,7 +250,11 @@ func uploadHandler(svc *importer.Service) http.Handler {
 		}
 
 		doc, err := svc.Upload(r.Context(), person.ID, header.Filename, contentType, data)
-		if err != nil {
+		var duplicate *importer.DuplicateError
+		if errors.As(err, &duplicate) {
+			http.Error(w, duplicate.Error(), http.StatusConflict)
+			return
+		} else if err != nil {
 			http.Error(w, "upload failed: "+err.Error(), http.StatusInternalServerError)
 			return
 		}

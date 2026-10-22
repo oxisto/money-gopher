@@ -2,6 +2,7 @@ package importer
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -64,6 +65,60 @@ func TestCSV_Parse(t *testing.T) {
 	deposit := staged[2]
 	if deposit.Type != "DEPOSIT_CASH" || deposit.CashDelta != 50000 || deposit.ISIN != "" {
 		t.Errorf("deposit = %+v", deposit)
+	}
+}
+
+// TestService_Upload_Duplicate: the same bytes twice is the same statement,
+// whatever the file is called; another person may still have their own
+// copy, and documents stored before hashes existed join in once hashed.
+func TestService_Upload_Duplicate(t *testing.T) {
+	svc, personID, ctx := newTestService(t)
+
+	first, err := svc.Upload(ctx, personID, "statement.pdf", "application/pdf", []byte("%PDF-1.4 the statement"))
+	if err != nil {
+		t.Fatalf("Upload() error = %v", err)
+	}
+
+	_, err = svc.Upload(ctx, personID, "statement (1).pdf", "application/pdf", []byte("%PDF-1.4 the statement"))
+	var duplicate *DuplicateError
+	if !errors.As(err, &duplicate) {
+		t.Fatalf("second Upload() error = %v, want a DuplicateError", err)
+	}
+	if duplicate.Existing.ID != first.ID {
+		t.Errorf("duplicate of %s, want %s", duplicate.Existing.ID, first.ID)
+	}
+	if msg := duplicate.Error(); !strings.Contains(msg, "statement.pdf") {
+		t.Errorf("message %q should name the earlier file", msg)
+	}
+
+	// A different statement is fine.
+	if _, err := svc.Upload(ctx, personID, "statement.pdf", "application/pdf", []byte("%PDF-1.4 another statement")); err != nil {
+		t.Errorf("Upload() of other content error = %v", err)
+	}
+
+	// Another person's copy of the same statement is theirs to import.
+	other, err := svc.DB.CreatePerson(ctx, persistence.CreatePersonParams{ID: "other", DisplayName: "Other"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Upload(ctx, other.ID, "statement.pdf", "application/pdf", []byte("%PDF-1.4 the statement")); err != nil {
+		t.Errorf("Upload() for another person error = %v", err)
+	}
+
+	// A document from before hashes existed is caught once backfilled.
+	if _, err := svc.DB.CreateDocument(ctx, persistence.CreateDocumentParams{
+		ID: "old", PersonID: personID, Filename: "old.pdf", ContentType: "application/pdf", Data: []byte("%PDF-1.4 an old one"),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Upload(ctx, personID, "old again.pdf", "application/pdf", []byte("%PDF-1.4 an old one")); err != nil {
+		t.Fatalf("Upload() before backfill error = %v, want none (not hashed yet)", err)
+	}
+	if n, err := svc.BackfillHashes(ctx); err != nil || n != 1 {
+		t.Fatalf("BackfillHashes() = %d, %v; want 1, nil", n, err)
+	}
+	if _, err := svc.Upload(ctx, personID, "old once more.pdf", "application/pdf", []byte("%PDF-1.4 an old one")); !errors.As(err, &duplicate) {
+		t.Errorf("Upload() after backfill error = %v, want a DuplicateError", err)
 	}
 }
 

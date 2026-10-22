@@ -328,6 +328,11 @@ deferred.
   still fetches them. The import's "Create
   security" dialog makes a listing (ticker = ISIN, the document's price
   currency, ING quotes), so this works without a trip to the Securities page.
+- **Duplicate uploads.** `documents.content_hash` (SHA-256) is checked per
+  person at upload; the same bytes again return `importer.DuplicateError`,
+  which `/upload` answers with 409 and a message naming the earlier file.
+  Documents from before the column are hashed at moneyd startup
+  (`Service.BackfillHashes`).
 - **Security kind.** `securities.kind` (STOCK, ETF, FUND, BOND, OTHER; null
   until set) and `SecurityKind` in the schema. The ING parser suggests one
   per staged transaction (`security_kind`: a face value and a percentage

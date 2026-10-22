@@ -1,8 +1,37 @@
 -- name: CreateDocument :one
 INSERT INTO
-    documents (id, person_id, filename, content_type, data)
+    documents (id, person_id, filename, content_type, data, content_hash)
 VALUES
-    (?, ?, ?, ?, ?) RETURNING *;
+    (?, ?, ?, ?, ?, ?) RETURNING *;
+
+-- name: GetDocumentByHash :one
+SELECT
+    *
+FROM
+    documents
+WHERE
+    person_id = ?
+    AND content_hash = ?
+ORDER BY
+    created_at
+LIMIT
+    1;
+
+-- name: ListDocumentsWithoutHash :many
+SELECT
+    id,
+    data
+FROM
+    documents
+WHERE
+    content_hash IS NULL;
+
+-- name: SetDocumentHash :exec
+UPDATE documents
+SET
+    content_hash = ?
+WHERE
+    id = ?;
 
 -- name: GetDocument :one
 SELECT

@@ -33,6 +33,7 @@ type Document struct {
 	TransactionDate sql.NullTime
 	CreatedAt       time.Time
 	PersonID        string
+	ContentHash     sql.NullString
 }
 
 type FxRate struct {
