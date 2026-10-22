@@ -1,6 +1,6 @@
 # The UI build is platform-independent, so it runs on the build host even
 # when the image targets another architecture.
-FROM --platform=$BUILDPLATFORM node:22-bookworm-slim AS ui
+FROM --platform=$BUILDPLATFORM node:24-bookworm-slim AS ui
 WORKDIR /src/ui
 COPY ui/package.json ui/package-lock.json ./
 RUN npm ci
