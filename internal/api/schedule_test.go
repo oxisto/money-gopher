@@ -528,3 +528,51 @@ func TestSchedule_Rent(t *testing.T) {
 		t.Errorf("Giro after the statement = %v, want unchanged: the row confirmed, not doubled", got)
 	}
 }
+
+// TestSchedule_StartMovesLater: a schedule created with the wrong start
+// booked months that never were; moving the start later drops those
+// expectations, and keeps what a statement backs.
+func TestSchedule_StartMovesLater(t *testing.T) {
+	db, err := persistence.OpenDB(":memory:")
+	if err != nil {
+		t.Fatalf("OpenDB: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	user, person, err := auth.EnsureDevUser(context.Background(), db)
+	if err != nil {
+		t.Fatalf("EnsureDevUser: %v", err)
+	}
+	ctx := auth.WithPerson(auth.WithUser(context.Background(), user), person)
+	schema := NewSchema(db, &quotes.Updater{DB: db, Registry: quotes.NewRegistry()})
+	h := transferHelpers{t, schema, ctx}
+	giro := h.account("Giro", "CASH", nil)
+	exec(t, schema, ctx, `mutation ($id: ID!) { updateCashAccount(id: $id, input: { iban: "DE02120300000000202051" }) { id } }`, map[string]any{"id": giro})
+	svc := importer.NewService(db)
+	doc, err := svc.Upload(ctx, person.ID, "aug.txt", "text/plain", []byte("ING-DiBa AG\nKontoauszug 2026\nIBAN DE02 1203 0000 0000 2020 51\n"+
+		"Buchung      Buchung / Verwendungszweck                                     Betrag (EUR)\nValuta\n\n"+
+		"03.08.2026                 Gutschrift/Dauerauftrag Mieter GmbH                               500,00\n03.08.2026                 Miete August\n"))
+	if err != nil {
+		t.Fatalf("Upload: %v", err)
+	}
+	if err := svc.Process(ctx, doc.ID, person.ID); err != nil {
+		t.Fatalf("Process: %v", err)
+	}
+	exec(t, schema, ctx, `mutation ($id: ID!, $acct: ID!) { confirmImport(documentID: $id, input: { cashAccountID: $acct, transactions: [] }) { id } }`, map[string]any{"id": doc.ID, "acct": giro})
+
+	// 8 January instead of 1 August: February to October booked, August adopted.
+	rent := createSchedule(t, h, fmt.Sprintf(`displayName: "Miete", type: DEPOSIT_CASH, interval: MONTHLY, dayOfMonth: 1,
+		start: "2026-01-08T00:00:00Z", end: "2026-10-31T00:00:00Z", cashAccountID: %q, books: true,
+		steps: [{ from: "2026-01-08T00:00:00Z", amount: 50000 }]`, giro))
+	if rent["booked"] != 9.0 || h.balance(giro) != 450000 {
+		t.Fatalf("booked %v, Giro %v; want 9 and 450000", rent["booked"], h.balance(giro))
+	}
+
+	data := exec(t, schema, ctx, `mutation ($id: ID!) { updateSchedule(id: $id, input: { start: "2026-08-01T00:00:00Z", steps: [{ from: "2026-08-01T00:00:00Z", amount: 50000 }] }) { booked unconfirmed { scheduledFor } } }`, map[string]any{"id": rent["id"]})
+	s := data["updateSchedule"].(map[string]any)
+	if s["booked"] != 3.0 || h.balance(giro) != 150000 {
+		t.Errorf("after moving the start: booked %v, Giro %v; want 3 (August adopted, September and October booked) and 150000", s["booked"], h.balance(giro))
+	}
+	if u := s["unconfirmed"].([]any); len(u) != 2 {
+		t.Errorf("unconfirmed = %v, want September and October", u)
+	}
+}

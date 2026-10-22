@@ -609,12 +609,48 @@ func (r *RootResolver) UpdateSchedule(ctx context.Context, args struct {
 	if err != nil {
 		return nil, err
 	}
+	// A narrower range drops the expectations now outside it: rows the
+	// schedule wrote itself that no statement has confirmed. Adopted rows
+	// and confirmed ones stay.
+	if err := pruneExpectations(ctx, r.db, updated); err != nil {
+		return nil, err
+	}
 	if updated.Books == 1 {
 		if _, err := bookSchedule(ctx, r.db, updated, time.Now()); err != nil {
 			return nil, err
 		}
 	}
 	return &ScheduleResolver{db: r.db, s: updated}, nil
+}
+
+// pruneExpectations deletes the schedule's own unconfirmed bookings whose
+// occurrence lies before its start or after its end.
+func pruneExpectations(ctx context.Context, db *persistence.DB, s *persistence.Schedule) error {
+	txs, err := db.ListTransactionsBySchedule(ctx, sql.NullString{String: s.ID, Valid: true})
+	if err != nil {
+		return err
+	}
+	start := schedule.Midnight(s.StartDate)
+	var outside []*persistence.Transaction
+	for _, tx := range txs {
+		if tx.Source != "schedule" || !tx.ScheduledFor.Valid {
+			continue
+		}
+		at := tx.ScheduledFor.Time
+		if !at.Before(start) && (!s.EndDate.Valid || !at.After(schedule.Midnight(s.EndDate.Time))) {
+			continue
+		}
+		if cnt, err := db.CountTransactionDocuments(ctx, tx.ID); err != nil {
+			return err
+		} else if cnt > 0 {
+			continue
+		}
+		outside = append(outside, tx)
+	}
+	if len(outside) == 0 {
+		return nil
+	}
+	return deleteBookings(ctx, db, outside)
 }
 
 // DeleteSchedule resolves Mutation.deleteSchedule. Transactions it booked
