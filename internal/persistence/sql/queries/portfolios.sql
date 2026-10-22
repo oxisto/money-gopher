@@ -46,3 +46,20 @@ DELETE FROM portfolios
 WHERE
     id = ?
     AND person_id = ?;
+
+-- name: GetPortfolioHoldingSecurity :one
+-- The person's portfolio that last took the security in: where a rent or
+-- dividend schedule books its income.
+SELECT
+    portfolios.*
+FROM
+    portfolios
+    JOIN transactions ON transactions.portfolio_id = portfolios.id
+WHERE
+    portfolios.person_id = ?
+    AND transactions.security_id = ?
+    AND transactions.type IN ('BUY', 'DELIVERY_INBOUND')
+ORDER BY
+    transactions.time DESC
+LIMIT
+    1;

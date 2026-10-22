@@ -146,7 +146,7 @@
 			start: dateInput(start),
 			end: end ? dateInput(end) : null,
 			steps: parsedSteps,
-			books: type === 'DIVIDEND' ? false : books
+			books
 		};
 		const result = schedule
 			? await mutate(updateSchedule, {
@@ -211,17 +211,17 @@
 			{/each}
 		</SelectField>
 	{/if}
-	{#if type !== 'DIVIDEND'}
-		<Checkbox bind:checked={books} label="Book automatically" />
-		<p class="text-xs text-muted">
+	<Checkbox bind:checked={books} label="Book automatically" />
+	<p class="text-xs text-muted">
+		{#if type === 'DIVIDEND'}
+			Each occurrence is written as income of the asset, in the portfolio that holds it, once its day
+			has passed. A statement row or a confirmation for the same payment later confirms it instead of
+			adding a second one; a deposit already in the books becomes the asset's income.
+		{:else}
 			Each occurrence is written as a transaction once its day has passed, past ones right away. A
 			statement that lists the same movement later confirms it instead of adding a second one.
-		</p>
-	{:else}
-		<p class="text-xs text-muted">
-			An expectation only: the dividend or rent confirmations book the real income.
-		</p>
-	{/if}
+		{/if}
+	</p>
 	<div class="grid grid-cols-2 gap-3">
 		<SelectField bind:value={interval} label="Every">
 			<option value="MONTHLY">Month</option>

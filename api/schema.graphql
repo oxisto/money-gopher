@@ -529,7 +529,7 @@ enum ScheduleType {
   "Credited on a savings account, charged on a loan."
   INTEREST
   ACCOUNT_FEES
-  "A dividend or rent an asset pays; an expectation only, never booked."
+  "A dividend or rent an asset pays, booked as the asset's income in the portfolio that holds it."
   DIVIDEND
   "Money moved from counterpartAccount into cashAccount: a Sparrate, a repayment."
   TRANSFER
@@ -640,7 +640,7 @@ input CreateScheduleInput {
   assetID: ID
   "At least one; the earliest gates the first occurrence."
   steps: [ScheduleStepInput!]!
-  "Write due occurrences as transactions (not for DIVIDEND). Default false."
+  "Write due occurrences as transactions; a DIVIDEND needs the asset held in a portfolio. Default false."
   books: Boolean
 }
 

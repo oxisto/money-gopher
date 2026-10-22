@@ -141,7 +141,11 @@ func validateSchedule(ctx context.Context, db *persistence.DB, person *persisten
 			return err
 		}
 		if s.Books == 1 {
-			return errors.New("a dividend schedule is an expectation only; its confirmations book it")
+			if _, err := db.GetPortfolioHoldingSecurity(ctx, persistence.GetPortfolioHoldingSecurityParams{PersonID: person.ID, SecurityID: sql.NullString{String: s.SecurityID.String, Valid: true}}); errors.Is(err, sql.ErrNoRows) {
+				return errors.New("to book its income, the asset must be held in one of your portfolios")
+			} else if err != nil {
+				return err
+			}
 		}
 	default:
 		if s.CounterpartAccountID.Valid || s.SecurityID.Valid {
@@ -673,9 +677,6 @@ func (r *RootResolver) BookSchedules(ctx context.Context, args struct{ Until *gr
 // until's day that have no transaction yet. Idempotent: an occurrence is
 // identified by (schedule, date). Returns how many were written.
 func bookSchedule(ctx context.Context, db *persistence.DB, s *persistence.Schedule, until time.Time) (int, error) {
-	if s.Type == "DIVIDEND" {
-		return 0, nil
-	}
 	steps, err := db.ListScheduleSteps(ctx, s.ID)
 	if err != nil {
 		return 0, err
@@ -687,6 +688,17 @@ func bookSchedule(ctx context.Context, db *persistence.DB, s *persistence.Schedu
 	}
 	sign := scheduleSign(s.Type, kindOf(account))
 	scheduleID := sql.NullString{String: s.ID, Valid: true}
+	// A rent or dividend lands on the account and is income of the asset,
+	// in the portfolio that holds it.
+	var holding *persistence.Portfolio
+	if s.Type == "DIVIDEND" {
+		holding, err = db.GetPortfolioHoldingSecurity(ctx, persistence.GetPortfolioHoldingSecurityParams{PersonID: s.PersonID, SecurityID: s.SecurityID})
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, nil // an expectation only until the asset is held
+		} else if err != nil {
+			return 0, err
+		}
+	}
 
 	n := 0
 	for _, occ := range scheduleModel(s, steps).Occurrences(s.StartDate, schedule.Midnight(until).AddDate(0, 0, 1)) {
@@ -740,6 +752,9 @@ func bookSchedule(ctx context.Context, db *persistence.DB, s *persistence.Schedu
 				{Type: "DEPOSIT_CASH", Time: occ.Date, CashAccountID: &to, CashDelta: occ.Amount, Currency: account.Currency},
 			}
 			transferID = sql.NullString{String: uuid.NewString(), Valid: true}
+		} else if s.Type == "DIVIDEND" {
+			to, portfolio, security := s.CashAccountID, holding.ID, s.SecurityID.String
+			legs = []txData{{Type: "DIVIDEND", Time: occ.Date, PortfolioID: &portfolio, SecurityID: &security, CashAccountID: &to, CashDelta: occ.Amount, Currency: account.Currency}}
 		} else {
 			to := s.CashAccountID
 			legs = []txData{{Type: s.Type, Time: occ.Date, CashAccountID: &to, CashDelta: sign * occ.Amount, Currency: account.Currency}}
@@ -755,6 +770,8 @@ func bookSchedule(ctx context.Context, db *persistence.DB, s *persistence.Schedu
 					ID:            uuid.NewString(),
 					Type:          d.Type,
 					Time:          d.Time,
+					PortfolioID:   nullString(d.PortfolioID),
+					SecurityID:    nullString(d.SecurityID),
 					CashAccountID: nullString(d.CashAccountID),
 					CashDelta:     d.CashDelta,
 					Currency:      d.Currency,
@@ -783,18 +800,27 @@ func bookSchedule(ctx context.Context, db *persistence.DB, s *persistence.Schedu
 // counterparty match is what makes a salary month with a bonus still
 // that month's salary.
 func adoptOccurrence(ctx context.Context, db *persistence.DB, s *persistence.Schedule, account *persistence.CashAccount, date time.Time, cashDelta int64, scheduleID sql.NullString) (bool, error) {
-	typ := s.Type
-	if typ == "TRANSFER" {
-		typ = "DEPOSIT_CASH"
+	types := []string{s.Type}
+	switch s.Type {
+	case "TRANSFER":
+		types = []string{"DEPOSIT_CASH"}
+	case "DIVIDEND":
+		// A statement books rent as a plain deposit; adopting makes it the
+		// asset's income.
+		types = []string{"DIVIDEND", "DEPOSIT_CASH"}
 	}
-	all, err := db.ListAdoptableTransactionsInWindow(ctx, persistence.ListAdoptableTransactionsInWindowParams{
-		CashAccountID: sql.NullString{String: account.ID, Valid: true},
-		Type:          typ,
-		Time:          date.AddDate(0, 0, -7),
-		Time_2:        date.AddDate(0, 0, 7),
-	})
-	if err != nil {
-		return false, err
+	var all []*persistence.Transaction
+	for _, typ := range types {
+		rows, err := db.ListAdoptableTransactionsInWindow(ctx, persistence.ListAdoptableTransactionsInWindowParams{
+			CashAccountID: sql.NullString{String: account.ID, Valid: true},
+			Type:          typ,
+			Time:          date.AddDate(0, 0, -7),
+			Time_2:        date.AddDate(0, 0, 7),
+		})
+		if err != nil {
+			return false, err
+		}
+		all = append(all, rows...)
 	}
 	parties, err := scheduleParties(ctx, db, s)
 	if err != nil {
@@ -831,6 +857,19 @@ func adoptOccurrence(ctx context.Context, db *persistence.DB, s *persistence.Sch
 		}
 	}
 	return true, db.Tx(ctx, func(q *persistence.Queries) error {
+		if s.Type == "DIVIDEND" && tx.Type != "DIVIDEND" {
+			holding, err := q.GetPortfolioHoldingSecurity(ctx, persistence.GetPortfolioHoldingSecurityParams{PersonID: s.PersonID, SecurityID: s.SecurityID})
+			if err != nil {
+				return err
+			}
+			if _, err := q.UpdateTransaction(ctx, persistence.UpdateTransactionParams{
+				Type: "DIVIDEND", Time: tx.Time, PortfolioID: sql.NullString{String: holding.ID, Valid: true}, SecurityID: s.SecurityID,
+				CashAccountID: tx.CashAccountID, Units: tx.Units, Price: tx.Price, Fees: tx.Fees, Taxes: tx.Taxes,
+				CashDelta: tx.CashDelta, Currency: tx.Currency, Note: tx.Note, ID: tx.ID,
+			}); err != nil {
+				return err
+			}
+		}
 		for _, id := range []string{tx.ID} {
 			if err := q.LinkTransactionToSchedule(ctx, persistence.LinkTransactionToScheduleParams{ScheduleID: scheduleID, ScheduledFor: sql.NullTime{Time: date, Valid: true}, ID: id}); err != nil {
 				return err
