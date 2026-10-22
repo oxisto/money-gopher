@@ -486,6 +486,8 @@ input CreateCashAccountInput {
 
 input UpdateCashAccountInput {
   displayName: String
+  "The IBAN; an empty string removes it. Stored without spaces."
+  iban: String
 }
 
 input AssetIdentifierInput {

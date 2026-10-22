@@ -90,6 +90,7 @@ func (r *RootResolver) CreateCashAccount(ctx context.Context, args struct{ Input
 // UpdateCashAccountInput is the input for Mutation.updateCashAccount.
 type UpdateCashAccountInput struct {
 	DisplayName *string
+	IBAN        *string
 }
 
 // UpdateCashAccount resolves Mutation.updateCashAccount.
@@ -116,9 +117,14 @@ func (r *RootResolver) UpdateCashAccount(ctx context.Context, args struct {
 	if args.Input.DisplayName != nil {
 		displayName = *args.Input.DisplayName
 	}
+	iban := current.Iban
+	if args.Input.IBAN != nil {
+		iban = normalizedIBAN(args.Input.IBAN) // "" clears it
+	}
 
 	account, err := r.db.UpdateCashAccount(ctx, persistence.UpdateCashAccountParams{
 		DisplayName: displayName,
+		Iban:        iban,
 		ID:          string(args.ID),
 		PersonID:    person.ID,
 	})
