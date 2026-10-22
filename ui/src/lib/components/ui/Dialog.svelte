@@ -17,6 +17,14 @@
 
 	let dialog: HTMLDialogElement;
 
+	// Only a click outside the dialog's box closes it. A click that targets
+	// the dialog element itself can also come from its own edge, e.g. on a
+	// control half hidden behind the content's scroll clip.
+	function onBackdropClick(e: MouseEvent) {
+		const r = dialog.getBoundingClientRect();
+		if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) close();
+	}
+
 	// The native <dialog> brings focus trapping, Escape and the backdrop for
 	// free; this only keeps it in sync with `open`.
 	$effect(() => {
@@ -31,8 +39,9 @@
 <dialog
 	bind:this={dialog}
 	onclose={close}
-	onclick={(e) => e.target === dialog && close()}
-	class="m-auto flex w-full {wide ? 'max-w-2xl' : 'max-w-md'} max-h-[calc(100dvh-2rem)] flex-col rounded-xl border border-line bg-surface p-0 text-fg shadow-2xl backdrop:bg-black/40 not-open:hidden"
+	onclick={onBackdropClick}
+	class="m-auto flex w-full {wide ? 'max-w-2xl' : 'max-w-md'} flex-col rounded-xl border border-line bg-surface p-0 text-fg shadow-2xl backdrop:bg-black/40 not-open:hidden"
+	style="max-height: calc(100dvh - 2rem)"
 >
 	<div class="flex shrink-0 items-center justify-between border-b border-line px-5 py-3.5">
 		<h2 class="font-semibold">{title}</h2>
