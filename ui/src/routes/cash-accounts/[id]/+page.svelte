@@ -6,6 +6,7 @@
 	import ScheduleForm from '#lib/components/ScheduleForm.svelte';
 	type ScheduleFormPreset = { name: string; type: string; dayOfMonth: number; start: string; steps: { from: string; amount: string }[]; books: boolean };
 	import Panel from '#lib/components/ui/Panel.svelte';
+	import Segmented from '#lib/components/ui/Segmented.svelte';
 	import Checkbox from '#lib/components/ui/Checkbox.svelte';
 	import { intervalLabel, scheduleTypeLabel } from '#lib/describe.js';
 	import Button from '#lib/components/ui/Button.svelte';
@@ -25,6 +26,8 @@
 
 	let addOpen = $state(false);
 	let transferOpen = $state(false);
+	// The schedules panel has outgrown a strip above the feed: a tab of its own.
+	let tab = $state<'activity' | 'expected'>('activity');
 
 	// Schedules: the panel lists what lands here or is paid from here.
 	type Schedule = NonNullable<typeof account>['schedules'][number];
@@ -285,6 +288,18 @@
 
 	<div class="flex flex-col gap-6">
 		<StatStrip {stats} />
+		<Segmented
+			label="View"
+			bind:value={tab}
+			options={[
+				{ value: 'activity', label: `Activity · ${transactions.length}` },
+				{
+					value: 'expected',
+					label: `Expected cash flows · ${account.schedules.length}${suggestions.length ? ` (+${suggestions.length} seen)` : ''}`
+				}
+			]}
+		/>
+		{#if tab === 'expected'}
 		<Panel title="Expected cash flows">
 			{#snippet aside()}
 				<div class="flex items-center gap-3 text-xs">
@@ -375,6 +390,7 @@
 			{/if}
 			<ErrorNote message={scheduleError} />
 		</Panel>
+		{:else}
 		<ActivityFeed
 			{transactions}
 			securities={[...data.securities, ...data.assets]}
@@ -382,6 +398,7 @@
 			showBalance
 			onchanged={refresh}
 		/>
+		{/if}
 	</div>
 {:else}
 	<p class="text-sm text-muted">Cash account not found.</p>
