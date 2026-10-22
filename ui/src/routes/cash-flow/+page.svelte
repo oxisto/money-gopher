@@ -126,7 +126,7 @@
 		{/snippet}
 		<table class="num w-full text-[13px]">
 			<tbody class="divide-y divide-line">
-				{#each cf.months as m (m.month)}
+				{#each [...cf.months].reverse() as m (m.month)}
 					{@const key = String(m.month)}
 					<tr class="cursor-pointer hover:bg-raised {selected === m ? 'bg-raised' : ''}" onclick={() => (open = isOpen(m) ? '' : key)}>
 						<td class="w-16 py-2 pr-3 text-muted">{monthLabel(m.month)}</td>
