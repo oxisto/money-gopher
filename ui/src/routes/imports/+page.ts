@@ -34,7 +34,11 @@ const Imports = graphql(`
 				asset { id displayName }
 			}
 		}
-		portfolios { id displayName }
+		portfolios {
+			id
+			displayName
+			snapshot { positions { asset { id } } }
+		}
 		cashAccounts { id displayName currency iban }
 		securities { id displayName }
 		assets { id displayName }
