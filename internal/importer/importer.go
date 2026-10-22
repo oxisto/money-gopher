@@ -171,6 +171,7 @@ func (s *Service) Process(ctx context.Context, documentID string, personID strin
 			PriceCurrency: nullStr(tx.PriceCurrency),
 			FxRate:        tx.FxRate,
 			SecurityKind:  nullStr(tx.SecurityKind),
+			AccountHint:   nullStr(tx.AccountHint),
 		})
 		if err != nil {
 			return err

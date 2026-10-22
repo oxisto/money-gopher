@@ -404,6 +404,26 @@ deferred.
   the counterpart and refuses type/asset/price changes; deleting one leg
   deletes both. The ING statement importer does not recognise a transfer
   that has already been booked by hand (no cross-document matching).
+- **LBS year-end bundles.** `importer.LBS` parses the Landesbausparkasse's
+  Jahresschlussdokumente: one PDF, one Kontoauszug per contract part
+  (Bausparvertrag, Vorfinanzierungskredit, Bauspardarlehen) under one
+  contract number, plus pages without ledger rows. The amount's column
+  (Belastungen or Gutschriften) gives the sign, so a loan's interest stages
+  as a negative INTEREST; the section gives `StagedTransaction.AccountHint`
+  ("Bausparvertrag 1234567890", column `staged_transactions.account_hint`).
+  The printed IBAN is the LBS's collection account, the same for every
+  customer, so it is not used for matching. Instead `cash_accounts.
+  reference` holds an account or contract number that is not an IBAN
+  (stored without spaces); the review page asks for one cash account per
+  hint, pre-picked by reference plus the kind the part implies (the
+  Bausparvertrag and the loan against it share the number), then by name,
+  then by kind, and sends it as a per-row `cashAccountID` override.
+  "Deposits paid from" (`ConfirmImportInput.depositsFromCashAccountID`,
+  per row `transferFromCashAccountID`) books each DEPOSIT_CASH row as a
+  transfer: a linked WITHDRAW_CASH on the chosen account, so a Sparrate or
+  a loan repayment reads "Transfer from Giro" and stays right should the
+  Giro ever be tracked. A re-confirm keeps an existing leg in step but does
+  not turn a plain deposit into a transfer.
 - **Duplicate uploads.** `documents.content_hash` (SHA-256) is checked per
   person at upload; the same bytes again return `importer.DuplicateError`,
   which `/upload` answers with 409 and a message naming the earlier file.

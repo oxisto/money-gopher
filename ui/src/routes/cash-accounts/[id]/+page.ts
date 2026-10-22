@@ -14,6 +14,7 @@ const CashAccountDetail = graphql(
 			declaredAt
 			currency
 			iban
+			reference
 			balance { amount currency }
 			ledgerBalance { amount currency }
 				transactions { ...ActivityTransaction }

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -66,6 +67,7 @@ type CreateCashAccountInput struct {
 	Kind            *string
 	Currency        string
 	IBAN            *string
+	Reference       *string
 	DeclaredBalance *int32
 }
 
@@ -105,6 +107,7 @@ func (r *RootResolver) CreateCashAccount(ctx context.Context, args struct{ Input
 		Currency:    args.Input.Currency,
 		Iban:        normalizedIBAN(args.Input.IBAN),
 		Kind:        kindColumn(args.Input.Kind),
+		Reference:   referenceColumn(args.Input.Reference),
 	}
 	if args.Input.DeclaredBalance != nil {
 		params.EstimatedBalance, params.EstimatedAt = declared(*args.Input.DeclaredBalance)
@@ -122,6 +125,7 @@ type UpdateCashAccountInput struct {
 	DisplayName     *string
 	Kind            *string
 	IBAN            *string
+	Reference       *string
 	Estimated       *bool
 	DeclaredBalance *int32
 }
@@ -158,6 +162,10 @@ func (r *RootResolver) UpdateCashAccount(ctx context.Context, args struct {
 	if args.Input.Kind != nil {
 		kind = kindColumn(args.Input.Kind)
 	}
+	reference := current.Reference
+	if args.Input.Reference != nil {
+		reference = referenceColumn(args.Input.Reference) // "" clears it
+	}
 	// A declaration (re)sets the estimate as of now; estimated: false
 	// returns the account to its ledger; estimated: true without a balance,
 	// now or earlier, has nothing to declare.
@@ -179,6 +187,7 @@ func (r *RootResolver) UpdateCashAccount(ctx context.Context, args struct {
 		Kind:             kind,
 		EstimatedBalance: balance,
 		EstimatedAt:      at,
+		Reference:        reference,
 		ID:               string(args.ID),
 		PersonID:         person.ID,
 	})
@@ -216,6 +225,13 @@ func (r *CashAccountResolver) Currency() string    { return r.account.Currency }
 func (r *CashAccountResolver) IBAN() *string {
 	if r.account.Iban.Valid {
 		return &r.account.Iban.String
+	}
+	return nil
+}
+
+func (r *CashAccountResolver) Reference() *string {
+	if r.account.Reference.Valid {
+		return &r.account.Reference.String
 	}
 	return nil
 }
@@ -270,6 +286,19 @@ func (r *CashAccountResolver) Transactions(ctx context.Context) ([]*TransactionR
 	}
 
 	return resolvers, nil
+}
+
+// referenceColumn stores an account or contract number without spaces, the
+// way a parser reads it off a statement ("7 038 222 803" → "7038222803").
+func referenceColumn(ref *string) sql.NullString {
+	if ref == nil {
+		return sql.NullString{}
+	}
+	s := strings.Join(strings.Fields(*ref), "")
+	if s == "" {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: s, Valid: true}
 }
 
 // normalizedIBAN is nullString for an IBAN: stored without spaces, upper

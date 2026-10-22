@@ -20,6 +20,7 @@ type CashAccount struct {
 	Kind             sql.NullString
 	EstimatedBalance sql.NullInt64
 	EstimatedAt      sql.NullTime
+	Reference        sql.NullString
 }
 
 type Document struct {
@@ -117,6 +118,7 @@ type StagedTransaction struct {
 	PriceCurrency sql.NullString
 	FxRate        Decimal
 	SecurityKind  sql.NullString
+	AccountHint   sql.NullString
 }
 
 type Transaction struct {

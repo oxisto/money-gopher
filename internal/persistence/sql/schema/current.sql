@@ -46,7 +46,9 @@ CREATE TABLE cash_accounts (
     -- Declared balance (minor units) and when; set = the account is an
     -- estimate, its transactions do not move the balance. Migration 0013.
     estimated_balance INTEGER,
-    estimated_at      TIMESTAMP
+    estimated_at      TIMESTAMP,
+    -- An account or contract number that is not an IBAN. Migration 0016.
+    reference         TEXT
 );
 
 CREATE TABLE portfolios (
@@ -181,7 +183,10 @@ CREATE TABLE staged_transactions (
     price_currency TEXT,
     fx_rate       DECIMAL(19,4),
     -- The kind the parser suggests for a security yet to be created.
-    security_kind TEXT
+    security_kind TEXT,
+    -- Which of the document's accounts the row belongs to, when a document
+    -- carries more than one statement.
+    account_hint  TEXT
 );
 
 CREATE TABLE sessions (

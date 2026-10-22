@@ -45,6 +45,12 @@ type StagedTransaction struct {
 	// SettlementIBAN is the bank account IBAN the settlement goes against.
 	// Used to auto-match the import to a portfolio's linked cash account.
 	SettlementIBAN string
+	// AccountHint names which of the document's accounts the row belongs
+	// to, for documents that bundle several statements (an LBS year-end
+	// bundle lists the Bausparvertrag and the loan side by side under one
+	// contract number and no IBAN of the customer's). Empty when the
+	// document is about one account.
+	AccountHint string
 }
 
 // Parser understands one bank's (or format's) documents.
@@ -61,7 +67,7 @@ type Parser interface {
 // DefaultParsers returns all built-in parsers. Adding a bank means adding a
 // package and listing its parser here.
 func DefaultParsers() []Parser {
-	return []Parser{ING{}, CSV{}}
+	return []Parser{ING{}, LBS{}, CSV{}}
 }
 
 // detect returns the first parser whose fingerprint matches.

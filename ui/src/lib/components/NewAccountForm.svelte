@@ -39,6 +39,7 @@
 	let name = $state('');
 	let currency = $state('EUR');
 	let iban = $state('');
+	let reference = $state('');
 	let accountKind = $state<'CASH' | 'SAVINGS' | 'LOAN'>('CASH');
 	let estimated = $state(false);
 	let declared = $state('');
@@ -62,6 +63,7 @@
 							kind: accountKind,
 							currency: currency.toUpperCase(),
 							iban: iban.trim() || null,
+							reference: reference.trim() || null,
 							declaredBalance: declaredBalance ?? undefined
 						}
 					})
@@ -73,6 +75,7 @@
 
 		name = '';
 		iban = '';
+		reference = '';
 		cashAccountID = '';
 		// Reloads the page and the sidebar's account list alike.
 		await refreshAll();
@@ -97,6 +100,7 @@
 			<TextField label="Currency" bind:value={currency} maxlength={3} required />
 		</div>
 		<TextField label="IBAN (optional)" bind:value={iban} placeholder="Matches imported statements to this account" />
+		<TextField label="Account or contract number (optional)" bind:value={reference} placeholder="For statements without your IBAN, e.g. a Bausparvertrag" />
 		<SelectField label="Kind" bind:value={accountKind}>
 			<option value="CASH">Cash account</option>
 			<option value="SAVINGS">Savings account (Bausparvertrag, savings)</option>

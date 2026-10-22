@@ -27,12 +27,14 @@
 				id
 				displayName
 				iban
+				reference
 			}
 		}
 	`);
 	let editOpen = $state(false);
 	let editName = $state('');
 	let editIBAN = $state('');
+	let editReference = $state('');
 	let editKind = $state('CASH');
 	let editEstimated = $state(false);
 	let editDeclared = $state('');
@@ -41,6 +43,7 @@
 	function openEdit() {
 		editName = account?.displayName ?? '';
 		editIBAN = account?.iban ?? '';
+		editReference = account?.reference ?? '';
 		editKind = account?.kind ?? 'CASH';
 		editEstimated = account?.estimated ?? false;
 		editDeclared = account?.declaredBalance ? String(account.declaredBalance.amount / 100) : '';
@@ -64,6 +67,7 @@
 			input: {
 				displayName: editName.trim(),
 				iban: editIBAN.trim(),
+				reference: editReference.trim(),
 				kind: editKind as 'CASH' | 'SAVINGS' | 'LOAN',
 				estimated: editEstimated,
 				declaredBalance: editEstimated && !unchanged ? declared : undefined
@@ -119,7 +123,8 @@
 			<h1 class="text-lg font-semibold">{account.displayName}</h1>
 			<p class="num text-[13px] text-muted">
 				{accountKindLabel(account.kind)} · {account.currency}{#if account.iban}
-					· {account.iban}{/if}
+					· {account.iban}{/if}{#if account.reference}
+					· No. {account.reference}{/if}
 				{#if account.estimated}
 					<span class="ml-1 rounded-full bg-accent-soft px-1.5 text-[11px] font-semibold text-accent-fg" title="The balance is what you declared, not a sum of transactions">
 						≈ estimated
@@ -149,6 +154,11 @@
 			<TextField bind:value={editIBAN} label="IBAN" placeholder="DE00 0000 0000 0000 0000 00" />
 			<p class="text-xs text-muted">
 				Statements and confirmations find this account by its IBAN; spaces don't matter.
+			</p>
+			<TextField bind:value={editReference} label="Account or contract number" placeholder="e.g. a Bausparvertrag's Vertragsnummer" />
+			<p class="text-xs text-muted">
+				For statements that print a contract or account number instead of your IBAN. Two
+				accounts may share one, like a Bausparvertrag and the loan against it.
 			</p>
 			<SelectField bind:value={editKind} label="Kind">
 				<option value="CASH">Cash account</option>
