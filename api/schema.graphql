@@ -700,6 +700,13 @@ input ConfirmImportInput {
   portfolioID: ID
   "Default cash account for trades, dividends and cash events."
   cashAccountID: ID
+  """
+  Books every DEPOSIT_CASH row as a transfer from this account of yours: a
+  withdrawal there, linked to the deposit like a manual transfer. For a
+  Sparrate or a loan repayment pulled from the Giro. Omitted, a deposit is
+  money from outside.
+  """
+  depositsFromCashAccountID: ID
   "Per-staged-transaction overrides; only needed when defaults are insufficient."
   transactions: [StagedTransactionConfirmInput!]!
 }
@@ -718,6 +725,8 @@ input StagedTransactionConfirmInput {
   cashAccountID: ID
   "Explicit cash delta in minor units (derived from units/price/fees/taxes otherwise)."
   cashDelta: Int
+  "For a DEPOSIT_CASH row: the account the money came from; see depositsFromCashAccountID."
+  transferFromCashAccountID: ID
 }
 
 type Mutation {

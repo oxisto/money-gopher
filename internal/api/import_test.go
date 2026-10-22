@@ -298,6 +298,7 @@ func TestImportLBSBundle(t *testing.T) {
 	}
 	loan := accountOf("LBS Vorfinanzierung", "LOAN")
 	savings := accountOf("LBS Bausparvertrag", "SAVINGS")
+	giro := exec(t, schema, ctx, `mutation { createCashAccount(input: { displayName: "Giro", currency: "EUR", declaredBalance: 150000 }) { id } }`, nil)["createCashAccount"].(map[string]any)["id"].(string)
 
 	text, err := os.ReadFile("../importer/testdata/lbs/jahresschluss.txt")
 	if err != nil {
@@ -331,9 +332,32 @@ func TestImportLBSBundle(t *testing.T) {
 		t.Fatalf("staged %d rows, want 11", len(overrides))
 	}
 
-	exec(t, schema, ctx, `mutation ($id: ID!, $acct: ID!, $tx: [StagedTransactionConfirmInput!]!) {
-		confirmImport(documentID: $id, input: { cashAccountID: $acct, transactions: $tx }) { id }
+	// A deposit cannot come from the account it lands on.
+	execExpectError(t, schema, ctx, `mutation ($id: ID!, $acct: ID!, $tx: [StagedTransactionConfirmInput!]!) {
+		confirmImport(documentID: $id, input: { cashAccountID: $acct, depositsFromCashAccountID: $acct, transactions: $tx }) { id }
 	}`, map[string]any{"id": doc.ID, "acct": savings, "tx": overrides})
+
+	data = exec(t, schema, ctx, `mutation ($id: ID!, $acct: ID!, $giro: ID!, $tx: [StagedTransactionConfirmInput!]!) {
+		confirmImport(documentID: $id, input: { cashAccountID: $acct, depositsFromCashAccountID: $giro, transactions: $tx }) {
+			type transferID counterpart { type cashDelta { amount } cashAccount { id } }
+		}
+	}`, map[string]any{"id": doc.ID, "acct": savings, "giro": giro, "tx": overrides})
+	deposits := 0
+	for _, raw := range data["confirmImport"].([]any) {
+		tx := raw.(map[string]any)
+		if tx["type"] == "DEPOSIT_CASH" {
+			deposits++
+			cp, _ := tx["counterpart"].(map[string]any)
+			if tx["transferID"] == nil || cp == nil || cp["type"] != "WITHDRAW_CASH" || cp["cashAccount"].(map[string]any)["id"] != giro {
+				t.Errorf("deposit %v: want a linked withdrawal on the Giro", tx)
+			}
+		} else if tx["transferID"] != nil {
+			t.Errorf("%v: only deposits become transfers", tx)
+		}
+	}
+	if deposits != 4 {
+		t.Errorf("confirmed %d deposits, want 4", deposits)
+	}
 
 	balance := func(id string) float64 {
 		data := exec(t, schema, ctx, `query ($id: ID!) { cashAccount(id: $id) { balance { amount } } }`, map[string]any{"id": id})
@@ -346,5 +370,12 @@ func TestImportLBSBundle(t *testing.T) {
 	// 125 + 112.50 + 32.96 interest charged, 125 paid, 50,000 disbursed.
 	if got := balance(loan); got != -5014546 {
 		t.Errorf("loan balance = %v, want -5014546", got)
+	}
+	// The Giro is an estimate: it keeps its declared balance while its
+	// ledger shows the 3 × 200 + 125 that left it.
+	data = exec(t, schema, ctx, `query ($id: ID!) { cashAccount(id: $id) { balance { amount } ledgerBalance { amount } } }`, map[string]any{"id": giro})
+	g := data["cashAccount"].(map[string]any)
+	if g["balance"].(map[string]any)["amount"] != 150000.0 || g["ledgerBalance"].(map[string]any)["amount"] != -72500.0 {
+		t.Errorf("Giro = %v, want balance 150000 and ledger -72500", g)
 	}
 }

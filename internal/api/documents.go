@@ -94,19 +94,21 @@ func (r *RootResolver) ReprocessDocument(ctx context.Context, args struct{ ID gr
 
 // ConfirmImportInput is the input type for Mutation.confirmImport.
 type ConfirmImportInput struct {
-	PortfolioID   *graphql.ID
-	CashAccountID *graphql.ID
-	Transactions  []StagedTransactionConfirmInput
+	PortfolioID               *graphql.ID
+	CashAccountID             *graphql.ID
+	DepositsFromCashAccountID *graphql.ID
+	Transactions              []StagedTransactionConfirmInput
 }
 
 // StagedTransactionConfirmInput carries per-transaction overrides within a
 // confirmImport call.
 type StagedTransactionConfirmInput struct {
-	ID            graphql.ID
-	AssetID       *graphql.ID
-	PortfolioID   *graphql.ID
-	CashAccountID *graphql.ID
-	CashDelta     *int32
+	ID                        graphql.ID
+	AssetID                   *graphql.ID
+	PortfolioID               *graphql.ID
+	CashAccountID             *graphql.ID
+	CashDelta                 *int32
+	TransferFromCashAccountID *graphql.ID
 }
 
 // ConfirmImport resolves Mutation.confirmImport. It commits all staged
@@ -238,6 +240,19 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 				return fmt.Errorf("staged transaction %q: %w", stx.ID, err)
 			}
 
+			// A deposit "paid from" one of the person's accounts is a
+			// transfer: the deposit here plus a withdrawal there, linked.
+			var leg *txData
+			if from := firstID(ov.TransferFromCashAccountID, args.Input.DepositsFromCashAccountID); from != nil && d.Type == "DEPOSIT_CASH" {
+				if d.CashAccountID != nil && *from == *d.CashAccountID {
+					return fmt.Errorf("staged transaction %q: a deposit cannot come from the account it lands on", stx.ID)
+				}
+				leg = &txData{Type: "WITHDRAW_CASH", Time: d.Time, CashAccountID: from, CashDelta: -d.CashDelta, Currency: d.Currency}
+				if err := leg.validate(ctx, r.db, person); err != nil {
+					return fmt.Errorf("staged transaction %q, paid from: %w", stx.ID, err)
+				}
+			}
+
 			if match := matchExisting(&d); match != nil {
 				tx, err := q.UpdateTransactionFromImport(ctx, persistence.UpdateTransactionFromImportParams{
 					Type:          d.Type,
@@ -258,12 +273,35 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 				if err != nil {
 					return err
 				}
+				// A re-confirm keeps a transfer's other leg in step; it
+				// does not turn a plain deposit into a transfer after the
+				// fact (delete and import again for that).
+				if leg != nil && match.TransferID.Valid {
+					other, err := q.GetTransferCounterpart(ctx, persistence.GetTransferCounterpartParams{TransferID: match.TransferID, ID: match.ID})
+					if err == nil {
+						if _, err := q.UpdateTransactionFromImport(ctx, persistence.UpdateTransactionFromImportParams{
+							Type: other.Type, Time: leg.Time, CashAccountID: nullString(leg.CashAccountID),
+							CashDelta: leg.CashDelta, Currency: leg.Currency, Price: other.Price, FxRate: other.FxRate,
+							PriceCurrency: other.PriceCurrency, Units: other.Units, Fees: other.Fees, Taxes: other.Taxes,
+							PortfolioID: other.PortfolioID, SecurityID: other.SecurityID, ID: other.ID,
+						}); err != nil {
+							return err
+						}
+					} else if !errors.Is(err, sql.ErrNoRows) {
+						return err
+					}
+				}
 				created = append(created, &TransactionResolver{db: r.db, transaction: tx})
 				continue
 			}
 
+			var transferID sql.NullString
+			if leg != nil {
+				transferID = sql.NullString{String: uuid.NewString(), Valid: true}
+			}
 			tx, err := q.CreateTransaction(ctx, persistence.CreateTransactionParams{
 				ID:            uuid.NewString(),
+				TransferID:    transferID,
 				Type:          d.Type,
 				Time:          d.Time,
 				PortfolioID:   nullString(d.PortfolioID),
@@ -282,6 +320,21 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 			})
 			if err != nil {
 				return err
+			}
+			if leg != nil {
+				if _, err := q.CreateTransaction(ctx, persistence.CreateTransactionParams{
+					ID:            uuid.NewString(),
+					TransferID:    transferID,
+					Type:          leg.Type,
+					Time:          leg.Time,
+					CashAccountID: nullString(leg.CashAccountID),
+					CashDelta:     leg.CashDelta,
+					Currency:      leg.Currency,
+					Source:        source,
+					DocumentID:    sql.NullString{String: doc.ID, Valid: true},
+				}); err != nil {
+					return err
+				}
 			}
 
 			created = append(created, &TransactionResolver{db: r.db, transaction: tx})

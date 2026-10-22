@@ -128,6 +128,22 @@
 	function accountName(id: string): string {
 		return cashAccounts.find((a) => a.id === id)?.displayName ?? '';
 	}
+
+	// Deposits can be booked as transfers from one of the person's own
+	// accounts: a Sparrate or a loan repayment pulled from the Giro.
+	// Pre-picked when there is exactly one plain cash account and it is not
+	// where the rows land; "none" means the money came from outside.
+	const hasDeposits = $derived(doc.stagedTransactions.some((tx) => tx.type === 'DEPOSIT_CASH'));
+	const targets = $derived(new Set(sections.length > 0 ? Object.values(sectionAccounts) : [cashAccountID]));
+	let depositsFrom = $state(
+		(() => {
+			const plain = cashAccounts.filter((a) => (a.kind ?? 'CASH') === 'CASH');
+			return plain.length === 1 ? plain[0].id : '';
+		})()
+	);
+	$effect.pre(() => {
+		if (depositsFrom && targets.has(depositsFrom)) depositsFrom = '';
+	});
 	let assetOverrides = $state<Record<string, string>>({});
 	let localSecurities = $state<Security[]>([]);
 	let createDialog = $state<{
@@ -235,6 +251,7 @@
 			input: {
 				portfolioID: portfolioRequired ? portfolioID : null,
 				cashAccountID: sections.length > 0 ? sectionAccounts[sections[0]] : cashAccountID,
+				depositsFromCashAccountID: depositsFrom || null,
 				transactions: txOverrides
 			}
 		});
@@ -322,6 +339,19 @@
 						</p>
 					{/if}
 				</div>
+				{#if hasDeposits}
+					<div class="flex-1 min-w-[180px]">
+						<SelectField bind:value={depositsFrom} label="Deposits paid from">
+							<option value="">— outside (money from elsewhere) —</option>
+							{#each cashAccounts.filter((a) => !targets.has(a.id)) as a (a.id)}
+								<option value={a.id}>{a.displayName} ({a.currency})</option>
+							{/each}
+						</SelectField>
+						<p class="mt-1 text-xs text-muted">
+							Books each deposit as a transfer: a withdrawal on that account, linked to it.
+						</p>
+					</div>
+				{/if}
 			</div>
 
 			<!-- Staged transactions table -->
@@ -418,6 +448,9 @@
 									<div class="font-medium {tx.cashDelta.amount > 0 ? 'text-pos' : ''}">
 										{tx.cashDelta.amount !== 0 ? formatSignedMoney(tx.cashDelta) : '—'}
 									</div>
+									{#if tx.type === 'DEPOSIT_CASH' && depositsFrom}
+										<div class="text-[11px] text-muted">from {accountName(depositsFrom)}</div>
+									{/if}
 									{#if tx.calculatedCashDelta}
 										{@const diff = tx.cashDelta.amount - tx.calculatedCashDelta.amount}
 										<div
