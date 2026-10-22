@@ -645,8 +645,8 @@ type ScheduleSuggestion {
 One month of the household's cash flow as the schedules expect it, seen
 from the cash accounts: money in, money out, money moved into savings
 or investments, and what is left. A loan's interest counts once, as the
-payment from the Giro. Actuals are the real movements on the tracked
-cash accounts, null for a month not over yet or without such an account.
+payment from the Giro. Actuals are the real movements on the cash
+accounts, for the months a statement covers.
 """
 type CashFlowMonth {
   "The first of the month."
@@ -661,11 +661,22 @@ type CashFlowMonth {
   expectedFree: Money!
   "The occurrences behind the numbers, by date."
   flows: [ExpectedFlow!]!
+  """
+  The real movements on the cash accounts in a month a statement covers:
+  every imported row, confirmed bookings included, expectations no
+  statement has confirmed left out. Null for a month without a statement.
+  """
   actualIn: Money
   actualOut: Money
   "Transfers into savings and trades paid from the account."
   actualSaved: Money
   actualFree: Money
+  "Of the actual movements, those no schedule explains: the groceries, the one-offs."
+  unscheduledIn: Money
+  unscheduledOut: Money
+  unscheduledSaved: Money
+  "The movements no schedule explains, by date."
+  unscheduled: [Transaction!]!
 }
 
 "The cash-flow view: a window of months, and the schedules behind them."

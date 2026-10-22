@@ -106,6 +106,8 @@ type CashFlowMonthResolver struct {
 	flows                            []*ExpectedFlowResolver
 	actual                           bool
 	actualIn, actualOut, actualSaved int64
+	unIn, unOut, unSaved             int64
+	unscheduled                      []*TransactionResolver
 }
 
 func (r *CashFlowMonthResolver) Month() graphql.Time  { return graphql.Time{Time: r.month} }
@@ -121,6 +123,15 @@ func (r *CashFlowMonthResolver) ActualOut() *Money   { return r.actualMoney(r.ac
 func (r *CashFlowMonthResolver) ActualSaved() *Money { return r.actualMoney(r.actualSaved) }
 func (r *CashFlowMonthResolver) ActualFree() *Money {
 	return r.actualMoney(r.actualIn - r.actualOut - r.actualSaved)
+}
+func (r *CashFlowMonthResolver) UnscheduledIn() *Money    { return r.actualMoney(r.unIn) }
+func (r *CashFlowMonthResolver) UnscheduledOut() *Money   { return r.actualMoney(r.unOut) }
+func (r *CashFlowMonthResolver) UnscheduledSaved() *Money { return r.actualMoney(r.unSaved) }
+func (r *CashFlowMonthResolver) Unscheduled() []*TransactionResolver {
+	if !r.actual {
+		return []*TransactionResolver{}
+	}
+	return r.unscheduled
 }
 func (r *CashFlowMonthResolver) actualMoney(v int64) *Money {
 	if !r.actual {
@@ -170,14 +181,12 @@ func (r *RootResolver) CashFlow(ctx context.Context, args struct {
 	}
 	kinds := map[string]string{}
 	currency := defaultCurrency
-	var tracked []*persistence.CashAccount
+	var cashAccounts []*persistence.CashAccount
 	for _, a := range accounts {
 		kinds[a.ID] = kindOf(a)
 		if kindOf(a) == "CASH" {
 			currency = a.Currency
-			if !a.EstimatedAt.Valid {
-				tracked = append(tracked, a)
-			}
+			cashAccounts = append(cashAccounts, a)
 		}
 	}
 
@@ -187,7 +196,7 @@ func (r *RootResolver) CashFlow(ctx context.Context, args struct {
 	}
 	buckets := make([]*CashFlowMonthResolver, months)
 	for i := range buckets {
-		buckets[i] = &CashFlowMonthResolver{month: from.AddDate(0, i, 0), currency: currency, flows: []*ExpectedFlowResolver{}}
+		buckets[i] = &CashFlowMonthResolver{month: from.AddDate(0, i, 0), currency: currency, flows: []*ExpectedFlowResolver{}, unscheduled: []*TransactionResolver{}}
 	}
 	index := func(t time.Time) int {
 		return (t.Year()-from.Year())*12 + int(t.Month()-from.Month())
@@ -226,42 +235,70 @@ func (r *RootResolver) CashFlow(ctx context.Context, args struct {
 		}
 	}
 
-	// Actuals: months over, on the tracked cash accounts.
-	if len(tracked) > 0 {
-		for _, a := range tracked {
-			txs, err := r.db.ListTransactionsByCashAccount(ctx, sql.NullString{String: a.ID, Valid: true})
-			if err != nil {
-				return nil, err
+	// Actuals: the real movements on the cash accounts, estimated ones
+	// included — their imported rows are the truth for the months a
+	// statement covers. An expectation no statement has confirmed is not.
+	for _, a := range cashAccounts {
+		txs, err := r.db.ListTransactionsByCashAccount(ctx, sql.NullString{String: a.ID, Valid: true})
+		if err != nil {
+			return nil, err
+		}
+		links, err := r.db.ListTransactionDocumentsByCashAccount(ctx, sql.NullString{String: a.ID, Valid: true})
+		if err != nil {
+			return nil, err
+		}
+		documented := map[string]bool{}
+		for _, l := range links {
+			documented[l.TransactionID] = true
+		}
+		for _, tx := range txs {
+			i := index(tx.Time.UTC())
+			if i < 0 || i >= months {
+				continue
 			}
-			for _, tx := range txs {
-				i := index(tx.Time.UTC())
-				if i < 0 || i >= months {
-					continue
+			if tx.Source == "schedule" && !documented[tx.ID] {
+				continue
+			}
+			if documented[tx.ID] {
+				buckets[i].actual = true
+			}
+			counterpart := ""
+			if tx.TransferID.Valid {
+				if other, err := r.db.GetTransferCounterpart(ctx, persistence.GetTransferCounterpartParams{TransferID: tx.TransferID, ID: tx.ID}); err == nil && other.CashAccountID.Valid {
+					counterpart = kinds[other.CashAccountID.String]
 				}
-				counterpart := ""
-				if tx.TransferID.Valid {
-					if other, err := r.db.GetTransferCounterpart(ctx, persistence.GetTransferCounterpartParams{TransferID: tx.TransferID, ID: tx.ID}); err == nil && other.CashAccountID.Valid {
-						counterpart = kinds[other.CashAccountID.String]
-					}
-				}
-				kind, amount := actualKind(tx, counterpart)
+			}
+			kind, amount := actualKind(tx, counterpart)
+			if kind == flowNone {
+				continue
+			}
+			b := buckets[i]
+			switch kind {
+			case flowIn:
+				b.actualIn += amount
+			case flowOut:
+				b.actualOut += amount
+			case flowSaved:
+				b.actualSaved += amount
+			}
+			if !tx.ScheduleID.Valid {
 				switch kind {
 				case flowIn:
-					buckets[i].actualIn += amount
+					b.unIn += amount
 				case flowOut:
-					buckets[i].actualOut += amount
+					b.unOut += amount
 				case flowSaved:
-					buckets[i].actualSaved += amount
+					b.unSaved += amount
 				}
+				b.unscheduled = append(b.unscheduled, &TransactionResolver{db: r.db, transaction: tx})
 			}
-		}
-		thisMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
-		for _, b := range buckets {
-			b.actual = b.month.Before(thisMonth)
 		}
 	}
 	for _, b := range buckets {
 		sort.SliceStable(b.flows, func(i, j int) bool { return b.flows[i].date.Before(b.flows[j].date) })
+		sort.SliceStable(b.unscheduled, func(i, j int) bool {
+			return b.unscheduled[i].transaction.Time.Before(b.unscheduled[j].transaction.Time)
+		})
 	}
 	sort.SliceStable(resolvers, func(i, j int) bool { return resolvers[i].s.DisplayName < resolvers[j].s.DisplayName })
 	return &CashFlowResolver{currency: currency, from: from, months: buckets, schedules: resolvers}, nil

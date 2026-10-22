@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Panel from '#lib/components/ui/Panel.svelte';
 	import StatStrip from '#lib/components/ui/StatStrip.svelte';
-	import { intervalLabel, scheduleTypeLabel } from '#lib/describe.js';
+	import { describeTransaction, intervalLabel, scheduleTypeLabel } from '#lib/describe.js';
 	import { formatDate, formatMoney, formatSignedMoney, toneOf } from '#lib/format.js';
 	import type { PageProps } from './$types';
 
@@ -25,6 +25,8 @@
 		)
 	);
 	let open = $state<string | null>(null);
+	// The last month a statement covers: where the plan meets the truth.
+	const lastActual = $derived([...cf.months].reverse().find((m) => m.actualFree));
 
 	/** How the schedule shows on the cash accounts: in, out, saved, or not at all. */
 	function bucket(s: (typeof cf.schedules)[number]): string {
@@ -56,7 +58,17 @@
 			{ label: `In, ${monthLabel(thisMonth.month)}`, value: formatSignedMoney(thisMonth.expectedIn), sub: 'salary, rent, interest', tone: toneOf(thisMonth.expectedIn.amount) },
 			{ label: 'Out', value: formatSignedMoney({ amount: -thisMonth.expectedOut.amount, currency: cf.currency }), sub: 'bills, fees, loan payments' },
 			{ label: 'Saved', value: formatSignedMoney({ amount: -thisMonth.expectedSaved.amount, currency: cf.currency }), sub: 'into savings, not spent', tone: 'muted' },
-			{ label: 'Free', value: formatSignedMoney(thisMonth.expectedFree), sub: 'in − out − saved', tone: toneOf(thisMonth.expectedFree.amount) }
+			{ label: 'Free', value: formatSignedMoney(thisMonth.expectedFree), sub: 'in − out − saved', tone: toneOf(thisMonth.expectedFree.amount) },
+			...(lastActual?.actualFree && lastActual.unscheduledOut
+				? [
+						{
+							label: `Actually free, ${monthLabel(lastActual.month)}`,
+							value: formatSignedMoney(lastActual.actualFree),
+							sub: `${formatMoney(lastActual.unscheduledOut)} spent outside any schedule · expected ${formatSignedMoney(lastActual.expectedFree)}`,
+							tone: toneOf(lastActual.actualFree.amount)
+						}
+					]
+				: [])
 		]}
 	/>
 
@@ -100,22 +112,54 @@
 					{#if open === key}
 						<tr>
 							<td colspan="3" class="bg-raised/50 px-3 py-2">
-								{#if m.flows.length === 0}
-									<p class="text-xs text-muted">Nothing expected this month.</p>
-								{:else}
-									<ul class="grid gap-x-6 gap-y-1 text-xs sm:grid-cols-2 lg:grid-cols-3">
-										{#each m.flows as f (f.schedule.id + f.date)}
-											<li class="flex justify-between gap-3">
-												<span class="truncate">
-													<span class="text-muted">{formatDate(f.date)}</span>
-													{f.schedule.displayName}
-													{#if f.booked}<span class="text-pos" title="A transaction exists for this occurrence">✓</span>{/if}
-												</span>
-												<span class="tabular-nums {f.amount.amount > 0 ? 'text-pos' : ''}">{formatSignedMoney(f.amount)}</span>
-											</li>
-										{/each}
-									</ul>
-								{/if}
+								<div class="grid gap-4 text-xs {m.actualIn ? 'lg:grid-cols-2' : ''}">
+									<div>
+										<p class="mb-1 font-medium text-muted">Expected</p>
+										{#if m.flows.length === 0}
+											<p class="text-muted">Nothing expected this month.</p>
+										{:else}
+											<ul class="flex flex-col gap-1">
+												{#each m.flows as f (f.schedule.id + f.date)}
+													<li class="flex justify-between gap-3">
+														<span class="truncate">
+															<span class="text-muted">{formatDate(f.date)}</span>
+															{f.schedule.displayName}
+															{#if f.booked}<span class="text-pos" title="A transaction exists for this occurrence">✓</span>{/if}
+														</span>
+														<span class="tabular-nums {f.amount.amount > 0 ? 'text-pos' : ''}">{formatSignedMoney(f.amount)}</span>
+													</li>
+												{/each}
+											</ul>
+										{/if}
+									</div>
+									{#if m.actualIn && m.actualOut && m.actualSaved && m.unscheduledIn && m.unscheduledOut && m.unscheduledSaved}
+										<div>
+											<p class="mb-1 font-medium text-muted">
+												Happened · in {formatMoney(m.actualIn)} · out {formatMoney(m.actualOut)} · saved {formatMoney(m.actualSaved)}
+											</p>
+											{#if m.unscheduled.length === 0}
+												<p class="text-muted">Every movement belonged to a schedule.</p>
+											{:else}
+												<p class="mb-1 text-muted">
+													Outside any schedule: in {formatMoney(m.unscheduledIn)} · out {formatMoney(m.unscheduledOut)}{#if m.unscheduledSaved.amount}
+														· saved {formatMoney(m.unscheduledSaved)}{/if}
+												</p>
+												<ul class="flex flex-col gap-1">
+													{#each m.unscheduled as t (t.id)}
+														{@const d = describeTransaction(t)}
+														<li class="flex justify-between gap-3">
+															<a href="/transactions/{t.id}" class="truncate hover:underline" title={d.subtitle}>
+																<span class="text-muted">{formatDate(t.time)}</span>
+																{d.title}
+															</a>
+															<span class="tabular-nums {t.cashDelta.amount > 0 ? 'text-pos' : ''}">{formatSignedMoney(t.cashDelta)}</span>
+														</li>
+													{/each}
+												</ul>
+											{/if}
+										</div>
+									{/if}
+								</div>
 							</td>
 						</tr>
 					{/if}
@@ -123,7 +167,7 @@
 			</tbody>
 		</table>
 		<p class="text-xs text-muted">
-			Expected from your schedules; the thin bar is what the tracked cash accounts actually show, for months that are over. Click a month for its occurrences.
+			Expected from your schedules; the thin bar is what the cash accounts actually show, for the months a statement covers. Click a month for the occurrences and for what happened outside any schedule.
 		</p>
 	</Panel>
 

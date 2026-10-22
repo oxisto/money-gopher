@@ -16,6 +16,20 @@ const CashFlowQuery = graphql(`
 				actualOut { amount currency }
 				actualSaved { amount currency }
 				actualFree { amount currency }
+				unscheduledIn { amount currency }
+				unscheduledOut { amount currency }
+				unscheduledSaved { amount currency }
+				unscheduled {
+					id
+					type
+					time
+					units
+					cashDelta { amount currency }
+					note
+					asset { id displayName kind }
+					counterpart { id cashAccount { id displayName } }
+					schedule { id displayName }
+				}
 				flows {
 					date
 					amount { amount currency }

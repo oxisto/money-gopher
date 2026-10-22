@@ -1,8 +1,14 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"testing"
+
+	"github.com/oxisto/money-gopher/internal/auth"
+	"github.com/oxisto/money-gopher/internal/importer"
+	"github.com/oxisto/money-gopher/internal/persistence"
+	"github.com/oxisto/money-gopher/internal/quotes"
 )
 
 // TestCashFlow: the household's month from the schedules, seen from the
@@ -10,17 +16,28 @@ import (
 // out, the Sparrate is saved; the loan's own interest charge is not a
 // cash-account movement and does not count twice.
 func TestCashFlow(t *testing.T) {
-	schema, ctx := newTestSchema(t)
+	db, err := persistence.OpenDB(":memory:")
+	if err != nil {
+		t.Fatalf("OpenDB: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	user, person, err := auth.EnsureDevUser(context.Background(), db)
+	if err != nil {
+		t.Fatalf("EnsureDevUser: %v", err)
+	}
+	ctx := auth.WithPerson(auth.WithUser(context.Background(), user), person)
+	schema := NewSchema(db, &quotes.Updater{DB: db, Registry: quotes.NewRegistry()})
 	h := transferHelpers{t, schema, ctx}
 	declared := 150000
 	giro := h.account("Giro", "CASH", &declared)
+	exec(t, schema, ctx, `mutation ($id: ID!) { updateCashAccount(id: $id, input: { iban: "DE02120300000000202051" }) { id } }`, map[string]any{"id": giro})
 	bauspar := h.account("Bausparvertrag", "SAVINGS", nil)
 	loan := h.account("Vorfinanzierung", "LOAN", nil)
 
 	mk := func(input string) {
 		createSchedule(t, h, input)
 	}
-	mk(fmt.Sprintf(`displayName: "Gehalt", type: DEPOSIT_CASH, interval: MONTHLY, dayOfMonth: 28, start: "2026-01-01T00:00:00Z", cashAccountID: %q, steps: [{ from: "2026-01-01T00:00:00Z", amount: 485000 }]`, giro))
+	mk(fmt.Sprintf(`displayName: "Gehalt", type: DEPOSIT_CASH, interval: MONTHLY, dayOfMonth: 28, start: "2026-01-01T00:00:00Z", end: "2026-04-30T00:00:00Z", cashAccountID: %q, books: true, steps: [{ from: "2026-01-01T00:00:00Z", amount: 485000 }]`, giro))
 	mk(fmt.Sprintf(`displayName: "Kreditkarte", type: WITHDRAW_CASH, interval: MONTHLY, dayOfMonth: 3, start: "2026-01-01T00:00:00Z", cashAccountID: %q, steps: [{ from: "2026-01-01T00:00:00Z", amount: 120000 }]`, giro))
 	mk(fmt.Sprintf(`displayName: "Sparrate", type: TRANSFER, interval: MONTHLY, dayOfMonth: 1, start: "2026-01-01T00:00:00Z", cashAccountID: %q, counterpartAccountID: %q, steps: [{ from: "2026-01-01T00:00:00Z", amount: 53582 }]`, bauspar, giro))
 	mk(fmt.Sprintf(`displayName: "Zinszahlung", type: TRANSFER, interval: MONTHLY, dayOfMonth: 1, start: "2026-01-01T00:00:00Z", cashAccountID: %q, counterpartAccountID: %q, steps: [{ from: "2026-01-01T00:00:00Z", amount: 62542 }]`, loan, giro))
@@ -63,5 +80,35 @@ func TestCashFlow(t *testing.T) {
 	}
 	if got := len(cf["schedules"].([]any)); got != 6 {
 		t.Errorf("%d schedules listed, want all 6", got)
+	}
+
+	// February's statement: the salary (confirming the booking) and the
+	// groceries nobody scheduled. February now has actuals; March has none.
+	svc := importer.NewService(db)
+	doc, err := svc.Upload(ctx, person.ID, "feb.txt", "text/plain", []byte("ING-DiBa AG\nKontoauszug 2026\nIBAN DE02 1203 0000 0000 2020 51\n"+
+		"Buchung      Buchung / Verwendungszweck                                     Betrag (EUR)\nValuta\n\n"+
+		"27.02.2026                 Gehalt/Rente Musterfirma GmbH                                   4.850,00\n27.02.2026                 Lohn/Gehalt 02/2026\n"+
+		"14.02.2026                 Lastschrift Supermarkt                                            -85,20\n14.02.2026                 Einkauf\n"))
+	if err != nil {
+		t.Fatalf("Upload: %v", err)
+	}
+	if err := svc.Process(ctx, doc.ID, person.ID); err != nil {
+		t.Fatalf("Process: %v", err)
+	}
+	exec(t, schema, ctx, `mutation ($id: ID!, $acct: ID!) { confirmImport(documentID: $id, input: { cashAccountID: $acct, transactions: [] }) { id } }`, map[string]any{"id": doc.ID, "acct": giro})
+
+	data = exec(t, schema, ctx, `{ cashFlow(from: "2026-02-01T00:00:00Z", months: 2) { months {
+		actualIn { amount } actualOut { amount } actualFree { amount } unscheduledIn { amount } unscheduledOut { amount } unscheduled { type note }
+	} } }`, nil)
+	feb := data["cashFlow"].(map[string]any)["months"].([]any)[0].(map[string]any)
+	if feb["actualIn"] == nil || feb["actualIn"].(map[string]any)["amount"] != 485000.0 || feb["actualOut"].(map[string]any)["amount"] != 8520.0 {
+		t.Errorf("February actuals = %v, want in 485000 and out 8520", feb)
+	}
+	if feb["unscheduledIn"].(map[string]any)["amount"] != 0.0 || feb["unscheduledOut"].(map[string]any)["amount"] != 8520.0 || len(feb["unscheduled"].([]any)) != 1 {
+		t.Errorf("February unscheduled = %v, want only the groceries", feb)
+	}
+	march := data["cashFlow"].(map[string]any)["months"].([]any)[1].(map[string]any)
+	if march["actualIn"] != nil || len(march["unscheduled"].([]any)) != 0 {
+		t.Errorf("March has actuals without a statement: %v", march)
 	}
 }
