@@ -170,3 +170,28 @@ SET
     scheduled_for = NULL
 WHERE
     schedule_id = ?;
+
+-- name: ListAdoptableTransactions :many
+-- Transactions a new schedule may adopt as its own occurrences: on the
+-- account, of the type and amount, in the window, not yet a schedule's.
+SELECT
+    *
+FROM
+    transactions
+WHERE
+    cash_account_id = ?
+    AND type = ?
+    AND cash_delta = ?
+    AND schedule_id IS NULL
+    AND time >= ?
+    AND time <= ?
+ORDER BY
+    time;
+
+-- name: LinkTransactionToSchedule :exec
+UPDATE transactions
+SET
+    schedule_id = ?,
+    scheduled_for = ?
+WHERE
+    id = ?;

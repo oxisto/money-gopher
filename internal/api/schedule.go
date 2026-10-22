@@ -696,6 +696,15 @@ func bookSchedule(ctx context.Context, db *persistence.DB, s *persistence.Schedu
 		if len(existing) > 0 {
 			continue
 		}
+		// A transaction already in the books for this occurrence — imported
+		// from a statement or entered by hand before the schedule existed —
+		// becomes the schedule's own instead of being booked a second time.
+		if adopted, err := adoptOccurrence(ctx, db, s, account, occ.Date, sign*occ.Amount, scheduleID); err != nil {
+			return n, err
+		} else if adopted {
+			n++
+			continue
+		}
 
 		var legs []txData
 		var transferID sql.NullString
@@ -741,6 +750,55 @@ func bookSchedule(ctx context.Context, db *persistence.DB, s *persistence.Schedu
 		n++
 	}
 	return n, nil
+}
+
+// adoptOccurrence links an existing transaction on the schedule's account
+// (same type and amount, within a week of the occurrence, not yet any
+// schedule's) to the occurrence, both legs when it is a transfer.
+func adoptOccurrence(ctx context.Context, db *persistence.DB, s *persistence.Schedule, account *persistence.CashAccount, date time.Time, cashDelta int64, scheduleID sql.NullString) (bool, error) {
+	typ := s.Type
+	if typ == "TRANSFER" {
+		typ = "DEPOSIT_CASH"
+	}
+	candidates, err := db.ListAdoptableTransactions(ctx, persistence.ListAdoptableTransactionsParams{
+		CashAccountID: sql.NullString{String: account.ID, Valid: true},
+		Type:          typ,
+		CashDelta:     cashDelta,
+		Time:          date.AddDate(0, 0, -7),
+		Time_2:        date.AddDate(0, 0, 7),
+	})
+	if err != nil || len(candidates) == 0 {
+		return false, err
+	}
+	tx := candidates[0]
+	for _, c := range candidates { // the closest one
+		if abs(c.Time.Sub(date)) < abs(tx.Time.Sub(date)) {
+			tx = c
+		}
+	}
+	return true, db.Tx(ctx, func(q *persistence.Queries) error {
+		for _, id := range []string{tx.ID} {
+			if err := q.LinkTransactionToSchedule(ctx, persistence.LinkTransactionToScheduleParams{ScheduleID: scheduleID, ScheduledFor: sql.NullTime{Time: date, Valid: true}, ID: id}); err != nil {
+				return err
+			}
+		}
+		if tx.TransferID.Valid {
+			other, err := q.GetTransferCounterpart(ctx, persistence.GetTransferCounterpartParams{TransferID: tx.TransferID, ID: tx.ID})
+			if err == nil {
+				return q.LinkTransactionToSchedule(ctx, persistence.LinkTransactionToScheduleParams{ScheduleID: scheduleID, ScheduledFor: sql.NullTime{Time: date, Valid: true}, ID: other.ID})
+			} else if !errors.Is(err, sql.ErrNoRows) {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func abs(d time.Duration) time.Duration {
+	if d < 0 {
+		return -d
+	}
+	return d
 }
 
 // Bookkeeper writes due occurrences of every person's booking schedules,

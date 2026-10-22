@@ -248,4 +248,22 @@ func TestSchedule_Books(t *testing.T) {
 	if got := data["schedule"].(map[string]any)["unconfirmed"].([]any); len(got) != 0 {
 		t.Errorf("unconfirmed = %v, want none", got)
 	}
+
+	// Deleting the schedule leaves its bookings as plain transactions; a
+	// new schedule for the same Sparrate adopts them instead of booking
+	// them again, counterpart legs included.
+	exec(t, schema, ctx, `mutation ($id: ID!) { deleteSchedule(id: $id) }`, map[string]any{"id": sparrate["id"]})
+	again := createSchedule(t, h, fmt.Sprintf(`displayName: "Sparrate", type: TRANSFER, interval: MONTHLY, dayOfMonth: 1,
+		start: "2025-02-01T00:00:00Z", end: "2025-04-30T00:00:00Z", cashAccountID: %q, counterpartAccountID: %q, books: true,
+		steps: [{ from: "2025-01-01T00:00:00Z", amount: 20000 }]`, bauspar, giro))
+	if again["booked"] != 3.0 || h.balance(bauspar) != 53505 {
+		t.Errorf("recreated: booked %v, Bausparvertrag %v; want the 3 adopted and 53505 unchanged", again["booked"], h.balance(bauspar))
+	}
+	data = exec(t, schema, ctx, `query ($id: ID!) { cashAccount(id: $id) { transactions { type cashDelta { amount } scheduleID } } }`, map[string]any{"id": giro})
+	for _, raw := range data["cashAccount"].(map[string]any)["transactions"].([]any) {
+		// The Sparrate legs; the loan repayment's leg from the statement is not one.
+		if tx := raw.(map[string]any); tx["cashDelta"].(map[string]any)["amount"] == -20000.0 && tx["scheduleID"] != again["id"] {
+			t.Errorf("Giro leg %v not adopted by the new schedule", tx)
+		}
+	}
 }

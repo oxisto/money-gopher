@@ -275,6 +275,102 @@ func (q *Queries) GetTransferCounterpart(ctx context.Context, arg GetTransferCou
 	return &i, err
 }
 
+const linkTransactionToSchedule = `-- name: LinkTransactionToSchedule :exec
+UPDATE transactions
+SET
+    schedule_id = ?,
+    scheduled_for = ?
+WHERE
+    id = ?
+`
+
+type LinkTransactionToScheduleParams struct {
+	ScheduleID   sql.NullString
+	ScheduledFor sql.NullTime
+	ID           string
+}
+
+func (q *Queries) LinkTransactionToSchedule(ctx context.Context, arg LinkTransactionToScheduleParams) error {
+	_, err := q.db.ExecContext(ctx, linkTransactionToSchedule, arg.ScheduleID, arg.ScheduledFor, arg.ID)
+	return err
+}
+
+const listAdoptableTransactions = `-- name: ListAdoptableTransactions :many
+SELECT
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for
+FROM
+    transactions
+WHERE
+    cash_account_id = ?
+    AND type = ?
+    AND cash_delta = ?
+    AND schedule_id IS NULL
+    AND time >= ?
+    AND time <= ?
+ORDER BY
+    time
+`
+
+type ListAdoptableTransactionsParams struct {
+	CashAccountID sql.NullString
+	Type          string
+	CashDelta     int64
+	Time          time.Time
+	Time_2        time.Time
+}
+
+// Transactions a new schedule may adopt as its own occurrences: on the
+// account, of the type and amount, in the window, not yet a schedule's.
+func (q *Queries) ListAdoptableTransactions(ctx context.Context, arg ListAdoptableTransactionsParams) ([]*Transaction, error) {
+	rows, err := q.db.QueryContext(ctx, listAdoptableTransactions,
+		arg.CashAccountID,
+		arg.Type,
+		arg.CashDelta,
+		arg.Time,
+		arg.Time_2,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Time,
+			&i.PortfolioID,
+			&i.SecurityID,
+			&i.CashAccountID,
+			&i.Units,
+			&i.Price,
+			&i.Fees,
+			&i.Taxes,
+			&i.CashDelta,
+			&i.Currency,
+			&i.Source,
+			&i.CreatedAt,
+			&i.DocumentID,
+			&i.PriceCurrency,
+			&i.FxRate,
+			&i.TransferID,
+			&i.ScheduleID,
+			&i.ScheduledFor,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTransactionsByCashAccount = `-- name: ListTransactionsByCashAccount :many
 SELECT
     id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for
