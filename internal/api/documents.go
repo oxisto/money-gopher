@@ -383,7 +383,7 @@ func (r *DocumentResolver) SuggestedCashAccount(ctx context.Context) (*CashAccou
 		return nil, err
 	}
 	account, err := r.db.GetCashAccountByIBAN(ctx, persistence.GetCashAccountByIBANParams{
-		Iban:     sql.NullString{String: r.doc.SettlementIban.String, Valid: true},
+		Iban:     sql.NullString{String: persistence.NormalizeIBAN(r.doc.SettlementIban.String), Valid: true},
 		PersonID: person.ID,
 	})
 	if errors.Is(err, sql.ErrNoRows) {

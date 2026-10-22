@@ -78,6 +78,12 @@ func run(addr string, dbPath string, quoteInterval time.Duration) error {
 		go updater.Run(context.Background(), quoteInterval)
 	}
 
+	if n, err := db.NormalizeIBANs(context.Background()); err != nil {
+		return fmt.Errorf("normalizing IBANs: %w", err)
+	} else if n > 0 {
+		slog.Info("normalized stored IBANs", "accounts", n)
+	}
+
 	svc := importer.NewService(db)
 	if n, err := svc.BackfillHashes(context.Background()); err != nil {
 		return fmt.Errorf("hashing stored documents: %w", err)
