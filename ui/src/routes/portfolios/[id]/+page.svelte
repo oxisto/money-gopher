@@ -7,7 +7,6 @@
 	import Dialog from '#lib/components/ui/Dialog.svelte';
 	import ErrorNote from '#lib/components/ui/ErrorNote.svelte';
 	import Icon from '#lib/components/ui/Icon.svelte';
-	import Panel from '#lib/components/ui/Panel.svelte';
 	import Segmented from '#lib/components/ui/Segmented.svelte';
 	import SelectField from '#lib/components/ui/SelectField.svelte';
 	import StatStrip from '#lib/components/ui/StatStrip.svelte';
@@ -19,7 +18,7 @@
 
 	let { data }: PageProps = $props();
 
-	let tab = $state<'holdings' | 'transactions'>('holdings');
+	let tab = $state<'holdings' | 'transactions' | 'return'>('holdings');
 	// Valuation has no period; the return does. Three are fetched, one shows.
 	let returnPeriod = $state<'ytd' | 'oneYear' | 'allTime'>('ytd');
 	let addOpen = $state(false);
@@ -143,18 +142,42 @@
 			]}
 		/>
 
-		<Panel title="Return">
-			{#snippet aside()}
-				<Segmented
-					label="Period"
-					bind:value={returnPeriod}
-					options={[
-						{ value: 'ytd', label: 'This year' },
-						{ value: 'oneYear', label: '12 months' },
-						{ value: 'allTime', label: 'All time' }
-					]}
-				/>
-			{/snippet}
+		<Segmented
+			label="View"
+			bind:value={tab}
+			options={[
+				{ value: 'holdings', label: `Holdings · ${snap.positions.length}` },
+				{ value: 'transactions', label: `Transactions · ${portfolio.transactions.length}` },
+				{ value: 'return', label: 'Return' }
+			]}
+		/>
+
+		{#if tab === 'holdings'}
+			<HoldingsTable holdings={holdingsOf(snap.positions)} />
+		{:else if tab === 'transactions'}
+			<ActivityFeed
+				transactions={portfolio.transactions as FeedTransaction[]}
+				securities={[...data.securities, ...data.assets]}
+				cashAccounts={data.cashAccounts}
+				onchanged={refresh}
+			/>
+		{:else}
+			<div class="flex flex-col gap-4">
+				<div class="flex flex-wrap items-center justify-between gap-3">
+					<p class="text-sm text-muted">
+						What the portfolio earned, in money: sales completed, income received, costs paid, and how
+						the open positions moved. The valuation above has no period; this does.
+					</p>
+					<Segmented
+						label="Period"
+						bind:value={returnPeriod}
+						options={[
+							{ value: 'ytd', label: 'This year' },
+							{ value: 'oneYear', label: '12 months' },
+							{ value: 'allTime', label: 'All time' }
+						]}
+					/>
+				</div>
 			<StatStrip
 				stats={[
 					{ label: 'Realized', value: formatSignedMoney(ret.realized), sub: 'completed sales, FIFO', tone: toneOf(ret.realized.amount) },
@@ -196,26 +219,7 @@
 					</tbody>
 				</table>
 			{/if}
-		</Panel>
-
-		<Segmented
-			label="View"
-			bind:value={tab}
-			options={[
-				{ value: 'holdings', label: `Holdings · ${snap.positions.length}` },
-				{ value: 'transactions', label: `Transactions · ${portfolio.transactions.length}` }
-			]}
-		/>
-
-		{#if tab === 'holdings'}
-			<HoldingsTable holdings={holdingsOf(snap.positions)} />
-		{:else}
-			<ActivityFeed
-				transactions={portfolio.transactions as FeedTransaction[]}
-				securities={[...data.securities, ...data.assets]}
-				cashAccounts={data.cashAccounts}
-				onchanged={refresh}
-			/>
+			</div>
 		{/if}
 	</div>
 {:else}

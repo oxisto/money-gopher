@@ -270,8 +270,9 @@ func (r *SnapshotResolver) Returns(args struct{ Period string }) (*ReturnsResolv
 	}
 	// The window is (from, to]; a transaction exactly at the period's
 	// start — the first one ever for ALL_TIME, one dated 1 January for
-	// YEAR_TO_DATE — belongs to it, so the start moves just before.
-	from = from.Add(-time.Nanosecond)
+	// YEAR_TO_DATE — belongs to it, so the start moves a second before.
+	// Whole seconds: a browser rounds finer fractions up.
+	from = from.Add(-time.Second)
 	period := args.Period
 	return &ReturnsResolver{
 		period: &period,
@@ -290,8 +291,8 @@ func (r *SnapshotResolver) ReturnsByYear() []*ReturnsResolver {
 	}
 	to := r.snap.Time
 	for year := r.snap.FirstTransactionTime.Year(); year <= to.Year(); year++ {
-		from := time.Date(year, time.January, 1, 0, 0, 0, 0, time.UTC).Add(-time.Nanosecond)
-		end := time.Date(year+1, time.January, 1, 0, 0, 0, 0, time.UTC).Add(-time.Nanosecond)
+		from := time.Date(year, time.January, 1, 0, 0, 0, 0, time.UTC).Add(-time.Second)
+		end := time.Date(year+1, time.January, 1, 0, 0, 0, 0, time.UTC).Add(-time.Second)
 		if end.After(to) {
 			end = to
 		}
