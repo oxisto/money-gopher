@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/graph-gophers/graphql-go"
@@ -253,6 +254,50 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 				}
 			}
 
+			// A statement row a schedule already booked (same account,
+			// type and amount, within a week) confirms that booking: the
+			// bank's date and amounts win, nothing is created twice.
+			if d.CashAccountID != nil {
+				candidates, err := q.ListUnconfirmedScheduledTransactions(ctx, persistence.ListUnconfirmedScheduledTransactionsParams{
+					CashAccountID: nullString(d.CashAccountID),
+					Type:          d.Type,
+				})
+				if err != nil {
+					return err
+				}
+				var hit *persistence.Transaction
+				for _, c := range candidates {
+					if consumed[c.ID] || c.CashDelta != d.CashDelta {
+						continue
+					}
+					if diff := c.Time.Sub(d.Time); diff < -7*24*time.Hour || diff > 7*24*time.Hour {
+						continue
+					}
+					hit = c
+					break
+				}
+				if hit != nil {
+					consumed[hit.ID] = true
+					tx, err := q.ConfirmScheduledTransaction(ctx, persistence.ConfirmScheduledTransactionParams{
+						Time:       d.Time,
+						Fees:       d.Fees,
+						Taxes:      d.Taxes,
+						CashDelta:  d.CashDelta,
+						DocumentID: sql.NullString{String: doc.ID, Valid: true},
+						Source:     source,
+						ID:         hit.ID,
+					})
+					if err != nil {
+						return err
+					}
+					if err := mirrorOntoCounterpart(ctx, q, hit, d.Time, -d.CashDelta); err != nil {
+						return err
+					}
+					created = append(created, &TransactionResolver{db: r.db, transaction: tx})
+					continue
+				}
+			}
+
 			if match := matchExisting(&d); match != nil {
 				tx, err := q.UpdateTransactionFromImport(ctx, persistence.UpdateTransactionFromImportParams{
 					Type:          d.Type,
@@ -276,18 +321,8 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 				// A re-confirm keeps a transfer's other leg in step; it
 				// does not turn a plain deposit into a transfer after the
 				// fact (delete and import again for that).
-				if leg != nil && match.TransferID.Valid {
-					other, err := q.GetTransferCounterpart(ctx, persistence.GetTransferCounterpartParams{TransferID: match.TransferID, ID: match.ID})
-					if err == nil {
-						if _, err := q.UpdateTransactionFromImport(ctx, persistence.UpdateTransactionFromImportParams{
-							Type: other.Type, Time: leg.Time, CashAccountID: nullString(leg.CashAccountID),
-							CashDelta: leg.CashDelta, Currency: leg.Currency, Price: other.Price, FxRate: other.FxRate,
-							PriceCurrency: other.PriceCurrency, Units: other.Units, Fees: other.Fees, Taxes: other.Taxes,
-							PortfolioID: other.PortfolioID, SecurityID: other.SecurityID, ID: other.ID,
-						}); err != nil {
-							return err
-						}
-					} else if !errors.Is(err, sql.ErrNoRows) {
+				if leg != nil {
+					if err := mirrorOntoCounterpart(ctx, q, match, leg.Time, leg.CashDelta); err != nil {
 						return err
 					}
 				}
@@ -368,6 +403,27 @@ func firstID(ids ...*graphql.ID) *string {
 		}
 	}
 	return nil
+}
+
+// mirrorOntoCounterpart moves a transfer's other leg to the given time and
+// amount, when tx is a leg; a plain transaction is left alone.
+func mirrorOntoCounterpart(ctx context.Context, q *persistence.Queries, tx *persistence.Transaction, at time.Time, cashDelta int64) error {
+	if !tx.TransferID.Valid {
+		return nil
+	}
+	other, err := q.GetTransferCounterpart(ctx, persistence.GetTransferCounterpartParams{TransferID: tx.TransferID, ID: tx.ID})
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	_, err = q.UpdateTransactionFromImport(ctx, persistence.UpdateTransactionFromImportParams{
+		Type: other.Type, Time: at, CashAccountID: other.CashAccountID,
+		CashDelta: cashDelta, Currency: other.Currency, Price: other.Price, FxRate: other.FxRate,
+		PriceCurrency: other.PriceCurrency, Units: other.Units, Fees: other.Fees, Taxes: other.Taxes,
+		PortfolioID: other.PortfolioID, SecurityID: other.SecurityID, ID: other.ID,
+	})
+	return err
 }
 
 // isCashOnlyType reports whether a transaction type is a pure cash event (no

@@ -336,7 +336,7 @@
 									</span>
 									<span class="min-w-0">
 										<span class="block truncate">{tx.title}</span>
-										<span class="block text-xs text-muted">{formatDate(tx.time)} · {tx.account}</span>
+										<span class="block truncate text-xs text-muted">{[formatDate(tx.time), tx.subtitle, tx.account].filter(Boolean).join(' · ')}</span>
 									</span>
 									<span class="font-medium {tx.cashDelta.amount > 0 ? 'text-pos' : ''}">
 										{tx.cashDelta.amount === 0 ? '—' : signed(tx.cashDelta)}

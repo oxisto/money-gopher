@@ -77,6 +77,28 @@ type Quote struct {
 	Price     Decimal
 }
 
+type Schedule struct {
+	ID                   string
+	PersonID             string
+	DisplayName          string
+	Type                 string
+	CashAccountID        string
+	CounterpartAccountID sql.NullString
+	SecurityID           sql.NullString
+	Recurrence           string
+	DayOfMonth           int64
+	StartDate            time.Time
+	EndDate              sql.NullTime
+	Books                int64
+	CreatedAt            time.Time
+}
+
+type ScheduleStep struct {
+	ScheduleID string
+	FromDate   time.Time
+	Amount     int64
+}
+
 type Security struct {
 	ID                   string
 	DisplayName          string
@@ -140,6 +162,8 @@ type Transaction struct {
 	PriceCurrency sql.NullString
 	FxRate        Decimal
 	TransferID    sql.NullString
+	ScheduleID    sql.NullString
+	ScheduledFor  sql.NullTime
 }
 
 type User struct {

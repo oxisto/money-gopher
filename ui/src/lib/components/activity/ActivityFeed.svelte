@@ -163,7 +163,13 @@
 		['FX rate', t.fxRate ? `1 ${t.cashDelta.currency} = ${t.fxRate} ${t.price?.currency ?? ''}` : null],
 		['Fees', t.fees.amount ? formatMoney(t.fees) : null],
 		['Taxes', t.taxes.amount ? formatMoney(t.taxes) : null],
-		['Realized gain', t.gain ? formatSignedMoney(t.gain) : null]
+		['Realized gain', t.gain ? formatSignedMoney(t.gain) : null],
+		[
+			'Expected',
+			t.schedule
+				? `${t.schedule.displayName} · ${t.document ? 'confirmed by the statement' : 'booked, not confirmed yet'}`
+				: null
+		]
 	].filter(([, v]) => v)}
 	<div class="num flex flex-col gap-3">
 		<div class="flex items-center gap-2.5">
@@ -188,7 +194,13 @@
 			class="flex items-center gap-2 rounded-lg border border-line bg-raised px-3 py-2.5 text-[13px] hover:bg-hover"
 		>
 			<Icon name="document" size={15} />
-			<span class="min-w-0 flex-1 truncate">{t.document ? t.document.filename : 'Entered manually'}</span>
+			<span class="min-w-0 flex-1 truncate">
+				{t.document
+					? t.document.filename
+					: t.scheduleID
+						? 'Booked by a schedule · not yet confirmed by a statement'
+						: 'Entered manually'}
+			</span>
 			<span class="shrink-0 text-muted">Open →</span>
 		</a>
 		<div class="flex gap-2">
@@ -282,9 +294,17 @@
 											<Icon name={d.icon} size={14} />
 										</span>
 										<span class="min-w-0">
-											<span class="block truncate">{d.title}</span>
+											<span class="block truncate">
+												{d.title}
+												{#if t.schedule}
+													<span
+														class="ml-1 rounded-full px-1.5 text-[11px] font-semibold {t.document ? 'bg-pos-soft text-pos' : 'bg-accent-soft text-accent-fg'}"
+														title={t.document ? `Expected (${t.schedule.displayName}), confirmed by the statement` : `Expected (${t.schedule.displayName}), not confirmed by a statement yet`}
+													>{t.document ? '✓ expected' : '≈ expected'}</span>
+												{/if}
+											</span>
 											<span class="block truncate text-xs text-muted">
-												{[t.portfolio?.displayName ?? t.cashAccount?.displayName, t.price ? `${formatPrice(t.price, 4)} each` : null]
+												{[d.subtitle, t.portfolio?.displayName ?? t.cashAccount?.displayName, t.price ? `${formatPrice(t.price, 4)} each` : null]
 													.filter(Boolean)
 													.join(' · ')}
 											</span>

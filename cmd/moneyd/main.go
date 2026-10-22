@@ -90,6 +90,11 @@ func run(addr string, dbPath string, quoteInterval time.Duration) error {
 	} else if n > 0 {
 		slog.Info("hashed stored documents for duplicate detection", "documents", n)
 	}
+
+	// Schedules that book write their due occurrences now and a few times
+	// a day from here on.
+	bookkeeper := &api.Bookkeeper{DB: db}
+	go bookkeeper.Run(context.Background(), 6*time.Hour)
 	mux := http.NewServeMux()
 
 	var protect func(http.Handler) http.Handler

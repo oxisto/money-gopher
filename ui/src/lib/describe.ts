@@ -6,13 +6,26 @@ interface DescribableTransaction {
 	asset: { displayName: string; kind?: string | null } | null;
 	/** The other leg of a transfer between own accounts, when it is one. */
 	counterpart?: { cashAccount: { displayName: string } | null } | null;
+	/** The schedule it is an occurrence of: its name becomes the title. */
+	schedule?: { displayName: string } | null;
 }
 
 /**
  * A plain-language title and an icon for a transaction, e.g. "Bought 25 ×
  * Allianz SE" — what activity lists show instead of the raw type code.
  */
-export function describeTransaction(tx: DescribableTransaction): { title: string; icon: IconName } {
+export function describeTransaction(tx: DescribableTransaction): {
+	title: string;
+	icon: IconName;
+	/** The generic description, when the title is a schedule's name. */
+	subtitle?: string;
+} {
+	// A scheduled occurrence goes by its schedule's name — "Sparrate",
+	// "Zinsen" — with the generic wording as the subtitle.
+	if (tx.schedule) {
+		const generic = describeTransaction({ ...tx, schedule: null });
+		return { title: tx.schedule.displayName, icon: generic.icon, subtitle: generic.title };
+	}
 	const name = tx.asset?.displayName ?? 'unknown asset';
 	const units = formatUnits(tx.units);
 	switch (tx.type) {
@@ -71,6 +84,37 @@ export function formatUnits(units: number): string {
 }
 
 /** What a cash account is, for sublines and badges. */
+/** What a schedule's kind is called in lists and forms. */
+export function scheduleTypeLabel(type: string, accountKind?: string | null): string {
+	switch (type) {
+		case 'TRANSFER':
+			return 'Transfer';
+		case 'DEPOSIT_CASH':
+			return 'Deposit';
+		case 'WITHDRAW_CASH':
+			return 'Withdrawal';
+		case 'INTEREST':
+			return accountKind === 'LOAN' ? 'Interest charged' : 'Interest';
+		case 'ACCOUNT_FEES':
+			return 'Fees';
+		case 'DIVIDEND':
+			return 'Dividend / rent';
+		default:
+			return type;
+	}
+}
+
+export function intervalLabel(interval: string): string {
+	switch (interval) {
+		case 'QUARTERLY':
+			return 'quarterly';
+		case 'YEARLY':
+			return 'yearly';
+		default:
+			return 'monthly';
+	}
+}
+
 export function accountKindLabel(kind: string | null | undefined): string {
 	switch (kind) {
 		case 'SAVINGS':

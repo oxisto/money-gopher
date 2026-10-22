@@ -17,6 +17,14 @@
 
 	let dialog: HTMLDialogElement;
 
+	// Only a click outside the dialog's box closes it. A click that targets
+	// the dialog element itself can also come from its own edge, e.g. on a
+	// control half hidden behind the content's scroll clip.
+	function onBackdropClick(e: MouseEvent) {
+		const r = dialog.getBoundingClientRect();
+		if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) close();
+	}
+
 	// The native <dialog> brings focus trapping, Escape and the backdrop for
 	// free; this only keeps it in sync with `open`.
 	$effect(() => {
@@ -31,10 +39,11 @@
 <dialog
 	bind:this={dialog}
 	onclose={close}
-	onclick={(e) => e.target === dialog && close()}
-	class="m-auto w-full {wide ? 'max-w-2xl' : 'max-w-md'} rounded-xl border border-line bg-surface p-0 text-fg shadow-2xl backdrop:bg-black/40"
+	onclick={onBackdropClick}
+	class="m-auto flex w-full {wide ? 'max-w-2xl' : 'max-w-md'} flex-col rounded-xl border border-line bg-surface p-0 text-fg shadow-2xl backdrop:bg-black/40 not-open:hidden"
+	style="max-height: calc(100dvh - 2rem)"
 >
-	<div class="flex items-center justify-between border-b border-line px-5 py-3.5">
+	<div class="flex shrink-0 items-center justify-between border-b border-line px-5 py-3.5">
 		<h2 class="font-semibold">{title}</h2>
 		<button
 			type="button"
@@ -45,7 +54,9 @@
 			<Icon name="close" />
 		</button>
 	</div>
-	<div class="px-5 py-4">
+	<!-- A form taller than the window scrolls here instead of overflowing
+	     the viewport, where its bottom could not be reached. -->
+	<div class="min-h-0 overflow-y-auto px-5 py-4">
 		{@render children()}
 	</div>
 </dialog>

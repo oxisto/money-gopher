@@ -11,70 +11,39 @@ import (
 	"time"
 )
 
-const createTransaction = `-- name: CreateTransaction :one
-INSERT INTO
-    transactions (
-        id,
-        type,
-        time,
-        portfolio_id,
-        security_id,
-        cash_account_id,
-        units,
-        price,
-        fees,
-        taxes,
-        cash_delta,
-        currency,
-        source,
-        document_id,
-        price_currency,
-        fx_rate,
-        transfer_id
-    )
-VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id
+const confirmScheduledTransaction = `-- name: ConfirmScheduledTransaction :one
+UPDATE transactions
+SET
+    time = ?,
+    fees = ?,
+    taxes = ?,
+    cash_delta = ?,
+    document_id = ?,
+    source = ?
+WHERE
+    id = ? RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for
 `
 
-type CreateTransactionParams struct {
-	ID            string
-	Type          string
-	Time          time.Time
-	PortfolioID   sql.NullString
-	SecurityID    sql.NullString
-	CashAccountID sql.NullString
-	Units         float64
-	Price         Decimal
-	Fees          int64
-	Taxes         int64
-	CashDelta     int64
-	Currency      string
-	Source        string
-	DocumentID    sql.NullString
-	PriceCurrency sql.NullString
-	FxRate        Decimal
-	TransferID    sql.NullString
+type ConfirmScheduledTransactionParams struct {
+	Time       time.Time
+	Fees       int64
+	Taxes      int64
+	CashDelta  int64
+	DocumentID sql.NullString
+	Source     string
+	ID         string
 }
 
-func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionParams) (*Transaction, error) {
-	row := q.db.QueryRowContext(ctx, createTransaction,
-		arg.ID,
-		arg.Type,
+// A statement row confirms a scheduled booking: the bank's date and amounts win.
+func (q *Queries) ConfirmScheduledTransaction(ctx context.Context, arg ConfirmScheduledTransactionParams) (*Transaction, error) {
+	row := q.db.QueryRowContext(ctx, confirmScheduledTransaction,
 		arg.Time,
-		arg.PortfolioID,
-		arg.SecurityID,
-		arg.CashAccountID,
-		arg.Units,
-		arg.Price,
 		arg.Fees,
 		arg.Taxes,
 		arg.CashDelta,
-		arg.Currency,
-		arg.Source,
 		arg.DocumentID,
-		arg.PriceCurrency,
-		arg.FxRate,
-		arg.TransferID,
+		arg.Source,
+		arg.ID,
 	)
 	var i Transaction
 	err := row.Scan(
@@ -96,6 +65,104 @@ func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionPa
 		&i.PriceCurrency,
 		&i.FxRate,
 		&i.TransferID,
+		&i.ScheduleID,
+		&i.ScheduledFor,
+	)
+	return &i, err
+}
+
+const createTransaction = `-- name: CreateTransaction :one
+INSERT INTO
+    transactions (
+        id,
+        type,
+        time,
+        portfolio_id,
+        security_id,
+        cash_account_id,
+        units,
+        price,
+        fees,
+        taxes,
+        cash_delta,
+        currency,
+        source,
+        document_id,
+        price_currency,
+        fx_rate,
+        transfer_id,
+        schedule_id,
+        scheduled_for)
+VALUES
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for
+`
+
+type CreateTransactionParams struct {
+	ID            string
+	Type          string
+	Time          time.Time
+	PortfolioID   sql.NullString
+	SecurityID    sql.NullString
+	CashAccountID sql.NullString
+	Units         float64
+	Price         Decimal
+	Fees          int64
+	Taxes         int64
+	CashDelta     int64
+	Currency      string
+	Source        string
+	DocumentID    sql.NullString
+	PriceCurrency sql.NullString
+	FxRate        Decimal
+	TransferID    sql.NullString
+	ScheduleID    sql.NullString
+	ScheduledFor  sql.NullTime
+}
+
+func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionParams) (*Transaction, error) {
+	row := q.db.QueryRowContext(ctx, createTransaction,
+		arg.ID,
+		arg.Type,
+		arg.Time,
+		arg.PortfolioID,
+		arg.SecurityID,
+		arg.CashAccountID,
+		arg.Units,
+		arg.Price,
+		arg.Fees,
+		arg.Taxes,
+		arg.CashDelta,
+		arg.Currency,
+		arg.Source,
+		arg.DocumentID,
+		arg.PriceCurrency,
+		arg.FxRate,
+		arg.TransferID,
+		arg.ScheduleID,
+		arg.ScheduledFor,
+	)
+	var i Transaction
+	err := row.Scan(
+		&i.ID,
+		&i.Type,
+		&i.Time,
+		&i.PortfolioID,
+		&i.SecurityID,
+		&i.CashAccountID,
+		&i.Units,
+		&i.Price,
+		&i.Fees,
+		&i.Taxes,
+		&i.CashDelta,
+		&i.Currency,
+		&i.Source,
+		&i.CreatedAt,
+		&i.DocumentID,
+		&i.PriceCurrency,
+		&i.FxRate,
+		&i.TransferID,
+		&i.ScheduleID,
+		&i.ScheduledFor,
 	)
 	return &i, err
 }
@@ -130,7 +197,7 @@ func (q *Queries) DeleteTransfer(ctx context.Context, transferID sql.NullString)
 
 const getTransaction = `-- name: GetTransaction :one
 SELECT
-    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for
 FROM
     transactions
 WHERE
@@ -159,13 +226,15 @@ func (q *Queries) GetTransaction(ctx context.Context, id string) (*Transaction, 
 		&i.PriceCurrency,
 		&i.FxRate,
 		&i.TransferID,
+		&i.ScheduleID,
+		&i.ScheduledFor,
 	)
 	return &i, err
 }
 
 const getTransferCounterpart = `-- name: GetTransferCounterpart :one
 SELECT
-    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for
 FROM
     transactions
 WHERE
@@ -200,13 +269,111 @@ func (q *Queries) GetTransferCounterpart(ctx context.Context, arg GetTransferCou
 		&i.PriceCurrency,
 		&i.FxRate,
 		&i.TransferID,
+		&i.ScheduleID,
+		&i.ScheduledFor,
 	)
 	return &i, err
 }
 
+const linkTransactionToSchedule = `-- name: LinkTransactionToSchedule :exec
+UPDATE transactions
+SET
+    schedule_id = ?,
+    scheduled_for = ?
+WHERE
+    id = ?
+`
+
+type LinkTransactionToScheduleParams struct {
+	ScheduleID   sql.NullString
+	ScheduledFor sql.NullTime
+	ID           string
+}
+
+func (q *Queries) LinkTransactionToSchedule(ctx context.Context, arg LinkTransactionToScheduleParams) error {
+	_, err := q.db.ExecContext(ctx, linkTransactionToSchedule, arg.ScheduleID, arg.ScheduledFor, arg.ID)
+	return err
+}
+
+const listAdoptableTransactions = `-- name: ListAdoptableTransactions :many
+SELECT
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for
+FROM
+    transactions
+WHERE
+    cash_account_id = ?
+    AND type = ?
+    AND cash_delta = ?
+    AND schedule_id IS NULL
+    AND time >= ?
+    AND time <= ?
+ORDER BY
+    time
+`
+
+type ListAdoptableTransactionsParams struct {
+	CashAccountID sql.NullString
+	Type          string
+	CashDelta     int64
+	Time          time.Time
+	Time_2        time.Time
+}
+
+// Transactions a new schedule may adopt as its own occurrences: on the
+// account, of the type and amount, in the window, not yet a schedule's.
+func (q *Queries) ListAdoptableTransactions(ctx context.Context, arg ListAdoptableTransactionsParams) ([]*Transaction, error) {
+	rows, err := q.db.QueryContext(ctx, listAdoptableTransactions,
+		arg.CashAccountID,
+		arg.Type,
+		arg.CashDelta,
+		arg.Time,
+		arg.Time_2,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Time,
+			&i.PortfolioID,
+			&i.SecurityID,
+			&i.CashAccountID,
+			&i.Units,
+			&i.Price,
+			&i.Fees,
+			&i.Taxes,
+			&i.CashDelta,
+			&i.Currency,
+			&i.Source,
+			&i.CreatedAt,
+			&i.DocumentID,
+			&i.PriceCurrency,
+			&i.FxRate,
+			&i.TransferID,
+			&i.ScheduleID,
+			&i.ScheduledFor,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTransactionsByCashAccount = `-- name: ListTransactionsByCashAccount :many
 SELECT
-    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for
 FROM
     transactions
 WHERE
@@ -243,6 +410,8 @@ func (q *Queries) ListTransactionsByCashAccount(ctx context.Context, cashAccount
 			&i.PriceCurrency,
 			&i.FxRate,
 			&i.TransferID,
+			&i.ScheduleID,
+			&i.ScheduledFor,
 		); err != nil {
 			return nil, err
 		}
@@ -259,7 +428,7 @@ func (q *Queries) ListTransactionsByCashAccount(ctx context.Context, cashAccount
 
 const listTransactionsByDocument = `-- name: ListTransactionsByDocument :many
 SELECT
-    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for
 FROM
     transactions
 WHERE
@@ -296,6 +465,8 @@ func (q *Queries) ListTransactionsByDocument(ctx context.Context, documentID sql
 			&i.PriceCurrency,
 			&i.FxRate,
 			&i.TransferID,
+			&i.ScheduleID,
+			&i.ScheduledFor,
 		); err != nil {
 			return nil, err
 		}
@@ -312,7 +483,7 @@ func (q *Queries) ListTransactionsByDocument(ctx context.Context, documentID sql
 
 const listTransactionsByPortfolio = `-- name: ListTransactionsByPortfolio :many
 SELECT
-    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for
 FROM
     transactions
 WHERE
@@ -349,6 +520,8 @@ func (q *Queries) ListTransactionsByPortfolio(ctx context.Context, portfolioID s
 			&i.PriceCurrency,
 			&i.FxRate,
 			&i.TransferID,
+			&i.ScheduleID,
+			&i.ScheduledFor,
 		); err != nil {
 			return nil, err
 		}
@@ -361,6 +534,198 @@ func (q *Queries) ListTransactionsByPortfolio(ctx context.Context, portfolioID s
 		return nil, err
 	}
 	return items, nil
+}
+
+const listTransactionsBySchedule = `-- name: ListTransactionsBySchedule :many
+SELECT
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for
+FROM
+    transactions
+WHERE
+    schedule_id = ?
+ORDER BY
+    scheduled_for
+`
+
+func (q *Queries) ListTransactionsBySchedule(ctx context.Context, scheduleID sql.NullString) ([]*Transaction, error) {
+	rows, err := q.db.QueryContext(ctx, listTransactionsBySchedule, scheduleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Time,
+			&i.PortfolioID,
+			&i.SecurityID,
+			&i.CashAccountID,
+			&i.Units,
+			&i.Price,
+			&i.Fees,
+			&i.Taxes,
+			&i.CashDelta,
+			&i.Currency,
+			&i.Source,
+			&i.CreatedAt,
+			&i.DocumentID,
+			&i.PriceCurrency,
+			&i.FxRate,
+			&i.TransferID,
+			&i.ScheduleID,
+			&i.ScheduledFor,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTransactionsByScheduleOccurrence = `-- name: ListTransactionsByScheduleOccurrence :many
+SELECT
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for
+FROM
+    transactions
+WHERE
+    schedule_id = ?
+    AND scheduled_for = ?
+`
+
+type ListTransactionsByScheduleOccurrenceParams struct {
+	ScheduleID   sql.NullString
+	ScheduledFor sql.NullTime
+}
+
+// The transaction(s) a schedule booked for one occurrence: both legs of a transfer.
+func (q *Queries) ListTransactionsByScheduleOccurrence(ctx context.Context, arg ListTransactionsByScheduleOccurrenceParams) ([]*Transaction, error) {
+	rows, err := q.db.QueryContext(ctx, listTransactionsByScheduleOccurrence, arg.ScheduleID, arg.ScheduledFor)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Time,
+			&i.PortfolioID,
+			&i.SecurityID,
+			&i.CashAccountID,
+			&i.Units,
+			&i.Price,
+			&i.Fees,
+			&i.Taxes,
+			&i.CashDelta,
+			&i.Currency,
+			&i.Source,
+			&i.CreatedAt,
+			&i.DocumentID,
+			&i.PriceCurrency,
+			&i.FxRate,
+			&i.TransferID,
+			&i.ScheduleID,
+			&i.ScheduledFor,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUnconfirmedScheduledTransactions = `-- name: ListUnconfirmedScheduledTransactions :many
+SELECT
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for
+FROM
+    transactions
+WHERE
+    cash_account_id = ?
+    AND type = ?
+    AND schedule_id IS NOT NULL
+    AND document_id IS NULL
+`
+
+type ListUnconfirmedScheduledTransactionsParams struct {
+	CashAccountID sql.NullString
+	Type          string
+}
+
+// Booked by a schedule on this account, not yet confirmed by a statement.
+func (q *Queries) ListUnconfirmedScheduledTransactions(ctx context.Context, arg ListUnconfirmedScheduledTransactionsParams) ([]*Transaction, error) {
+	rows, err := q.db.QueryContext(ctx, listUnconfirmedScheduledTransactions, arg.CashAccountID, arg.Type)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Time,
+			&i.PortfolioID,
+			&i.SecurityID,
+			&i.CashAccountID,
+			&i.Units,
+			&i.Price,
+			&i.Fees,
+			&i.Taxes,
+			&i.CashDelta,
+			&i.Currency,
+			&i.Source,
+			&i.CreatedAt,
+			&i.DocumentID,
+			&i.PriceCurrency,
+			&i.FxRate,
+			&i.TransferID,
+			&i.ScheduleID,
+			&i.ScheduledFor,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const unlinkScheduleTransactions = `-- name: UnlinkScheduleTransactions :exec
+UPDATE transactions
+SET
+    schedule_id = NULL,
+    scheduled_for = NULL
+WHERE
+    schedule_id = ?
+`
+
+// Before a schedule is deleted: its bookings stay, as plain transactions.
+func (q *Queries) UnlinkScheduleTransactions(ctx context.Context, scheduleID sql.NullString) error {
+	_, err := q.db.ExecContext(ctx, unlinkScheduleTransactions, scheduleID)
+	return err
 }
 
 const updateTransaction = `-- name: UpdateTransaction :one
@@ -378,7 +743,7 @@ SET
     cash_delta = ?,
     currency = ?
 WHERE
-    id = ? RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id
+    id = ? RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for
 `
 
 type UpdateTransactionParams struct {
@@ -431,6 +796,8 @@ func (q *Queries) UpdateTransaction(ctx context.Context, arg UpdateTransactionPa
 		&i.PriceCurrency,
 		&i.FxRate,
 		&i.TransferID,
+		&i.ScheduleID,
+		&i.ScheduledFor,
 	)
 	return &i, err
 }
@@ -452,7 +819,7 @@ SET
     price_currency = ?,
     fx_rate = ?
 WHERE
-    id = ? RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id
+    id = ? RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for
 `
 
 type UpdateTransactionFromImportParams struct {
@@ -510,6 +877,8 @@ func (q *Queries) UpdateTransactionFromImport(ctx context.Context, arg UpdateTra
 		&i.PriceCurrency,
 		&i.FxRate,
 		&i.TransferID,
+		&i.ScheduleID,
+		&i.ScheduledFor,
 	)
 	return &i, err
 }

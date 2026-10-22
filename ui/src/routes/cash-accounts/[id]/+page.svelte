@@ -3,6 +3,10 @@
 	import ActivityFeed from '#lib/components/activity/ActivityFeed.svelte';
 	import TransactionForm from '#lib/components/TransactionForm.svelte';
 	import TransferForm from '#lib/components/TransferForm.svelte';
+	import ScheduleForm from '#lib/components/ScheduleForm.svelte';
+	import Panel from '#lib/components/ui/Panel.svelte';
+	import Checkbox from '#lib/components/ui/Checkbox.svelte';
+	import { intervalLabel, scheduleTypeLabel } from '#lib/describe.js';
 	import Button from '#lib/components/ui/Button.svelte';
 	import Dialog from '#lib/components/ui/Dialog.svelte';
 	import ErrorNote from '#lib/components/ui/ErrorNote.svelte';
@@ -20,6 +24,53 @@
 
 	let addOpen = $state(false);
 	let transferOpen = $state(false);
+
+	// Schedules: the panel lists what lands here or is paid from here.
+	type Schedule = NonNullable<typeof account>['schedules'][number];
+	let scheduleOpen = $state(false);
+	let editingSchedule = $state<Schedule | null>(null);
+	let deletingSchedule = $state<string | null>(null);
+	let scheduleError = $state<string | null>(null);
+	const deleteSchedule = graphql(`
+		mutation DeleteSchedule($id: ID!) {
+			deleteSchedule(id: $id)
+		}
+	`);
+	const bookSchedules = graphql(`
+		mutation BookSchedules {
+			bookSchedules
+		}
+	`);
+	function openSchedule(s: Schedule | null) {
+		editingSchedule = s;
+		scheduleError = null;
+		scheduleOpen = true;
+	}
+	async function removeSchedule(id: string) {
+		const result = await mutate(deleteSchedule, { id });
+		scheduleError = result.error;
+		deletingSchedule = null;
+		if (!scheduleError) refresh();
+	}
+	async function bookNow() {
+		const result = await mutate(bookSchedules, {});
+		scheduleError = result.error;
+		if (!scheduleError) refresh();
+	}
+	/** The schedule's amount as it hits this account: a transfer paid from here leaves. */
+	function amountHere(s: Schedule) {
+		const out = s.type === 'TRANSFER' && s.cashAccount.id !== account?.id;
+		return { amount: out ? -s.currentAmount.amount : s.currentAmount.amount, currency: s.currentAmount.currency };
+	}
+	function describeSchedule(s: Schedule): string {
+		if (s.type === 'TRANSFER') {
+			return s.cashAccount.id === account?.id
+				? `from ${s.counterpartAccount?.displayName ?? '…'}`
+				: `to ${s.cashAccount.displayName}`;
+		}
+		if (s.type === 'DIVIDEND') return `from ${s.asset?.displayName ?? '…'}`;
+		return scheduleTypeLabel(s.type, account?.kind).toLowerCase();
+	}
 
 	const updateCashAccount = graphql(`
 		mutation EditCashAccount($id: ID!, $input: UpdateCashAccountInput!) {
@@ -137,6 +188,21 @@
 		<Button onclick={() => (addOpen = true)}><Icon name="plus" size={15} /> Add transaction</Button>
 	</div>
 
+	<Dialog bind:open={scheduleOpen} title={editingSchedule ? 'Edit schedule' : 'New schedule'}>
+		{#key editingSchedule?.id ?? 'new'}
+			<ScheduleForm
+				{account}
+				cashAccounts={data.cashAccounts}
+				assets={[...data.securities, ...data.assets]}
+				schedule={editingSchedule}
+				onsaved={() => {
+					scheduleOpen = false;
+					refresh();
+				}}
+			/>
+		{/key}
+	</Dialog>
+
 	<Dialog bind:open={transferOpen} title="Transfer between accounts">
 		<TransferForm
 			{account}
@@ -165,10 +231,7 @@
 				<option value="SAVINGS">Savings account</option>
 				<option value="LOAN">Loan</option>
 			</SelectField>
-			<label class="flex items-center gap-2 text-sm">
-				<input type="checkbox" bind:checked={editEstimated} />
-				The balance is an estimate
-			</label>
+			<Checkbox bind:checked={editEstimated} label="The balance is an estimate" />
 			{#if editEstimated}
 				<TextField bind:value={editDeclared} label="Approximate balance" placeholder="e.g. 1500" required />
 				<p class="text-xs text-muted">
@@ -199,6 +262,66 @@
 
 	<div class="flex flex-col gap-6">
 		<StatStrip {stats} />
+		<Panel title="Expected cash flows">
+			{#snippet aside()}
+				<div class="flex items-center gap-3 text-xs">
+					{#if account.schedules.some((s) => s.books)}
+						<button class="text-muted hover:text-fg" onclick={bookNow} title="Write every due occurrence now; moneyd does this by itself a few times a day">Book due now</button>
+					{/if}
+					<button class="text-accent-fg hover:underline" onclick={() => openSchedule(null)}>+ Add</button>
+				</div>
+			{/snippet}
+			{#if account.schedules.length === 0}
+				<p class="text-sm text-muted">
+					Nothing recurring yet. A salary, a Sparrate, a loan's interest: ≈ estimates for the
+					cash-flow view, and booked for you when you switch that on.
+				</p>
+			{:else}
+				<table class="num w-full text-[13px]">
+					<tbody class="divide-y divide-line">
+						{#each account.schedules as s (s.id)}
+							{@const amount = amountHere(s)}
+							<tr>
+								<td class="py-2 pr-3">
+									<div class="font-medium">{s.displayName}</div>
+									<div class="text-xs text-muted">
+										{describeSchedule(s)} · {intervalLabel(s.interval)} on the {s.dayOfMonth}.{#if s.end}
+											· until {formatDate(s.end)}{/if}
+									</div>
+								</td>
+								<td class="py-2 pr-3 text-right tabular-nums {amount.amount > 0 ? 'text-pos' : ''}">
+									{formatSignedMoney(amount)}
+								</td>
+								<td class="py-2 pr-3 text-right text-xs text-muted whitespace-nowrap">
+									{#if s.nextDate}next {formatDate(s.nextDate)}{:else}ended{/if}
+								</td>
+								<td class="py-2 pr-3 text-right text-xs whitespace-nowrap">
+									{#if s.books}
+										<span class="text-muted">{s.booked} booked</span>
+										{#if s.unconfirmed.length > 0}
+											<span class="ml-1 rounded-full bg-accent-soft px-1.5 text-[11px] font-semibold text-accent-fg" title="Booked by the schedule; no statement has confirmed these yet">{s.unconfirmed.length} unconfirmed</span>
+										{/if}
+									{:else}
+										<span class="rounded-full bg-raised px-1.5 text-[11px] font-semibold text-muted">≈ estimate</span>
+									{/if}
+								</td>
+								<td class="py-2 text-right text-xs whitespace-nowrap">
+									<button class="text-muted hover:text-fg" onclick={() => openSchedule(s)}>Edit</button>
+									{#if deletingSchedule === s.id}
+										<button class="ml-2 text-neg hover:underline" onclick={() => removeSchedule(s.id)}>Really delete</button>
+										<button class="ml-2 text-muted hover:text-fg" onclick={() => (deletingSchedule = null)}>Keep</button>
+									{:else}
+										<button class="ml-2 text-muted hover:text-neg" onclick={() => (deletingSchedule = s.id)}>Delete</button>
+									{/if}
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+				<p class="text-xs text-muted">Booked transactions stay when a schedule is deleted.</p>
+			{/if}
+			<ErrorNote message={scheduleError} />
+		</Panel>
 		<ActivityFeed
 			{transactions}
 			securities={[...data.securities, ...data.assets]}

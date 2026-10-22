@@ -1,5 +1,5 @@
 import { graphql, query } from '#lib/graphql/client.js';
-import { ActivityTransaction } from '#lib/graphql/documents.js';
+import { ActivityTransaction, ScheduleFields } from '#lib/graphql/documents.js';
 import type { PageLoad } from './$types';
 
 const CashAccountDetail = graphql(
@@ -18,13 +18,14 @@ const CashAccountDetail = graphql(
 			balance { amount currency }
 			ledgerBalance { amount currency }
 				transactions { ...ActivityTransaction }
+				schedules { ...ScheduleFields }
 			}
 			securities { id displayName }
 			assets { id displayName }
 			cashAccounts { id displayName currency kind }
 		}
 	`,
-	[ActivityTransaction]
+	[ActivityTransaction, ScheduleFields]
 );
 
 export const load: PageLoad = async ({ fetch, params }) =>

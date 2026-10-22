@@ -14,6 +14,7 @@ const OverviewTransaction = graphql(`
 		cashAccount { displayName }
 		transferID
 		counterpart { id cashAccount { id displayName } }
+		schedule { id displayName }
 	}
 `);
 
