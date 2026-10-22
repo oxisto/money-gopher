@@ -6,13 +6,26 @@ interface DescribableTransaction {
 	asset: { displayName: string; kind?: string | null } | null;
 	/** The other leg of a transfer between own accounts, when it is one. */
 	counterpart?: { cashAccount: { displayName: string } | null } | null;
+	/** The schedule it is an occurrence of: its name becomes the title. */
+	schedule?: { displayName: string } | null;
 }
 
 /**
  * A plain-language title and an icon for a transaction, e.g. "Bought 25 ×
  * Allianz SE" — what activity lists show instead of the raw type code.
  */
-export function describeTransaction(tx: DescribableTransaction): { title: string; icon: IconName } {
+export function describeTransaction(tx: DescribableTransaction): {
+	title: string;
+	icon: IconName;
+	/** The generic description, when the title is a schedule's name. */
+	subtitle?: string;
+} {
+	// A scheduled occurrence goes by its schedule's name — "Sparrate",
+	// "Zinsen" — with the generic wording as the subtitle.
+	if (tx.schedule) {
+		const generic = describeTransaction({ ...tx, schedule: null });
+		return { title: tx.schedule.displayName, icon: generic.icon, subtitle: generic.title };
+	}
 	const name = tx.asset?.displayName ?? 'unknown asset';
 	const units = formatUnits(tx.units);
 	switch (tx.type) {

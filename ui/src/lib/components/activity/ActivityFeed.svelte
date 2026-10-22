@@ -304,7 +304,7 @@
 												{/if}
 											</span>
 											<span class="block truncate text-xs text-muted">
-												{[t.portfolio?.displayName ?? t.cashAccount?.displayName, t.price ? `${formatPrice(t.price, 4)} each` : null]
+												{[d.subtitle, t.portfolio?.displayName ?? t.cashAccount?.displayName, t.price ? `${formatPrice(t.price, 4)} each` : null]
 													.filter(Boolean)
 													.join(' · ')}
 											</span>
