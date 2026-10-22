@@ -1,0 +1,8 @@
+# The sqlc output counts every query function whether or not a test calls
+# it, which says nothing about the code we write. Hand-written files in the
+# package (persistence.go, decimal.go) are measured as usual.
+ignore:
+  - "internal/persistence/*.sql.go"
+  - "internal/persistence/models.go"
+  - "internal/persistence/db.go"
+  - "legacy"
