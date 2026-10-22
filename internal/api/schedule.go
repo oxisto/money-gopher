@@ -796,15 +796,18 @@ func adoptOccurrence(ctx context.Context, db *persistence.DB, s *persistence.Sch
 	if err != nil {
 		return false, err
 	}
-	nameKey := schedule.CounterpartyKey(s.DisplayName)
+	parties, err := scheduleParties(ctx, db, s)
+	if err != nil {
+		return false, err
+	}
 	var candidates []*persistence.Transaction
 	for _, c := range all {
 		if c.CashDelta == cashDelta {
 			candidates = append(candidates, c)
 			continue
 		}
-		if c.Note.Valid && nameKey != "" {
-			if key, _ := schedule.Counterparty(c.Note.String); key == nameKey {
+		if c.Note.Valid {
+			if key, _ := schedule.Counterparty(c.Note.String); parties[key] {
 				candidates = append(candidates, c)
 			}
 		}
@@ -812,9 +815,18 @@ func adoptOccurrence(ctx context.Context, db *persistence.DB, s *persistence.Sch
 	if len(candidates) == 0 {
 		return false, nil
 	}
+	// The closest in time; on the same day, the closest in amount — the
+	// salary rather than the travel refund paid alongside it.
+	absAmount := func(a int64) int64 {
+		if a < 0 {
+			return -a
+		}
+		return a
+	}
 	tx := candidates[0]
-	for _, c := range candidates { // the closest one
-		if abs(c.Time.Sub(date)) < abs(tx.Time.Sub(date)) {
+	for _, c := range candidates[1:] {
+		dc, dt := abs(c.Time.Sub(date)), abs(tx.Time.Sub(date))
+		if dc < dt || dc == dt && absAmount(c.CashDelta-cashDelta) < absAmount(tx.CashDelta-cashDelta) {
 			tx = c
 		}
 	}
@@ -834,6 +846,29 @@ func adoptOccurrence(ctx context.Context, db *persistence.DB, s *persistence.Sch
 		}
 		return nil
 	})
+}
+
+// scheduleParties is who the schedule's money comes from or goes to: the
+// counterparties named on its occurrences so far, plus its own name. A
+// schedule called "Gehalt" learns the employer from the first statement
+// row it adopts.
+func scheduleParties(ctx context.Context, db *persistence.DB, s *persistence.Schedule) (map[string]bool, error) {
+	parties := map[string]bool{}
+	if key := schedule.CounterpartyKey(s.DisplayName); key != "" {
+		parties[key] = true
+	}
+	txs, err := db.ListTransactionsBySchedule(ctx, sql.NullString{String: s.ID, Valid: true})
+	if err != nil {
+		return nil, err
+	}
+	for _, tx := range txs {
+		if tx.Note.Valid {
+			if key, _ := schedule.Counterparty(tx.Note.String); key != "" {
+				parties[key] = true
+			}
+		}
+	}
+	return parties, nil
 }
 
 // deleteBookings removes a schedule's own bookings for one occurrence,

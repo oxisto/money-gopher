@@ -417,7 +417,9 @@ func TestSchedule_AdoptsByCounterparty(t *testing.T) {
 		t.Fatalf("Giro after the statement = %v, want 1755000", h.balance(giro))
 	}
 
-	gehalt := createSchedule(t, h, fmt.Sprintf(`displayName: "Musterfirma GmbH", type: DEPOSIT_CASH, interval: MONTHLY, dayOfMonth: 28,
+	// Named "Gehalt", not after the employer: the schedule learns the
+	// payer from the rows it adopts by amount.
+	gehalt := createSchedule(t, h, fmt.Sprintf(`displayName: "Gehalt", type: DEPOSIT_CASH, interval: MONTHLY, dayOfMonth: 28,
 		start: "2026-05-01T00:00:00Z", end: "2026-08-31T00:00:00Z", cashAccountID: %q, books: true,
 		steps: [{ from: "2026-05-01T00:00:00Z", amount: 485000 }]`, giro))
 	// May and June by amount, July by counterparty; August booked as usual.
