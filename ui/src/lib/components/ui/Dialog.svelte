@@ -32,9 +32,9 @@
 	bind:this={dialog}
 	onclose={close}
 	onclick={(e) => e.target === dialog && close()}
-	class="m-auto w-full {wide ? 'max-w-2xl' : 'max-w-md'} rounded-xl border border-line bg-surface p-0 text-fg shadow-2xl backdrop:bg-black/40"
+	class="m-auto flex w-full {wide ? 'max-w-2xl' : 'max-w-md'} max-h-[calc(100dvh-2rem)] flex-col rounded-xl border border-line bg-surface p-0 text-fg shadow-2xl backdrop:bg-black/40 not-open:hidden"
 >
-	<div class="flex items-center justify-between border-b border-line px-5 py-3.5">
+	<div class="flex shrink-0 items-center justify-between border-b border-line px-5 py-3.5">
 		<h2 class="font-semibold">{title}</h2>
 		<button
 			type="button"
@@ -45,7 +45,9 @@
 			<Icon name="close" />
 		</button>
 	</div>
-	<div class="px-5 py-4">
+	<!-- A form taller than the window scrolls here instead of overflowing
+	     the viewport, where its bottom could not be reached. -->
+	<div class="min-h-0 overflow-y-auto px-5 py-4">
 		{@render children()}
 	</div>
 </dialog>
