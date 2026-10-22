@@ -385,6 +385,26 @@ func TestImportLBSBundle(t *testing.T) {
 	if got := balance(loan); got != -5014546 {
 		t.Errorf("loan balance = %v, want -5014546", got)
 	}
+	// The Giro's statement later lists one of those Lastschriften: the leg
+	// the LBS bundle created gets the Giro statement as a second document
+	// instead of a double.
+	exec(t, schema, ctx, `mutation ($id: ID!) { updateCashAccount(id: $id, input: { iban: "DE02120300000000202051" }) { id } }`, map[string]any{"id": giro})
+	giroDoc, err := svc.Upload(ctx, person.ID, "giro.txt", "text/plain", []byte("ING-DiBa AG\nKontoauszug 2025\nIBAN DE02 1203 0000 0000 2020 51\n"+
+		"Buchung      Buchung / Verwendungszweck                                     Betrag (EUR)\nValuta\n\n"+
+		"03.02.2025                 Lastschrifteinzug LBS SUED                                        -200,00\n"))
+	if err != nil {
+		t.Fatalf("Upload: %v", err)
+	}
+	if err := svc.Process(ctx, giroDoc.ID, person.ID); err != nil {
+		t.Fatalf("Process: %v", err)
+	}
+	data = exec(t, schema, ctx, `mutation ($id: ID!, $acct: ID!) {
+		confirmImport(documentID: $id, input: { cashAccountID: $acct, transactions: [] }) { type transferID documents { filename } }
+	}`, map[string]any{"id": giroDoc.ID, "acct": giro})
+	if got := data["confirmImport"].([]any); len(got) != 1 || got[0].(map[string]any)["transferID"] == nil || len(got[0].(map[string]any)["documents"].([]any)) != 2 {
+		t.Errorf("Giro statement confirm = %v, want the existing leg with the LBS bundle and the Giro statement", got)
+	}
+
 	// The Giro is an estimate: it keeps its declared balance while its
 	// ledger shows the 3 × 200 + 125 that left it.
 	data = exec(t, schema, ctx, `query ($id: ID!) { cashAccount(id: $id) { balance { amount } ledgerBalance { amount } } }`, map[string]any{"id": giro})

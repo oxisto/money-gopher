@@ -201,6 +201,16 @@ CREATE TABLE schedule_steps (
     PRIMARY KEY (schedule_id, from_date)
 );
 
+-- Every document that describes a transaction: the one it was imported
+-- from (also transactions.document_id) and every statement that confirmed
+-- it since. Migration 0019.
+CREATE TABLE transaction_documents (
+    transaction_id TEXT      NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
+    document_id    TEXT      NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    linked_at      TIMESTAMP NOT NULL DEFAULT (now()),
+    PRIMARY KEY (transaction_id, document_id)
+);
+
 CREATE TABLE staged_transactions (
     id            TEXT     PRIMARY KEY,
     document_id   TEXT     NOT NULL REFERENCES documents(id) ON DELETE CASCADE,

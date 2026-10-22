@@ -23,7 +23,7 @@ const TransactionDetail = graphql(`
 				displayName
 				identifiers { kind value }
 			}
-			document {
+			documents {
 				id
 				filename
 				contentType

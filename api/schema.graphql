@@ -353,8 +353,14 @@ type Transaction {
   fxRate: Decimal
   "Provenance of this transaction, e.g. 'MANUAL' or an import kind."
   source: String!
-  "The document this transaction was imported from; null for manual entries."
+  "The first of documents; null for manual entries nothing has confirmed."
   document: Document
+  """
+  Every document describing this transaction: the one it was imported
+  from, and each statement that confirmed it since. A transfer leg seen
+  by two banks has both their statements.
+  """
+  documents: [Document!]!
   """
   Free text: what the statement printed for the row, or what you wrote.
   Lists show it as the title when set, before a schedule's name and the

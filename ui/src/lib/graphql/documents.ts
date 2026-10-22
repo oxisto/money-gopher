@@ -23,6 +23,7 @@ export const ActivityTransaction = graphql(`
 		portfolio { id displayName }
 		cashAccount { id displayName }
 		document { id filename }
+		documents { id filename }
 		transferID
 		counterpart { id cashAccount { id displayName } }
 		scheduleID

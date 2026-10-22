@@ -11,37 +11,34 @@ import (
 	"time"
 )
 
-const confirmScheduledTransaction = `-- name: ConfirmScheduledTransaction :one
+const confirmTransaction = `-- name: ConfirmTransaction :one
 UPDATE transactions
 SET
     time = ?,
     fees = ?,
     taxes = ?,
     cash_delta = ?,
-    document_id = ?,
     source = ?
 WHERE
     id = ? RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for, note
 `
 
-type ConfirmScheduledTransactionParams struct {
-	Time       time.Time
-	Fees       int64
-	Taxes      int64
-	CashDelta  int64
-	DocumentID sql.NullString
-	Source     string
-	ID         string
+type ConfirmTransactionParams struct {
+	Time      time.Time
+	Fees      int64
+	Taxes     int64
+	CashDelta int64
+	Source    string
+	ID        string
 }
 
-// A statement row confirms a scheduled booking: the bank's date and amounts win.
-func (q *Queries) ConfirmScheduledTransaction(ctx context.Context, arg ConfirmScheduledTransactionParams) (*Transaction, error) {
-	row := q.db.QueryRowContext(ctx, confirmScheduledTransaction,
+// A statement row confirms a booking: the bank's date and amounts win.
+func (q *Queries) ConfirmTransaction(ctx context.Context, arg ConfirmTransactionParams) (*Transaction, error) {
+	row := q.db.QueryRowContext(ctx, confirmTransaction,
 		arg.Time,
 		arg.Fees,
 		arg.Taxes,
 		arg.CashDelta,
-		arg.DocumentID,
 		arg.Source,
 		arg.ID,
 	)
@@ -379,6 +376,72 @@ func (q *Queries) ListAdoptableTransactions(ctx context.Context, arg ListAdoptab
 	return items, nil
 }
 
+const listConfirmableTransactions = `-- name: ListConfirmableTransactions :many
+SELECT
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for, note
+FROM
+    transactions
+WHERE
+    cash_account_id = ?
+    AND type = ?
+    AND (
+        schedule_id IS NOT NULL
+        OR transfer_id IS NOT NULL
+    )
+`
+
+type ListConfirmableTransactionsParams struct {
+	CashAccountID sql.NullString
+	Type          string
+}
+
+// What a statement row may confirm on this account: a schedule's booking
+// or a transfer leg, whether or not another document describes it already.
+func (q *Queries) ListConfirmableTransactions(ctx context.Context, arg ListConfirmableTransactionsParams) ([]*Transaction, error) {
+	rows, err := q.db.QueryContext(ctx, listConfirmableTransactions, arg.CashAccountID, arg.Type)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Time,
+			&i.PortfolioID,
+			&i.SecurityID,
+			&i.CashAccountID,
+			&i.Units,
+			&i.Price,
+			&i.Fees,
+			&i.Taxes,
+			&i.CashDelta,
+			&i.Currency,
+			&i.Source,
+			&i.CreatedAt,
+			&i.DocumentID,
+			&i.PriceCurrency,
+			&i.FxRate,
+			&i.TransferID,
+			&i.ScheduleID,
+			&i.ScheduledFor,
+			&i.Note,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTransactionsByCashAccount = `-- name: ListTransactionsByCashAccount :many
 SELECT
     id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for, note
@@ -437,16 +500,18 @@ func (q *Queries) ListTransactionsByCashAccount(ctx context.Context, cashAccount
 
 const listTransactionsByDocument = `-- name: ListTransactionsByDocument :many
 SELECT
-    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for, note
+    transactions.id, transactions.type, transactions.time, transactions.portfolio_id, transactions.security_id, transactions.cash_account_id, transactions.units, transactions.price, transactions.fees, transactions.taxes, transactions.cash_delta, transactions.currency, transactions.source, transactions.created_at, transactions.document_id, transactions.price_currency, transactions.fx_rate, transactions.transfer_id, transactions.schedule_id, transactions.scheduled_for, transactions.note
 FROM
     transactions
+    JOIN transaction_documents ON transaction_documents.transaction_id = transactions.id
 WHERE
-    document_id = ?
+    transaction_documents.document_id = ?
 ORDER BY
-    time
+    transactions.time
 `
 
-func (q *Queries) ListTransactionsByDocument(ctx context.Context, documentID sql.NullString) ([]*Transaction, error) {
+// Every transaction the document describes: imported from it, or confirmed by it.
+func (q *Queries) ListTransactionsByDocument(ctx context.Context, documentID string) ([]*Transaction, error) {
 	rows, err := q.db.QueryContext(ctx, listTransactionsByDocument, documentID)
 	if err != nil {
 		return nil, err
@@ -621,69 +686,6 @@ type ListTransactionsByScheduleOccurrenceParams struct {
 // The transaction(s) a schedule booked for one occurrence: both legs of a transfer.
 func (q *Queries) ListTransactionsByScheduleOccurrence(ctx context.Context, arg ListTransactionsByScheduleOccurrenceParams) ([]*Transaction, error) {
 	rows, err := q.db.QueryContext(ctx, listTransactionsByScheduleOccurrence, arg.ScheduleID, arg.ScheduledFor)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []*Transaction
-	for rows.Next() {
-		var i Transaction
-		if err := rows.Scan(
-			&i.ID,
-			&i.Type,
-			&i.Time,
-			&i.PortfolioID,
-			&i.SecurityID,
-			&i.CashAccountID,
-			&i.Units,
-			&i.Price,
-			&i.Fees,
-			&i.Taxes,
-			&i.CashDelta,
-			&i.Currency,
-			&i.Source,
-			&i.CreatedAt,
-			&i.DocumentID,
-			&i.PriceCurrency,
-			&i.FxRate,
-			&i.TransferID,
-			&i.ScheduleID,
-			&i.ScheduledFor,
-			&i.Note,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listUnconfirmedScheduledTransactions = `-- name: ListUnconfirmedScheduledTransactions :many
-SELECT
-    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for, note
-FROM
-    transactions
-WHERE
-    cash_account_id = ?
-    AND type = ?
-    AND schedule_id IS NOT NULL
-    AND document_id IS NULL
-`
-
-type ListUnconfirmedScheduledTransactionsParams struct {
-	CashAccountID sql.NullString
-	Type          string
-}
-
-// Booked by a schedule on this account, not yet confirmed by a statement.
-func (q *Queries) ListUnconfirmedScheduledTransactions(ctx context.Context, arg ListUnconfirmedScheduledTransactionsParams) ([]*Transaction, error) {
-	rows, err := q.db.QueryContext(ctx, listUnconfirmedScheduledTransactions, arg.CashAccountID, arg.Type)
 	if err != nil {
 		return nil, err
 	}

@@ -157,7 +157,7 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 		// real-world event") lets confirming safely reconcile a transaction
 		// in place — picking up whatever the newer parser now gets right, e.g.
 		// FX precision or a security match — instead of creating a duplicate.
-		existingForDoc, err := q.ListTransactionsByDocument(ctx, sql.NullString{String: doc.ID, Valid: true})
+		existingForDoc, err := q.ListTransactionsByDocument(ctx, doc.ID)
 		if err != nil {
 			return err
 		}
@@ -263,11 +263,13 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 				}
 			}
 
-			// A statement row a schedule already booked (same account,
-			// type and amount, within a week) confirms that booking: the
-			// bank's date and amounts win, nothing is created twice.
+			// A statement row that a schedule booked or a transfer wrote
+			// (same account, type and amount, within a week) confirms that
+			// transaction: the bank's date and amounts win, the document is
+			// linked, nothing is created twice. A leg seen by both banks
+			// ends up with both statements.
 			if d.CashAccountID != nil {
-				candidates, err := q.ListUnconfirmedScheduledTransactions(ctx, persistence.ListUnconfirmedScheduledTransactionsParams{
+				candidates, err := q.ListConfirmableTransactions(ctx, persistence.ListConfirmableTransactionsParams{
 					CashAccountID: nullString(d.CashAccountID),
 					Type:          d.Type,
 				})
@@ -295,16 +297,18 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 						if len(hits) == 1 {
 							cashDelta = d.CashDelta // the bank's amount wins
 						}
-						tx, err := q.ConfirmScheduledTransaction(ctx, persistence.ConfirmScheduledTransactionParams{
-							Time:       d.Time,
-							Fees:       hit.Fees,
-							Taxes:      hit.Taxes,
-							CashDelta:  cashDelta,
-							DocumentID: sql.NullString{String: doc.ID, Valid: true},
-							Source:     source,
-							ID:         hit.ID,
+						tx, err := q.ConfirmTransaction(ctx, persistence.ConfirmTransactionParams{
+							Time:      d.Time,
+							Fees:      hit.Fees,
+							Taxes:     hit.Taxes,
+							CashDelta: cashDelta,
+							Source:    source,
+							ID:        hit.ID,
 						})
 						if err != nil {
+							return err
+						}
+						if err := q.LinkTransactionDocument(ctx, persistence.LinkTransactionDocumentParams{TransactionID: hit.ID, DocumentID: doc.ID}); err != nil {
 							return err
 						}
 						if err := mirrorOntoCounterpart(ctx, q, hit, d.Time, -cashDelta); err != nil {
@@ -376,9 +380,13 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 			if err != nil {
 				return err
 			}
+			if err := q.LinkTransactionDocument(ctx, persistence.LinkTransactionDocumentParams{TransactionID: tx.ID, DocumentID: doc.ID}); err != nil {
+				return err
+			}
 			if leg != nil {
+				legID := uuid.NewString()
 				if _, err := q.CreateTransaction(ctx, persistence.CreateTransactionParams{
-					ID:            uuid.NewString(),
+					ID:            legID,
 					TransferID:    transferID,
 					Type:          leg.Type,
 					Time:          leg.Time,
@@ -388,6 +396,9 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 					Source:        source,
 					DocumentID:    sql.NullString{String: doc.ID, Valid: true},
 				}); err != nil {
+					return err
+				}
+				if err := q.LinkTransactionDocument(ctx, persistence.LinkTransactionDocumentParams{TransactionID: legID, DocumentID: doc.ID}); err != nil {
 					return err
 				}
 			}
@@ -444,7 +455,7 @@ func (r *StagedTransactionResolver) Confirms(ctx context.Context) ([]*Transactio
 	if err != nil || account == nil {
 		return []*TransactionResolver{}, err
 	}
-	candidates, err := r.db.ListUnconfirmedScheduledTransactions(ctx, persistence.ListUnconfirmedScheduledTransactionsParams{
+	candidates, err := r.db.ListConfirmableTransactions(ctx, persistence.ListConfirmableTransactionsParams{
 		CashAccountID: sql.NullString{String: account.ID, Valid: true},
 		Type:          r.tx.Type,
 	})
@@ -453,9 +464,16 @@ func (r *StagedTransactionResolver) Confirms(ctx context.Context) ([]*Transactio
 	}
 	var near []*persistence.Transaction
 	for _, c := range candidates {
-		if diff := c.Time.Sub(r.tx.Time); diff >= -7*24*time.Hour && diff <= 7*24*time.Hour {
-			near = append(near, c)
+		if diff := c.Time.Sub(r.tx.Time); diff < -7*24*time.Hour || diff > 7*24*time.Hour {
+			continue
 		}
+		// Already this document's: a re-analysis reconciles it in place.
+		if linked, err := r.linkedToThisDocument(ctx, c); err != nil {
+			return nil, err
+		} else if linked {
+			continue
+		}
+		near = append(near, c)
 	}
 	out := []*TransactionResolver{}
 	for _, hit := range pooledBookings(near, r.tx.CashDelta) {
@@ -481,17 +499,34 @@ func (r *StagedTransactionResolver) DuplicateOf(ctx context.Context) (*Transacti
 		if diff := tx.Time.Sub(r.tx.Time); diff < -3*24*time.Hour || diff > 3*24*time.Hour {
 			continue
 		}
-		// This document's own earlier import reconciles in place; an
-		// unconfirmed booking is what the row confirms, not a double.
-		if tx.DocumentID.Valid && tx.DocumentID.String == r.doc.ID {
+		// A booking or a transfer leg is what the row confirms, not a
+		// double; this document's own earlier import reconciles in place.
+		if tx.ScheduleID.Valid || tx.TransferID.Valid {
 			continue
 		}
-		if tx.ScheduleID.Valid && !tx.DocumentID.Valid {
+		if linked, err := r.linkedToThisDocument(ctx, tx); err != nil {
+			return nil, err
+		} else if linked {
 			continue
 		}
 		return &TransactionResolver{db: r.db, transaction: tx}, nil
 	}
 	return nil, nil
+}
+
+// linkedToThisDocument reports whether the staged row's own document
+// already describes tx.
+func (r *StagedTransactionResolver) linkedToThisDocument(ctx context.Context, tx *persistence.Transaction) (bool, error) {
+	docs, err := r.db.ListTransactionDocuments(ctx, tx.ID)
+	if err != nil {
+		return false, err
+	}
+	for _, d := range docs {
+		if d.ID == r.doc.ID {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // pooledBookings picks the bookings a statement row confirms: the first
@@ -638,7 +673,7 @@ func (r *DocumentResolver) SuggestedCashAccount(ctx context.Context) (*CashAccou
 // transactions that came from this document; see the schema doc comment
 // for why this matters before re-confirming a reprocessed document.
 func (r *DocumentResolver) Transactions(ctx context.Context) ([]*TransactionResolver, error) {
-	transactions, err := r.db.ListTransactionsByDocument(ctx, sql.NullString{String: r.doc.ID, Valid: true})
+	transactions, err := r.db.ListTransactionsByDocument(ctx, r.doc.ID)
 	if err != nil {
 		return nil, err
 	}

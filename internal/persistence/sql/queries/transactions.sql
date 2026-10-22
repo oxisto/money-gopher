@@ -53,14 +53,16 @@ ORDER BY
     time DESC;
 
 -- name: ListTransactionsByDocument :many
+-- Every transaction the document describes: imported from it, or confirmed by it.
 SELECT
-    *
+    transactions.*
 FROM
     transactions
+    JOIN transaction_documents ON transaction_documents.transaction_id = transactions.id
 WHERE
-    document_id = ?
+    transaction_documents.document_id = ?
 ORDER BY
-    time;
+    transactions.time;
 
 -- name: UpdateTransactionFromImport :one
 -- ConfirmImport's reconciliation update; also refreshes FX fields, unlike UpdateTransaction.
@@ -140,8 +142,9 @@ WHERE
 ORDER BY
     scheduled_for;
 
--- name: ListUnconfirmedScheduledTransactions :many
--- Booked by a schedule on this account, not yet confirmed by a statement.
+-- name: ListConfirmableTransactions :many
+-- What a statement row may confirm on this account: a schedule's booking
+-- or a transfer leg, whether or not another document describes it already.
 SELECT
     *
 FROM
@@ -149,18 +152,19 @@ FROM
 WHERE
     cash_account_id = ?
     AND type = ?
-    AND schedule_id IS NOT NULL
-    AND document_id IS NULL;
+    AND (
+        schedule_id IS NOT NULL
+        OR transfer_id IS NOT NULL
+    );
 
--- name: ConfirmScheduledTransaction :one
--- A statement row confirms a scheduled booking: the bank's date and amounts win.
+-- name: ConfirmTransaction :one
+-- A statement row confirms a booking: the bank's date and amounts win.
 UPDATE transactions
 SET
     time = ?,
     fees = ?,
     taxes = ?,
     cash_delta = ?,
-    document_id = ?,
     source = ?
 WHERE
     id = ? RETURNING *;
