@@ -641,6 +641,41 @@ type ScheduleSuggestion {
   covered: Boolean!
 }
 
+"""
+One month of the household's cash flow as the schedules expect it, seen
+from the cash accounts: money in, money out, money moved into savings
+or investments, and what is left. A loan's interest counts once, as the
+payment from the Giro. Actuals are the real movements on the tracked
+cash accounts, null for a month not over yet or without such an account.
+"""
+type CashFlowMonth {
+  "The first of the month."
+  month: Time!
+  "Salary, rent, dividends and interest expected on the cash accounts."
+  expectedIn: Money!
+  "Card bills, fees and loan payments expected to leave them."
+  expectedOut: Money!
+  "Sparraten: moved into savings, not spent."
+  expectedSaved: Money!
+  "expectedIn − expectedOut − expectedSaved."
+  expectedFree: Money!
+  "The occurrences behind the numbers, by date."
+  flows: [ExpectedFlow!]!
+  actualIn: Money
+  actualOut: Money
+  "Transfers into savings and trades paid from the account."
+  actualSaved: Money
+  actualFree: Money
+}
+
+"The cash-flow view: a window of months, and the schedules behind them."
+type CashFlow {
+  currency: String!
+  from: Time!
+  months: [CashFlowMonth!]!
+  schedules: [Schedule!]!
+}
+
 "One occurrence of a schedule."
 type ExpectedFlow {
   schedule: Schedule!
@@ -709,6 +744,12 @@ type Query {
   schedule(id: ID!): Schedule
   "Every schedule's occurrences with from <= date < to, by date."
   expectedFlows(from: Time!, to: Time!): [ExpectedFlow!]!
+  """
+  The household's monthly cash flow as the schedules expect it, from the
+  first of the month of from (default: five months back) for months
+  (default 12, at most 60).
+  """
+  cashFlow(from: Time, months: Int): CashFlow!
   "Listed instruments, shared by everyone on this server."
   securities: [Asset!]!
   "The active person's own assets: the office room, the car, a loan given."
