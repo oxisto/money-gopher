@@ -66,10 +66,41 @@ func ingKontoHasISINContinuation(lines []string, from int) bool {
 	return false
 }
 
+// ingKontoDated matches the Valuta line under a row: the value date, then
+// the first line of the Verwendungszweck (or nothing).
+var ingKontoDated = regexp.MustCompile(`^\s*\d{2}\.\d{2}\.\d{4}\s*(.*?)\s*$`)
+
+// ingKontoPurpose gathers the Verwendungszweck printed under a row: the
+// text on its Valuta line and the wrapped lines after it, up to the next
+// row or a blank line (a page break). SEPA boilerplate — the Referenz and
+// Mandat lines — is left out.
+func ingKontoPurpose(lines []string, from int) string {
+	var parts []string
+	for j := from; j < len(lines); j++ {
+		line := lines[j]
+		if strings.TrimSpace(line) == "" || ingKontoRow.MatchString(line) {
+			break
+		}
+		text := strings.TrimSpace(line)
+		if m := ingKontoDated.FindStringSubmatch(line); m != nil {
+			if j != from {
+				break // the next row's Valuta line
+			}
+			text = m[1]
+		}
+		if text == "" || strings.HasPrefix(text, "Referenz:") || strings.HasPrefix(text, "Mandat") {
+			continue
+		}
+		parts = append(parts, text)
+	}
+	return strings.Join(parts, " ")
+}
+
 // ingKontoRawRow is one matched, not-yet-filtered ledger line.
 type ingKontoRawRow struct {
 	dateStr string
 	desc    string
+	purpose string
 	amount  int64
 }
 
@@ -142,7 +173,7 @@ func ingParseKontoauszug(text string) ([]StagedTransaction, error) {
 			continue
 		}
 
-		rows = append(rows, ingKontoRawRow{dateStr: m[1], desc: desc, amount: amount})
+		rows = append(rows, ingKontoRawRow{dateStr: m[1], desc: desc, purpose: ingKontoPurpose(lines, i+1), amount: amount})
 	}
 
 	// Second pass: for each date, sum any withholding-tax rows and fold them
@@ -212,7 +243,7 @@ func ingParseKontoauszug(text string) ([]StagedTransaction, error) {
 			Taxes:          taxes,
 			Currency:       "EUR",
 			SettlementIBAN: iban,
-			Note:           strings.TrimSpace(r.desc),
+			Note:           ingKontoNote(r),
 		})
 	}
 
@@ -220,4 +251,14 @@ func ingParseKontoauszug(text string) ([]StagedTransaction, error) {
 		return nil, fmt.Errorf("no transactions found in Kontoauszug")
 	}
 	return out, nil
+}
+
+// ingKontoNote is the row as the statement words it: the Buchungsart and
+// counterparty, then the Verwendungszweck.
+func ingKontoNote(r ingKontoRawRow) string {
+	desc := strings.TrimSpace(r.desc)
+	if r.purpose == "" {
+		return desc
+	}
+	return desc + " · " + r.purpose
 }
