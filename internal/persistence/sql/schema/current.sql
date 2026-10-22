@@ -47,7 +47,7 @@ CREATE TABLE cash_accounts (
     -- estimate, its transactions do not move the balance. Migration 0013.
     estimated_balance INTEGER,
     estimated_at      TIMESTAMP,
-    -- An account or contract number that is not an IBAN. Migration 0015.
+    -- An account or contract number that is not an IBAN. Migration 0016.
     reference         TEXT
 );
 
