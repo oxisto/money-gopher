@@ -496,6 +496,18 @@ type StagedTransaction {
   accountHint: String
   "The statement's own wording for the row."
   note: String
+  """
+  Bookings on the suggested cash account this row will confirm instead of
+  being imported as a new transaction: one of its amount, or a few that
+  add up to it when the bank pooled several debits into one.
+  """
+  confirms: [Transaction!]!
+  """
+  A transaction already in the books on the suggested cash account with
+  this type, amount and date (within three days), from another document or
+  entered by hand: importing the row would double it.
+  """
+  duplicateOf: Transaction
 }
 
 "The kind of cash flow a schedule produces."

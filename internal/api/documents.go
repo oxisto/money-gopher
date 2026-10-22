@@ -23,8 +23,9 @@ type DocumentResolver struct {
 
 // StagedTransactionResolver resolves the StagedTransaction GraphQL type.
 type StagedTransactionResolver struct {
-	db *persistence.DB
-	tx *persistence.StagedTransaction
+	db  *persistence.DB
+	tx  *persistence.StagedTransaction
+	doc *persistence.Document
 }
 
 // Documents resolves Query.documents.
@@ -422,6 +423,75 @@ func firstID(ids ...*graphql.ID) *string {
 	return nil
 }
 
+// suggestedAccount is the document's suggested cash account, where the
+// row would land by default; nil without one.
+func (r *StagedTransactionResolver) suggestedAccount(ctx context.Context) (*persistence.CashAccount, error) {
+	if r.doc == nil {
+		return nil, nil
+	}
+	suggested, err := (&DocumentResolver{db: r.db, doc: r.doc}).SuggestedCashAccount(ctx)
+	if err != nil || suggested == nil {
+		return nil, err
+	}
+	return suggested.account, nil
+}
+
+// Confirms resolves StagedTransaction.confirms.
+func (r *StagedTransactionResolver) Confirms(ctx context.Context) ([]*TransactionResolver, error) {
+	account, err := r.suggestedAccount(ctx)
+	if err != nil || account == nil {
+		return []*TransactionResolver{}, err
+	}
+	candidates, err := r.db.ListUnconfirmedScheduledTransactions(ctx, persistence.ListUnconfirmedScheduledTransactionsParams{
+		CashAccountID: sql.NullString{String: account.ID, Valid: true},
+		Type:          r.tx.Type,
+	})
+	if err != nil {
+		return nil, err
+	}
+	var near []*persistence.Transaction
+	for _, c := range candidates {
+		if diff := c.Time.Sub(r.tx.Time); diff >= -7*24*time.Hour && diff <= 7*24*time.Hour {
+			near = append(near, c)
+		}
+	}
+	out := []*TransactionResolver{}
+	for _, hit := range pooledBookings(near, r.tx.CashDelta) {
+		out = append(out, &TransactionResolver{db: r.db, transaction: hit})
+	}
+	return out, nil
+}
+
+// DuplicateOf resolves StagedTransaction.duplicateOf.
+func (r *StagedTransactionResolver) DuplicateOf(ctx context.Context) (*TransactionResolver, error) {
+	account, err := r.suggestedAccount(ctx)
+	if err != nil || account == nil {
+		return nil, err
+	}
+	txs, err := r.db.ListTransactionsByCashAccount(ctx, sql.NullString{String: account.ID, Valid: true})
+	if err != nil {
+		return nil, err
+	}
+	for _, tx := range txs {
+		if tx.Type != r.tx.Type || tx.CashDelta != r.tx.CashDelta {
+			continue
+		}
+		if diff := tx.Time.Sub(r.tx.Time); diff < -3*24*time.Hour || diff > 3*24*time.Hour {
+			continue
+		}
+		// This document's own earlier import reconciles in place; an
+		// unconfirmed booking is what the row confirms, not a double.
+		if tx.DocumentID.Valid && tx.DocumentID.String == r.doc.ID {
+			continue
+		}
+		if tx.ScheduleID.Valid && !tx.DocumentID.Valid {
+			continue
+		}
+		return &TransactionResolver{db: r.db, transaction: tx}, nil
+	}
+	return nil, nil
+}
+
 // pooledBookings picks the bookings a statement row confirms: the first
 // one of exactly its amount, else the smallest set (up to three) whose
 // amounts add up to it, else none.
@@ -521,7 +591,7 @@ func (r *DocumentResolver) StagedTransactions(ctx context.Context) ([]*StagedTra
 	}
 	resolvers := make([]*StagedTransactionResolver, len(txs))
 	for i, tx := range txs {
-		resolvers[i] = &StagedTransactionResolver{db: r.db, tx: tx}
+		resolvers[i] = &StagedTransactionResolver{db: r.db, tx: tx, doc: r.doc}
 	}
 	return resolvers, nil
 }

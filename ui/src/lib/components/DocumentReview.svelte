@@ -28,6 +28,8 @@
 		asset: { id: string; displayName: string } | null;
 		accountHint?: string | null;
 		note?: string | null;
+		confirms?: { id: string; schedule: { displayName: string } | null }[];
+		duplicateOf?: { id: string; source: string; document: { filename: string } | null } | null;
 	}
 	interface Document {
 		id: string;
@@ -148,7 +150,9 @@
 	let assetOverrides = $state<Record<string, string>>({});
 	// Rows left out of the import: a movement another document already
 	// covers, or one that does not belong.
-	let skipped = $state<Record<string, boolean>>({});
+	let skipped = $state<Record<string, boolean>>(
+		Object.fromEntries(doc.stagedTransactions.filter((tx) => tx.duplicateOf).map((tx) => [tx.id, true]))
+	);
 	const selectedCount = $derived(doc.stagedTransactions.filter((tx) => !skipped[tx.id]).length);
 	let localSecurities = $state<Security[]>([]);
 	let createDialog = $state<{
@@ -406,6 +410,15 @@
 									</span>
 									{#if tx.note}
 										<span class="block max-w-[220px] truncate text-xs text-muted" title={tx.note}>{tx.note}</span>
+									{/if}
+									{#if tx.confirms && tx.confirms.length > 0}
+										<span class="block text-xs text-pos" title="Already expected; the row attaches this statement to the booking instead of adding a transaction">
+											✓ confirms {tx.confirms.map((c) => c.schedule?.displayName ?? 'a booking').join(', ')}
+										</span>
+									{:else if tx.duplicateOf}
+										<span class="block text-xs text-gold" title="A transaction with this type, amount and date is already on the account">
+											already in the books{tx.duplicateOf.document ? ` · ${tx.duplicateOf.document.filename}` : tx.duplicateOf.source === 'MANUAL' ? ' · entered by hand' : ''}
+										</span>
 									{/if}
 								</td>
 								<td class="px-2 py-2 max-w-[220px]">
