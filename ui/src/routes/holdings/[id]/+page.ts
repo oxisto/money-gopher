@@ -9,6 +9,7 @@ const HoldingDetail = graphql(
 				id
 				displayName
 				kind
+				owner { id }
 				identifiers { kind value }
 				underlyingSecurity { id displayName }
 				listings {

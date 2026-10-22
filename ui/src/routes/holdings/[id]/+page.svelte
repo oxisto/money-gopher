@@ -8,7 +8,8 @@
 	import Icon from '#lib/components/ui/Icon.svelte';
 	import TextField from '#lib/components/ui/TextField.svelte';
 	import { graphql, mutate } from '#lib/graphql/client.js';
-	import { kindLabel, type SecurityKind } from '#lib/securities.js';
+	import SelectField from '#lib/components/ui/SelectField.svelte';
+	import { asKind, handValuedKinds, kindLabel, type SecurityKind } from '#lib/securities.js';
 	import { describeTransaction, formatUnits } from '#lib/describe.js';
 	import {
 		formatDate,
@@ -36,6 +37,46 @@
 			}
 		}
 	`);
+	// A personal asset is edited here, not on the Securities page, which
+	// lists the shared instruments only.
+	const owned = $derived(!!security?.owner);
+
+	const updateAsset = graphql(`
+		mutation UpdateAsset($id: ID!, $input: UpdateSecurityInput!) {
+			updateSecurity(id: $id, input: $input) {
+				id
+			}
+		}
+	`);
+	let editOpen = $state(false);
+	let editName = $state('');
+	let editKind = $state('');
+	let editError = $state<string | null>(null);
+	let savingEdit = $state(false);
+
+	function openEdit() {
+		editName = security?.displayName ?? '';
+		editKind = security?.kind ?? '';
+		editError = null;
+		editOpen = true;
+	}
+
+	async function saveEdit(event: SubmitEvent) {
+		event.preventDefault();
+		if (!security || !editName.trim()) return;
+		savingEdit = true;
+		const result = await mutate(updateAsset, {
+			id: security.id,
+			input: { displayName: editName.trim(), kind: asKind(editKind) }
+		});
+		savingEdit = false;
+		editError = result.error;
+		if (!editError) {
+			editOpen = false;
+			await refreshAll();
+		}
+	}
+
 	let valuationOpen = $state(false);
 	let valuationDate = $state(new Date().toISOString().slice(0, 10));
 	let valuationPrice = $state('');
@@ -196,13 +237,39 @@
 		{#if valuedByHand}
 			<Button onclick={() => (valuationOpen = true)}>Record valuation</Button>
 		{/if}
-		<a
-			href="/securities"
-			class="inline-flex h-8.5 items-center rounded-lg border border-line bg-surface px-3 text-sm font-medium shadow-xs hover:bg-raised"
-		>
-			Edit security
-		</a>
+		{#if owned}
+			<Button variant="secondary" onclick={openEdit}>Edit asset</Button>
+		{:else}
+			<a
+				href="/securities"
+				class="inline-flex h-8.5 items-center rounded-lg border border-line bg-surface px-3 text-sm font-medium shadow-xs hover:bg-raised"
+			>
+				Edit security
+			</a>
+		{/if}
 	</div>
+
+	<Dialog bind:open={editOpen} title="Edit asset">
+		<form onsubmit={saveEdit} class="flex flex-col gap-3">
+			<TextField bind:value={editName} label="Name" required />
+			<SelectField bind:value={editKind} label="Kind">
+				{#each handValuedKinds as [value, label] (value)}
+					<option {value}>{label}</option>
+				{/each}
+			</SelectField>
+			<p class="text-xs text-muted">
+				The cost basis is the transfer-in in the history below; open it to change the amount or the
+				date. Valuations are recorded with the button next to this one.
+			</p>
+			<ErrorNote message={editError} />
+			<div class="mt-2 flex justify-end gap-2">
+				<Button variant="secondary" onclick={() => (editOpen = false)}>Cancel</Button>
+				<Button type="submit" disabled={savingEdit || !editName.trim()}>
+					{savingEdit ? 'Saving…' : 'Save'}
+				</Button>
+			</div>
+		</form>
+	</Dialog>
 
 	<Dialog bind:open={valuationOpen} title="Record valuation">
 		<form onsubmit={saveValuation} class="flex flex-col gap-3">
