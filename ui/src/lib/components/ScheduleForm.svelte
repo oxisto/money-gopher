@@ -191,6 +191,20 @@
 			{/each}
 		</SelectField>
 	{/if}
+	{#if type !== 'DIVIDEND'}
+		<label class="flex items-center gap-2 text-sm">
+			<input type="checkbox" bind:checked={books} />
+			Book automatically
+		</label>
+		<p class="text-xs text-muted">
+			Each occurrence is written as a transaction once its day has passed, past ones right away. A
+			statement that lists the same movement later confirms it instead of adding a second one.
+		</p>
+	{:else}
+		<p class="text-xs text-muted">
+			An expectation only: the dividend or rent confirmations book the real income.
+		</p>
+	{/if}
 	<div class="grid grid-cols-2 gap-3">
 		<SelectField bind:value={interval} label="Every">
 			<option value="MONTHLY">Month</option>
@@ -220,20 +234,6 @@
 		</button>
 	</div>
 
-	{#if type !== 'DIVIDEND'}
-		<label class="flex items-center gap-2 text-sm">
-			<input type="checkbox" bind:checked={books} />
-			Book automatically
-		</label>
-		<p class="text-xs text-muted">
-			Each occurrence is written as a transaction once its day has passed, past ones right away. A
-			statement that lists the same movement later confirms it instead of adding a second one.
-		</p>
-	{:else}
-		<p class="text-xs text-muted">
-			An expectation only: the dividend or rent confirmations book the real income.
-		</p>
-	{/if}
 	<ErrorNote message={error} />
 	<div class="flex justify-end">
 		<Button type="submit" disabled={saving || !name.trim()}>{saving ? 'Saving…' : schedule ? 'Save' : 'Create schedule'}</Button>
