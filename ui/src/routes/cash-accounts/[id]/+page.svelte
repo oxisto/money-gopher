@@ -2,6 +2,7 @@
 	import { refreshAll } from '$app/navigation';
 	import ActivityFeed from '#lib/components/activity/ActivityFeed.svelte';
 	import TransactionForm from '#lib/components/TransactionForm.svelte';
+	import TransferForm from '#lib/components/TransferForm.svelte';
 	import Button from '#lib/components/ui/Button.svelte';
 	import Dialog from '#lib/components/ui/Dialog.svelte';
 	import ErrorNote from '#lib/components/ui/ErrorNote.svelte';
@@ -18,6 +19,7 @@
 	let { data }: PageProps = $props();
 
 	let addOpen = $state(false);
+	let transferOpen = $state(false);
 
 	const updateCashAccount = graphql(`
 		mutation EditCashAccount($id: ID!, $input: UpdateCashAccountInput!) {
@@ -126,8 +128,20 @@
 			</p>
 		</div>
 		<Button variant="secondary" onclick={openEdit}>Edit</Button>
+		<Button variant="secondary" onclick={() => (transferOpen = true)}><Icon name="transferOut" size={15} /> Transfer</Button>
 		<Button onclick={() => (addOpen = true)}><Icon name="plus" size={15} /> Add transaction</Button>
 	</div>
+
+	<Dialog bind:open={transferOpen} title="Transfer between accounts">
+		<TransferForm
+			{account}
+			cashAccounts={data.cashAccounts}
+			oncreated={() => {
+				transferOpen = false;
+				refresh();
+			}}
+		/>
+	</Dialog>
 
 	<Dialog bind:open={editOpen} title="Edit account">
 		<form onsubmit={saveEdit} class="flex flex-col gap-3">

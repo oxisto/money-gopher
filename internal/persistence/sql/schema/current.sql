@@ -158,7 +158,9 @@ CREATE TABLE transactions (
     -- FX bond support (see migrations/0005_fx_rate.sql): NULL price_currency
     -- means Price is denominated in currency (the common case).
     price_currency  TEXT,
-    fx_rate         DECIMAL(19,4)
+    fx_rate         DECIMAL(19,4),
+    -- Shared by the two legs of a transfer between own accounts. Migration 0014.
+    transfer_id     TEXT
 );
 
 CREATE TABLE staged_transactions (

@@ -89,6 +89,11 @@
 
 	<TextField bind:value={time} label="Date" type="datetime-local" required />
 
+	{#if tx.transferID}
+		<p class="text-xs text-muted sm:col-span-2">
+			One leg of a transfer: the date and the amount change on both legs; the type and asset stay.
+		</p>
+	{/if}
 	<SelectField bind:value={assetID} label="Asset">
 		<option value="">None</option>
 		{#each securities as s (s.id)}

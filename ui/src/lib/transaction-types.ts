@@ -16,6 +16,9 @@ export interface TransactionRow {
 	fxRate: string | null;
 	asset: { id: string; displayName: string } | null;
 	cashAccount: { id: string } | null;
+	/** Set on both legs of a transfer between own accounts. */
+	transferID?: string | null;
+	counterpart?: { id: string; cashAccount: { id: string; displayName: string } | null } | null;
 }
 
 export interface AssetOption {

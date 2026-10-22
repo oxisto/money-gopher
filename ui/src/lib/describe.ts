@@ -4,6 +4,8 @@ interface DescribableTransaction {
 	type: string;
 	units: number;
 	asset: { displayName: string; kind?: string | null } | null;
+	/** The other leg of a transfer between own accounts, when it is one. */
+	counterpart?: { cashAccount: { displayName: string } | null } | null;
 }
 
 /**
@@ -28,8 +30,14 @@ export function describeTransaction(tx: DescribableTransaction): { title: string
 		case 'INTEREST':
 			return { title: 'Interest', icon: 'percent' };
 		case 'DEPOSIT_CASH':
+			if (tx.counterpart) {
+				return { title: `Transfer from ${tx.counterpart.cashAccount?.displayName ?? 'another account'}`, icon: 'transferIn' };
+			}
 			return { title: 'Deposit', icon: 'arrowIn' };
 		case 'WITHDRAW_CASH':
+			if (tx.counterpart) {
+				return { title: `Transfer to ${tx.counterpart.cashAccount?.displayName ?? 'another account'}`, icon: 'transferOut' };
+			}
 			return { title: 'Withdrawal', icon: 'arrowOut' };
 		case 'ACCOUNT_FEES':
 			return { title: 'Account fees', icon: 'receipt' };

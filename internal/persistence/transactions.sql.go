@@ -29,10 +29,11 @@ INSERT INTO
         source,
         document_id,
         price_currency,
-        fx_rate
+        fx_rate,
+        transfer_id
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id
 `
 
 type CreateTransactionParams struct {
@@ -52,6 +53,7 @@ type CreateTransactionParams struct {
 	DocumentID    sql.NullString
 	PriceCurrency sql.NullString
 	FxRate        Decimal
+	TransferID    sql.NullString
 }
 
 func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionParams) (*Transaction, error) {
@@ -72,6 +74,7 @@ func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionPa
 		arg.DocumentID,
 		arg.PriceCurrency,
 		arg.FxRate,
+		arg.TransferID,
 	)
 	var i Transaction
 	err := row.Scan(
@@ -92,6 +95,7 @@ func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionPa
 		&i.DocumentID,
 		&i.PriceCurrency,
 		&i.FxRate,
+		&i.TransferID,
 	)
 	return &i, err
 }
@@ -110,9 +114,23 @@ func (q *Queries) DeleteTransaction(ctx context.Context, id string) (int64, erro
 	return result.RowsAffected()
 }
 
+const deleteTransfer = `-- name: DeleteTransfer :execrows
+DELETE FROM transactions
+WHERE
+    transfer_id = ?
+`
+
+func (q *Queries) DeleteTransfer(ctx context.Context, transferID sql.NullString) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteTransfer, transferID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const getTransaction = `-- name: GetTransaction :one
 SELECT
-    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id
 FROM
     transactions
 WHERE
@@ -140,13 +158,55 @@ func (q *Queries) GetTransaction(ctx context.Context, id string) (*Transaction, 
 		&i.DocumentID,
 		&i.PriceCurrency,
 		&i.FxRate,
+		&i.TransferID,
+	)
+	return &i, err
+}
+
+const getTransferCounterpart = `-- name: GetTransferCounterpart :one
+SELECT
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id
+FROM
+    transactions
+WHERE
+    transfer_id = ?
+    AND id <> ?
+`
+
+type GetTransferCounterpartParams struct {
+	TransferID sql.NullString
+	ID         string
+}
+
+func (q *Queries) GetTransferCounterpart(ctx context.Context, arg GetTransferCounterpartParams) (*Transaction, error) {
+	row := q.db.QueryRowContext(ctx, getTransferCounterpart, arg.TransferID, arg.ID)
+	var i Transaction
+	err := row.Scan(
+		&i.ID,
+		&i.Type,
+		&i.Time,
+		&i.PortfolioID,
+		&i.SecurityID,
+		&i.CashAccountID,
+		&i.Units,
+		&i.Price,
+		&i.Fees,
+		&i.Taxes,
+		&i.CashDelta,
+		&i.Currency,
+		&i.Source,
+		&i.CreatedAt,
+		&i.DocumentID,
+		&i.PriceCurrency,
+		&i.FxRate,
+		&i.TransferID,
 	)
 	return &i, err
 }
 
 const listTransactionsByCashAccount = `-- name: ListTransactionsByCashAccount :many
 SELECT
-    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id
 FROM
     transactions
 WHERE
@@ -182,6 +242,7 @@ func (q *Queries) ListTransactionsByCashAccount(ctx context.Context, cashAccount
 			&i.DocumentID,
 			&i.PriceCurrency,
 			&i.FxRate,
+			&i.TransferID,
 		); err != nil {
 			return nil, err
 		}
@@ -198,7 +259,7 @@ func (q *Queries) ListTransactionsByCashAccount(ctx context.Context, cashAccount
 
 const listTransactionsByDocument = `-- name: ListTransactionsByDocument :many
 SELECT
-    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id
 FROM
     transactions
 WHERE
@@ -234,6 +295,7 @@ func (q *Queries) ListTransactionsByDocument(ctx context.Context, documentID sql
 			&i.DocumentID,
 			&i.PriceCurrency,
 			&i.FxRate,
+			&i.TransferID,
 		); err != nil {
 			return nil, err
 		}
@@ -250,7 +312,7 @@ func (q *Queries) ListTransactionsByDocument(ctx context.Context, documentID sql
 
 const listTransactionsByPortfolio = `-- name: ListTransactionsByPortfolio :many
 SELECT
-    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id
 FROM
     transactions
 WHERE
@@ -286,6 +348,7 @@ func (q *Queries) ListTransactionsByPortfolio(ctx context.Context, portfolioID s
 			&i.DocumentID,
 			&i.PriceCurrency,
 			&i.FxRate,
+			&i.TransferID,
 		); err != nil {
 			return nil, err
 		}
@@ -315,7 +378,7 @@ SET
     cash_delta = ?,
     currency = ?
 WHERE
-    id = ? RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate
+    id = ? RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id
 `
 
 type UpdateTransactionParams struct {
@@ -367,6 +430,7 @@ func (q *Queries) UpdateTransaction(ctx context.Context, arg UpdateTransactionPa
 		&i.DocumentID,
 		&i.PriceCurrency,
 		&i.FxRate,
+		&i.TransferID,
 	)
 	return &i, err
 }
@@ -388,7 +452,7 @@ SET
     price_currency = ?,
     fx_rate = ?
 WHERE
-    id = ? RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate
+    id = ? RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id
 `
 
 type UpdateTransactionFromImportParams struct {
@@ -445,6 +509,7 @@ func (q *Queries) UpdateTransactionFromImport(ctx context.Context, arg UpdateTra
 		&i.DocumentID,
 		&i.PriceCurrency,
 		&i.FxRate,
+		&i.TransferID,
 	)
 	return &i, err
 }
