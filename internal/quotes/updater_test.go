@@ -4,9 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
+	"github.com/oxisto/money-gopher/internal/auth"
 	"github.com/oxisto/money-gopher/internal/persistence"
 )
 
@@ -105,5 +107,55 @@ func TestUpdater(t *testing.T) {
 	updated, err = updater.UpdateSecurities(ctx, []string{security.ID})
 	if err != nil || updated != 1 {
 		t.Errorf("UpdateSecurities() = %d, %v; want 1, nil", updated, err)
+	}
+
+	// A security that was bought and sold out again is skipped by the
+	// scheduled run — its feed has probably dropped it, and no figure
+	// depends on a fresh price — but an explicit request still fetches it.
+	matured, err := db.CreateSecurity(ctx, persistence.CreateSecurityParams{ID: "matured", DisplayName: "3,00 % Matured Bond"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.CreateListing(ctx, persistence.CreateListingParams{
+		ID: "l3", SecurityID: matured.ID, Ticker: "XS0000000000", Currency: "EUR",
+		QuoteProvider: sql.NullString{String: "fake", Valid: true},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	// Trades settle against an account, which belongs to a person.
+	_, person, err := auth.EnsureDevUser(ctx, db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	account, err := db.CreateCashAccount(ctx, persistence.CreateCashAccountParams{
+		ID: "acct", PersonID: person.ID, DisplayName: "Giro", Currency: "EUR",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, trade := range []struct {
+		typ   string
+		units float64
+	}{{"BUY", 50}, {"SELL", 20}, {"SELL", 30}} {
+		if _, err := db.CreateTransaction(ctx, persistence.CreateTransactionParams{
+			ID: fmt.Sprintf("trade%d", i), Type: trade.typ, Time: time.Date(2025, time.Month(i+1), 1, 0, 0, 0, 0, time.UTC),
+			SecurityID:    sql.NullString{String: matured.ID, Valid: true},
+			CashAccountID: sql.NullString{String: account.ID, Valid: true},
+			Units:         trade.units, Currency: "EUR",
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	provider.ins = nil
+	if updated, err := updater.UpdateAll(ctx); err != nil || updated != 1 {
+		t.Errorf("UpdateAll() with a sold-out security = %d, %v; want 1, nil", updated, err)
+	}
+	for _, ins := range provider.ins {
+		if ins.Ticker == "XS0000000000" {
+			t.Errorf("UpdateAll() fetched the sold-out security")
+		}
+	}
+	if updated, err := updater.UpdateSecurities(ctx, []string{matured.ID}); err != nil || updated != 1 {
+		t.Errorf("UpdateSecurities() for the sold-out security = %d, %v; want 1, nil", updated, err)
 	}
 }
