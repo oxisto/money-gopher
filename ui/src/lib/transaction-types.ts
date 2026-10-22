@@ -20,6 +20,7 @@ export interface TransactionRow {
 	transferID?: string | null;
 	/** Booked by a schedule; not yet confirmed by a statement when document is null. */
 	scheduleID?: string | null;
+	schedule?: { id: string; displayName: string } | null;
 	counterpart?: { id: string; cashAccount: { id: string; displayName: string } | null } | null;
 }
 

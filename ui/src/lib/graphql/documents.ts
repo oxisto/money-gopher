@@ -26,6 +26,7 @@ export const ActivityTransaction = graphql(`
 		transferID
 		counterpart { id cashAccount { id displayName } }
 		scheduleID
+		schedule { id displayName }
 	}
 `);
 

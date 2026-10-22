@@ -312,7 +312,11 @@ type Transaction {
   time: Time!
   "Set on both legs of a transfer between own accounts; null otherwise."
   transferID: ID
-  "The schedule that booked this transaction, and for which occurrence."
+  """
+  The schedule this transaction is an occurrence of, booked by it or
+  adopted from the books; with a document it is a confirmed expectation.
+  """
+  schedule: Schedule
   scheduleID: ID
   scheduledFor: Time
   "The other leg of a transfer: the deposit for a withdrawal and vice versa."

@@ -851,6 +851,24 @@ func (r *TransactionResolver) ScheduleID() *graphql.ID {
 	return &id
 }
 
+// Schedule resolves Transaction.schedule.
+func (r *TransactionResolver) Schedule(ctx context.Context) (*ScheduleResolver, error) {
+	if !r.transaction.ScheduleID.Valid {
+		return nil, nil
+	}
+	person, err := auth.PersonFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	s, err := r.db.GetSchedule(ctx, persistence.GetScheduleParams{ID: r.transaction.ScheduleID.String, PersonID: person.ID})
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+	return &ScheduleResolver{db: r.db, s: s}, nil
+}
+
 // ScheduledFor resolves Transaction.scheduledFor.
 func (r *TransactionResolver) ScheduledFor() *graphql.Time {
 	if !r.transaction.ScheduledFor.Valid {
