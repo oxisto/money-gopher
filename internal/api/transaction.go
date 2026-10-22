@@ -20,6 +20,7 @@ import (
 type TransactionResolver struct {
 	db          *persistence.DB
 	transaction *persistence.Transaction
+	documents   []*DocumentResolver // loaded on first use
 }
 
 // txData is the merged, validated set of transaction fields shared by the
@@ -596,17 +597,26 @@ func (r *TransactionResolver) Source() string {
 	return r.transaction.Source
 }
 
-// Documents resolves Transaction.documents.
+// Documents resolves Transaction.documents. Loaded once per resolver:
+// document asks for the same list.
 func (r *TransactionResolver) Documents(ctx context.Context) ([]*DocumentResolver, error) {
-	docs, err := r.db.ListTransactionDocuments(ctx, r.transaction.ID)
-	if err != nil {
-		return nil, err
+	if r.documents == nil {
+		rows, err := r.db.ListTransactionDocuments(ctx, r.transaction.ID)
+		if err != nil {
+			return nil, err
+		}
+		r.documents = make([]*DocumentResolver, 0, len(rows))
+		for _, row := range rows {
+			// Without data and extracted text; DocumentResolver fields that
+			// need them load the document themselves.
+			r.documents = append(r.documents, &DocumentResolver{db: r.db, doc: &persistence.Document{
+				ID: row.ID, Filename: row.Filename, ContentType: row.ContentType, State: row.State,
+				DetectedBank: row.DetectedBank, Error: row.Error, SettlementIban: row.SettlementIban,
+				TransactionDate: row.TransactionDate, CreatedAt: row.CreatedAt, PersonID: row.PersonID, ContentHash: row.ContentHash,
+			}})
+		}
 	}
-	out := make([]*DocumentResolver, 0, len(docs))
-	for _, doc := range docs {
-		out = append(out, &DocumentResolver{db: r.db, doc: doc})
-	}
-	return out, nil
+	return r.documents, nil
 }
 
 // Document resolves Transaction.document: the first of Documents.

@@ -8,6 +8,7 @@ package persistence
 import (
 	"context"
 	"database/sql"
+	"time"
 )
 
 const countTransactionDocuments = `-- name: CountTransactionDocuments :one
@@ -45,7 +46,17 @@ func (q *Queries) LinkTransactionDocument(ctx context.Context, arg LinkTransacti
 
 const listTransactionDocuments = `-- name: ListTransactionDocuments :many
 SELECT
-    documents.id, documents.user_id, documents.filename, documents.content_type, documents.data, documents.state, documents.detected_bank, documents.extracted_text, documents.error, documents.settlement_iban, documents.transaction_date, documents.created_at, documents.person_id, documents.content_hash
+    documents.id,
+    documents.filename,
+    documents.content_type,
+    documents.state,
+    documents.detected_bank,
+    documents.error,
+    documents.settlement_iban,
+    documents.transaction_date,
+    documents.created_at,
+    documents.person_id,
+    documents.content_hash
 FROM
     documents
     JOIN transaction_documents ON transaction_documents.document_id = documents.id
@@ -55,25 +66,37 @@ ORDER BY
     transaction_documents.linked_at
 `
 
-// The documents describing a transaction, oldest link first.
-func (q *Queries) ListTransactionDocuments(ctx context.Context, transactionID string) ([]*Document, error) {
+type ListTransactionDocumentsRow struct {
+	ID              string
+	Filename        string
+	ContentType     string
+	State           string
+	DetectedBank    sql.NullString
+	Error           sql.NullString
+	SettlementIban  sql.NullString
+	TransactionDate sql.NullTime
+	CreatedAt       time.Time
+	PersonID        string
+	ContentHash     sql.NullString
+}
+
+// The documents describing a transaction, oldest link first: without the
+// file and the extracted text, which a list of transactions never needs.
+func (q *Queries) ListTransactionDocuments(ctx context.Context, transactionID string) ([]*ListTransactionDocumentsRow, error) {
 	rows, err := q.db.QueryContext(ctx, listTransactionDocuments, transactionID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []*Document
+	var items []*ListTransactionDocumentsRow
 	for rows.Next() {
-		var i Document
+		var i ListTransactionDocumentsRow
 		if err := rows.Scan(
 			&i.ID,
-			&i.UserID,
 			&i.Filename,
 			&i.ContentType,
-			&i.Data,
 			&i.State,
 			&i.DetectedBank,
-			&i.ExtractedText,
 			&i.Error,
 			&i.SettlementIban,
 			&i.TransactionDate,

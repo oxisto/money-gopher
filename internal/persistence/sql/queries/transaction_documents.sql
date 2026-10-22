@@ -5,9 +5,20 @@ VALUES
     (?, ?) ON CONFLICT DO NOTHING;
 
 -- name: ListTransactionDocuments :many
--- The documents describing a transaction, oldest link first.
+-- The documents describing a transaction, oldest link first: without the
+-- file and the extracted text, which a list of transactions never needs.
 SELECT
-    documents.*
+    documents.id,
+    documents.filename,
+    documents.content_type,
+    documents.state,
+    documents.detected_bank,
+    documents.error,
+    documents.settlement_iban,
+    documents.transaction_date,
+    documents.created_at,
+    documents.person_id,
+    documents.content_hash
 FROM
     documents
     JOIN transaction_documents ON transaction_documents.document_id = documents.id
