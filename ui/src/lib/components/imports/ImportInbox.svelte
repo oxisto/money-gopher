@@ -88,6 +88,15 @@
 		tab = byTab.review.length ? 'review' : byTab.problems.length ? 'problems' : 'imported';
 	});
 
+	// An upload answers before the document is parsed, so a fresh one sits
+	// at "Processing…" until something reloads. Poll while any is, and stop
+	// the moment none is; the effect reruns with every reload.
+	$effect(() => {
+		if (!documents.some((d) => d.state === 'UPLOADED')) return;
+		const timer = setTimeout(onchanged, 1500);
+		return () => clearTimeout(timer);
+	});
+
 	const tabs: { key: Tab; label: string; loud?: boolean }[] = [
 		{ key: 'review', label: 'Needs review', loud: true },
 		{ key: 'problems', label: 'Problems', loud: true },
