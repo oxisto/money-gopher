@@ -115,8 +115,12 @@
 		if (byName) return byName.id;
 		return (kind && cashAccounts.find((a) => a.kind === kind)?.id) ?? '';
 	}
-	let sectionAccounts = $state<Record<string, string>>({});
-	$effect(() => {
+	// Every section has a key before its select renders: a bound select
+	// with no value at all is an error, an empty string is "— select —".
+	let sectionAccounts = $state<Record<string, string>>(
+		Object.fromEntries(sections.map((s) => [s, guessAccount(s)]))
+	);
+	$effect.pre(() => {
 		for (const s of sections) {
 			if (sectionAccounts[s] === undefined) sectionAccounts[s] = guessAccount(s);
 		}
