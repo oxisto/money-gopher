@@ -24,9 +24,28 @@
 			...cf.months.map((m) => Math.max(m.expectedIn.amount, m.expectedOut.amount + m.expectedSaved.amount, m.actualIn?.amount ?? 0, (m.actualOut?.amount ?? 0) + (m.actualSaved?.amount ?? 0)))
 		)
 	);
-	let open = $state<string | null>(null);
-	// The last month a statement covers: where the plan meets the truth.
+	// One month at a time: the strip shows the selected one, the last with a
+	// statement by default, since that is where the plan meets the truth.
 	const lastActual = $derived([...cf.months].reverse().find((m) => m.actualFree));
+	let open = $state<string | null>(null);
+	const selected = $derived(cf.months.find((m) => String(m.month) === open) ?? lastActual ?? thisMonth);
+	const monthName = (t: Date | string) =>
+		new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(t));
+	type M = (typeof cf.months)[number];
+	/** A tile: the actual when the month has a statement, the expectation beneath; else the expectation. */
+	function tile(m: M, label: string, expected: number, actual: number | null | undefined, sub: string, sign = 1) {
+		const cur = cf.currency;
+		if (actual === null || actual === undefined) {
+			return { label, value: formatSignedMoney({ amount: sign * expected, currency: cur }), sub: `expected · ${sub}`, tone: toneOf(sign * expected) };
+		}
+		const diff = actual - expected;
+		return {
+			label,
+			value: formatSignedMoney({ amount: sign * actual, currency: cur }),
+			sub: `expected ${formatSignedMoney({ amount: sign * expected, currency: cur })}${diff ? ` · ${diff > 0 ? '+' : '−'}${formatMoney({ amount: Math.abs(diff), currency: cur })}` : ''}`,
+			tone: toneOf(sign * actual)
+		};
+	}
 
 	/** How the schedule shows on the cash accounts: in, out, saved, or not at all. */
 	function bucket(s: (typeof cf.schedules)[number]): string {
@@ -53,24 +72,32 @@
 </div>
 
 <div class="flex flex-col gap-6">
-	<StatStrip
-		stats={[
-			{ label: `In, ${monthLabel(thisMonth.month)}`, value: formatSignedMoney(thisMonth.expectedIn), sub: 'salary, rent, interest', tone: toneOf(thisMonth.expectedIn.amount) },
-			{ label: 'Out', value: formatSignedMoney({ amount: -thisMonth.expectedOut.amount, currency: cf.currency }), sub: 'bills, fees, loan payments' },
-			{ label: 'Saved', value: formatSignedMoney({ amount: -thisMonth.expectedSaved.amount, currency: cf.currency }), sub: 'into savings, not spent', tone: 'muted' },
-			{ label: 'Free', value: formatSignedMoney(thisMonth.expectedFree), sub: 'in − out − saved', tone: toneOf(thisMonth.expectedFree.amount) },
-			...(lastActual?.actualFree && lastActual.unscheduledOut
-				? [
-						{
-							label: `Actually free, ${monthLabel(lastActual.month)}`,
-							value: formatSignedMoney(lastActual.actualFree),
-							sub: `${formatMoney(lastActual.unscheduledOut)} spent outside any schedule · expected ${formatSignedMoney(lastActual.expectedFree)}`,
-							tone: toneOf(lastActual.actualFree.amount)
-						}
-					]
-				: [])
-		]}
-	/>
+	<div class="flex flex-col gap-2">
+		<h2 class="text-sm font-semibold">
+			{monthName(selected.month)}
+			<span class="ml-1 font-normal text-muted">
+				{selected.actualFree ? '· what happened, against what the schedules expected' : '· what the schedules expect'}
+			</span>
+		</h2>
+		<StatStrip
+			stats={[
+				tile(selected, 'In', selected.expectedIn.amount, selected.actualIn?.amount, 'salary, rent, interest'),
+				tile(selected, 'Out', selected.expectedOut.amount, selected.actualOut?.amount, 'bills, fees, loan payments', -1),
+				tile(selected, 'Saved', selected.expectedSaved.amount, selected.actualSaved?.amount, 'into savings, not spent', -1),
+				tile(selected, 'Free', selected.expectedFree.amount, selected.actualFree?.amount, 'in − out − saved'),
+				...(selected.unscheduledOut
+					? [
+							{
+								label: 'Outside any schedule',
+								value: formatSignedMoney({ amount: -selected.unscheduledOut.amount, currency: cf.currency }),
+								sub: `${selected.unscheduled.length} movements the schedules do not know`,
+								tone: ''
+							}
+						]
+					: [])
+			]}
+		/>
+	</div>
 
 	<Panel title="Month by month">
 		{#snippet aside()}
@@ -84,7 +111,7 @@
 			<tbody class="divide-y divide-line">
 				{#each cf.months as m (m.month)}
 					{@const key = String(m.month)}
-					<tr class="cursor-pointer hover:bg-raised" onclick={() => (open = open === key ? null : key)}>
+					<tr class="cursor-pointer hover:bg-raised {String(selected.month) === key ? 'bg-raised' : ''}" onclick={() => (open = open === key ? null : key)}>
 						<td class="w-16 py-2 pr-3 text-muted">{monthLabel(m.month)}</td>
 						<td class="py-2 pr-3">
 							<div class="flex flex-col gap-1">
@@ -167,7 +194,7 @@
 			</tbody>
 		</table>
 		<p class="text-xs text-muted">
-			Expected from your schedules; the thin bar is what the cash accounts actually show, for the months a statement covers. Click a month for the occurrences and for what happened outside any schedule.
+			Thick bar: what the schedules expect. Thin bar: what the cash accounts actually show, for the months a statement covers. Click a month to put it in the strip above and see its details.
 		</p>
 	</Panel>
 
