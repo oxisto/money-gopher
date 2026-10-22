@@ -5,10 +5,13 @@
 	import ActivityFeed from '#lib/components/activity/ActivityFeed.svelte';
 	import Button from '#lib/components/ui/Button.svelte';
 	import Dialog from '#lib/components/ui/Dialog.svelte';
+	import ErrorNote from '#lib/components/ui/ErrorNote.svelte';
 	import Icon from '#lib/components/ui/Icon.svelte';
 	import Segmented from '#lib/components/ui/Segmented.svelte';
 	import StatStrip from '#lib/components/ui/StatStrip.svelte';
+	import TextField from '#lib/components/ui/TextField.svelte';
 	import { formatMoney, formatPercent, formatSignedMoney, toneOf } from '#lib/format.js';
+	import { graphql, mutate } from '#lib/graphql/client.js';
 	import type { FeedTransaction } from '#lib/transaction-types.js';
 	import type { PageProps } from './$types';
 
@@ -18,6 +21,36 @@
 	let addOpen = $state(false);
 
 	const portfolio = $derived(data.portfolio);
+
+	const updatePortfolio = graphql(`
+		mutation RenamePortfolio($id: ID!, $displayName: String!) {
+			updatePortfolio(id: $id, input: { displayName: $displayName }) {
+				id
+				displayName
+			}
+		}
+	`);
+	let renameOpen = $state(false);
+	let newName = $state('');
+	let renameError = $state<string | null>(null);
+
+	function openRename() {
+		newName = portfolio?.displayName ?? '';
+		renameError = null;
+		renameOpen = true;
+	}
+
+	async function saveName(event: SubmitEvent) {
+		event.preventDefault();
+		if (!portfolio || !newName.trim()) return;
+		const result = await mutate(updatePortfolio, { id: portfolio.id, displayName: newName.trim() });
+		renameError = result.error;
+		if (!renameError) {
+			renameOpen = false;
+			// The sidebar lists portfolios by name too.
+			await refreshAll();
+		}
+	}
 
 	function refresh() {
 		refreshAll();
@@ -36,8 +69,20 @@
 				</a>
 			</p>
 		</div>
+		<Button variant="secondary" onclick={openRename}>Rename</Button>
 		<Button onclick={() => (addOpen = true)}><Icon name="plus" size={15} /> Add transaction</Button>
 	</div>
+
+	<Dialog bind:open={renameOpen} title="Rename portfolio">
+		<form onsubmit={saveName} class="flex flex-col gap-3">
+			<TextField bind:value={newName} label="Name" required />
+			<ErrorNote message={renameError} />
+			<div class="mt-2 flex justify-end gap-2">
+				<Button variant="secondary" onclick={() => (renameOpen = false)}>Cancel</Button>
+				<Button type="submit" disabled={!newName.trim()}>Save</Button>
+			</div>
+		</form>
+	</Dialog>
 
 	<Dialog bind:open={addOpen} title="Add transaction" wide>
 		<TransactionForm
