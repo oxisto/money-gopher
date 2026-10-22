@@ -268,6 +268,10 @@ func (r *SnapshotResolver) Returns(args struct{ Period string }) (*ReturnsResolv
 	if err != nil {
 		return nil, err
 	}
+	// The window is (from, to]; a transaction exactly at the period's
+	// start — the first one ever for ALL_TIME, one dated 1 January for
+	// YEAR_TO_DATE — belongs to it, so the start moves just before.
+	from = from.Add(-time.Nanosecond)
 	period := args.Period
 	return &ReturnsResolver{
 		period: &period,
