@@ -27,7 +27,10 @@ export function describeTransaction(tx: DescribableTransaction): {
 	// moves to the subtitle either way.
 	if (tx.note || tx.schedule) {
 		const generic = describeTransaction({ ...tx, schedule: null, note: null });
-		return { title: tx.note || tx.schedule!.displayName, icon: generic.icon, subtitle: generic.title };
+		// A statement's note is "Buchungsart counterparty · Verwendungszweck":
+		// the first part names the row, the rest explains it.
+		const [head, ...rest] = (tx.note || tx.schedule!.displayName).split(' · ');
+		return { title: head, icon: generic.icon, subtitle: [...rest, generic.title].join(' · ') };
 	}
 	const name = tx.asset?.displayName ?? 'unknown asset';
 	const units = formatUnits(tx.units);

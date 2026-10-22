@@ -267,3 +267,96 @@ func TestSchedule_Books(t *testing.T) {
 		}
 	}
 }
+
+// TestSchedule_PooledDebit: the LBS collects the Sparrate and the Zinsrate
+// in one direct debit, so the Giro statement shows 1,161.24 where the
+// schedules booked two legs of 535.82 and 625.42. The row confirms both.
+func TestSchedule_PooledDebit(t *testing.T) {
+	db, err := persistence.OpenDB(":memory:")
+	if err != nil {
+		t.Fatalf("OpenDB: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	user, person, err := auth.EnsureDevUser(context.Background(), db)
+	if err != nil {
+		t.Fatalf("EnsureDevUser: %v", err)
+	}
+	ctx := auth.WithPerson(auth.WithUser(context.Background(), user), person)
+	schema := NewSchema(db, &quotes.Updater{DB: db, Registry: quotes.NewRegistry()})
+	h := transferHelpers{t, schema, ctx}
+
+	giro := h.account("Giro", "CASH", nil)
+	bauspar := h.account("Bausparvertrag", "SAVINGS", nil)
+	loan := h.account("Vorfinanzierung", "LOAN", nil)
+	createSchedule(t, h, fmt.Sprintf(`displayName: "Sparrate", type: TRANSFER, interval: MONTHLY, dayOfMonth: 1,
+		start: "2026-09-01T00:00:00Z", end: "2026-09-30T00:00:00Z", cashAccountID: %q, counterpartAccountID: %q, books: true,
+		steps: [{ from: "2026-09-01T00:00:00Z", amount: 53582 }]`, bauspar, giro))
+	createSchedule(t, h, fmt.Sprintf(`displayName: "Zinszahlung", type: TRANSFER, interval: MONTHLY, dayOfMonth: 1,
+		start: "2026-09-01T00:00:00Z", end: "2026-09-30T00:00:00Z", cashAccountID: %q, counterpartAccountID: %q, books: true,
+		steps: [{ from: "2026-09-01T00:00:00Z", amount: 62542 }]`, loan, giro))
+	if h.balance(giro) != -116124 {
+		t.Fatalf("Giro after booking = %v, want -116124", h.balance(giro))
+	}
+
+	// A Giro statement in the ING layout, naming the account by its IBAN.
+	exec(t, schema, ctx, `mutation ($id: ID!) { updateCashAccount(id: $id, input: { iban: "DE02120300000000202051" }) { id } }`, map[string]any{"id": giro})
+	statement := func(rows string) string {
+		return "ING-DiBa AG\nKontoauszug Girokonto\nIBAN DE02 1203 0000 0000 2020 51\n" +
+			"Buchung    Buchung / Verwendungszweck                      Betrag (EUR)\n" + rows
+	}
+	svc := importer.NewService(db)
+	doc, err := svc.Upload(ctx, person.ID, "giro.txt", "text/plain", []byte(statement("01.09.2026 Lastschrifteinzug LBS SUED Bausparen     -1.161,24\n")))
+	if err != nil {
+		t.Fatalf("Upload: %v", err)
+	}
+	if err := svc.Process(ctx, doc.ID, person.ID); err != nil {
+		t.Fatalf("Process: %v", err)
+	}
+	// The review says so beforehand: the row confirms both legs and
+	// doubles nothing.
+	stagedOf := func(id string) map[string]any {
+		data := exec(t, schema, ctx, `{ documents { id stagedTransactions { confirms { id schedule { displayName } } duplicateOf { id schedule { displayName } } } } }`, nil)
+		for _, raw := range data["documents"].([]any) {
+			if d := raw.(map[string]any); d["id"] == id {
+				return d["stagedTransactions"].([]any)[0].(map[string]any)
+			}
+		}
+		t.Fatalf("document %s not listed", id)
+		return nil
+	}
+	row := stagedOf(doc.ID)
+	if got := row["confirms"].([]any); len(got) != 2 || row["duplicateOf"] != nil {
+		t.Errorf("review hint = %v, want two bookings confirmed and no duplicate", row)
+	}
+
+	data := exec(t, schema, ctx, `mutation ($id: ID!, $acct: ID!) {
+		confirmImport(documentID: $id, input: { cashAccountID: $acct, transactions: [] }) { cashDelta { amount } schedule { displayName } document { id } }
+	}`, map[string]any{"id": doc.ID, "acct": giro})
+	confirmed := data["confirmImport"].([]any)
+	if len(confirmed) != 2 {
+		t.Fatalf("confirmed %d transactions, want the 2 pooled legs: %v", len(confirmed), confirmed)
+	}
+	for _, raw := range confirmed {
+		tx := raw.(map[string]any)
+		if tx["schedule"] == nil || tx["document"] == nil {
+			t.Errorf("%v: want a scheduled leg confirmed by the statement", tx)
+		}
+	}
+	if h.balance(giro) != -116124 {
+		t.Errorf("Giro after the statement = %v, want -116124 still (nothing doubled)", h.balance(giro))
+	}
+
+	// A second statement listing one of the legs again: the row is a
+	// duplicate of the now-confirmed booking.
+	doc2, err := svc.Upload(ctx, person.ID, "giro2.txt", "text/plain", []byte(statement("02.09.2026 Lastschrifteinzug LBS SUED Sparrate     -535,82\n")))
+	if err != nil {
+		t.Fatalf("Upload: %v", err)
+	}
+	if err := svc.Process(ctx, doc2.ID, person.ID); err != nil {
+		t.Fatalf("Process: %v", err)
+	}
+	row = stagedOf(doc2.ID)
+	if dup, _ := row["duplicateOf"].(map[string]any); len(row["confirms"].([]any)) != 0 || dup == nil || dup["schedule"].(map[string]any)["displayName"] != "Sparrate" {
+		t.Errorf("second statement's hint = %v, want a duplicate of the confirmed Sparrate leg", row)
+	}
+}

@@ -48,6 +48,15 @@ func TestING_ParseKontoauszug(t *testing.T) {
 	if len(txs) != wantRows {
 		t.Fatalf("len(txs) = %d, want %d", len(txs), wantRows)
 	}
+	// The note is the statement's wording: the amount line's Buchungsart
+	// and counterparty, then the Verwendungszweck from the Valuta line and
+	// its wrapped continuation, without the SEPA Referenz line.
+	if got := txs[0].Note; got != "Gutschrift Max Mustermann · Gehalt Januar" {
+		t.Errorf("note = %q, want %q", got, "Gutschrift Max Mustermann · Gehalt Januar")
+	}
+	if got := txs[2].Note; got != "Ueberweisung Max Mustermann · Miete Januar" {
+		t.Errorf("note = %q, want %q", got, "Ueberweisung Max Mustermann · Miete Januar")
+	}
 	for _, tx := range txs {
 		if tx.CashDelta == -10000 || tx.CashDelta == 2450 || tx.CashDelta == -543210 {
 			t.Errorf("%+v: a securities-related row (ISIN continuation line) leaked through", tx)

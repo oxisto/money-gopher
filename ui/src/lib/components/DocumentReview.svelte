@@ -28,6 +28,8 @@
 		asset: { id: string; displayName: string } | null;
 		accountHint?: string | null;
 		note?: string | null;
+		confirms?: { id: string; schedule: { displayName: string } | null }[];
+		duplicateOf?: { id: string; source: string; document: { filename: string } | null } | null;
 	}
 	interface Document {
 		id: string;
@@ -146,6 +148,12 @@
 		if (depositsFrom && targets.has(depositsFrom)) depositsFrom = '';
 	});
 	let assetOverrides = $state<Record<string, string>>({});
+	// Rows left out of the import: a movement another document already
+	// covers, or one that does not belong.
+	let skipped = $state<Record<string, boolean>>(
+		Object.fromEntries(doc.stagedTransactions.filter((tx) => tx.duplicateOf).map((tx) => [tx.id, true]))
+	);
+	const selectedCount = $derived(doc.stagedTransactions.filter((tx) => !skipped[tx.id]).length);
 	let localSecurities = $state<Security[]>([]);
 	let createDialog = $state<{
 		txId: string;
@@ -239,13 +247,18 @@
 		confirming = true;
 		error = null;
 
+		if (selectedCount === 0) {
+			error = 'Nothing left to import.';
+			return;
+		}
 		const txOverrides = doc.stagedTransactions
 			.map((tx) => ({
 				id: tx.id,
 				assetID: assetOverrides[tx.id] || undefined,
-				cashAccountID: tx.accountHint ? sectionAccounts[tx.accountHint] : undefined
+				cashAccountID: tx.accountHint ? sectionAccounts[tx.accountHint] : undefined,
+				skip: skipped[tx.id] || undefined
 			}))
-			.filter((ov) => ov.assetID || ov.cashAccountID);
+			.filter((ov) => ov.assetID || ov.cashAccountID || ov.skip);
 
 		const result = await mutate(confirmImport, {
 			documentID: doc.id,
@@ -360,7 +373,10 @@
 				<table class="num min-w-full text-[13px]">
 					<thead class="bg-raised text-xs text-muted">
 						<tr>
-							<th class="py-2 pr-2 pl-3 text-left font-medium">Date</th>
+							<th class="py-2 pl-3 text-left font-medium" title="Untick a row to leave it out of the import">
+								<input type="checkbox" checked={selectedCount === doc.stagedTransactions.length} onchange={(e) => { const all = (e.currentTarget as HTMLInputElement).checked; for (const tx of doc.stagedTransactions) skipped[tx.id] = !all; }} aria-label="Import all rows" />
+							</th>
+							<th class="py-2 pr-2 pl-2 text-left font-medium">Date</th>
 							<th class="px-2 py-2 text-left font-medium">Event</th>
 							<th class="px-2 py-2 text-left font-medium">Security</th>
 							<th class="px-2 py-2 text-right font-medium">Units</th>
@@ -374,7 +390,7 @@
 						{#each rows as tx, i (tx.id)}
 							{#if sections.length > 0 && (i === 0 || rows[i - 1].accountHint !== tx.accountHint)}
 								<tr class="bg-raised">
-									<td colspan="7" class="px-3 py-1.5 text-xs font-medium text-muted">
+									<td colspan="8" class="px-3 py-1.5 text-xs font-medium text-muted">
 										{tx.accountHint}
 										{#if sectionAccounts[tx.accountHint ?? '']}
 											<span class="font-normal">→ {accountName(sectionAccounts[tx.accountHint ?? ''])}</span>
@@ -382,8 +398,11 @@
 									</td>
 								</tr>
 							{/if}
-							<tr>
-								<td class="py-2 pr-2 pl-3 text-muted whitespace-nowrap">{formatDate(tx.time)}</td>
+							<tr class={skipped[tx.id] ? 'opacity-40' : ''}>
+								<td class="py-2 pl-3">
+									<input type="checkbox" checked={!skipped[tx.id]} onchange={(e) => (skipped[tx.id] = !(e.currentTarget as HTMLInputElement).checked)} aria-label="Import this row" />
+								</td>
+								<td class="py-2 pr-2 pl-2 text-muted whitespace-nowrap">{formatDate(tx.time)}</td>
 								<td class="px-2 py-2 whitespace-nowrap">
 									<span class="flex items-center gap-1.5">
 										<span class="text-muted"><Icon name={describeTransaction(tx).icon} size={13} /></span>
@@ -391,6 +410,15 @@
 									</span>
 									{#if tx.note}
 										<span class="block max-w-[220px] truncate text-xs text-muted" title={tx.note}>{tx.note}</span>
+									{/if}
+									{#if tx.confirms && tx.confirms.length > 0}
+										<span class="block text-xs text-pos" title="Already expected; the row attaches this statement to the booking instead of adding a transaction">
+											✓ confirms {tx.confirms.map((c) => c.schedule?.displayName ?? 'a booking').join(', ')}
+										</span>
+									{:else if tx.duplicateOf}
+										<span class="block text-xs text-gold" title="A transaction with this type, amount and date is already on the account">
+											already in the books{tx.duplicateOf.document ? ` · ${tx.duplicateOf.document.filename}` : tx.duplicateOf.source === 'MANUAL' ? ' · entered by hand' : ''}
+										</span>
 									{/if}
 								</td>
 								<td class="px-2 py-2 max-w-[220px]">
@@ -475,7 +503,7 @@
 
 			<div class="flex items-center gap-4">
 				<Button onclick={confirm} disabled={confirming}>
-					{confirming ? 'Importing…' : `Import ${doc.stagedTransactions.length} transaction${doc.stagedTransactions.length !== 1 ? 's' : ''}`}
+					{confirming ? 'Importing…' : `Import ${selectedCount} transaction${selectedCount !== 1 ? 's' : ''}`}
 				</Button>
 				<ErrorNote message={error} />
 			</div>
