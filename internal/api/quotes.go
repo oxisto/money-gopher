@@ -24,19 +24,23 @@ type QuoteUpdateResultResolver struct {
 // are reported in the result instead of failing the whole mutation, so one
 // broken provider does not hide the successful updates.
 func (r *RootResolver) TriggerQuoteUpdate(ctx context.Context, args struct{ SecurityIDs *[]graphql.ID }) (*QuoteUpdateResultResolver, error) {
-	if _, err := auth.UserFromContext(ctx); err != nil {
+	person, err := auth.PersonFromContext(ctx)
+	if err != nil {
 		return nil, err
 	}
 
-	var (
-		updated int
-		err     error
-	)
+	var updated int
 	if args.SecurityIDs == nil {
 		updated, err = r.quotes.UpdateAll(ctx)
 	} else {
 		ids := make([]string, 0, len(*args.SecurityIDs))
 		for _, id := range *args.SecurityIDs {
+			// Only what the person may see: a shared security or their own asset.
+			if _, err := r.db.GetSecurityVisibleTo(ctx, persistence.GetSecurityVisibleToParams{ID: string(id), PersonID: ownedBy(person)}); errors.Is(err, sql.ErrNoRows) {
+				return nil, fmt.Errorf("security %q not found", id)
+			} else if err != nil {
+				return nil, err
+			}
 			ids = append(ids, string(id))
 		}
 		updated, err = r.quotes.UpdateSecurities(ctx, ids)
@@ -68,11 +72,12 @@ func (r *RootResolver) RecordQuote(ctx context.Context, args struct {
 	Time      graphql.Time
 	Price     Decimal
 }) (*QuoteResolver, error) {
-	if _, err := auth.UserFromContext(ctx); err != nil {
+	person, err := auth.PersonFromContext(ctx)
+	if err != nil {
 		return nil, err
 	}
 
-	listing, err := r.db.GetListing(ctx, string(args.ListingID))
+	listing, err := r.db.GetListingVisibleTo(ctx, persistence.GetListingVisibleToParams{ID: string(args.ListingID), PersonID: ownedBy(person)})
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("listing %q not found", args.ListingID)
 	} else if err != nil {
@@ -99,7 +104,13 @@ func (r *RootResolver) DeleteQuote(ctx context.Context, args struct {
 	ListingID graphql.ID
 	Time      graphql.Time
 }) (bool, error) {
-	if _, err := auth.UserFromContext(ctx); err != nil {
+	person, err := auth.PersonFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	if _, err := r.db.GetListingVisibleTo(ctx, persistence.GetListingVisibleToParams{ID: string(args.ListingID), PersonID: ownedBy(person)}); errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	} else if err != nil {
 		return false, err
 	}
 

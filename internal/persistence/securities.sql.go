@@ -78,9 +78,9 @@ func (q *Queries) CreateQuote(ctx context.Context, arg CreateQuoteParams) error 
 
 const createSecurity = `-- name: CreateSecurity :one
 INSERT INTO
-    securities (id, display_name, underlying_security_id, asset_kind)
+    securities (id, display_name, underlying_security_id, asset_kind, person_id)
 VALUES
-    (?, ?, ?, ?) RETURNING id, display_name, underlying_security_id, kind, asset_kind
+    (?, ?, ?, ?, ?) RETURNING id, display_name, underlying_security_id, kind, asset_kind, person_id
 `
 
 type CreateSecurityParams struct {
@@ -88,6 +88,7 @@ type CreateSecurityParams struct {
 	DisplayName          string
 	UnderlyingSecurityID sql.NullString
 	AssetKind            sql.NullString
+	PersonID             sql.NullString
 }
 
 func (q *Queries) CreateSecurity(ctx context.Context, arg CreateSecurityParams) (*Security, error) {
@@ -96,6 +97,7 @@ func (q *Queries) CreateSecurity(ctx context.Context, arg CreateSecurityParams) 
 		arg.DisplayName,
 		arg.UnderlyingSecurityID,
 		arg.AssetKind,
+		arg.PersonID,
 	)
 	var i Security
 	err := row.Scan(
@@ -104,6 +106,7 @@ func (q *Queries) CreateSecurity(ctx context.Context, arg CreateSecurityParams) 
 		&i.UnderlyingSecurityID,
 		&i.Kind,
 		&i.AssetKind,
+		&i.PersonID,
 	)
 	return &i, err
 }
@@ -181,10 +184,16 @@ const deleteSecurity = `-- name: DeleteSecurity :execrows
 DELETE FROM securities
 WHERE
     id = ?
+    AND (person_id IS NULL OR person_id = ?)
 `
 
-func (q *Queries) DeleteSecurity(ctx context.Context, id string) (int64, error) {
-	result, err := q.db.ExecContext(ctx, deleteSecurity, id)
+type DeleteSecurityParams struct {
+	ID       string
+	PersonID sql.NullString
+}
+
+func (q *Queries) DeleteSecurity(ctx context.Context, arg DeleteSecurityParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteSecurity, arg.ID, arg.PersonID)
 	if err != nil {
 		return 0, err
 	}
@@ -202,24 +211,28 @@ func (q *Queries) DeleteSecurityIdentifiers(ctx context.Context, securityID stri
 	return err
 }
 
-const findSecurityByIdentifier = `-- name: FindSecurityByIdentifier :one
+const findSecurityByIdentifierVisibleTo = `-- name: FindSecurityByIdentifierVisibleTo :one
 SELECT
-    s.id, s.display_name, s.underlying_security_id, s.kind, s.asset_kind
+    s.id, s.display_name, s.underlying_security_id, s.kind, s.asset_kind, s.person_id
 FROM
     securities s
     JOIN security_identifiers si ON si.security_id = s.id
 WHERE
     si.kind = ?
     AND si.value = ?
+    AND (s.person_id IS NULL OR s.person_id = ?)
 `
 
-type FindSecurityByIdentifierParams struct {
-	Kind  string
-	Value string
+type FindSecurityByIdentifierVisibleToParams struct {
+	Kind     string
+	Value    string
+	PersonID sql.NullString
 }
 
-func (q *Queries) FindSecurityByIdentifier(ctx context.Context, arg FindSecurityByIdentifierParams) (*Security, error) {
-	row := q.db.QueryRowContext(ctx, findSecurityByIdentifier, arg.Kind, arg.Value)
+// A shared security or one of this person's own assets carrying the
+// identifier.
+func (q *Queries) FindSecurityByIdentifierVisibleTo(ctx context.Context, arg FindSecurityByIdentifierVisibleToParams) (*Security, error) {
+	row := q.db.QueryRowContext(ctx, findSecurityByIdentifierVisibleTo, arg.Kind, arg.Value, arg.PersonID)
 	var i Security
 	err := row.Scan(
 		&i.ID,
@@ -227,6 +240,7 @@ func (q *Queries) FindSecurityByIdentifier(ctx context.Context, arg FindSecurity
 		&i.UnderlyingSecurityID,
 		&i.Kind,
 		&i.AssetKind,
+		&i.PersonID,
 	)
 	return &i, err
 }
@@ -277,17 +291,25 @@ func (q *Queries) GetLatestQuoteBefore(ctx context.Context, arg GetLatestQuoteBe
 	return &i, err
 }
 
-const getListing = `-- name: GetListing :one
+const getListingVisibleTo = `-- name: GetListingVisibleTo :one
 SELECT
-    id, security_id, exchange, ticker, currency, quote_provider
+    l.id, l.security_id, l.exchange, l.ticker, l.currency, l.quote_provider
 FROM
-    listings
+    listings l
+    JOIN securities s ON s.id = l.security_id
 WHERE
-    id = ?
+    l.id = ?
+    AND (s.person_id IS NULL OR s.person_id = ?)
 `
 
-func (q *Queries) GetListing(ctx context.Context, id string) (*Listing, error) {
-	row := q.db.QueryRowContext(ctx, getListing, id)
+type GetListingVisibleToParams struct {
+	ID       string
+	PersonID sql.NullString
+}
+
+// A listing of a shared security or of this person's own asset.
+func (q *Queries) GetListingVisibleTo(ctx context.Context, arg GetListingVisibleToParams) (*Listing, error) {
+	row := q.db.QueryRowContext(ctx, getListingVisibleTo, arg.ID, arg.PersonID)
 	var i Listing
 	err := row.Scan(
 		&i.ID,
@@ -302,7 +324,7 @@ func (q *Queries) GetListing(ctx context.Context, id string) (*Listing, error) {
 
 const getSecurity = `-- name: GetSecurity :one
 SELECT
-    id, display_name, underlying_security_id, kind, asset_kind
+    id, display_name, underlying_security_id, kind, asset_kind, person_id
 FROM
     securities
 WHERE
@@ -318,8 +340,81 @@ func (q *Queries) GetSecurity(ctx context.Context, id string) (*Security, error)
 		&i.UnderlyingSecurityID,
 		&i.Kind,
 		&i.AssetKind,
+		&i.PersonID,
 	)
 	return &i, err
+}
+
+const getSecurityVisibleTo = `-- name: GetSecurityVisibleTo :one
+SELECT
+    id, display_name, underlying_security_id, kind, asset_kind, person_id
+FROM
+    securities
+WHERE
+    id = ?
+    AND (person_id IS NULL OR person_id = ?)
+`
+
+type GetSecurityVisibleToParams struct {
+	ID       string
+	PersonID sql.NullString
+}
+
+// A shared security, or a personal asset of this person.
+func (q *Queries) GetSecurityVisibleTo(ctx context.Context, arg GetSecurityVisibleToParams) (*Security, error) {
+	row := q.db.QueryRowContext(ctx, getSecurityVisibleTo, arg.ID, arg.PersonID)
+	var i Security
+	err := row.Scan(
+		&i.ID,
+		&i.DisplayName,
+		&i.UnderlyingSecurityID,
+		&i.Kind,
+		&i.AssetKind,
+		&i.PersonID,
+	)
+	return &i, err
+}
+
+const listAssetsForPerson = `-- name: ListAssetsForPerson :many
+SELECT
+    id, display_name, underlying_security_id, kind, asset_kind, person_id
+FROM
+    securities
+WHERE
+    person_id = ?
+ORDER BY
+    display_name
+`
+
+// The person's own assets.
+func (q *Queries) ListAssetsForPerson(ctx context.Context, personID sql.NullString) ([]*Security, error) {
+	rows, err := q.db.QueryContext(ctx, listAssetsForPerson, personID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*Security
+	for rows.Next() {
+		var i Security
+		if err := rows.Scan(
+			&i.ID,
+			&i.DisplayName,
+			&i.UnderlyingSecurityID,
+			&i.Kind,
+			&i.AssetKind,
+			&i.PersonID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listListings = `-- name: ListListings :many
@@ -472,13 +567,16 @@ func (q *Queries) ListQuotes(ctx context.Context, arg ListQuotesParams) ([]*Quot
 
 const listSecurities = `-- name: ListSecurities :many
 SELECT
-    id, display_name, underlying_security_id, kind, asset_kind
+    id, display_name, underlying_security_id, kind, asset_kind, person_id
 FROM
     securities
+WHERE
+    person_id IS NULL
 ORDER BY
     display_name
 `
 
+// The shared, listed instruments.
 func (q *Queries) ListSecurities(ctx context.Context) ([]*Security, error) {
 	rows, err := q.db.QueryContext(ctx, listSecurities)
 	if err != nil {
@@ -494,6 +592,7 @@ func (q *Queries) ListSecurities(ctx context.Context) ([]*Security, error) {
 			&i.UnderlyingSecurityID,
 			&i.Kind,
 			&i.AssetKind,
+			&i.PersonID,
 		); err != nil {
 			return nil, err
 		}
@@ -592,7 +691,8 @@ SET
     underlying_security_id = ?,
     asset_kind = ?
 WHERE
-    id = ? RETURNING id, display_name, underlying_security_id, kind, asset_kind
+    id = ?
+    AND (person_id IS NULL OR person_id = ?) RETURNING id, display_name, underlying_security_id, kind, asset_kind, person_id
 `
 
 type UpdateSecurityParams struct {
@@ -600,6 +700,7 @@ type UpdateSecurityParams struct {
 	UnderlyingSecurityID sql.NullString
 	AssetKind            sql.NullString
 	ID                   string
+	PersonID             sql.NullString
 }
 
 func (q *Queries) UpdateSecurity(ctx context.Context, arg UpdateSecurityParams) (*Security, error) {
@@ -608,6 +709,7 @@ func (q *Queries) UpdateSecurity(ctx context.Context, arg UpdateSecurityParams) 
 		arg.UnderlyingSecurityID,
 		arg.AssetKind,
 		arg.ID,
+		arg.PersonID,
 	)
 	var i Security
 	err := row.Scan(
@@ -616,6 +718,7 @@ func (q *Queries) UpdateSecurity(ctx context.Context, arg UpdateSecurityParams) 
 		&i.UnderlyingSecurityID,
 		&i.Kind,
 		&i.AssetKind,
+		&i.PersonID,
 	)
 	return &i, err
 }

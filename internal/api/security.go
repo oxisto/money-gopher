@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/graph-gophers/graphql-go"
 
+	"github.com/oxisto/money-gopher/internal/auth"
 	"github.com/oxisto/money-gopher/internal/persistence"
 )
 
@@ -53,7 +54,12 @@ func (r *RootResolver) Securities(ctx context.Context) ([]*SecurityResolver, err
 
 // Security resolves Query.security.
 func (r *RootResolver) Security(ctx context.Context, args struct{ ID graphql.ID }) (*SecurityResolver, error) {
-	security, err := r.db.GetSecurity(ctx, string(args.ID))
+	person, err := auth.PersonFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	security, err := r.db.GetSecurityVisibleTo(ctx, persistence.GetSecurityVisibleToParams{ID: string(args.ID), PersonID: ownedBy(person)})
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	} else if err != nil {
@@ -139,13 +145,17 @@ func (r *RootResolver) UpdateSecurity(ctx context.Context, args struct {
 	ID    graphql.ID
 	Input UpdateSecurityInput
 }) (*SecurityResolver, error) {
+	person, err := auth.PersonFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var security *persistence.Security
 
 	// Fields not in the input are written back as read, so the read and the
 	// write must see the same snapshot — otherwise a concurrent update to them
 	// in between is silently undone.
-	err := r.db.TxWith(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead}, func(q *persistence.Queries) (err error) {
-		security, err = q.GetSecurity(ctx, string(args.ID))
+	err = r.db.TxWith(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead}, func(q *persistence.Queries) (err error) {
+		security, err = q.GetSecurityVisibleTo(ctx, persistence.GetSecurityVisibleToParams{ID: string(args.ID), PersonID: ownedBy(person)})
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("security %q not found", args.ID)
 		} else if err != nil {
@@ -171,6 +181,7 @@ func (r *RootResolver) UpdateSecurity(ctx context.Context, args struct {
 				UnderlyingSecurityID: underlying,
 				AssetKind:            kind,
 				ID:                   string(args.ID),
+				PersonID:             ownedBy(person),
 			})
 			if err != nil {
 				return err
@@ -204,7 +215,12 @@ func (r *RootResolver) UpdateSecurity(ctx context.Context, args struct {
 // DeleteSecurity resolves Mutation.deleteSecurity. Deleting fails while
 // transactions still reference the security.
 func (r *RootResolver) DeleteSecurity(ctx context.Context, args struct{ ID graphql.ID }) (graphql.ID, error) {
-	rows, err := r.db.DeleteSecurity(ctx, string(args.ID))
+	person, err := auth.PersonFromContext(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	rows, err := r.db.DeleteSecurity(ctx, persistence.DeleteSecurityParams{ID: string(args.ID), PersonID: ownedBy(person)})
 	if err != nil {
 		return "", err
 	}
@@ -343,8 +359,14 @@ func (r *SecurityResolver) UnderlyingSecurity(ctx context.Context) (*SecurityRes
 		return nil, nil
 	}
 
-	underlying, err := r.db.GetSecurity(ctx, r.security.UnderlyingSecurityID.String)
+	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
+		return nil, err
+	}
+	underlying, err := r.db.GetSecurityVisibleTo(ctx, persistence.GetSecurityVisibleToParams{ID: r.security.UnderlyingSecurityID.String, PersonID: ownedBy(person)})
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil // someone else's asset: not ours to show
+	} else if err != nil {
 		return nil, err
 	}
 

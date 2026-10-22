@@ -27,6 +27,9 @@ export function isValuedByHand(kind: string | null | undefined): boolean {
 	return kind === 'PROPERTY' || kind === 'VEHICLE' || kind === 'LOAN' || kind === 'OTHER';
 }
 
+/** The kinds a personal asset can be: those valued by hand. */
+export const handValuedKinds = securityKinds.filter(([kind]) => isValuedByHand(kind));
+
 /** A ticker-shaped name for a manual price series: "Office room" → "OFFICE-ROOM". */
 export function tickerFor(name: string): string {
 	return (

@@ -238,11 +238,17 @@ enum SecurityKind {
   OTHER
 }
 
-"Security is a tradable security, shared across all users."
+"""
+Security is an asset: a listed instrument shared by everyone on this
+server, or — when it has an owner — a personal asset such as the office
+room rented out, visible to that person alone.
+"""
 type Security {
   id: ID!
   displayName: String!
   kind: SecurityKind
+  "The person this asset belongs to. Null for a listed instrument, shared by everyone."
+  owner: Person
   identifiers: [SecurityIdentifier!]!
   listings: [Listing!]!
   """
@@ -438,7 +444,11 @@ type Query {
   portfolio(id: ID!): Portfolio
   cashAccounts: [CashAccount!]!
   cashAccount(id: ID!): CashAccount
+  "Listed instruments, shared by everyone on this server."
   securities: [Security!]!
+  "The active person's own assets: the office room, the car, a loan given."
+  assets: [Security!]!
+  "A shared security, or one of the active person's own assets."
   security(id: ID!): Security
   transaction(id: ID!): Transaction
   "All documents uploaded by the current user, optionally filtered by state."
@@ -495,6 +505,30 @@ input ListingInput {
   ticker: String!
   currency: String!
   quoteProvider: String
+}
+
+"""
+BookAssetInput books an asset you own without a broker document: the asset
+itself (yours alone), its manual price series, a transfer-in of one unit at
+cost into your "Other assets" portfolio — created on first use, settling
+against cashAccountID — and, when given, today's valuation.
+"""
+input BookAssetInput {
+  displayName: String!
+  kind: SecurityKind!
+  "The ISO 4217 code the cost and every later valuation are in."
+  currency: String!
+  "When it became yours; the transfer-in is booked at this time."
+  acquiredAt: Time!
+  "What it cost, in major units: the cost basis of the position."
+  cost: Decimal!
+  "What it is worth now, in major units; stored as a valuation dated now."
+  valueToday: Decimal
+  """
+  The cash account rent, interest or a sale settle against. Needed when the
+  "Other assets" portfolio is first created; ignored once it exists.
+  """
+  cashAccountID: ID
 }
 
 input CreateSecurityInput {
@@ -604,6 +638,8 @@ type Mutation {
   deleteCashAccount(id: ID!): ID!
 
   createSecurity(input: CreateSecurityInput!): Security!
+  "Books an asset you own: see BookAssetInput."
+  bookAsset(input: BookAssetInput!): Security!
   updateSecurity(id: ID!, input: UpdateSecurityInput!): Security!
   "Deletes the security. Fails while transactions still reference it."
   deleteSecurity(id: ID!): ID!

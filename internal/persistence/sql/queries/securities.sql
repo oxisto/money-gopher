@@ -1,8 +1,18 @@
 -- name: CreateSecurity :one
 INSERT INTO
-    securities (id, display_name, underlying_security_id, asset_kind)
+    securities (id, display_name, underlying_security_id, asset_kind, person_id)
 VALUES
-    (?, ?, ?, ?) RETURNING *;
+    (?, ?, ?, ?, ?) RETURNING *;
+
+-- name: GetSecurityVisibleTo :one
+-- A shared security, or a personal asset of this person.
+SELECT
+    *
+FROM
+    securities
+WHERE
+    id = ?
+    AND (person_id IS NULL OR person_id = ?);
 
 -- name: GetSecurity :one
 SELECT
@@ -13,10 +23,24 @@ WHERE
     id = ?;
 
 -- name: ListSecurities :many
+-- The shared, listed instruments.
 SELECT
     *
 FROM
     securities
+WHERE
+    person_id IS NULL
+ORDER BY
+    display_name;
+
+-- name: ListAssetsForPerson :many
+-- The person's own assets.
+SELECT
+    *
+FROM
+    securities
+WHERE
+    person_id = ?
 ORDER BY
     display_name;
 
@@ -27,12 +51,14 @@ SET
     underlying_security_id = ?,
     asset_kind = ?
 WHERE
-    id = ? RETURNING *;
+    id = ?
+    AND (person_id IS NULL OR person_id = ?) RETURNING *;
 
 -- name: DeleteSecurity :execrows
 DELETE FROM securities
 WHERE
-    id = ?;
+    id = ?
+    AND (person_id IS NULL OR person_id = ?);
 
 -- name: CreateSecurityIdentifier :exec
 INSERT INTO
@@ -56,7 +82,9 @@ DELETE FROM security_identifiers
 WHERE
     security_id = ?;
 
--- name: FindSecurityByIdentifier :one
+-- name: FindSecurityByIdentifierVisibleTo :one
+-- A shared security or one of this person's own assets carrying the
+-- identifier.
 SELECT
     s.*
 FROM
@@ -64,7 +92,8 @@ FROM
     JOIN security_identifiers si ON si.security_id = s.id
 WHERE
     si.kind = ?
-    AND si.value = ?;
+    AND si.value = ?
+    AND (s.person_id IS NULL OR s.person_id = ?);
 
 -- name: CreateListing :one
 INSERT INTO
@@ -79,13 +108,16 @@ INSERT INTO
 VALUES
     (?, ?, ?, ?, ?, ?) RETURNING *;
 
--- name: GetListing :one
+-- name: GetListingVisibleTo :one
+-- A listing of a shared security or of this person's own asset.
 SELECT
-    *
+    l.*
 FROM
-    listings
+    listings l
+    JOIN securities s ON s.id = l.security_id
 WHERE
-    id = ?;
+    l.id = ?
+    AND (s.person_id IS NULL OR s.person_id = ?);
 
 -- name: ListListings :many
 SELECT

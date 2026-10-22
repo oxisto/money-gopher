@@ -213,9 +213,10 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 				d.SecurityID = &stx.SecurityID.String
 			} else if stx.Isin.Valid && stx.Isin.String != "" {
 				// Live ISIN lookup for documents processed before the security existed.
-				sec, err := q.FindSecurityByIdentifier(ctx, persistence.FindSecurityByIdentifierParams{
-					Kind:  "ISIN",
-					Value: stx.Isin.String,
+				sec, err := q.FindSecurityByIdentifierVisibleTo(ctx, persistence.FindSecurityByIdentifierVisibleToParams{
+					Kind:     "ISIN",
+					Value:    stx.Isin.String,
+					PersonID: ownedBy(person),
 				})
 				if err == nil {
 					d.SecurityID = &sec.ID
@@ -514,9 +515,14 @@ func (r *StagedTransactionResolver) Security(ctx context.Context) (*SecurityReso
 	if !r.tx.Isin.Valid || r.tx.Isin.String == "" {
 		return nil, nil
 	}
-	security, err := r.db.FindSecurityByIdentifier(ctx, persistence.FindSecurityByIdentifierParams{
-		Kind:  "ISIN",
-		Value: r.tx.Isin.String,
+	person, err := auth.PersonFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	security, err := r.db.FindSecurityByIdentifierVisibleTo(ctx, persistence.FindSecurityByIdentifierVisibleToParams{
+		Kind:     "ISIN",
+		Value:    r.tx.Isin.String,
+		PersonID: ownedBy(person),
 	})
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil

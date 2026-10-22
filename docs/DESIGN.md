@@ -216,9 +216,13 @@ Deleted from v1: all buf/proto/Connect artifacts (`buf*.yaml`, `mgo.proto`, `gen
     series (a listing with a provider for a security, manual valuations for
     the rest), ownership and cost basis as a delivery-in transaction, income
     against it like a dividend. The engine values it through the same quote
-    lookup; nothing there changes. Steps: kinds beyond securities, manual
-    valuations with an entry form, a form to book an asset you own without a
-    broker document, "security" → "asset" naming once the word is wrong.
+    lookup; nothing there changes. Done: kinds beyond securities, manual
+    valuations with an entry form (#658); ownership — `securities.person_id`,
+    visible to the owner alone, "shared or mine" in every lookup by ID or
+    ISIN — the `bookAsset` mutation and the Assets page, with personal
+    assets held in one "Other assets" portfolio per person
+    (`portfolios.purpose = 'ASSETS'`, created on first use). Next: the
+    "security" → "asset" naming across API and UI.
 11. **M10 — Recurring transactions.** A schedule (amount, interval, start,
     optional end) expanded into expected cash flows: rent coming in, a
     savings plan going out. Matched against imported statements so expected
@@ -377,7 +381,15 @@ deferred.
   Kinds beyond securities have no quote feed: their listing has no provider
   and is priced by `recordQuote` (the holding page's "Record valuation");
   the finance engine values them through the same quote lookup. Ownership
-  and cost basis of such an asset is a DELIVERY_INBOUND with a price. The ING parser suggests one
+  and cost basis of such an asset is a DELIVERY_INBOUND with a price —
+  `bookAsset` makes all of it in one transaction. `securities.person_id`
+  (migration 0012) marks a personal asset: `ListSecurities` is the shared
+  rows, `ListAssetsForPerson` the owned ones, and every lookup by ID or
+  identifier goes through a `...VisibleTo` query (`person_id IS NULL OR
+  person_id = ?`); positions, transactions and gains start from
+  person-scoped rows and keep plain `GetSecurity`. Known gap:
+  `NetWorthAt`'s "Invested" counts transfers at raw price × units, not at
+  `purchasePrice` (FX-converted). The ING parser suggests one
   per staged transaction (`security_kind`: a face value and a percentage
   price make it a bond, a Zinsgutschrift a bond coupon, "ETF"/"ETC"/"ETN" in
   the name an ETF, "Fonds"/"Fund" a fund, anything else a stock); the import
