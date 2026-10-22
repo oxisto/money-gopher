@@ -52,7 +52,7 @@
 		<main
 			class="min-w-0 flex-1 border-line bg-surface md:m-2 md:ml-0 md:min-h-[calc(100vh-1rem)] md:rounded-xl md:border"
 		>
-			<div class="mx-auto max-w-6xl px-4 py-5 md:px-8 md:pb-12">
+			<div class="mx-auto max-w-7xl px-4 py-5 md:px-6 md:pb-12">
 				{@render children()}
 			</div>
 		</main>
