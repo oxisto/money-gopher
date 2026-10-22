@@ -1,12 +1,24 @@
 <script lang="ts">
 	import Panel from '#lib/components/ui/Panel.svelte';
+	import Segmented from '#lib/components/ui/Segmented.svelte';
 	import StatStrip from '#lib/components/ui/StatStrip.svelte';
+	import { goto } from '$app/navigation';
+	import { navigating } from '$app/state';
 	import { describeTransaction, intervalLabel, scheduleTypeLabel } from '#lib/describe.js';
 	import { formatDate, formatMoney, formatSignedMoney, toneOf } from '#lib/format.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 	const cf = $derived(data.cashFlow);
+
+	// The year lives in the URL (?year=2027); next year is all expectation.
+	const currentYear = new Date().getFullYear();
+	const years = Array.from({ length: 5 }, (_, i) => String(currentYear + 1 - i));
+	let year = $derived(String(data.year));
+	function loadYear(value: string) {
+		open = null;
+		goto(`?year=${value}`, { reset: false, replace: true });
+	}
 
 	const monthLabel = (t: Date | string) =>
 		new Intl.DateTimeFormat(undefined, { month: 'short', year: '2-digit', timeZone: 'UTC' }).format(new Date(t));
@@ -24,11 +36,15 @@
 			...cf.months.map((m) => Math.max(m.expectedIn.amount, m.expectedOut.amount + m.expectedSaved.amount, m.actualIn?.amount ?? 0, (m.actualOut?.amount ?? 0) + (m.actualSaved?.amount ?? 0)))
 		)
 	);
-	// One month at a time: the strip shows the selected one, the last with a
-	// statement by default, since that is where the plan meets the truth.
+	// One month at a time: the strip and the opened row show the selected
+	// one — the current month on entry, else the last with a statement.
 	const lastActual = $derived([...cf.months].reverse().find((m) => m.actualFree));
+	const isCurrent = $derived(String(data.year) === String(currentYear));
 	let open = $state<string | null>(null);
-	const selected = $derived(cf.months.find((m) => String(m.month) === open) ?? lastActual ?? thisMonth);
+	const selected = $derived(
+		cf.months.find((m) => String(m.month) === open) ?? (isCurrent ? thisMonth : (lastActual ?? cf.months[0]))
+	);
+	const isOpen = (m: (typeof cf.months)[number]) => (open === null ? selected === m : open === String(m.month));
 	const monthName = (t: Date | string) =>
 		new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(t));
 	type M = (typeof cf.months)[number];
@@ -62,16 +78,17 @@
 <div class="mb-6 flex flex-wrap items-center gap-3">
 	<div class="flex-1">
 		<h1 class="text-lg font-semibold">
-			Cash flow
+			Cash flow {year}
 			<span class="ml-1 rounded-full bg-accent-soft px-1.5 align-middle text-[11px] font-semibold text-accent-fg" title="From your schedules, not from tracking every expense">≈ estimated</span>
 		</h1>
 		<p class="text-[13px] text-muted">
 			The household's month as your schedules expect it, seen from the cash accounts: in, out, saved, and what is left.
 		</p>
 	</div>
+	<Segmented label="Year" options={years.map((y) => ({ value: y, label: y }))} bind:value={year} onchange={loadYear} />
 </div>
 
-<div class="flex flex-col gap-6">
+<div class="flex flex-col gap-6 transition-opacity {navigating.to?.route.id === '/cash-flow' ? 'opacity-60' : ''}">
 	<div class="flex flex-col gap-2">
 		<h2 class="text-sm font-semibold">
 			{monthName(selected.month)}
@@ -111,7 +128,7 @@
 			<tbody class="divide-y divide-line">
 				{#each cf.months as m (m.month)}
 					{@const key = String(m.month)}
-					<tr class="cursor-pointer hover:bg-raised {String(selected.month) === key ? 'bg-raised' : ''}" onclick={() => (open = open === key ? null : key)}>
+					<tr class="cursor-pointer hover:bg-raised {selected === m ? 'bg-raised' : ''}" onclick={() => (open = isOpen(m) ? '' : key)}>
 						<td class="w-16 py-2 pr-3 text-muted">{monthLabel(m.month)}</td>
 						<td class="py-2 pr-3">
 							<div class="flex flex-col gap-1">
@@ -136,7 +153,7 @@
 							{/if}
 						</td>
 					</tr>
-					{#if open === key}
+					{#if isOpen(m)}
 						<tr>
 							<td colspan="3" class="bg-raised/50 px-3 py-2">
 								<div class="grid gap-4 text-xs {m.actualIn ? 'lg:grid-cols-2' : ''}">

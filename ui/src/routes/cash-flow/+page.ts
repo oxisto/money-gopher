@@ -2,8 +2,8 @@ import { graphql, query } from '#lib/graphql/client.js';
 import type { PageLoad } from './$types';
 
 const CashFlowQuery = graphql(`
-	query CashFlow {
-		cashFlow {
+	query CashFlow($from: Time!) {
+		cashFlow(from: $from, months: 12) {
 			currency
 			from
 			months {
@@ -53,4 +53,11 @@ const CashFlowQuery = graphql(`
 	}
 `);
 
-export const load: PageLoad = async ({ fetch }) => query(CashFlowQuery, {}, fetch);
+/** The year shown, from ?year=; defaults to the current one. Next year is allowed: it is all expectation. */
+export const load: PageLoad = async ({ fetch, url }) => {
+	const current = new Date().getFullYear();
+	const param = Number(url.searchParams.get('year'));
+	const year = Number.isInteger(param) && param > 1900 && param <= current + 1 ? param : current;
+	const { cashFlow } = await query(CashFlowQuery, { from: new Date(Date.UTC(year, 0, 1)) }, fetch);
+	return { year, cashFlow };
+};
