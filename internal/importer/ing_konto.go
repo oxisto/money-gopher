@@ -70,11 +70,11 @@ func ingKontoHasISINContinuation(lines []string, from int) bool {
 // the first line of the Verwendungszweck (or nothing).
 var ingKontoDated = regexp.MustCompile(`^\s*\d{2}\.\d{2}\.\d{4}\s*(.*?)\s*$`)
 
-// ingKontoPurpose gathers the Verwendungszweck printed under a row: the
-// text on its Valuta line and the wrapped lines after it, up to the next
-// row or a blank line (a page break). SEPA boilerplate — the Referenz and
-// Mandat lines — is left out.
-func ingKontoPurpose(lines []string, from int) string {
+// ingKontoContinuation gathers the lines printed under a row: the text on
+// its Valuta line and the wrapped lines after it, up to the next row or a
+// blank line (a page break). SEPA boilerplate — the Referenz and Mandat
+// lines — is left out.
+func ingKontoContinuation(lines []string, from int) []string {
 	var parts []string
 	for j := from; j < len(lines); j++ {
 		line := lines[j]
@@ -93,15 +93,56 @@ func ingKontoPurpose(lines []string, from int) string {
 		}
 		parts = append(parts, text)
 	}
-	return strings.Join(parts, " ")
+	return parts
+}
+
+// ingKontoNameWidth is the column the statement wraps a counterparty's
+// name at: the longest name part on an amount line. A name that fills
+// the width continues on the next line, mid-word.
+func ingKontoNameWidth(rows []ingKontoRawRow) int {
+	width := 0
+	for _, r := range rows {
+		if n := len([]rune(ingKontoNamePart(r.desc))); n > width {
+			width = n
+		}
+	}
+	return width
+}
+
+// ingKontoNamePart is the amount line's text after the Buchungsart: the
+// counterparty's name, as far as it fit.
+func ingKontoNamePart(desc string) string {
+	_, name, _ := strings.Cut(strings.TrimSpace(desc), " ")
+	return name
+}
+
+// ingKontoNote is the row as the statement words it: the Buchungsart and
+// the counterparty, then " · " and the Verwendungszweck. A name wrapped
+// mid-word at the column width is joined back together first.
+func ingKontoNote(r ingKontoRawRow, width int) string {
+	desc := strings.TrimSpace(r.desc)
+	nameOpen := width >= 30 && len([]rune(ingKontoNamePart(desc))) == width
+	var purpose []string
+	for _, text := range r.continuation {
+		if nameOpen {
+			desc += text
+			nameOpen = len([]rune(text)) == width
+			continue
+		}
+		purpose = append(purpose, text)
+	}
+	if len(purpose) == 0 {
+		return desc
+	}
+	return desc + " · " + strings.Join(purpose, " ")
 }
 
 // ingKontoRawRow is one matched, not-yet-filtered ledger line.
 type ingKontoRawRow struct {
-	dateStr string
-	desc    string
-	purpose string
-	amount  int64
+	dateStr      string
+	desc         string
+	continuation []string
+	amount       int64
 }
 
 // ingParseKontoauszug parses every dated cash movement in an ING account
@@ -173,7 +214,7 @@ func ingParseKontoauszug(text string) ([]StagedTransaction, error) {
 			continue
 		}
 
-		rows = append(rows, ingKontoRawRow{dateStr: m[1], desc: desc, purpose: ingKontoPurpose(lines, i+1), amount: amount})
+		rows = append(rows, ingKontoRawRow{dateStr: m[1], desc: desc, continuation: ingKontoContinuation(lines, i+1), amount: amount})
 	}
 
 	// Second pass: for each date, sum any withholding-tax rows and fold them
@@ -198,6 +239,7 @@ func ingParseKontoauszug(text string) ([]StagedTransaction, error) {
 		}
 	}
 
+	nameWidth := ingKontoNameWidth(rows)
 	var out []StagedTransaction
 	foldedDate := map[string]bool{} // only the first interest row per date gets the fold.
 	for i, r := range rows {
@@ -243,7 +285,7 @@ func ingParseKontoauszug(text string) ([]StagedTransaction, error) {
 			Taxes:          taxes,
 			Currency:       "EUR",
 			SettlementIBAN: iban,
-			Note:           ingKontoNote(r),
+			Note:           ingKontoNote(r, nameWidth),
 		})
 	}
 
@@ -251,14 +293,4 @@ func ingParseKontoauszug(text string) ([]StagedTransaction, error) {
 		return nil, fmt.Errorf("no transactions found in Kontoauszug")
 	}
 	return out, nil
-}
-
-// ingKontoNote is the row as the statement words it: the Buchungsart and
-// counterparty, then the Verwendungszweck.
-func ingKontoNote(r ingKontoRawRow) string {
-	desc := strings.TrimSpace(r.desc)
-	if r.purpose == "" {
-		return desc
-	}
-	return desc + " · " + r.purpose
 }
