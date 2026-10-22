@@ -58,8 +58,8 @@ Two families.
 | `cash_accounts` | balances and currencies |
 | `net_worth_history` | net worth against invested capital over a period, as points |
 | `realized_gains` | dividends, interest, sales in a period |
-| `security` | one security: identifiers, listings, latest quote, quote history summary, kind |
-| `search_securities` | by name or ISIN among the securities the app knows |
+| `asset` | one asset: identifiers, listings, latest quote, quote history summary, kind |
+| `search_assets` | by name or ISIN among the securities the app knows |
 | `transactions` | the transactions of a security or an account in a period (detail; off by default, see Principles) |
 
 **External** (research; every result cached in the database with source and

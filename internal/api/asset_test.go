@@ -141,7 +141,7 @@ func TestBookAsset(t *testing.T) {
 
 	// Held in "Other assets": one unit, cost basis 40000, worth 42000.
 	portfolios := func() []any {
-		data := exec(t, schema, ctx, `{ portfolios { displayName snapshot { positions { security { id } units purchaseValue { amount } marketValue { amount } } } } }`, nil)
+		data := exec(t, schema, ctx, `{ portfolios { displayName snapshot { positions { asset { id } units purchaseValue { amount } marketValue { amount } } } } }`, nil)
 		return data["portfolios"].([]any)
 	}
 	ps := portfolios()
@@ -185,7 +185,7 @@ func TestAssetIsolation(t *testing.T) {
 
 	data := exec(t, schema, ctx, `mutation {
 		createCashAccount(input: { displayName: "Giro", currency: "EUR" }) { id }
-		shared: createSecurity(input: { displayName: "Vanguard FTSE All-World", listings: [{ ticker: "VWCE", currency: "EUR" }] }) { id listings { id } }
+		shared: createAsset(input: { displayName: "Vanguard FTSE All-World", listings: [{ ticker: "VWCE", currency: "EUR" }] }) { id listings { id } }
 	}`, nil)
 	accountID := data["createCashAccount"].(map[string]any)["id"].(string)
 	sharedID := data["shared"].(map[string]any)["id"].(string)
@@ -203,8 +203,8 @@ func TestAssetIsolation(t *testing.T) {
 
 	data = exec(t, schema, other, `query ($room: ID!, $shared: ID!) {
 		assets { id }
-		room: security(id: $room) { id }
-		shared: security(id: $shared) { id }
+		room: asset(id: $room) { id }
+		shared: asset(id: $shared) { id }
 	}`, map[string]any{"room": roomID, "shared": sharedID})
 	if n := len(data["assets"].([]any)); n != 0 {
 		t.Errorf("the other person's assets = %d, want 0", n)
@@ -217,9 +217,9 @@ func TestAssetIsolation(t *testing.T) {
 	}
 
 	for name, q := range map[string]string{
-		"update":  `mutation ($id: ID!) { updateSecurity(id: $id, input: { displayName: "Mine now" }) { id } }`,
-		"delete":  `mutation ($id: ID!) { deleteSecurity(id: $id) }`,
-		"refresh": `mutation ($id: ID!) { triggerQuoteUpdate(securityIDs: [$id]) { updatedListings } }`,
+		"update":  `mutation ($id: ID!) { updateAsset(id: $id, input: { displayName: "Mine now" }) { id } }`,
+		"delete":  `mutation ($id: ID!) { deleteAsset(id: $id) }`,
+		"refresh": `mutation ($id: ID!) { triggerQuoteUpdate(assetIDs: [$id]) { updatedListings } }`,
 	} {
 		t.Run("other cannot "+name, func(t *testing.T) {
 			execExpectError(t, schema, other, q, map[string]any{"id": roomID})
@@ -238,7 +238,7 @@ func TestAssetIsolation(t *testing.T) {
 	})
 
 	// The owner can do all of it, and the shared security is editable by both.
-	exec(t, schema, ctx, `mutation ($id: ID!) { updateSecurity(id: $id, input: { displayName: "Office room, 25 m²" }) { id } }`, map[string]any{"id": roomID})
-	exec(t, schema, other, `mutation ($id: ID!) { updateSecurity(id: $id, input: { displayName: "Vanguard FTSE All-World (Acc)" }) { id } }`, map[string]any{"id": sharedID})
-	exec(t, schema, ctx, `mutation ($id: ID!) { updateSecurity(id: $id, input: { displayName: "Vanguard FTSE All-World" }) { id } }`, map[string]any{"id": sharedID})
+	exec(t, schema, ctx, `mutation ($id: ID!) { updateAsset(id: $id, input: { displayName: "Office room, 25 m²" }) { id } }`, map[string]any{"id": roomID})
+	exec(t, schema, other, `mutation ($id: ID!) { updateAsset(id: $id, input: { displayName: "Vanguard FTSE All-World (Acc)" }) { id } }`, map[string]any{"id": sharedID})
+	exec(t, schema, ctx, `mutation ($id: ID!) { updateAsset(id: $id, input: { displayName: "Vanguard FTSE All-World" }) { id } }`, map[string]any{"id": sharedID})
 }

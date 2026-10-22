@@ -28,15 +28,16 @@ const Imports = graphql(`
 				calculatedCashDelta { amount currency }
 				fxRate
 				currency
-				securityHint
+				assetHint
 				isin
-				securityKindHint
-				security { id displayName }
+				assetKindHint
+				asset { id displayName }
 			}
 		}
 		portfolios { id displayName }
 		cashAccounts { id displayName currency iban }
 		securities { id displayName }
+		assets { id displayName }
 	}
 `);
 

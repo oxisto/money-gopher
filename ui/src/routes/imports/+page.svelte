@@ -25,7 +25,7 @@
 		documents={data.documents}
 		portfolios={data.portfolios}
 		cashAccounts={data.cashAccounts}
-		securities={data.securities}
+		securities={[...data.securities, ...data.assets]}
 		onchanged={refresh}
 	/>
 </div>

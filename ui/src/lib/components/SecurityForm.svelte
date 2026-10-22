@@ -5,13 +5,13 @@
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import SelectField from './ui/SelectField.svelte';
 	import TextField from './ui/TextField.svelte';
-	import { asKind, isValuedByHand, securityKinds, tickerFor } from '#lib/securities.js';
+	import { asKind, isValuedByHand, assetKinds, tickerFor } from '#lib/assets.js';
 
 	let { oncreated }: { oncreated?: () => void } = $props();
 
-	const createSecurity = graphql(`
-		mutation CreateSecurity($input: CreateSecurityInput!) {
-			createSecurity(input: $input) {
+	const createAsset = graphql(`
+		mutation CreateAsset($input: CreateAssetInput!) {
+			createAsset(input: $input) {
 				id
 			}
 		}
@@ -40,7 +40,7 @@
 			return;
 		}
 
-		const result = await mutate(createSecurity, {
+		const result = await mutate(createAsset, {
 			input: {
 				displayName: name.trim(),
 				kind: asKind(kind),
@@ -74,7 +74,7 @@
 		<TextField bind:value={name} label="Name" placeholder="e.g. iShares Core MSCI World" required />
 		<SelectField bind:value={kind} label="Kind">
 			<option value="">Not set</option>
-			{#each securityKinds as [value, label] (value)}
+			{#each assetKinds as [value, label] (value)}
 				<option {value}>{label}</option>
 			{/each}
 		</SelectField>

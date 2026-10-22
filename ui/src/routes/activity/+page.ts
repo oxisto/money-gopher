@@ -16,6 +16,7 @@ const Activity = graphql(
 				transactions { ...ActivityTransaction }
 			}
 			securities { id displayName }
+			assets { id displayName }
 		}
 	`,
 	[ActivityTransaction]

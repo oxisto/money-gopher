@@ -182,8 +182,8 @@ type PositionResolver struct {
 	security *persistence.Security
 }
 
-func (r *PositionResolver) Security() *SecurityResolver {
-	return &SecurityResolver{db: r.db, security: r.security}
+func (r *PositionResolver) Asset() *AssetResolver {
+	return &AssetResolver{db: r.db, security: r.security}
 }
 
 func (r *PositionResolver) Units() float64 {

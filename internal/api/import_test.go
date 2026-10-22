@@ -72,7 +72,7 @@ func TestImportPipeline(t *testing.T) {
 
 	// 2b. Create the security so the importer can match it by ISIN.
 	exec(t, schema, ctx, `mutation {
-		createSecurity(input: {
+		createAsset(input: {
 			displayName: "Pfizer Inc."
 			identifiers: [{ kind: "ISIN", value: "US7170811035" }]
 			listings: [{ ticker: "PFE", exchange: "XETR", currency: "EUR" }]

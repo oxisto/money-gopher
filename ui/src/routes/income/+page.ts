@@ -16,7 +16,7 @@ const RealizedGains = graphql(`
 				time
 				type
 				amount { amount currency }
-				security { id displayName }
+				asset { id displayName }
 				cashAccount { displayName }
 				portfolio { displayName }
 			}

@@ -39,7 +39,7 @@ func TestTriggerQuoteUpdate(t *testing.T) {
 	schema, ctx := NewSchema(db, updater), auth.WithPerson(auth.WithUser(context.Background(), user), person)
 
 	exec(t, schema, ctx, `mutation {
-		createSecurity(input: {
+		createAsset(input: {
 			displayName: "Vanguard FTSE All-World"
 			listings: [{ ticker: "VWCE", currency: "EUR", quoteProvider: "fake" }]
 		}) { id }

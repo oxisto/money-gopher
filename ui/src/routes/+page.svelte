@@ -108,19 +108,19 @@
 	// cash. Shades of the accent keep it calm; cash gets its own color.
 	const SHADES = ['bg-accent', 'bg-accent/80', 'bg-accent/65', 'bg-accent/50', 'bg-accent/38', 'bg-accent/28'];
 	const allocation = $derived.by(() => {
-		const bySecurity = new Map<string, { id: string; name: string; value: number }>();
+		const byAsset = new Map<string, { id: string; name: string; value: number }>();
 		for (const p of portfolios) {
 			for (const pos of p.snapshot.positions) {
-				const e = bySecurity.get(pos.security.id) ?? {
-					id: pos.security.id,
-					name: pos.security.displayName,
+				const e = byAsset.get(pos.asset.id) ?? {
+					id: pos.asset.id,
+					name: pos.asset.displayName,
 					value: 0
 				};
 				e.value += pos.marketValue.amount;
-				bySecurity.set(pos.security.id, e);
+				byAsset.set(pos.asset.id, e);
 			}
 		}
-		const sorted = [...bySecurity.values()].sort((a, b) => b.value - a.value);
+		const sorted = [...byAsset.values()].sort((a, b) => b.value - a.value);
 		const top = sorted.slice(0, SHADES.length);
 		const rest = sorted.slice(SHADES.length);
 		// Keyed by ID: different securities can share a display name.
@@ -186,7 +186,7 @@
 				id: doc.id,
 				title: first
 					? staged.length === 1
-						? describeTransaction({ ...first, security: first.security ?? (first.securityHint ? { displayName: first.securityHint } : null) }).title
+						? describeTransaction({ ...first, asset: first.asset ?? (first.assetHint ? { displayName: first.assetHint } : null) }).title
 						: `${staged.length} transactions`
 					: doc.filename,
 				meta: [doc.transactionDate ? formatDate(doc.transactionDate) : null, doc.suggestedCashAccount?.displayName]

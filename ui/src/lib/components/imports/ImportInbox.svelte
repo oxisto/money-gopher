@@ -19,10 +19,10 @@
 		calculatedCashDelta: { amount: number; currency: string } | null;
 		fxRate: string | null;
 		currency: string;
-		securityHint: string | null;
-		securityKindHint: string | null;
+		assetHint: string | null;
+		assetKindHint: string | null;
 		isin: string | null;
-		security: { id: string; displayName: string } | null;
+		asset: { id: string; displayName: string } | null;
 	}
 	interface Document {
 		id: string;
@@ -129,7 +129,7 @@
 	// form would otherwise ask for already has an unambiguous answer: the
 	// cash account (IBAN match, or there's only one to begin with), the
 	// portfolio (only one exists, since portfolios are never auto-matched),
-	// every transaction's security (already resolved from its ISIN), and
+	// every transaction's asset (already resolved from its ISIN), and
 	// the parsed cash amount agrees with the one recomputed from its parts.
 	// A reprocessed document can be PARSED again while still having
 	// committed transactions; confirmImport reconciles those in place, so
@@ -145,7 +145,7 @@
 		if (portfolioRequired && !portfolioID) return null;
 
 		for (const tx of doc.stagedTransactions) {
-			if (!tx.security && (tx.isin || tx.securityHint)) return null;
+			if (!tx.asset && (tx.isin || tx.assetHint)) return null;
 			if (tx.calculatedCashDelta && tx.calculatedCashDelta.amount !== tx.cashDelta.amount) return null;
 		}
 		return { cashAccountID, portfolioID };
@@ -179,14 +179,14 @@
 		const mismatches = staged.filter(
 			(s) => s.calculatedCashDelta && s.calculatedCashDelta.amount !== s.cashDelta.amount
 		).length;
-		const unmatched = staged.filter((s) => !s.security && (s.isin || s.securityHint)).length;
+		const unmatched = staged.filter((s) => !s.asset && (s.isin || s.assetHint)).length;
 		const amount = staged.length
 			? staged.reduce((s, t) => s + t.cashDelta.amount, 0)
 			: doc.transactions.reduce((s, t) => s + t.cashDelta.amount, 0);
 		const d = first
 			? describeTransaction({
 					...first,
-					security: first.security ?? (first.securityHint ? { displayName: first.securityHint } : null)
+					asset: first.asset ?? (first.assetHint ? { displayName: first.assetHint } : null)
 				})
 			: null;
 		return {
@@ -325,7 +325,7 @@
 									{:else if s.mismatches}
 										{s.mismatches} {s.mismatches === 1 ? 'amount differs' : 'amounts differ'}
 									{:else if s.unmatched}
-										{s.unmatched} unknown {s.unmatched === 1 ? 'security' : 'securities'}
+										{s.unmatched} unknown {s.unmatched === 1 ? 'asset' : 'securities'}
 									{:else if !match}
 										amounts match · choose the account
 									{:else}

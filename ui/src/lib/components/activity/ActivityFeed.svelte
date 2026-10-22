@@ -8,7 +8,7 @@
 	import Icon from '#lib/components/ui/Icon.svelte';
 	import { describeTransaction, formatUnits } from '#lib/describe.js';
 	import { formatDate, formatMoney, formatPrice, formatSignedMoney, toneOf } from '#lib/format.js';
-	import type { CashAccountOption, FeedTransaction, SecurityOption } from '#lib/transaction-types.js';
+	import type { CashAccountOption, FeedTransaction, AssetOption } from '#lib/transaction-types.js';
 
 	let {
 		transactions,
@@ -20,7 +20,7 @@
 	}: {
 		/** Newest first. */
 		transactions: FeedTransaction[];
-		securities: SecurityOption[];
+		securities: AssetOption[];
 		cashAccounts: CashAccountOption[];
 		// Only meaningful when transactions is one cash account's full
 		// history: the running sum then ends exactly at its balance. A

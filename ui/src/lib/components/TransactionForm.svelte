@@ -3,7 +3,7 @@
 	import { TRANSACTION_TYPES, type TransactionType } from '#lib/transaction-types.js';
 	import { labelOf } from '#lib/describe.js';
 	import { formatMoney, parseAmount, parsePrice } from '#lib/format.js';
-	import type { SecurityOption, CashAccountOption } from '#lib/transaction-types.js';
+	import type { AssetOption, CashAccountOption } from '#lib/transaction-types.js';
 	import Button from './ui/Button.svelte';
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import SelectField from './ui/SelectField.svelte';
@@ -20,7 +20,7 @@
 		portfolioID?: string;
 		defaultCashAccountID?: string;
 		defaultType?: TransactionType;
-		securities: SecurityOption[];
+		securities: AssetOption[];
 		cashAccounts: CashAccountOption[];
 		oncreated: () => void;
 	} = $props();
@@ -42,7 +42,7 @@
 
 	let type = $state<TransactionType>(defaultType);
 	let time = $state(nowLocal());
-	let securityID = $state('');
+	let assetID = $state('');
 	let cashAccountID = $state(defaultCashAccountID);
 	let units = $state('');
 	let price = $state('');
@@ -77,7 +77,7 @@
 				time: new Date(time),
 				currency: currency.toUpperCase(),
 				portfolioID: portfolioID || undefined,
-				securityID: securityID || undefined,
+				assetID: assetID || undefined,
 				cashAccountID: cashAccountID || undefined,
 				units: units ? parseFloat(units) : undefined,
 				price: parsePrice(price) ?? undefined,
@@ -109,10 +109,10 @@
 
 		<TextField bind:value={time} label="Date" type="datetime-local" required />
 
-		<SelectField bind:value={securityID} label="Security">
+		<SelectField bind:value={assetID} label="Asset">
 			<option value="">None</option>
-			{#each securities as security (security.id)}
-				<option value={security.id}>{security.displayName}</option>
+			{#each securities as asset (asset.id)}
+				<option value={asset.id}>{asset.displayName}</option>
 			{/each}
 		</SelectField>
 

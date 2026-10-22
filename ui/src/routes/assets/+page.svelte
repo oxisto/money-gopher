@@ -5,7 +5,7 @@
 	import Dialog from '#lib/components/ui/Dialog.svelte';
 	import Icon from '#lib/components/ui/Icon.svelte';
 	import { formatDate, formatMoney, formatSignedMoney, toneOf } from '#lib/format.js';
-	import { kindLabel, type SecurityKind } from '#lib/securities.js';
+	import { kindLabel, type AssetKind } from '#lib/assets.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -15,7 +15,7 @@
 	// The asset's position, merged across portfolios like Holdings does; an
 	// asset with none yet (its transfer-in deleted) still lists, at nothing.
 	const holdings = $derived(
-		new Map(holdingsOf(data.portfolios.flatMap((p) => p.snapshot.positions)).map((h) => [h.securityId, h]))
+		new Map(holdingsOf(data.portfolios.flatMap((p) => p.snapshot.positions)).map((h) => [h.assetId, h]))
 	);
 	const rows = $derived(
 		data.assets.map((asset) => ({
@@ -63,7 +63,7 @@
 						<td class="py-2.5 pr-3 pl-4">
 							<a href="/holdings/{asset.id}" class="font-medium hover:underline">{asset.displayName}</a>
 							<div class="text-[11px] text-muted">
-								{asset.kind ? kindLabel[asset.kind as SecurityKind] : 'Asset'}
+								{asset.kind ? kindLabel[asset.kind as AssetKind] : 'Asset'}
 								{#if asset.listings[0]}
 									· in {asset.listings[0].currency}
 								{/if}

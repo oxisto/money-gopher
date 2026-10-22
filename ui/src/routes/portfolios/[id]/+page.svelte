@@ -43,7 +43,7 @@
 		<TransactionForm
 			portfolioID={portfolio.id}
 			defaultCashAccountID={portfolio.cashAccount.id}
-			securities={data.securities}
+			securities={[...data.securities, ...data.assets]}
 			cashAccounts={data.cashAccounts}
 			oncreated={() => {
 				addOpen = false;
@@ -90,7 +90,7 @@
 		{:else}
 			<ActivityFeed
 				transactions={portfolio.transactions as FeedTransaction[]}
-				securities={data.securities}
+				securities={[...data.securities, ...data.assets]}
 				cashAccounts={data.cashAccounts}
 				onchanged={refresh}
 			/>

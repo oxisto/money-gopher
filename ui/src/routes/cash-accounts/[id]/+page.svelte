@@ -56,7 +56,7 @@
 		<TransactionForm
 			defaultCashAccountID={account.id}
 			defaultType="DEPOSIT_CASH"
-			securities={data.securities}
+			securities={[...data.securities, ...data.assets]}
 			cashAccounts={data.cashAccounts}
 			oncreated={() => {
 				addOpen = false;
@@ -69,7 +69,7 @@
 		<StatStrip {stats} />
 		<ActivityFeed
 			{transactions}
-			securities={data.securities}
+			securities={[...data.securities, ...data.assets]}
 			cashAccounts={data.cashAccounts}
 			showBalance
 			onchanged={refresh}

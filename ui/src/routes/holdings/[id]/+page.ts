@@ -5,13 +5,13 @@ import type { PageLoad } from './$types';
 const HoldingDetail = graphql(
 	`
 		query HoldingDetail($id: ID!) {
-			security(id: $id) {
+			asset(id: $id) {
 				id
 				displayName
 				kind
 				owner { id }
 				identifiers { kind value }
-				underlyingSecurity { id displayName }
+				underlyingAsset { id displayName }
 				listings {
 					id
 					exchange
@@ -45,7 +45,7 @@ const HoldingDetail = graphql(
 					taxes { amount currency }
 					cashDelta { amount currency }
 					gain { amount currency }
-					security { id displayName }
+					asset { id displayName }
 				}
 			}
 		}

@@ -14,11 +14,11 @@ export interface TransactionRow {
 	taxes: { amount: number; currency: string };
 	cashDelta: { amount: number; currency: string };
 	fxRate: string | null;
-	security: { id: string; displayName: string } | null;
+	asset: { id: string; displayName: string } | null;
 	cashAccount: { id: string } | null;
 }
 
-export interface SecurityOption {
+export interface AssetOption {
 	id: string;
 	displayName: string;
 }

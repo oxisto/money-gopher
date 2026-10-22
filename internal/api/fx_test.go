@@ -30,15 +30,15 @@ func TestSnapshot_ForeignListing(t *testing.T) {
 
 	data := exec(t, schema, ctx, `mutation {
 		createCashAccount(input: { displayName: "Giro", currency: "EUR" }) { id }
-		createSecurity(input: {
+		createAsset(input: {
 			displayName: "4,125 % United States of America"
 			identifiers: [{ kind: "ISIN", value: "US91282CFV81" }]
 			listings: [{ ticker: "US91282CFV81", currency: "USD" }]
 		}) { id listings { id } }
 	}`, nil)
 	accountID := data["createCashAccount"].(map[string]any)["id"].(string)
-	security := data["createSecurity"].(map[string]any)
-	securityID := security["id"].(string)
+	security := data["createAsset"].(map[string]any)
+	assetID := security["id"].(string)
 	listingID := security["listings"].([]any)[0].(map[string]any)["id"].(string)
 
 	data = exec(t, schema, ctx, `mutation ($account: ID!) {
@@ -54,7 +54,7 @@ func TestSnapshot_ForeignListing(t *testing.T) {
 	if _, err := db.CreateTransaction(ctx, persistence.CreateTransactionParams{
 		ID: "buy", Type: "BUY", Time: bought,
 		PortfolioID:   sql.NullString{String: portfolioID, Valid: true},
-		SecurityID:    sql.NullString{String: securityID, Valid: true},
+		SecurityID:    sql.NullString{String: assetID, Valid: true},
 		CashAccountID: sql.NullString{String: accountID, Valid: true},
 		Units:         300,
 		Price:         price,

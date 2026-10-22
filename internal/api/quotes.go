@@ -23,18 +23,18 @@ type QuoteUpdateResultResolver struct {
 // TriggerQuoteUpdate resolves Mutation.triggerQuoteUpdate. Failed listings
 // are reported in the result instead of failing the whole mutation, so one
 // broken provider does not hide the successful updates.
-func (r *RootResolver) TriggerQuoteUpdate(ctx context.Context, args struct{ SecurityIDs *[]graphql.ID }) (*QuoteUpdateResultResolver, error) {
+func (r *RootResolver) TriggerQuoteUpdate(ctx context.Context, args struct{ AssetIDs *[]graphql.ID }) (*QuoteUpdateResultResolver, error) {
 	person, err := auth.PersonFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	var updated int
-	if args.SecurityIDs == nil {
+	if args.AssetIDs == nil {
 		updated, err = r.quotes.UpdateAll(ctx)
 	} else {
-		ids := make([]string, 0, len(*args.SecurityIDs))
-		for _, id := range *args.SecurityIDs {
+		ids := make([]string, 0, len(*args.AssetIDs))
+		for _, id := range *args.AssetIDs {
 			// Only what the person may see: a shared security or their own asset.
 			if _, err := r.db.GetSecurityVisibleTo(ctx, persistence.GetSecurityVisibleToParams{ID: string(id), PersonID: ownedBy(person)}); errors.Is(err, sql.ErrNoRows) {
 				return nil, fmt.Errorf("security %q not found", id)

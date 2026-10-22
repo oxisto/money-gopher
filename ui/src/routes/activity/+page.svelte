@@ -34,7 +34,7 @@
 <Dialog bind:open={addOpen} title="Add transaction" wide>
 	<TransactionForm
 		defaultType="DEPOSIT_CASH"
-		securities={data.securities}
+		securities={[...data.securities, ...data.assets]}
 		cashAccounts={data.cashAccounts}
 		oncreated={() => {
 			addOpen = false;
@@ -44,7 +44,7 @@
 </Dialog>
 <ActivityFeed
 	{transactions}
-	securities={data.securities}
+	securities={[...data.securities, ...data.assets]}
 	cashAccounts={data.cashAccounts}
 	showAccountFilter
 	onchanged={refresh}

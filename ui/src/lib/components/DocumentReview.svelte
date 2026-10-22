@@ -8,7 +8,7 @@
 	import Icon from './ui/Icon.svelte';
 	import SelectField from './ui/SelectField.svelte';
 	import TextField from './ui/TextField.svelte';
-	import { asKind, securityKinds } from '#lib/securities.js';
+	import { asKind, assetKinds } from '#lib/assets.js';
 
 	interface StagedTx {
 		id: string;
@@ -22,10 +22,10 @@
 		calculatedCashDelta: { amount: number; currency: string } | null;
 		fxRate: string | null;
 		currency: string;
-		securityHint: string | null;
+		assetHint: string | null;
 		isin: string | null;
-		securityKindHint: string | null;
-		security: { id: string; displayName: string } | null;
+		assetKindHint: string | null;
+		asset: { id: string; displayName: string } | null;
 	}
 	interface Document {
 		id: string;
@@ -70,9 +70,9 @@
 		}
 	`);
 
-	const createSecurityMutation = graphql(`
-		mutation CreateSecurityFromImport($input: CreateSecurityInput!) {
-			createSecurity(input: $input) {
+	const createAssetMutation = graphql(`
+		mutation CreateAssetFromImport($input: CreateAssetInput!) {
+			createAsset(input: $input) {
 				id
 				displayName
 			}
@@ -82,7 +82,7 @@
 	// Pre-select the matched cash account if the server found one, otherwise fall back to first.
 	let portfolioID = $state(portfolios[0]?.id ?? '');
 	let cashAccountID = $state(suggestedCashAccount?.id ?? cashAccounts[0]?.id ?? '');
-	let securityOverrides = $state<Record<string, string>>({});
+	let assetOverrides = $state<Record<string, string>>({});
 	let localSecurities = $state<Security[]>([]);
 	let createDialog = $state<{
 		txId: string;
@@ -113,10 +113,10 @@
 	function openCreateDialog(tx: StagedTx) {
 		createDialog = {
 			txId: tx.id,
-			name: tx.securityHint ?? tx.isin ?? '',
+			name: tx.assetHint ?? tx.isin ?? '',
 			isin: tx.isin ?? '',
-			kind: tx.securityKindHint ?? '',
-			// The document says what the security trades in: a foreign bond's
+			kind: tx.assetKindHint ?? '',
+			// The document says what the asset trades in: a foreign bond's
 			// price is in its own currency, everything else in the settlement
 			// currency. Quotes by ISIN need no ticker, so an ISIN is enough
 			// to get them.
@@ -125,10 +125,10 @@
 		};
 	}
 
-	async function confirmCreateSecurity() {
+	async function confirmCreateAsset() {
 		if (!createDialog) return;
 		creatingDialog = true;
-		const result = await mutate(createSecurityMutation, {
+		const result = await mutate(createAssetMutation, {
 			input: {
 				displayName: createDialog.name,
 				kind: asKind(createDialog.kind),
@@ -149,10 +149,10 @@
 			error = result.error;
 			return;
 		}
-		const newSec = result.data?.createSecurity;
+		const newSec = result.data?.createAsset;
 		if (newSec) {
 			localSecurities = [...localSecurities, newSec];
-			securityOverrides[createDialog.txId] = newSec.id;
+			assetOverrides[createDialog.txId] = newSec.id;
 		}
 		createDialog = null;
 	}
@@ -170,9 +170,9 @@
 		confirming = true;
 		error = null;
 
-		const txOverrides = Object.entries(securityOverrides)
+		const txOverrides = Object.entries(assetOverrides)
 			.filter(([, secID]) => secID)
-			.map(([id, secID]) => ({ id, securityID: secID }));
+			.map(([id, secID]) => ({ id, assetID: secID }));
 
 		const result = await mutate(confirmImport, {
 			documentID: doc.id,
@@ -284,19 +284,19 @@
 									</span>
 								</td>
 								<td class="px-2 py-2 max-w-[220px]">
-									{#if tx.security}
-										<span class="text-fg">{tx.security.displayName}</span>
+									{#if tx.asset}
+										<span class="text-fg">{tx.asset.displayName}</span>
 										{#if tx.isin}
 											<span class="ml-1 text-xs text-muted">{tx.isin}</span>
 										{/if}
-									{:else if tx.securityHint || tx.isin}
+									{:else if tx.assetHint || tx.isin}
 										<div class="flex flex-col gap-1">
-											{#if tx.securityHint}
-												<span class="text-xs text-muted italic truncate">"{tx.securityHint}"</span>
+											{#if tx.assetHint}
+												<span class="text-xs text-muted italic truncate">"{tx.assetHint}"</span>
 											{/if}
 											<div class="flex items-center gap-1">
 												<select
-													bind:value={securityOverrides[tx.id]}
+													bind:value={assetOverrides[tx.id]}
 													class="h-7 min-w-0 flex-1 py-0 pr-7 pl-2 text-xs"
 												>
 													<option value="">— unmatched —</option>
@@ -304,7 +304,7 @@
 														<option value={s.id}>{s.displayName}</option>
 													{/each}
 												</select>
-												{#if tx.isin && !securityOverrides[tx.id]}
+												{#if tx.isin && !assetOverrides[tx.id]}
 													<button
 														onclick={() => openCreateDialog(tx)}
 														class="h-7 shrink-0 rounded-md border border-accent/30 bg-accent-soft px-2 text-xs font-medium text-accent-fg"
@@ -372,7 +372,7 @@
 
 <Dialog
 	open={createDialog !== null}
-	title="Add security"
+	title="Add asset"
 	onclose={() => (createDialog = null)}
 >
 	{#if createDialog}
@@ -380,7 +380,7 @@
 			<TextField label="Name" bind:value={createDialog.name} placeholder="Security name" required />
 			<SelectField bind:value={createDialog.kind} label="Kind">
 				<option value="">Not set</option>
-				{#each securityKinds as [value, label] (value)}
+				{#each assetKinds as [value, label] (value)}
 					<option {value}>{label}</option>
 				{/each}
 			</SelectField>
@@ -402,19 +402,19 @@
 					</SelectField>
 				</div>
 				<p class="text-xs text-muted">
-					The currency the security is quoted in, as the document states it. Quotes are converted
+					The currency the asset is quoted in, as the document states it. Quotes are converted
 					into the portfolio's currency when they differ.
 				</p>
 			{/if}
 			<div class="mt-2 flex justify-end gap-2">
 				<Button variant="secondary" onclick={() => (createDialog = null)}>Cancel</Button>
 				<Button
-					onclick={confirmCreateSecurity}
+					onclick={confirmCreateAsset}
 					disabled={creatingDialog ||
 						!createDialog.name ||
 						(!!createDialog.isin && createDialog.currency.trim().length !== 3)}
 				>
-					{creatingDialog ? 'Creating…' : 'Create security'}
+					{creatingDialog ? 'Creating…' : 'Create asset'}
 				</Button>
 			</div>
 		</div>
