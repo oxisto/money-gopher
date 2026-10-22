@@ -35,7 +35,8 @@ ORDER BY
 -- name: UpdateCashAccount :one
 UPDATE cash_accounts
 SET
-    display_name = ?
+    display_name = ?,
+    iban = ?
 WHERE
     id = ?
     AND person_id = ? RETURNING *;

@@ -245,7 +245,8 @@ func (q *Queries) SetCashAccountIBAN(ctx context.Context, arg SetCashAccountIBAN
 const updateCashAccount = `-- name: UpdateCashAccount :one
 UPDATE cash_accounts
 SET
-    display_name = ?
+    display_name = ?,
+    iban = ?
 WHERE
     id = ?
     AND person_id = ? RETURNING id, user_id, display_name, currency, iban, created_at, person_id
@@ -253,12 +254,18 @@ WHERE
 
 type UpdateCashAccountParams struct {
 	DisplayName string
+	Iban        sql.NullString
 	ID          string
 	PersonID    string
 }
 
 func (q *Queries) UpdateCashAccount(ctx context.Context, arg UpdateCashAccountParams) (*CashAccount, error) {
-	row := q.db.QueryRowContext(ctx, updateCashAccount, arg.DisplayName, arg.ID, arg.PersonID)
+	row := q.db.QueryRowContext(ctx, updateCashAccount,
+		arg.DisplayName,
+		arg.Iban,
+		arg.ID,
+		arg.PersonID,
+	)
 	var i CashAccount
 	err := row.Scan(
 		&i.ID,
