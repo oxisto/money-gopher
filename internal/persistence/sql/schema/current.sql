@@ -166,7 +166,10 @@ CREATE TABLE transactions (
     -- Booked by a schedule, for this occurrence; document_id stays NULL until
     -- a statement confirms it. Migration 0017.
     schedule_id     TEXT,
-    scheduled_for   TIMESTAMP
+    scheduled_for   TIMESTAMP,
+    -- Free text: the statement's wording for the row, or the person's own.
+    -- Lists show it as the title when set. Migration 0018.
+    note            TEXT
 );
 
 -- Recurring cash flows (migration 0017): a schedule lands on cash_account_id;
@@ -219,7 +222,9 @@ CREATE TABLE staged_transactions (
     security_kind TEXT,
     -- Which of the document's accounts the row belongs to, when a document
     -- carries more than one statement.
-    account_hint  TEXT
+    account_hint  TEXT,
+    -- The statement's wording for the row. Migration 0018.
+    note          TEXT
 );
 
 CREATE TABLE sessions (

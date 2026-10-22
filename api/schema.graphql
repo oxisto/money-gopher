@@ -355,6 +355,12 @@ type Transaction {
   source: String!
   "The document this transaction was imported from; null for manual entries."
   document: Document
+  """
+  Free text: what the statement printed for the row, or what you wrote.
+  Lists show it as the title when set, before a schedule's name and the
+  generic wording.
+  """
+  note: String
 }
 
 "DocumentState is the processing state of an uploaded document."
@@ -488,6 +494,8 @@ type StagedTransaction {
   "Bausparvertrag 1234567890". Pick a cash account per hint on review.
   """
   accountHint: String
+  "The statement's own wording for the row."
+  note: String
 }
 
 "The kind of cash flow a schedule produces."
@@ -801,6 +809,7 @@ input CreateTransactionInput {
   "The signed change of the cash account balance in minor units."
   cashDelta: Int
   currency: String!
+  note: String
 }
 
 """
@@ -819,6 +828,8 @@ input UpdateTransactionInput {
   taxes: Int
   cashDelta: Int
   currency: String
+  "An empty string removes the note."
+  note: String
 }
 
 """

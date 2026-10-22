@@ -15,6 +15,7 @@ const TransactionDetail = graphql(`
 			gain { amount currency }
 			fxRate
 			source
+			note
 			portfolio { id displayName }
 			cashAccount { id displayName }
 			asset {

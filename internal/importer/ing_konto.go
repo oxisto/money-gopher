@@ -212,6 +212,7 @@ func ingParseKontoauszug(text string) ([]StagedTransaction, error) {
 			Taxes:          taxes,
 			Currency:       "EUR",
 			SettlementIBAN: iban,
+			Note:           strings.TrimSpace(r.desc),
 		})
 	}
 

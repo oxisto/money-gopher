@@ -51,6 +51,7 @@
 	let cashDelta = $state('');
 	let gross = $state('');
 	let currency = $state('EUR');
+	let note = $state('');
 	let error = $state<string | null>(null);
 
 	// DEPOSIT_CASH/INTEREST credit the account net of any withheld tax;
@@ -86,7 +87,8 @@
 				price: parsePrice(price) ?? undefined,
 				fees: parseAmount(fees) ?? undefined,
 				taxes: parseAmount(taxes) ?? undefined,
-				cashDelta: isGrossDerived ? derivedCashDelta : (parseAmount(cashDelta) ?? undefined)
+				cashDelta: isGrossDerived ? derivedCashDelta : (parseAmount(cashDelta) ?? undefined),
+				note: note.trim() || undefined
 			}
 		});
 		error = result.error;
@@ -149,6 +151,7 @@
 			/>
 		{/if}
 		<TextField bind:value={currency} label="Currency" maxlength={3} required />
+		<TextField bind:value={note} label="Note" placeholder="Shown as the title, e.g. Gehalt Oktober" />
 	</div>
 
 	<div class="mt-4">
