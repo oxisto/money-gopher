@@ -19,6 +19,13 @@ func TestSuggest(t *testing.T) {
 		}
 		ms = append(ms, Movement{Time: d(2026, time.Month(m), 28), Amount: amount + int64(m%3), Note: "Gehalt/Rente Fraunhofer-Gesellschaft zur Forderung der angewandten Forschung einge · 3440 Lohn/Gehalt 10010826/2026" + string(rune('0'+m))})
 	}
+	// The same employer also paid a bonus and two small refunds in July:
+	// extras, not a second beat.
+	ms = append(ms,
+		Movement{Time: d(2026, 7, 10), Amount: 300000, Note: "Gutschrift Fraunhofer-Gesellschaft zur Forderung der angewandten Forschung einge · Sonderzahlung"},
+		Movement{Time: d(2026, 7, 30), Amount: 4200, Note: "Gutschrift Fraunhofer-Gesellschaft zur Forderung der angewandten Forschung einge · Reisekosten"},
+		Movement{Time: d(2026, 7, 30), Amount: 1800, Note: "Gutschrift Fraunhofer-Gesellschaft zur Forderung der angewandten Forschung einge · Reisekosten"},
+	)
 	// A card bill around the 3rd, a different amount every month.
 	for m := 1; m <= 12; m++ {
 		ms = append(ms, Movement{Time: d(2026, time.Month(m), 3), Amount: -int64(80000 + 7000*m), Note: "Lastschrift VISA Card · Kreditkartenabrechnung 10/2026"})
@@ -41,8 +48,8 @@ func TestSuggest(t *testing.T) {
 	}
 
 	salary := got[0]
-	if !salary.Incoming || salary.Recurrence != Monthly || salary.DayOfMonth != 28 || salary.Count != 11 || salary.Variable {
-		t.Errorf("salary = %+v", salary)
+	if !salary.Incoming || salary.Recurrence != Monthly || salary.DayOfMonth != 28 || salary.Count != 12 || salary.Extra != 2 || salary.Variable {
+		t.Errorf("salary = %+v, want 12 monthly beats (the July bonus stands in for the missing statement) and 2 extras", salary)
 	}
 	if salary.Name != "Fraunhofer-Gesellschaft zur Forderung der angewandten Forschung einge" {
 		t.Errorf("salary name = %q", salary.Name)

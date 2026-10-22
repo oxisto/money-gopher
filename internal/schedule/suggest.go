@@ -37,6 +37,9 @@ type Suggestion struct {
 	// Variable is true when the amount changes from one occurrence to
 	// the next, as a card bill does; Steps then holds one average.
 	Variable bool
+	// Extra counts occurrences beyond one per month — a bonus, a refund
+	// from the same party — which the rhythm and the steps leave out.
+	Extra int
 }
 
 var (
@@ -94,13 +97,13 @@ func Suggest(ms []Movement, minCount int) []Suggestion {
 
 	var out []Suggestion
 	for _, g := range groups {
-		rows := g.rows
-		sort.Slice(rows, func(i, j int) bool { return rows[i].Time.Before(rows[j].Time) })
-		months := map[string]bool{}
-		for _, r := range rows {
-			months[r.Time.Format("2006-01")] = true
-		}
-		if len(rows) < minCount || len(months) < minCount {
+		all := g.rows
+		sort.Slice(all, func(i, j int) bool { return all[i].Time.Before(all[j].Time) })
+		// One occurrence per month stands for the rhythm: the one closest
+		// to the party's typical amount. A bonus or a refund in the same
+		// month is an extra, not a second beat.
+		rows := representatives(all)
+		if len(rows) < minCount {
 			continue
 		}
 		recurrence, ok := rhythm(rows)
@@ -121,6 +124,7 @@ func Suggest(ms []Movement, minCount int) []Suggestion {
 			Count:      len(rows),
 			Steps:      steps,
 			Variable:   variable,
+			Extra:      len(all) - len(rows),
 		})
 	}
 	// Largest first: the salary before the streaming subscription.
@@ -131,6 +135,43 @@ func Suggest(ms []Movement, minCount int) []Suggestion {
 		}
 		return out[i].Name < out[j].Name
 	})
+	return out
+}
+
+// representatives keeps one occurrence per month: the one whose amount
+// is closest to the median of all. Input and output are sorted by time.
+func representatives(rows []Movement) []Movement {
+	amounts := make([]int64, 0, len(rows))
+	for _, r := range rows {
+		a := r.Amount
+		if a < 0 {
+			a = -a
+		}
+		amounts = append(amounts, a)
+	}
+	sort.Slice(amounts, func(i, j int) bool { return amounts[i] < amounts[j] })
+	typical := amounts[len(amounts)/2]
+	distance := func(r Movement) int64 {
+		a := r.Amount
+		if a < 0 {
+			a = -a
+		}
+		if a > typical {
+			return a - typical
+		}
+		return typical - a
+	}
+	var out []Movement
+	for _, r := range rows {
+		month := r.Time.UTC().Format("2006-01")
+		if n := len(out); n > 0 && out[n-1].Time.UTC().Format("2006-01") == month {
+			if distance(r) < distance(out[n-1]) {
+				out[n-1] = r
+			}
+			continue
+		}
+		out = append(out, r)
+	}
 	return out
 }
 
@@ -203,9 +244,27 @@ func amountSteps(rows []Movement) ([]Step, bool) {
 		}
 		runs = append(runs, run{from: Midnight(r.Time), total: a, n: 1})
 	}
-	var steps []Step
+	// A lone outlier between two runs of the same amount — a month whose
+	// only payment was a bonus — does not end a step; the runs around it
+	// are one.
+	var merged []run
 	for i, ru := range runs {
-		if ru.n >= 2 || i == len(runs)-1 && len(steps) > 0 {
+		avg := func(r run) int64 { return r.total / r.n }
+		if n := len(merged); n > 0 {
+			if ru.n == 1 && i < len(runs)-1 && same(avg(runs[i+1]), avg(merged[n-1])) {
+				continue
+			}
+			if same(avg(ru), avg(merged[n-1])) {
+				merged[n-1].total += ru.total
+				merged[n-1].n += ru.n
+				continue
+			}
+		}
+		merged = append(merged, ru)
+	}
+	var steps []Step
+	for i, ru := range merged {
+		if ru.n >= 2 || i == len(merged)-1 && len(steps) > 0 {
 			steps = append(steps, Step{From: ru.from, Amount: ru.total / ru.n})
 		}
 	}
