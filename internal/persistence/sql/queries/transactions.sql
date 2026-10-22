@@ -78,7 +78,8 @@ SET
     cash_delta = ?,
     currency = ?,
     price_currency = ?,
-    fx_rate = ?
+    fx_rate = ?,
+    note = ?
 WHERE
     id = ? RETURNING *;
 

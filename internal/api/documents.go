@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -330,6 +331,7 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 					Currency:      d.Currency,
 					PriceCurrency: sql.NullString{String: d.PriceCurrency, Valid: d.PriceCurrency != ""},
 					FxRate:        d.FxRate,
+					Note:          reconciledNote(match.Note, stx.Note),
 					ID:            match.ID,
 				})
 				if err != nil {
@@ -537,9 +539,21 @@ func mirrorOntoCounterpart(ctx context.Context, q *persistence.Queries, tx *pers
 		Type: other.Type, Time: at, CashAccountID: other.CashAccountID,
 		CashDelta: cashDelta, Currency: other.Currency, Price: other.Price, FxRate: other.FxRate,
 		PriceCurrency: other.PriceCurrency, Units: other.Units, Fees: other.Fees, Taxes: other.Taxes,
-		PortfolioID: other.PortfolioID, SecurityID: other.SecurityID, ID: other.ID,
+		PortfolioID: other.PortfolioID, SecurityID: other.SecurityID, Note: other.Note, ID: other.ID,
 	})
 	return err
+}
+
+// reconciledNote keeps a note the person wrote and takes the parser's
+// newer wording when the existing note is empty or a truncated form of it.
+func reconciledNote(existing, parsed sql.NullString) sql.NullString {
+	if !parsed.Valid {
+		return existing
+	}
+	if !existing.Valid || strings.HasPrefix(parsed.String, existing.String) {
+		return parsed
+	}
+	return existing
 }
 
 // isCashOnlyType reports whether a transaction type is a pure cash event (no
