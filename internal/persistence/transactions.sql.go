@@ -376,6 +376,80 @@ func (q *Queries) ListAdoptableTransactions(ctx context.Context, arg ListAdoptab
 	return items, nil
 }
 
+const listAdoptableTransactionsInWindow = `-- name: ListAdoptableTransactionsInWindow :many
+SELECT
+    id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for, note
+FROM
+    transactions
+WHERE
+    cash_account_id = ?
+    AND type = ?
+    AND schedule_id IS NULL
+    AND time >= ?
+    AND time <= ?
+ORDER BY
+    time
+`
+
+type ListAdoptableTransactionsInWindowParams struct {
+	CashAccountID sql.NullString
+	Type          string
+	Time          time.Time
+	Time_2        time.Time
+}
+
+// Transactions on the account, of the type, in the window, not yet a
+// schedule's: a new schedule may adopt one by amount or by counterparty.
+func (q *Queries) ListAdoptableTransactionsInWindow(ctx context.Context, arg ListAdoptableTransactionsInWindowParams) ([]*Transaction, error) {
+	rows, err := q.db.QueryContext(ctx, listAdoptableTransactionsInWindow,
+		arg.CashAccountID,
+		arg.Type,
+		arg.Time,
+		arg.Time_2,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Time,
+			&i.PortfolioID,
+			&i.SecurityID,
+			&i.CashAccountID,
+			&i.Units,
+			&i.Price,
+			&i.Fees,
+			&i.Taxes,
+			&i.CashDelta,
+			&i.Currency,
+			&i.Source,
+			&i.CreatedAt,
+			&i.DocumentID,
+			&i.PriceCurrency,
+			&i.FxRate,
+			&i.TransferID,
+			&i.ScheduleID,
+			&i.ScheduledFor,
+			&i.Note,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listConfirmableTransactions = `-- name: ListConfirmableTransactions :many
 SELECT
     id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for, note

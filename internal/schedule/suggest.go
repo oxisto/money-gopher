@@ -47,9 +47,10 @@ var (
 	suggestSpaces = regexp.MustCompile(`\s+`)
 )
 
-// counterparty reduces a note to the party it names: the part before
-// " · " without the leading Buchungsart, lower case, digits dropped.
-func counterparty(note string) (key, display string) {
+// Counterparty reduces a note to the party it names: the part before
+// " · " without the leading Buchungsart, lower case, digits dropped. The
+// display form keeps the statement's spelling.
+func Counterparty(note string) (key, display string) {
 	head, _, _ := strings.Cut(note, " · ")
 	head = strings.TrimSpace(head)
 	if head == "" {
@@ -61,9 +62,14 @@ func counterparty(note string) (key, display string) {
 	if display == "" {
 		display = head
 	}
-	key = strings.ToLower(suggestDigits.ReplaceAllString(display, ""))
-	key = strings.TrimSpace(suggestSpaces.ReplaceAllString(key, " "))
-	return key, display
+	return CounterpartyKey(display), display
+}
+
+// CounterpartyKey is the comparable form of a party's name: lower case,
+// digits dropped, whitespace collapsed.
+func CounterpartyKey(name string) string {
+	key := strings.ToLower(suggestDigits.ReplaceAllString(name, ""))
+	return strings.TrimSpace(suggestSpaces.ReplaceAllString(key, " "))
 }
 
 // Suggest finds the recurring movements among ms. A group needs at least
@@ -79,7 +85,7 @@ func Suggest(ms []Movement, minCount int) []Suggestion {
 	}
 	groups := map[string]*group{}
 	for _, m := range ms {
-		key, display := counterparty(m.Note)
+		key, display := Counterparty(m.Note)
 		if key == "" || m.Amount == 0 {
 			continue
 		}

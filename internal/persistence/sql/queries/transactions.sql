@@ -202,3 +202,19 @@ SET
     scheduled_for = ?
 WHERE
     id = ?;
+
+-- name: ListAdoptableTransactionsInWindow :many
+-- Transactions on the account, of the type, in the window, not yet a
+-- schedule's: a new schedule may adopt one by amount or by counterparty.
+SELECT
+    *
+FROM
+    transactions
+WHERE
+    cash_account_id = ?
+    AND type = ?
+    AND schedule_id IS NULL
+    AND time >= ?
+    AND time <= ?
+ORDER BY
+    time;

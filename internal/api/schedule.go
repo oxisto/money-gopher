@@ -695,6 +695,29 @@ func bookSchedule(ctx context.Context, db *persistence.DB, s *persistence.Schedu
 			return n, err
 		}
 		if len(existing) > 0 {
+			// An expectation no statement has confirmed gives way to a real
+			// row that turned up since — the July salary with its bonus,
+			// imported after the schedule booked the usual amount.
+			confirmed := false
+			for _, e := range existing {
+				if cnt, err := db.CountTransactionDocuments(ctx, e.ID); err != nil {
+					return n, err
+				} else if cnt > 0 {
+					confirmed = true
+				}
+			}
+			if confirmed {
+				continue
+			}
+			adopted, err := adoptOccurrence(ctx, db, s, account, occ.Date, sign*occ.Amount, scheduleID)
+			if err != nil {
+				return n, err
+			}
+			if adopted {
+				if err := deleteBookings(ctx, db, existing); err != nil {
+					return n, err
+				}
+			}
 			continue
 		}
 		// A transaction already in the books for this occurrence — imported
@@ -754,22 +777,40 @@ func bookSchedule(ctx context.Context, db *persistence.DB, s *persistence.Schedu
 }
 
 // adoptOccurrence links an existing transaction on the schedule's account
-// (same type and amount, within a week of the occurrence, not yet any
-// schedule's) to the occurrence, both legs when it is a transfer.
+// (same type, within a week of the occurrence, not yet any schedule's,
+// and either of the amount or from the counterparty the schedule is
+// named after) to the occurrence, both legs when it is a transfer. The
+// counterparty match is what makes a salary month with a bonus still
+// that month's salary.
 func adoptOccurrence(ctx context.Context, db *persistence.DB, s *persistence.Schedule, account *persistence.CashAccount, date time.Time, cashDelta int64, scheduleID sql.NullString) (bool, error) {
 	typ := s.Type
 	if typ == "TRANSFER" {
 		typ = "DEPOSIT_CASH"
 	}
-	candidates, err := db.ListAdoptableTransactions(ctx, persistence.ListAdoptableTransactionsParams{
+	all, err := db.ListAdoptableTransactionsInWindow(ctx, persistence.ListAdoptableTransactionsInWindowParams{
 		CashAccountID: sql.NullString{String: account.ID, Valid: true},
 		Type:          typ,
-		CashDelta:     cashDelta,
 		Time:          date.AddDate(0, 0, -7),
 		Time_2:        date.AddDate(0, 0, 7),
 	})
-	if err != nil || len(candidates) == 0 {
+	if err != nil {
 		return false, err
+	}
+	nameKey := schedule.CounterpartyKey(s.DisplayName)
+	var candidates []*persistence.Transaction
+	for _, c := range all {
+		if c.CashDelta == cashDelta {
+			candidates = append(candidates, c)
+			continue
+		}
+		if c.Note.Valid && nameKey != "" {
+			if key, _ := schedule.Counterparty(c.Note.String); key == nameKey {
+				candidates = append(candidates, c)
+			}
+		}
+	}
+	if len(candidates) == 0 {
+		return false, nil
 	}
 	tx := candidates[0]
 	for _, c := range candidates { // the closest one
@@ -788,6 +829,30 @@ func adoptOccurrence(ctx context.Context, db *persistence.DB, s *persistence.Sch
 			if err == nil {
 				return q.LinkTransactionToSchedule(ctx, persistence.LinkTransactionToScheduleParams{ScheduleID: scheduleID, ScheduledFor: sql.NullTime{Time: date, Valid: true}, ID: other.ID})
 			} else if !errors.Is(err, sql.ErrNoRows) {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// deleteBookings removes a schedule's own bookings for one occurrence,
+// both legs of a transfer.
+func deleteBookings(ctx context.Context, db *persistence.DB, bookings []*persistence.Transaction) error {
+	return db.Tx(ctx, func(q *persistence.Queries) error {
+		done := map[string]bool{}
+		for _, b := range bookings {
+			if b.TransferID.Valid {
+				if done[b.TransferID.String] {
+					continue
+				}
+				done[b.TransferID.String] = true
+				if _, err := q.DeleteTransfer(ctx, b.TransferID); err != nil {
+					return err
+				}
+				continue
+			}
+			if _, err := q.DeleteTransaction(ctx, b.ID); err != nil {
 				return err
 			}
 		}

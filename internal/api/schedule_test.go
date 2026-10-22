@@ -369,3 +369,77 @@ func TestSchedule_PooledDebit(t *testing.T) {
 		t.Errorf("Giro after the second statement = %v, want -116124 still", h.balance(giro))
 	}
 }
+
+// TestSchedule_AdoptsByCounterparty: a salary month with a bonus has the
+// same payer and date but a different amount. The schedule adopts it all
+// the same, and an expectation booked before the statement arrived gives
+// way to the real row on the next booking run.
+func TestSchedule_AdoptsByCounterparty(t *testing.T) {
+	db, err := persistence.OpenDB(":memory:")
+	if err != nil {
+		t.Fatalf("OpenDB: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	user, person, err := auth.EnsureDevUser(context.Background(), db)
+	if err != nil {
+		t.Fatalf("EnsureDevUser: %v", err)
+	}
+	ctx := auth.WithPerson(auth.WithUser(context.Background(), user), person)
+	schema := NewSchema(db, &quotes.Updater{DB: db, Registry: quotes.NewRegistry()})
+	h := transferHelpers{t, schema, ctx}
+	giro := h.account("Giro", "CASH", nil)
+	exec(t, schema, ctx, `mutation ($id: ID!) { updateCashAccount(id: $id, input: { iban: "DE02120300000000202051" }) { id } }`, map[string]any{"id": giro})
+
+	statement := func(rows string) []byte {
+		return []byte("ING-DiBa AG\nKontoauszug 2026\nIBAN DE02 1203 0000 0000 2020 51\n" +
+			"Buchung      Buchung / Verwendungszweck                                     Betrag (EUR)\nValuta\n\n" + rows)
+	}
+	svc := importer.NewService(db)
+	importStatement := func(name, rows string) {
+		doc, err := svc.Upload(ctx, person.ID, name, "text/plain", statement(rows))
+		if err != nil {
+			t.Fatalf("Upload: %v", err)
+		}
+		if err := svc.Process(ctx, doc.ID, person.ID); err != nil {
+			t.Fatalf("Process: %v", err)
+		}
+		exec(t, schema, ctx, `mutation ($id: ID!, $acct: ID!) { confirmImport(documentID: $id, input: { cashAccountID: $acct, transactions: [] }) { id } }`, map[string]any{"id": doc.ID, "acct": giro})
+	}
+	// May and June at the usual amount, July with a bonus on top.
+	importStatement("q2.txt",
+		"28.05.2026                 Gehalt/Rente Musterfirma GmbH                                   4.850,00\n"+
+			"28.05.2026                 Lohn/Gehalt 05/2026\n"+
+			"26.06.2026                 Gehalt/Rente Musterfirma GmbH                                   4.850,00\n"+
+			"26.06.2026                 Lohn/Gehalt 06/2026\n"+
+			"28.07.2026                 Gehalt/Rente Musterfirma GmbH                                   7.850,00\n"+
+			"28.07.2026                 Lohn/Gehalt 07/2026 inkl. Bonus\n")
+	if h.balance(giro) != 1755000 {
+		t.Fatalf("Giro after the statement = %v, want 1755000", h.balance(giro))
+	}
+
+	gehalt := createSchedule(t, h, fmt.Sprintf(`displayName: "Musterfirma GmbH", type: DEPOSIT_CASH, interval: MONTHLY, dayOfMonth: 28,
+		start: "2026-05-01T00:00:00Z", end: "2026-08-31T00:00:00Z", cashAccountID: %q, books: true,
+		steps: [{ from: "2026-05-01T00:00:00Z", amount: 485000 }]`, giro))
+	// May and June by amount, July by counterparty; August booked as usual.
+	if gehalt["booked"] != 4.0 || h.balance(giro) != 1755000+485000 {
+		t.Errorf("booked %v, Giro %v; want 4 and 2240000 (the July bonus month adopted, August booked)", gehalt["booked"], h.balance(giro))
+	}
+
+	// August's statement arrives: a bonus again, so the row cannot confirm
+	// the booking by amount and imports beside it. The next booking run
+	// adopts the real row and drops the expectation.
+	importStatement("aug.txt",
+		"28.08.2026                 Gehalt/Rente Musterfirma GmbH                                   5.350,00\n"+
+			"28.08.2026                 Lohn/Gehalt 08/2026 inkl. Praemie\n")
+	if h.balance(giro) != 1755000+485000+535000 {
+		t.Fatalf("Giro after August's statement = %v, want the expectation still beside the real row", h.balance(giro))
+	}
+	exec(t, schema, ctx, `mutation { bookSchedules(until: "2026-08-31T00:00:00Z") }`, nil)
+	if h.balance(giro) != 1755000+535000 {
+		t.Errorf("Giro after the booking run = %v, want 2290000: the real August row only", h.balance(giro))
+	}
+	data := exec(t, schema, ctx, `query ($id: ID!) { schedule(id: $id) { booked unconfirmed { id } } }`, map[string]any{"id": gehalt["id"]})
+	if s := data["schedule"].(map[string]any); s["booked"] != 4.0 || len(s["unconfirmed"].([]any)) != 0 {
+		t.Errorf("schedule after the run = %v, want 4 occurrences, none unconfirmed", s)
+	}
+}
