@@ -97,7 +97,7 @@ func (d *txData) validate(ctx context.Context, db *persistence.DB, person *persi
 	}
 
 	switch d.Type {
-	case "DEPOSIT_CASH", "INTEREST":
+	case "DEPOSIT_CASH":
 		if d.CashDelta <= 0 {
 			return fmt.Errorf("%s must increase the cash balance", d.Type)
 		}
@@ -123,11 +123,21 @@ func (d *txData) validate(ctx context.Context, db *persistence.DB, person *persi
 		}
 	}
 	if d.CashAccountID != nil {
-		_, err := db.GetCashAccount(ctx, persistence.GetCashAccountParams{ID: *d.CashAccountID, PersonID: person.ID})
+		account, err := db.GetCashAccount(ctx, persistence.GetCashAccountParams{ID: *d.CashAccountID, PersonID: person.ID})
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("cash account %q not found", *d.CashAccountID)
 		} else if err != nil {
 			return err
+		}
+		// Interest is earned on a cash or savings account and charged on a
+		// loan, where it is what makes the balance more negative.
+		if d.Type == "INTEREST" {
+			if kindOf(account) == "LOAN" && d.CashDelta >= 0 {
+				return errors.New("INTEREST on a loan is interest charged and must decrease the balance")
+			}
+			if kindOf(account) != "LOAN" && d.CashDelta <= 0 {
+				return errors.New("INTEREST must increase the cash balance")
+			}
 		}
 	}
 	if d.SecurityID != nil {

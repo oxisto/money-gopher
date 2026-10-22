@@ -10,13 +10,16 @@ import (
 )
 
 type CashAccount struct {
-	ID          string
-	UserID      sql.NullString
-	DisplayName string
-	Currency    string
-	Iban        sql.NullString
-	CreatedAt   time.Time
-	PersonID    string
+	ID               string
+	UserID           sql.NullString
+	DisplayName      string
+	Currency         string
+	Iban             sql.NullString
+	CreatedAt        time.Time
+	PersonID         string
+	Kind             sql.NullString
+	EstimatedBalance sql.NullInt64
+	EstimatedAt      sql.NullTime
 }
 
 type Document struct {

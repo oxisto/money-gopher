@@ -82,17 +82,43 @@ type Person {
 }
 
 """
-CashAccount is a real-world bank/cash account. Its balance is derived from
-the cash deltas of all transactions settling against it.
+AccountKind is what a cash account is. All three are ledgers; a LOAN's
+balance runs negative (interest charged makes it more so, repayments less).
+"""
+enum AccountKind {
+  CASH
+  "A Bausparvertrag, a Tagesgeld used as savings: money put aside."
+  SAVINGS
+  "A liability: a mortgage, a Bauspardarlehen. Its balance is what is owed."
+  LOAN
+}
+
+"""
+CashAccount is a real-world bank/cash account — or a savings contract, or a
+loan. Its balance is derived from the cash deltas of all transactions
+settling against it, unless it is estimated: then the balance is what its
+owner declared, and transactions on it do not move it.
 """
 type CashAccount {
   id: ID!
   displayName: String!
+  kind: AccountKind!
   "The ISO 4217 code the account is denominated in."
   currency: String!
   "The IBAN of this bank account, used to auto-match imported documents."
   iban: String
+  """
+  True when the balance is declared ("about 1,500") rather than summed
+  from transactions. The Giro one does not want to track day to day.
+  """
+  estimated: Boolean!
+  "The declared balance and when it was declared; null for a tracked account."
+  declaredBalance: Money
+  declaredAt: Time
+  "declaredBalance when estimated, the ledger sum otherwise."
   balance: Money!
+  "The sum of all cash deltas, whether or not the account is estimated."
+  ledgerBalance: Money!
   transactions: [Transaction!]!
 }
 
@@ -143,6 +169,12 @@ type NetWorthPoint {
   netWorth − invested is what the money has earned.
   """
   invested: Money!
+  """
+  The part of netWorth that is declared rather than tracked: the declared
+  balances of estimated accounts. Constant over time, since a declaration
+  has no history.
+  """
+  estimated: Money!
 }
 
 "Position is the holding of one security in a portfolio snapshot."
@@ -478,16 +510,28 @@ input UpdatePortfolioInput {
 
 input CreateCashAccountInput {
   displayName: String!
+  "CASH when omitted."
+  kind: AccountKind
   "The ISO 4217 code the account is denominated in."
   currency: String!
   "The IBAN of this bank account (optional but enables auto-matching of imported documents)."
   iban: String
+  "Minor units. Setting it makes the account estimated, declared as of now."
+  declaredBalance: Int
 }
 
 input UpdateCashAccountInput {
   displayName: String
+  kind: AccountKind
   "The IBAN; an empty string removes it. Stored without spaces."
   iban: String
+  """
+  false returns the account to its ledger; true needs a declared balance,
+  given here or earlier.
+  """
+  estimated: Boolean
+  "Minor units. Declares (or re-declares) the balance as of now."
+  declaredBalance: Int
 }
 
 input AssetIdentifierInput {

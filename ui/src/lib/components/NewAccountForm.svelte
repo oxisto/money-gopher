@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { parseAmount } from '#lib/format.js';
 	import { graphql, mutate } from '#lib/graphql/client.js';
 	import { refreshAll } from '$app/navigation';
 	import Button from './ui/Button.svelte';
@@ -38,6 +39,9 @@
 	let name = $state('');
 	let currency = $state('EUR');
 	let iban = $state('');
+	let accountKind = $state<'CASH' | 'SAVINGS' | 'LOAN'>('CASH');
+	let estimated = $state(false);
+	let declared = $state('');
 	let cashAccountID = $state('');
 	let error = $state<string | null>(null);
 
@@ -45,13 +49,20 @@
 		event.preventDefault();
 		if (!name.trim()) return;
 
+		const declaredBalance = estimated ? parseAmount(declared) : null;
+		if (kind === 'cash' && estimated && declaredBalance === null) {
+			error = 'An estimated account needs the balance you believe it has.';
+			return;
+		}
 		const result =
 			kind === 'cash'
 				? await mutate(createCashAccount, {
 						input: {
 							displayName: name.trim(),
+							kind: accountKind,
 							currency: currency.toUpperCase(),
-							iban: iban.trim() || null
+							iban: iban.trim() || null,
+							declaredBalance: declaredBalance ?? undefined
 						}
 					})
 				: await mutate(createPortfolio, {
@@ -86,6 +97,18 @@
 			<TextField label="Currency" bind:value={currency} maxlength={3} required />
 		</div>
 		<TextField label="IBAN (optional)" bind:value={iban} placeholder="Matches imported statements to this account" />
+		<SelectField label="Kind" bind:value={accountKind}>
+			<option value="CASH">Cash account</option>
+			<option value="SAVINGS">Savings account (Bausparvertrag, savings)</option>
+			<option value="LOAN">Loan (its balance is what you owe)</option>
+		</SelectField>
+		<label class="flex items-center gap-2 text-sm">
+			<input type="checkbox" bind:checked={estimated} />
+			I won't track this one; the balance is an estimate
+		</label>
+		{#if estimated}
+			<TextField label="Approximate balance" bind:value={declared} placeholder="e.g. 1500" required />
+		{/if}
 	{:else if cashAccounts.length === 0}
 		<p class="text-sm text-muted">A portfolio settles its trades against a cash account. Create one of those first.</p>
 	{:else}

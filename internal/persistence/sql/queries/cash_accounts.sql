@@ -1,8 +1,8 @@
 -- name: CreateCashAccount :one
 INSERT INTO
-    cash_accounts (id, person_id, display_name, currency, iban)
+    cash_accounts (id, person_id, display_name, currency, iban, kind, estimated_balance, estimated_at)
 VALUES
-    (?, ?, ?, ?, ?) RETURNING *;
+    (?, ?, ?, ?, ?, ?, ?, ?) RETURNING *;
 
 -- name: GetCashAccountByIBAN :one
 SELECT
@@ -36,7 +36,10 @@ ORDER BY
 UPDATE cash_accounts
 SET
     display_name = ?,
-    iban = ?
+    iban = ?,
+    kind = ?,
+    estimated_balance = ?,
+    estimated_at = ?
 WHERE
     id = ?
     AND person_id = ? RETURNING *;

@@ -58,7 +58,19 @@ func (r *RootResolver) NetWorthHistory(ctx context.Context, args struct {
 		currency = txs[0].Currency
 	}
 
-	points := finance.NetWorthAt(txs, times, latestQuote(ctx, r.db))
+	// The declared balances of the estimated accounts count as constants.
+	accounts, err := r.db.ListCashAccounts(ctx, person.ID)
+	if err != nil {
+		return nil, err
+	}
+	estimated := map[string]int64{}
+	for _, a := range accounts {
+		if a.EstimatedBalance.Valid {
+			estimated[a.ID] = a.EstimatedBalance.Int64
+		}
+	}
+
+	points := finance.NetWorthAt(txs, estimated, times, latestQuote(ctx, r.db))
 	resolvers := make([]*NetWorthPointResolver, len(points))
 	for i := range points {
 		resolvers[i] = &NetWorthPointResolver{point: points[i], currency: currency}
@@ -75,3 +87,4 @@ type NetWorthPointResolver struct {
 func (r *NetWorthPointResolver) Time() graphql.Time { return graphql.Time{Time: r.point.Time} }
 func (r *NetWorthPointResolver) NetWorth() Money    { return money(r.point.NetWorth, r.currency) }
 func (r *NetWorthPointResolver) Invested() Money    { return money(r.point.Invested, r.currency) }
+func (r *NetWorthPointResolver) Estimated() Money   { return money(r.point.Estimated, r.currency) }

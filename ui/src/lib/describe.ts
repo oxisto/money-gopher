@@ -61,3 +61,15 @@ export function labelOf(type: string): string {
 export function formatUnits(units: number): string {
 	return new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 }).format(units);
 }
+
+/** What a cash account is, for sublines and badges. */
+export function accountKindLabel(kind: string | null | undefined): string {
+	switch (kind) {
+		case 'SAVINGS':
+			return 'Savings account';
+		case 'LOAN':
+			return 'Loan';
+		default:
+			return 'Cash account';
+	}
+}

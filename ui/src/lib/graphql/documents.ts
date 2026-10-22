@@ -61,7 +61,7 @@ export const LayoutQuery = graphql(`
 		cashAccounts {
 			id
 			displayName
-			balance { amount currency }
+			kind estimated balance { amount currency }
 		}
 		documents(state: PARSED) { id }
 	}

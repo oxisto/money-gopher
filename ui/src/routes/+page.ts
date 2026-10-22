@@ -36,6 +36,8 @@ const Dashboard = graphql(`
 		cashAccounts {
 			id
 			displayName
+			kind
+			estimated
 			currency
 			balance { amount currency }
 			transactions { ...OverviewTransaction }
@@ -76,6 +78,7 @@ const NetWorthHistory = graphql(`
 			time
 			netWorth { amount currency }
 			invested { amount currency }
+			estimated { amount currency }
 		}
 	}
 `);
