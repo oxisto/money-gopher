@@ -77,6 +77,7 @@ type Security struct {
 	DisplayName          string
 	UnderlyingSecurityID sql.NullString
 	Kind                 sql.NullString
+	AssetKind            sql.NullString
 }
 
 type SecurityIdentifier struct {

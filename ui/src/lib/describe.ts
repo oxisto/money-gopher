@@ -3,7 +3,7 @@ import type { IconName } from './icons';
 interface DescribableTransaction {
 	type: string;
 	units: number;
-	security: { displayName: string } | null;
+	security: { displayName: string; kind?: string | null } | null;
 }
 
 /**
@@ -23,7 +23,8 @@ export function describeTransaction(tx: DescribableTransaction): { title: string
 		case 'DELIVERY_OUTBOUND':
 			return { title: `Transferred out ${units} × ${name}`, icon: 'transferOut' };
 		case 'DIVIDEND':
-			return { title: `Dividend · ${name}`, icon: 'coin' };
+			// Income against a property is rent; the engine treats it alike.
+			return { title: `${tx.security?.kind === 'PROPERTY' ? 'Rent' : 'Dividend'} · ${name}`, icon: 'coin' };
 		case 'INTEREST':
 			return { title: 'Interest', icon: 'percent' };
 		case 'DEPOSIT_CASH':

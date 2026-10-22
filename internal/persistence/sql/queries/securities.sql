@@ -1,6 +1,6 @@
 -- name: CreateSecurity :one
 INSERT INTO
-    securities (id, display_name, underlying_security_id, kind)
+    securities (id, display_name, underlying_security_id, asset_kind)
 VALUES
     (?, ?, ?, ?) RETURNING *;
 
@@ -25,7 +25,7 @@ UPDATE securities
 SET
     display_name = ?,
     underlying_security_id = ?,
-    kind = ?
+    asset_kind = ?
 WHERE
     id = ? RETURNING *;
 
@@ -78,6 +78,14 @@ INSERT INTO
     )
 VALUES
     (?, ?, ?, ?, ?, ?) RETURNING *;
+
+-- name: GetListing :one
+SELECT
+    *
+FROM
+    listings
+WHERE
+    id = ?;
 
 -- name: ListListings :many
 SELECT
@@ -190,3 +198,9 @@ WHERE
     AND time <= ?
 ORDER BY
     time;
+
+-- name: DeleteQuote :execrows
+DELETE FROM quotes
+WHERE
+    listing_id = ?
+    AND time = ?;

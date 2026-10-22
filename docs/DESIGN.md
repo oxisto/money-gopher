@@ -211,6 +211,34 @@ Deleted from v1: all buf/proto/Connect artifacts (`buf*.yaml`, `mgo.proto`, `gen
 8. **M7 — Ship it.** `go:embed` the built SPA, single-binary release (goreleaser),
    Dockerfile, docs. `mgo` CLI rebuilt on genqlient for the endpoints that matter.
 9. **M8 — LLM fallback extraction** (opt-in), more bank parsers as needed.
+10. **M9 — Assets.** A security is one kind of asset. The office room rented
+    out, the car, a private loan: an asset with a name and a kind, a price
+    series (a listing with a provider for a security, manual valuations for
+    the rest), ownership and cost basis as a delivery-in transaction, income
+    against it like a dividend. The engine values it through the same quote
+    lookup; nothing there changes. Steps: kinds beyond securities, manual
+    valuations with an entry form, a form to book an asset you own without a
+    broker document, "security" → "asset" naming once the word is wrong.
+11. **M10 — Recurring transactions.** A schedule (amount, interval, start,
+    optional end) expanded into expected cash flows: rent coming in, a
+    savings plan going out. Matched against imported statements so expected
+    and actual line up and a missed month shows. Needed by the plan in M12.
+12. **M11 — Agent and chat.** A backend agent against an OpenAI-compatible
+    model (self-hosted first): model client with tool calling and streaming,
+    a tool registry (internal: holdings, performance, cash, net worth history,
+    quotes, assets; external: web search, page fetch, dividend data,
+    instrument search, all cached with a timestamp), and a run executor with
+    a persisted step log and limits. Runs stream over SSE; a chat page per
+    person starts runs and renders their steps; a finished run is a stored,
+    reopenable report. Every number in a report comes from a tool result.
+    Candidates the agent researches land on a watchlist with their facts.
+    The same tools serve an MCP endpoint for Claude Code.
+13. **M12 — Plans and simulation.** A plan per person: starting amount,
+    monthly contribution, allocation, horizon, cost assumptions. A
+    deterministic path and a Monte Carlo fan from per-kind return and
+    volatility assumptions (editable), plan versus actual, and the agent
+    creating or editing plans through a tool. Then the German tax layer
+    (Sparer-Pauschbetrag, Vorabpauschale, Freistellungsauftrag) and inflation.
 
 **Where M5 landed:**
 
@@ -340,8 +368,16 @@ deferred.
   sale's realized gain rather than interest income on the Income page; a
   separate INTEREST transaction would classify it better but would have to
   split the document's taxes by guesswork.
-- **Security kind.** `securities.kind` (STOCK, ETF, FUND, BOND, OTHER; null
-  until set) and `SecurityKind` in the schema. The ING parser suggests one
+- **Security kind.** `securities.asset_kind` (STOCK, ETF, FUND, BOND,
+  PROPERTY, VEHICLE, LOAN, OTHER; null until set) and `SecurityKind` in the
+  schema. It started as `kind` with a CHECK listing the values; lightsql can
+  neither drop a constraint nor rebuild a table other tables reference, so
+  the column was superseded (migration 0011) and `kind` is dead weight.
+  Lesson: no CHECK on enum-like columns — validate in the GraphQL enum.
+  Kinds beyond securities have no quote feed: their listing has no provider
+  and is priced by `recordQuote` (the holding page's "Record valuation");
+  the finance engine values them through the same quote lookup. Ownership
+  and cost basis of such an asset is a DELIVERY_INBOUND with a price. The ING parser suggests one
   per staged transaction (`security_kind`: a face value and a percentage
   price make it a bond, a Zinsgutschrift a bond coupon, "ETF"/"ETC"/"ETN" in
   the name an ETF, "Fonds"/"Fund" a fund, anything else a stock); the import

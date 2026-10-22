@@ -97,7 +97,7 @@ func (r *RootResolver) CreateSecurity(ctx context.Context, args struct{ Input Cr
 		security, err = q.CreateSecurity(ctx, persistence.CreateSecurityParams{
 			ID:                   uuid.NewString(),
 			DisplayName:          args.Input.DisplayName,
-			Kind:                 nullString(args.Input.Kind),
+			AssetKind:            nullString(args.Input.Kind),
 			UnderlyingSecurityID: idToNullString(args.Input.UnderlyingSecurityID),
 		})
 		if err != nil {
@@ -157,7 +157,7 @@ func (r *RootResolver) UpdateSecurity(ctx context.Context, args struct {
 			if args.Input.DisplayName != nil {
 				displayName = *args.Input.DisplayName
 			}
-			kind := security.Kind
+			kind := security.AssetKind
 			if args.Input.Kind != nil {
 				kind = nullString(args.Input.Kind)
 			}
@@ -169,7 +169,7 @@ func (r *RootResolver) UpdateSecurity(ctx context.Context, args struct {
 			security, err = q.UpdateSecurity(ctx, persistence.UpdateSecurityParams{
 				DisplayName:          displayName,
 				UnderlyingSecurityID: underlying,
-				Kind:                 kind,
+				AssetKind:            kind,
 				ID:                   string(args.ID),
 			})
 			if err != nil {
@@ -314,10 +314,10 @@ func (r *SecurityResolver) DisplayName() string {
 }
 
 func (r *SecurityResolver) Kind() *string {
-	if !r.security.Kind.Valid {
+	if !r.security.AssetKind.Valid {
 		return nil
 	}
-	return &r.security.Kind.String
+	return &r.security.AssetKind.String
 }
 
 // Identifiers resolves Security.identifiers.

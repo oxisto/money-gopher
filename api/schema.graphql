@@ -220,12 +220,21 @@ type QuoteUpdateResult {
   errors: [String!]!
 }
 
-"What a security is. Null until someone says."
+"""
+What an asset is. Null until someone says. A security is one kind of
+asset; the others have no quote feed and are valued by hand (recordQuote
+on a listing without a provider).
+"""
 enum SecurityKind {
   STOCK
   ETF
   FUND
   BOND
+  "Real estate, or a share of it: the office room rented out."
+  PROPERTY
+  VEHICLE
+  "Money lent to someone."
+  LOAN
   OTHER
 }
 
@@ -608,6 +617,14 @@ type Mutation {
   securities, or for every listing with a provider when none are given.
   """
   triggerQuoteUpdate(securityIDs: [ID!]): QuoteUpdateResult!
+
+  """
+  Stores a price by hand: a valuation of an asset without a quote feed, or
+  a correction. A quote at the same time is replaced.
+  """
+  recordQuote(listingID: ID!, time: Time!, price: Decimal!): Quote!
+  "Removes one stored quote. Returns whether there was one."
+  deleteQuote(listingID: ID!, time: Time!): Boolean!
 
   "Create a new person (financial entity) accessible by the current user."
   createPerson(displayName: String!): Person!

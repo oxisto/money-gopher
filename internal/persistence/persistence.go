@@ -56,7 +56,11 @@ func OpenDB(path string) (*DB, error) {
 		return nil, err
 	}
 
-	if err = goose.Up(conn, "sql/migrations"); err != nil {
+	// Feature branches each bring a migration, and a database that ran one
+	// branch's before another's lands with a gap below its version. Those
+	// migrations only ever add; applying a missed one late is safe, and
+	// goose otherwise refuses to start at all.
+	if err = goose.Up(conn, "sql/migrations", goose.WithAllowMissing()); err != nil {
 		return nil, fmt.Errorf("could not apply migrations: %w", err)
 	}
 

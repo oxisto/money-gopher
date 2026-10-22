@@ -5,7 +5,7 @@
 	import ErrorNote from './ui/ErrorNote.svelte';
 	import SelectField from './ui/SelectField.svelte';
 	import TextField from './ui/TextField.svelte';
-	import { asKind, securityKinds } from '#lib/securities.js';
+	import { asKind, isValuedByHand, securityKinds, tickerFor } from '#lib/securities.js';
 
 	let { oncreated }: { oncreated?: () => void } = $props();
 
@@ -29,8 +29,14 @@
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
 		if (!name.trim()) return;
-		if (ticker.trim() && currency.trim().length !== 3) {
-			error = 'A listing needs the currency it is quoted in.';
+		// An asset valued by hand needs a price series to put the
+		// valuations on; without a ticker of its own it gets one from the
+		// name.
+		const series = ticker.trim().toUpperCase() || (isValuedByHand(kind) ? tickerFor(name) : '');
+		if (series && currency.trim().length !== 3) {
+			error = isValuedByHand(kind)
+				? 'An asset valued by hand needs the currency its valuations are in.'
+				: 'A listing needs the currency it is quoted in.';
 			return;
 		}
 
@@ -39,10 +45,10 @@
 				displayName: name.trim(),
 				kind: asKind(kind),
 				identifiers: isin.trim() ? [{ kind: 'ISIN', value: isin.trim().toUpperCase() }] : [],
-				listings: ticker.trim()
+				listings: series
 					? [
 							{
-								ticker: ticker.trim().toUpperCase(),
+								ticker: series,
 								exchange: exchange.trim() || undefined,
 								currency: currency.toUpperCase(),
 								quoteProvider: quoteProvider || undefined
@@ -77,10 +83,10 @@
 		<TextField bind:value={exchange} label="Exchange (MIC)" placeholder="e.g. XETR" />
 		<TextField
 			bind:value={currency}
-			label="Listing currency"
-			placeholder="What it is quoted in, e.g. USD"
+			label={isValuedByHand(kind) ? 'Valuation currency' : 'Listing currency'}
+			placeholder={isValuedByHand(kind) ? 'e.g. EUR' : 'What it is quoted in, e.g. USD'}
 			maxlength={3}
-			required={!!ticker.trim()}
+			required={!!ticker.trim() || isValuedByHand(kind)}
 		/>
 		<SelectField bind:value={quoteProvider} label="Quote provider">
 			<option value="">None</option>
