@@ -412,9 +412,12 @@ deferred.
   as a negative INTEREST; the section gives `StagedTransaction.AccountHint`
   ("Bausparvertrag 1234567890", column `staged_transactions.account_hint`).
   The printed IBAN is the LBS's collection account, the same for every
-  customer, so it is not used for matching; the review page asks for one
-  cash account per hint and sends it as a per-row `cashAccountID`
-  override, guessing from account names and kinds. A Lastschrifteinzug
+  customer, so it is not used for matching. Instead `cash_accounts.
+  reference` holds an account or contract number that is not an IBAN
+  (stored without spaces); the review page asks for one cash account per
+  hint, pre-picked by reference plus the kind the part implies (the
+  Bausparvertrag and the loan against it share the number), then by name,
+  then by kind, and sends it as a per-row `cashAccountID` override. A Lastschrifteinzug
   stages as a plain deposit, not a transfer leg: the Giro it came from is
   an estimate, where the counter-leg would be ignored anyway.
 - **Duplicate uploads.** `documents.content_hash` (SHA-256) is checked per

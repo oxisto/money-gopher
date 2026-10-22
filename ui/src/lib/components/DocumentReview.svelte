@@ -41,6 +41,7 @@
 		displayName: string;
 		currency: string;
 		kind?: string | null;
+		reference?: string | null;
 	}
 	interface Security {
 		id: string;
@@ -100,14 +101,18 @@
 				)
 			: doc.stagedTransactions
 	);
-	// Guess from the account names and kinds: a section called
-	// "Vorfinanzierungskredit" wants a loan, a "Bausparvertrag" a savings
-	// account, and a name that contains the section's word wins.
+	// A hint is "<part> <contract number>". The number plus the kind the
+	// part implies is exact: a Bausparvertrag and the loan against it
+	// share the number but not the kind. Without a stored number, a name
+	// that contains the part's word wins, then the kind alone.
 	function guessAccount(hint: string): string {
-		const word = hint.split(' ')[0].toLowerCase();
-		const byName = cashAccounts.find((a) => a.displayName.toLowerCase().includes(word));
+		const [word, number] = hint.split(' ');
+		const kind = /kredit|darlehen/i.test(word) ? 'LOAN' : /spar/i.test(word) ? 'SAVINGS' : null;
+		const byReference = cashAccounts.filter((a) => number && a.reference === number);
+		const exact = byReference.find((a) => !kind || (a.kind ?? 'CASH') === kind) ?? byReference[0];
+		if (exact) return exact.id;
+		const byName = cashAccounts.find((a) => a.displayName.toLowerCase().includes(word.toLowerCase()));
 		if (byName) return byName.id;
-		const kind = /kredit|darlehen/.test(word) ? 'LOAN' : /bauspar|spar/.test(word) ? 'SAVINGS' : null;
 		return (kind && cashAccounts.find((a) => a.kind === kind)?.id) ?? '';
 	}
 	let sectionAccounts = $state<Record<string, string>>({});

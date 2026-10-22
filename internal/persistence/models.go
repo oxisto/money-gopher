@@ -20,6 +20,7 @@ type CashAccount struct {
 	Kind             sql.NullString
 	EstimatedBalance sql.NullInt64
 	EstimatedAt      sql.NullTime
+	Reference        sql.NullString
 }
 
 type Document struct {

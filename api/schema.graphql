@@ -108,6 +108,13 @@ type CashAccount {
   "The IBAN of this bank account, used to auto-match imported documents."
   iban: String
   """
+  An account or contract number that is not an IBAN: a Bausparvertrag's
+  Vertragsnummer, a Depotnummer. Statements that print it instead of an
+  IBAN match on it (together with the kind, since a Bausparvertrag and
+  the loan against it share one number).
+  """
+  reference: String
+  """
   True when the balance is declared ("about 1,500") rather than summed
   from transactions. The Giro one does not want to track day to day.
   """
@@ -527,6 +534,8 @@ input CreateCashAccountInput {
   currency: String!
   "The IBAN of this bank account (optional but enables auto-matching of imported documents)."
   iban: String
+  "An account or contract number that is not an IBAN."
+  reference: String
   "Minor units. Setting it makes the account estimated, declared as of now."
   declaredBalance: Int
 }
@@ -562,6 +571,8 @@ input UpdateCashAccountInput {
   kind: AccountKind
   "The IBAN; an empty string removes it. Stored without spaces."
   iban: String
+  "The account or contract number; an empty string removes it."
+  reference: String
   """
   false returns the account to its ledger; true needs a declared balance,
   given here or earlier.

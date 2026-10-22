@@ -289,8 +289,12 @@ func TestImportLBSBundle(t *testing.T) {
 	schema := NewSchema(db, &quotes.Updater{DB: db, Registry: quotes.NewRegistry()})
 
 	accountOf := func(name, kind string) string {
-		data := exec(t, schema, ctx, fmt.Sprintf(`mutation { createCashAccount(input: { displayName: %q, currency: "EUR", kind: %s }) { id } }`, name, kind), nil)
-		return data["createCashAccount"].(map[string]any)["id"].(string)
+		data := exec(t, schema, ctx, fmt.Sprintf(`mutation { createCashAccount(input: { displayName: %q, currency: "EUR", kind: %s, reference: "1 234 567 890" }) { id reference } }`, name, kind), nil)
+		acct := data["createCashAccount"].(map[string]any)
+		if acct["reference"] != "1234567890" {
+			t.Errorf("reference stored as %v, want 1234567890 (spaces dropped)", acct["reference"])
+		}
+		return acct["id"].(string)
 	}
 	loan := accountOf("LBS Vorfinanzierung", "LOAN")
 	savings := accountOf("LBS Bausparvertrag", "SAVINGS")

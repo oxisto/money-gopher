@@ -46,7 +46,9 @@ CREATE TABLE cash_accounts (
     -- Declared balance (minor units) and when; set = the account is an
     -- estimate, its transactions do not move the balance. Migration 0013.
     estimated_balance INTEGER,
-    estimated_at      TIMESTAMP
+    estimated_at      TIMESTAMP,
+    -- An account or contract number that is not an IBAN. Migration 0015.
+    reference         TEXT
 );
 
 CREATE TABLE portfolios (
