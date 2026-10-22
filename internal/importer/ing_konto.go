@@ -40,6 +40,14 @@ func ingKontoTaxLabel(desc string) bool {
 		strings.Contains(desc, "Solidaritätszuschlag")
 }
 
+// ingKontoIsSecuritiesSettlement reports whether a row's description is a
+// securities settlement — a trade ("Wertpapierkauf", "Wertpapiergutschrift")
+// or an income payout ("Zins/Dividende WP") — which a dedicated
+// confirmation document already covers.
+func ingKontoIsSecuritiesSettlement(desc string) bool {
+	return strings.HasPrefix(desc, "Wertpapier") || strings.HasPrefix(desc, "Zins/Dividende")
+}
+
 // ingKontoHasISINContinuation reports whether an ISIN mention appears
 // between lines[from] and the next line matching ingKontoRow (exclusive) —
 // i.e. within the current row's own continuation text, however many
@@ -116,7 +124,13 @@ func ingParseKontoauszug(text string) ([]StagedTransaction, error) {
 		// so this scans ahead rather than checking only lines[i+1], and
 		// stops at the next real ledger row so it can't attribute a much
 		// later ISIN mention to the wrong transaction.
-		if ingKontoHasISINContinuation(lines, i+1) {
+		//
+		// Only the settlement rows themselves, though: a Sparplan's
+		// "Lastschrift-Einzug" names the ISIN in its continuation too, but
+		// it is the money pulled in from the Giro to fund the plan — the
+		// purchase is a separate Wertpapierkauf row — so it is a deposit
+		// and must be kept.
+		if ingKontoIsSecuritiesSettlement(desc) && ingKontoHasISINContinuation(lines, i+1) {
 			continue
 		}
 

@@ -40,8 +40,11 @@ func TestING_ParseKontoauszug(t *testing.T) {
 	// event. Nor the second Wertpapierkauf (-5,432.10), whose ISIN
 	// continuation lands on a simulated next page — past a page-footer
 	// watermark, a blank gap, and a repeated page-header/column-heading
-	// block — rather than the very next line.
-	const wantRows = 6
+	// block — rather than the very next line. The Sparplan's
+	// Lastschrift-Einzug (+350.00) names an ISIN in its continuation too,
+	// but it is the money pulled in to fund the plan, not the trade, and
+	// must be kept as a deposit.
+	const wantRows = 7
 	if len(txs) != wantRows {
 		t.Fatalf("len(txs) = %d, want %d", len(txs), wantRows)
 	}
@@ -125,8 +128,21 @@ func TestING_ParseKontoauszug(t *testing.T) {
 		}
 	}
 
+	var foundSparplan bool
+	for _, tx := range txs {
+		if tx.CashDelta == 35000 {
+			foundSparplan = true
+			if tx.Type != "DEPOSIT_CASH" {
+				t.Errorf("Sparplan Lastschrift-Einzug: Type = %q, want DEPOSIT_CASH", tx.Type)
+			}
+		}
+	}
+	if !foundSparplan {
+		t.Error("the Sparplan Lastschrift-Einzug (+350.00) was skipped as if it were the trade")
+	}
+
 	wantByType := map[string]int{
-		"DEPOSIT_CASH":  1,
+		"DEPOSIT_CASH":  2, // Gehalt, Sparplan Lastschrift-Einzug
 		"WITHDRAW_CASH": 2, // Miete, Stromversorger
 		"ACCOUNT_FEES":  1,
 		"INTEREST":      1,
@@ -138,15 +154,16 @@ func TestING_ParseKontoauszug(t *testing.T) {
 		}
 	}
 
-	// The six tracked rows' own net: 2500.00 (Gehalt) - 800.00 (Miete)
-	// - 11.90 (Kontoführungsentgelt) - 455.98 (Stromversorger) - 0.02
-	// (TAX_REFUND) + 7.00 (net interest) = 1239.10. This is smaller than
+	// The seven tracked rows' own net: 2500.00 (Gehalt) + 350.00 (Sparplan
+	// debit) - 800.00 (Miete) - 11.90 (Kontoführungsentgelt) - 455.98
+	// (Stromversorger) - 0.02 (TAX_REFUND) + 7.00 (net interest) = 1589.10.
+	// This is smaller than
 	// the statement's own Alter Saldo -> Neuer Saldo delta (5,000.00 ->
 	// 731.50, i.e. -4,268.50): the difference is exactly the two excluded
 	// Wertpapierkauf rows and the excluded dividend (-100.00 - 5,432.10 +
 	// 24.50 = -5,507.60), deliberately not tracked here since a dedicated
 	// document covers each of them.
-	const wantNet = 123910
+	const wantNet = 158910
 	if net != wantNet {
 		t.Errorf("net = %d, want %d", net, wantNet)
 	}
