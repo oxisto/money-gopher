@@ -3,6 +3,9 @@ name: Pull Request Title
 on:
   pull_request:
     types: [opened, edited, reopened, synchronize]
+  # The merge queue needs every required check to report on its merge
+  # groups; there is no title to check there, so the job passes.
+  merge_group:
 
 permissions: {}
 
@@ -11,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 'Check title follows "<area>: <what it does>"'
+        if: github.event_name == 'pull_request'
         env:
           # Via env, never interpolated into the script: titles are user input.
           TITLE: ${{ github.event.pull_request.title }}
