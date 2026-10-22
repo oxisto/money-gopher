@@ -53,3 +53,18 @@ FROM
     transactions
 WHERE
     cash_account_id = ?;
+
+-- name: ListCashAccountsWithIBAN :many
+SELECT
+    *
+FROM
+    cash_accounts
+WHERE
+    iban IS NOT NULL;
+
+-- name: SetCashAccountIBAN :exec
+UPDATE cash_accounts
+SET
+    iban = ?
+WHERE
+    id = ?;

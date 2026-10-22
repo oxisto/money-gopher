@@ -78,7 +78,7 @@ func (r *RootResolver) CreateCashAccount(ctx context.Context, args struct{ Input
 		PersonID:    person.ID,
 		DisplayName: args.Input.DisplayName,
 		Currency:    args.Input.Currency,
-		Iban:        nullString(args.Input.IBAN),
+		Iban:        normalizedIBAN(args.Input.IBAN),
 	})
 	if err != nil {
 		return nil, err
@@ -183,4 +183,13 @@ func (r *CashAccountResolver) Transactions(ctx context.Context) ([]*TransactionR
 	}
 
 	return resolvers, nil
+}
+
+// normalizedIBAN is nullString for an IBAN: stored without spaces, upper
+// case, so a statement's IBAN finds it. Empty stays NULL.
+func normalizedIBAN(iban *string) sql.NullString {
+	if iban == nil || persistence.NormalizeIBAN(*iban) == "" {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: persistence.NormalizeIBAN(*iban), Valid: true}
 }

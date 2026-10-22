@@ -184,6 +184,64 @@ func (q *Queries) ListCashAccounts(ctx context.Context, personID string) ([]*Cas
 	return items, nil
 }
 
+const listCashAccountsWithIBAN = `-- name: ListCashAccountsWithIBAN :many
+SELECT
+    id, user_id, display_name, currency, iban, created_at, person_id
+FROM
+    cash_accounts
+WHERE
+    iban IS NOT NULL
+`
+
+func (q *Queries) ListCashAccountsWithIBAN(ctx context.Context) ([]*CashAccount, error) {
+	rows, err := q.db.QueryContext(ctx, listCashAccountsWithIBAN)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*CashAccount
+	for rows.Next() {
+		var i CashAccount
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.DisplayName,
+			&i.Currency,
+			&i.Iban,
+			&i.CreatedAt,
+			&i.PersonID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const setCashAccountIBAN = `-- name: SetCashAccountIBAN :exec
+UPDATE cash_accounts
+SET
+    iban = ?
+WHERE
+    id = ?
+`
+
+type SetCashAccountIBANParams struct {
+	Iban sql.NullString
+	ID   string
+}
+
+func (q *Queries) SetCashAccountIBAN(ctx context.Context, arg SetCashAccountIBANParams) error {
+	_, err := q.db.ExecContext(ctx, setCashAccountIBAN, arg.Iban, arg.ID)
+	return err
+}
+
 const updateCashAccount = `-- name: UpdateCashAccount :one
 UPDATE cash_accounts
 SET
