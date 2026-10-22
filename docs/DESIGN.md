@@ -416,6 +416,17 @@ deferred.
   line). Confirming a scheduled booking does not overwrite a note;
   re-importing after a re-analysis upgrades a note that is empty or a
   prefix of the parser's newer wording (`reconciledNote`).
+- **Portfolio returns.** `finance.ReturnsOver(txs, from, to, quote)`
+  splits a period's absolute return into four parts that add up: realized
+  (FIFO gains of completed sales, gross of their fees and taxes), income
+  (dividends, coupons, rent, gross of withholding), costs (every fee and
+  tax in the period), and value change (the open positions' movement net
+  of purchases and sales, i.e. total − the other three). Total is end
+  value − start value + the net cash that left the portfolio, over
+  (from, to] like the time-weighted return. `PortfolioSnapshot.returns
+  (period)` and `returnsByYear` serve it; the portfolio page shows a
+  Return panel with a period switch (valuation above it has none) and a
+  stacked bar per year.
 - **Suggested schedules.** `schedule.Suggest` reads what recurs off an
   account's own deposits and withdrawals (transfer legs and scheduled
   bookings left out): groups by counterparty (the note's head without the
