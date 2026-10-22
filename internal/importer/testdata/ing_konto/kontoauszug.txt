@@ -27,6 +27,8 @@
                      06.01.2024                 Wertpapierkauf                                                                                                                                -100,00
                      08.01.2024                 WP-ABRECHNUNG 0000000001001 Kauf ISIN DE0000000090
                                                 MUSTER ETF
+                     31.01.2024                 Lastschrift-Einzug Max Mustermann                                                                                                              350,00
+                     31.01.2024                 Sparplan ISIN DE0000000090 MUSTER ETF
                      07.01.2024                 Wertpapierkauf                                                                                                                              -5.432,10
                      09.01.2024
 
