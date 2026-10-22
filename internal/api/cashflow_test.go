@@ -39,7 +39,7 @@ func TestCashFlow(t *testing.T) {
 	}
 	mk(fmt.Sprintf(`displayName: "Gehalt", type: DEPOSIT_CASH, interval: MONTHLY, dayOfMonth: 28, start: "2026-01-01T00:00:00Z", end: "2026-04-30T00:00:00Z", cashAccountID: %q, books: true, steps: [{ from: "2026-01-01T00:00:00Z", amount: 485000 }]`, giro))
 	mk(fmt.Sprintf(`displayName: "Kreditkarte", type: WITHDRAW_CASH, interval: MONTHLY, dayOfMonth: 3, start: "2026-01-01T00:00:00Z", cashAccountID: %q, steps: [{ from: "2026-01-01T00:00:00Z", amount: 120000 }]`, giro))
-	mk(fmt.Sprintf(`displayName: "Sparrate", type: TRANSFER, interval: MONTHLY, dayOfMonth: 1, start: "2026-01-01T00:00:00Z", cashAccountID: %q, counterpartAccountID: %q, steps: [{ from: "2026-01-01T00:00:00Z", amount: 53582 }]`, bauspar, giro))
+	mk(fmt.Sprintf(`displayName: "Sparrate", type: TRANSFER, interval: MONTHLY, dayOfMonth: 1, start: "2026-01-01T00:00:00Z", end: "2026-04-30T00:00:00Z", cashAccountID: %q, counterpartAccountID: %q, books: true, steps: [{ from: "2026-01-01T00:00:00Z", amount: 53582 }]`, bauspar, giro))
 	mk(fmt.Sprintf(`displayName: "Zinszahlung", type: TRANSFER, interval: MONTHLY, dayOfMonth: 1, start: "2026-01-01T00:00:00Z", cashAccountID: %q, counterpartAccountID: %q, steps: [{ from: "2026-01-01T00:00:00Z", amount: 62542 }]`, loan, giro))
 	mk(fmt.Sprintf(`displayName: "Zinsen", type: INTEREST, interval: MONTHLY, dayOfMonth: 31, start: "2026-01-01T00:00:00Z", cashAccountID: %q, steps: [{ from: "2026-01-01T00:00:00Z", amount: 62542 }]`, loan))
 	mk(fmt.Sprintf(`displayName: "Versicherung", type: WITHDRAW_CASH, interval: YEARLY, dayOfMonth: 15, start: "2026-03-01T00:00:00Z", cashAccountID: %q, steps: [{ from: "2026-01-01T00:00:00Z", amount: 45000 }]`, giro))
@@ -88,6 +88,7 @@ func TestCashFlow(t *testing.T) {
 	doc, err := svc.Upload(ctx, person.ID, "feb.txt", "text/plain", []byte("ING-DiBa AG\nKontoauszug 2026\nIBAN DE02 1203 0000 0000 2020 51\n"+
 		"Buchung      Buchung / Verwendungszweck                                     Betrag (EUR)\nValuta\n\n"+
 		"27.02.2026                 Gehalt/Rente Musterfirma GmbH                                   4.850,00\n27.02.2026                 Lohn/Gehalt 02/2026\n"+
+		"02.02.2026                 Lastschrifteinzug LBS SUED                                        -535,82\n02.02.2026                 Bausparvertrag\n"+
 		"14.02.2026                 Lastschrift Supermarkt                                            -85,20\n14.02.2026                 Einkauf\n"))
 	if err != nil {
 		t.Fatalf("Upload: %v", err)
@@ -98,11 +99,16 @@ func TestCashFlow(t *testing.T) {
 	exec(t, schema, ctx, `mutation ($id: ID!, $acct: ID!) { confirmImport(documentID: $id, input: { cashAccountID: $acct, transactions: [] }) { id } }`, map[string]any{"id": doc.ID, "acct": giro})
 
 	data = exec(t, schema, ctx, `{ cashFlow(from: "2026-02-01T00:00:00Z", months: 2) { months {
-		actualIn { amount } actualOut { amount } actualFree { amount } unscheduledIn { amount } unscheduledOut { amount } unscheduled { type note }
+		actualIn { amount } actualOut { amount } actualSaved { amount } actualFree { amount } unscheduledIn { amount } unscheduledOut { amount } unscheduledSaved { amount } unscheduled { type note }
 	} } }`, nil)
 	feb := data["cashFlow"].(map[string]any)["months"].([]any)[0].(map[string]any)
-	if feb["actualIn"] == nil || feb["actualIn"].(map[string]any)["amount"] != 485000.0 || feb["actualOut"].(map[string]any)["amount"] != 8520.0 {
-		t.Errorf("February actuals = %v, want in 485000 and out 8520", feb)
+	// The salary confirmed its booking, the LBS debit confirmed the
+	// Sparrate's Giro leg (saved), the groceries are unscheduled.
+	if feb["actualIn"] == nil || feb["actualIn"].(map[string]any)["amount"] != 485000.0 || feb["actualOut"].(map[string]any)["amount"] != 8520.0 || feb["actualSaved"].(map[string]any)["amount"] != 53582.0 {
+		t.Errorf("February actuals = %v, want in 485000, out 8520, saved 53582", feb)
+	}
+	if feb["actualFree"].(map[string]any)["amount"] != 485000.0-8520.0-53582.0 || feb["unscheduledSaved"].(map[string]any)["amount"] != 0.0 {
+		t.Errorf("February free/unscheduled saved = %v", feb)
 	}
 	if feb["unscheduledIn"].(map[string]any)["amount"] != 0.0 || feb["unscheduledOut"].(map[string]any)["amount"] != 8520.0 || len(feb["unscheduled"].([]any)) != 1 {
 		t.Errorf("February unscheduled = %v, want only the groceries", feb)
