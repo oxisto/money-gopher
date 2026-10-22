@@ -38,6 +38,10 @@ func (r *RootResolver) RealizedGains(ctx context.Context, args struct{ From, To 
 	if err != nil {
 		return nil, err
 	}
+	txs, err = withoutLoanInterest(ctx, r.db, person.ID, txs)
+	if err != nil {
+		return nil, err
+	}
 
 	return &RealizedGainsResolver{
 		db:    r.db,
@@ -223,4 +227,31 @@ func (r *RealizedGainResolver) CashAccount(ctx context.Context) (*CashAccountRes
 
 func (r *RealizedGainResolver) Amount() Money {
 	return money(r.gain.Amount, r.gain.Currency)
+}
+
+// withoutLoanInterest drops the INTEREST transactions of loan accounts:
+// interest charged is a financing cost, not income, and would otherwise
+// net against the interest earned on the Income page.
+func withoutLoanInterest(ctx context.Context, db *persistence.DB, personID string, txs []*persistence.Transaction) ([]*persistence.Transaction, error) {
+	accounts, err := db.ListCashAccounts(ctx, personID)
+	if err != nil {
+		return nil, err
+	}
+	loans := map[string]bool{}
+	for _, a := range accounts {
+		if kindOf(a) == "LOAN" {
+			loans[a.ID] = true
+		}
+	}
+	if len(loans) == 0 {
+		return txs, nil
+	}
+	kept := txs[:0:0]
+	for _, tx := range txs {
+		if tx.Type == "INTEREST" && tx.CashAccountID.Valid && loans[tx.CashAccountID.String] {
+			continue
+		}
+		kept = append(kept, tx)
+	}
+	return kept, nil
 }

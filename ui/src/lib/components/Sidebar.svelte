@@ -196,9 +196,11 @@
 					class="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px]
 						{isActive(href) ? 'bg-hover' : 'hover:bg-hover'}"
 				>
-					<span class="size-1.5 rounded-full bg-gold"></span>
+					<span class="size-1.5 rounded-full {a.kind === 'LOAN' ? 'bg-neg' : 'bg-gold'}"></span>
 					<span class="flex-1 truncate">{a.displayName}</span>
-					<span class="num text-xs text-muted">{formatMoneyCompact(a.balance)}</span>
+					<span class="num text-xs text-muted" title={a.estimated ? 'estimated' : undefined}>
+						{a.estimated ? '≈ ' : ''}{formatMoneyCompact(a.balance)}
+					</span>
 				</a>
 			{/each}
 		</div>

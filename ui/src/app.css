@@ -137,6 +137,11 @@
 		@apply rounded-lg border-line bg-surface text-sm text-fg placeholder:text-muted focus:border-accent focus:ring-accent;
 	}
 	input[type='checkbox'] {
-		@apply rounded border-line-strong bg-surface text-accent focus:ring-accent;
+		@apply rounded border-line-strong text-accent focus:ring-accent;
+	}
+	/* Only unchecked: the plugin fills a checked box with currentColor
+	   behind its white tick, and this layer would paint over that. */
+	input[type='checkbox']:not(:checked) {
+		@apply bg-surface;
 	}
 }

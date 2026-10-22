@@ -10,7 +10,7 @@ const Imports = graphql(`
 			detectedBank
 			error
 			transactionDate
-			suggestedCashAccount { id displayName currency }
+			suggestedCashAccount { id displayName currency estimated }
 			transactions {
 				id
 				type

@@ -43,8 +43,12 @@
 	const empty = $derived(portfolios.length === 0 && cashAccounts.length === 0);
 
 	const invested = $derived(sum(portfolios.map((p) => p.snapshot.totalMarketValue)));
-	const cash = $derived(sum(cashAccounts.map((a) => a.balance)));
-	const netWorth = $derived(sum([invested, cash]));
+	// Loans count against net worth; estimated accounts count at what their
+	// owner declared, and the headline says how much of it is that.
+	const cash = $derived(sum(cashAccounts.filter((a) => a.kind !== 'LOAN').map((a) => a.balance)));
+	const loans = $derived(sum(cashAccounts.filter((a) => a.kind === 'LOAN').map((a) => a.balance)));
+	const estimatedPart = $derived(sum(cashAccounts.filter((a) => a.estimated).map((a) => a.balance)));
+	const netWorth = $derived(sum([invested, cash, loans]));
 
 	const history = $derived(data.history);
 	const change = $derived.by(() => {
@@ -97,9 +101,14 @@
 			},
 			{
 				label: 'Cash',
-				value: formatMoney(cash),
+				value: `${estimatedPart.amount ? '≈ ' : ''}${formatMoney(cash)}`,
 				tone: '',
-				sub: netWorth.amount ? `${formatPercent(cash.amount / netWorth.amount).replace('+', '')} of net worth` : ''
+				sub: [
+					netWorth.amount ? `${formatPercent(cash.amount / netWorth.amount).replace('+', '')} of net worth` : '',
+					loans.amount ? `${formatMoney(loans)} in loans` : ''
+				]
+					.filter(Boolean)
+					.join(' · ')
 			}
 		];
 	});
@@ -238,6 +247,9 @@
 				<div class="min-w-64 flex-1">
 					<div class="text-[13px] text-muted">Net worth</div>
 					<div class="num mt-1 text-4xl font-semibold tracking-tight">{formatMoney(netWorth)}</div>
+					{#if estimatedPart.amount}
+						<div class="num mt-0.5 text-[13px] text-muted">of which ≈ {formatMoney(estimatedPart)} estimated</div>
+					{/if}
 					{#if change}
 						{@const since = periods.find((p) => p.value === period)?.since}
 						<div class="num mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm">

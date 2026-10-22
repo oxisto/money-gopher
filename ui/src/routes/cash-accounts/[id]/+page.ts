@@ -6,16 +6,21 @@ const CashAccountDetail = graphql(
 	`
 		query CashAccountDetail($id: ID!) {
 			cashAccount(id: $id) {
-				id
-				displayName
-				currency
-				iban
-				balance { amount currency }
+			id
+			displayName
+			kind
+			estimated
+			declaredBalance { amount currency }
+			declaredAt
+			currency
+			iban
+			balance { amount currency }
+			ledgerBalance { amount currency }
 				transactions { ...ActivityTransaction }
 			}
 			securities { id displayName }
 			assets { id displayName }
-			cashAccounts { id displayName currency }
+			cashAccounts { id displayName currency kind }
 		}
 	`,
 	[ActivityTransaction]

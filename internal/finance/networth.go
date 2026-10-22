@@ -17,24 +17,48 @@ type NetWorthPoint struct {
 	// price minus those delivered out. NetWorth − Invested is what the
 	// money has earned.
 	Invested int64
+	// Estimated is the part of NetWorth that is declared rather than
+	// tracked: the declared balances of estimated accounts.
+	Estimated int64
 }
 
 // NetWorthAt evaluates the net worth at each of the given times from all of
 // a person's transactions (portfolio and cash account ones, deduplicated,
-// any order) and a quote lookup.
-func NetWorthAt(txs []*persistence.Transaction, times []time.Time, quote QuoteFunc) []NetWorthPoint {
+// any order), the declared balances of the estimated accounts by account
+// ID, and a quote lookup.
+//
+// An estimated account is outside the tracked world: its declared balance
+// counts as a constant, its transactions never move it. Pure cash events
+// on it (deposits, withdrawals, interest, fees, tax) are therefore ignored
+// altogether, while a trade or dividend settling on it is money from or
+// to outside — a purchase paid from the estimated Giro is capital brought
+// in, a dividend landing there is earned and taken out — so it counts in
+// Invested with the opposite sign instead of as cash.
+func NetWorthAt(txs []*persistence.Transaction, estimated map[string]int64, times []time.Time, quote QuoteFunc) []NetWorthPoint {
+	var declared int64
+	for _, balance := range estimated {
+		declared += balance
+	}
+
 	points := make([]NetWorthPoint, 0, len(times))
 	for _, at := range times {
-		p := NetWorthPoint{Time: at}
-		p.NetWorth = marketValue(books(txs, at, false), at, quote)
+		p := NetWorthPoint{Time: at, Estimated: declared}
+		p.NetWorth = marketValue(books(txs, at, false), at, quote) + declared
 
 		for _, tx := range txs {
 			if tx.Time.After(at) {
 				continue
 			}
-			// Every cash effect, trades included, lands on a cash account;
-			// a transaction without one moves no cash.
 			if tx.CashAccountID.Valid {
+				if _, isEstimated := estimated[tx.CashAccountID.String]; isEstimated {
+					if isCashOnly(tx.Type) {
+						continue
+					}
+					p.Invested -= tx.CashDelta
+					continue
+				}
+				// Every cash effect, trades included, lands on a cash
+				// account; a transaction without one moves no cash.
 				p.NetWorth += tx.CashDelta
 			}
 
@@ -52,4 +76,14 @@ func NetWorthAt(txs []*persistence.Transaction, times []time.Time, quote QuoteFu
 		points = append(points, p)
 	}
 	return points
+}
+
+// isCashOnly reports whether a transaction type moves cash and nothing
+// else: no security changes hands.
+func isCashOnly(typ string) bool {
+	switch typ {
+	case "INTEREST", "DEPOSIT_CASH", "WITHDRAW_CASH", "ACCOUNT_FEES", "TAX_REFUND":
+		return true
+	}
+	return false
 }

@@ -382,6 +382,18 @@ deferred.
   still fetches them. The import's "Create
   security" dialog makes a listing (ticker = ISIN, the document's price
   currency, ING quotes), so this works without a trip to the Securities page.
+- **Account kinds and estimates (M10, step 1).** `cash_accounts.kind`
+  (NULL = CASH, SAVINGS, LOAN; `AccountKind` in the schema, no CHECK) and
+  `estimated_balance`/`estimated_at`. A LOAN is a ledger whose balance runs
+  negative: INTEREST on it must be negative (charged), and is left out of
+  realized gains as a financing cost. An estimated account's `balance` is
+  what its owner declared; `ledgerBalance` stays visible; for net worth
+  (`finance.NetWorthAt`) the declaration is a constant (`NetWorthPoint.
+  Estimated`), the account's pure cash events are ignored, and a trade or
+  dividend settling on it counts in Invested with the opposite sign — money
+  from or to outside. The UI marks estimates with "≈" everywhere they
+  appear: sidebar, overview headline and Cash tile, a band in the net worth
+  chart, the account page.
 - **Duplicate uploads.** `documents.content_hash` (SHA-256) is checked per
   person at upload; the same bytes again return `importer.DuplicateError`,
   which `/upload` answers with 409 and a message naming the earlier file.

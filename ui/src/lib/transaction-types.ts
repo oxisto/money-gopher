@@ -26,6 +26,8 @@ export interface AssetOption {
 export interface CashAccountOption {
 	id: string;
 	displayName: string;
+	/** CASH when missing; INTEREST on a LOAN is a charge, not a credit. */
+	kind?: string | null;
 }
 
 /**

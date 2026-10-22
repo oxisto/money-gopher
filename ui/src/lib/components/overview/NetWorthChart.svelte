@@ -5,6 +5,8 @@
 		time: Date;
 		netWorth: Money;
 		invested: Money;
+		/** The declared part of netWorth: estimated accounts, no history. */
+		estimated?: Money;
 	}
 
 	let { points }: { points: Point[] } = $props();
@@ -32,6 +34,18 @@
 
 	const line = $derived(path(points.map((p) => p.netWorth.amount)));
 	const invested = $derived(path(points.map((p) => p.invested.amount)));
+	// What is tracked, below the declared estimates: drawn as the solid
+	// line, with the estimated part as a hatched band up to the total.
+	const hasEstimate = $derived(points.some((p) => p.estimated?.amount));
+	const tracked = $derived(path(points.map((p) => p.netWorth.amount - (p.estimated?.amount ?? 0))));
+	const band = $derived.by(() => {
+		if (!hasEstimate) return '';
+		const up = points.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.netWorth.amount).toFixed(1)}`);
+		const down = [...points]
+			.reverse()
+			.map((p, j) => `L${x(points.length - 1 - j).toFixed(1)},${y(p.netWorth.amount - (p.estimated?.amount ?? 0)).toFixed(1)}`);
+		return `${up.join(' ')} ${down.join(' ')} Z`;
+	});
 	const currency = $derived(points[0]?.netWorth.currency ?? 'EUR');
 
 	const yLabels = $derived(
@@ -74,7 +88,11 @@
 			{#each [PAD, H / 2, H - PAD] as gy (gy)}
 				<line x1="0" x2={W} y1={gy} y2={gy} class="stroke-line" vector-effect="non-scaling-stroke" />
 			{/each}
-			<path d="{line} L{W},{H} L0,{H} Z" class="fill-accent-soft" />
+			<path d="{hasEstimate ? tracked : line} L{W},{H} L0,{H} Z" class="fill-accent-soft" />
+			{#if hasEstimate}
+				<path d={band} class="fill-gold/20" />
+				<path d={line} fill="none" class="stroke-gold" stroke-width="1.5" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" />
+			{/if}
 			<path
 				d={invested}
 				fill="none"
@@ -83,7 +101,7 @@
 				stroke-dasharray="4 4"
 				vector-effect="non-scaling-stroke"
 			/>
-			<path d={line} fill="none" class="stroke-accent" stroke-width="2" vector-effect="non-scaling-stroke" />
+			<path d={hasEstimate ? tracked : line} fill="none" class="stroke-accent" stroke-width="2" vector-effect="non-scaling-stroke" />
 		</svg>
 
 		<div class="num pointer-events-none absolute inset-y-0 right-0 flex flex-col justify-between text-[11px] text-muted">
@@ -107,6 +125,11 @@
 				<div class="flex justify-between gap-3">
 					<span class="text-muted">Net worth</span>{formatMoney(hovered.netWorth)}
 				</div>
+				{#if hovered.estimated?.amount}
+					<div class="flex justify-between gap-3">
+						<span class="text-muted">of which estimated</span>≈ {formatMoney(hovered.estimated)}
+					</div>
+				{/if}
 				<div class="flex justify-between gap-3">
 					<span class="text-muted">Invested</span>{formatMoney(hovered.invested)}
 				</div>
@@ -129,7 +152,12 @@
 		{/each}
 	</div>
 	<div class="flex flex-wrap gap-4 text-xs text-muted">
-		<span class="flex items-center gap-1.5"><span class="h-0.5 w-3.5 bg-accent"></span>Net worth</span>
+		<span class="flex items-center gap-1.5"><span class="h-0.5 w-3.5 bg-accent"></span>{hasEstimate ? 'Tracked' : 'Net worth'}</span>
+		{#if hasEstimate}
+			<span class="flex items-center gap-1.5">
+				<span class="h-2.5 w-3.5 rounded-sm bg-gold/30"></span>≈ estimated balances
+			</span>
+		{/if}
 		<span class="flex items-center gap-1.5">
 			<span class="w-3.5 border-t-2 border-dashed border-muted"></span>Invested (deposits − withdrawals)
 		</span>

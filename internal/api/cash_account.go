@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/graph-gophers/graphql-go"
@@ -61,9 +62,33 @@ func (r *RootResolver) CashAccount(ctx context.Context, args struct{ ID graphql.
 
 // CreateCashAccountInput is the input for Mutation.createCashAccount.
 type CreateCashAccountInput struct {
-	DisplayName string
-	Currency    string
-	IBAN        *string
+	DisplayName     string
+	Kind            *string
+	Currency        string
+	IBAN            *string
+	DeclaredBalance *int32
+}
+
+// kindColumn is the stored form of an AccountKind: NULL for CASH, so
+// every account from before kinds existed reads as one.
+func kindColumn(kind *string) sql.NullString {
+	if kind == nil || *kind == "CASH" {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: *kind, Valid: true}
+}
+
+// kindOf is the AccountKind of a stored account.
+func kindOf(account *persistence.CashAccount) string {
+	if account.Kind.Valid {
+		return account.Kind.String
+	}
+	return "CASH"
+}
+
+// declared is the estimate columns for a balance declared now.
+func declared(balance int32) (sql.NullInt64, sql.NullTime) {
+	return sql.NullInt64{Int64: int64(balance), Valid: true}, sql.NullTime{Time: time.Now().UTC(), Valid: true}
 }
 
 // CreateCashAccount resolves Mutation.createCashAccount.
@@ -73,13 +98,18 @@ func (r *RootResolver) CreateCashAccount(ctx context.Context, args struct{ Input
 		return nil, err
 	}
 
-	account, err := r.db.CreateCashAccount(ctx, persistence.CreateCashAccountParams{
+	params := persistence.CreateCashAccountParams{
 		ID:          uuid.NewString(),
 		PersonID:    person.ID,
 		DisplayName: args.Input.DisplayName,
 		Currency:    args.Input.Currency,
 		Iban:        normalizedIBAN(args.Input.IBAN),
-	})
+		Kind:        kindColumn(args.Input.Kind),
+	}
+	if args.Input.DeclaredBalance != nil {
+		params.EstimatedBalance, params.EstimatedAt = declared(*args.Input.DeclaredBalance)
+	}
+	account, err := r.db.CreateCashAccount(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -89,8 +119,11 @@ func (r *RootResolver) CreateCashAccount(ctx context.Context, args struct{ Input
 
 // UpdateCashAccountInput is the input for Mutation.updateCashAccount.
 type UpdateCashAccountInput struct {
-	DisplayName *string
-	IBAN        *string
+	DisplayName     *string
+	Kind            *string
+	IBAN            *string
+	Estimated       *bool
+	DeclaredBalance *int32
 }
 
 // UpdateCashAccount resolves Mutation.updateCashAccount.
@@ -121,12 +154,33 @@ func (r *RootResolver) UpdateCashAccount(ctx context.Context, args struct {
 	if args.Input.IBAN != nil {
 		iban = normalizedIBAN(args.Input.IBAN) // "" clears it
 	}
+	kind := current.Kind
+	if args.Input.Kind != nil {
+		kind = kindColumn(args.Input.Kind)
+	}
+	// A declaration (re)sets the estimate as of now; estimated: false
+	// returns the account to its ledger; estimated: true without a balance,
+	// now or earlier, has nothing to declare.
+	balance, at := current.EstimatedBalance, current.EstimatedAt
+	if args.Input.DeclaredBalance != nil {
+		balance, at = declared(*args.Input.DeclaredBalance)
+	}
+	if args.Input.Estimated != nil {
+		if !*args.Input.Estimated {
+			balance, at = sql.NullInt64{}, sql.NullTime{}
+		} else if !balance.Valid {
+			return nil, errors.New("an estimated account needs a declared balance")
+		}
+	}
 
 	account, err := r.db.UpdateCashAccount(ctx, persistence.UpdateCashAccountParams{
-		DisplayName: displayName,
-		Iban:        iban,
-		ID:          string(args.ID),
-		PersonID:    person.ID,
+		DisplayName:      displayName,
+		Iban:             iban,
+		Kind:             kind,
+		EstimatedBalance: balance,
+		EstimatedAt:      at,
+		ID:               string(args.ID),
+		PersonID:         person.ID,
 	})
 	if err != nil {
 		return nil, err
@@ -166,14 +220,41 @@ func (r *CashAccountResolver) IBAN() *string {
 	return nil
 }
 
-// Balance resolves CashAccount.balance as the sum of all cash deltas.
-func (r *CashAccountResolver) Balance(ctx context.Context) (Money, error) {
+func (r *CashAccountResolver) Kind() string    { return kindOf(r.account) }
+func (r *CashAccountResolver) Estimated() bool { return r.account.EstimatedBalance.Valid }
+
+func (r *CashAccountResolver) DeclaredBalance() *Money {
+	if !r.account.EstimatedBalance.Valid {
+		return nil
+	}
+	m := money(r.account.EstimatedBalance.Int64, r.account.Currency)
+	return &m
+}
+
+func (r *CashAccountResolver) DeclaredAt() *graphql.Time {
+	if !r.account.EstimatedAt.Valid {
+		return nil
+	}
+	return &graphql.Time{Time: r.account.EstimatedAt.Time}
+}
+
+// LedgerBalance resolves CashAccount.ledgerBalance: the sum of all cash
+// deltas, whatever the account's mode.
+func (r *CashAccountResolver) LedgerBalance(ctx context.Context) (Money, error) {
 	balance, err := r.db.GetCashAccountBalance(ctx, sql.NullString{String: r.account.ID, Valid: true})
 	if err != nil {
 		return Money{}, err
 	}
-
 	return money(balance, r.account.Currency), nil
+}
+
+// Balance resolves CashAccount.balance: what the owner declared for an
+// estimated account, the ledger sum otherwise.
+func (r *CashAccountResolver) Balance(ctx context.Context) (Money, error) {
+	if r.account.EstimatedBalance.Valid {
+		return money(r.account.EstimatedBalance.Int64, r.account.Currency), nil
+	}
+	return r.LedgerBalance(ctx)
 }
 
 // Transactions resolves CashAccount.transactions, newest first.

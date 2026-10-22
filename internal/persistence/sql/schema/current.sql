@@ -40,7 +40,13 @@ CREATE TABLE cash_accounts (
     currency     TEXT     NOT NULL,
     iban         TEXT,
     created_at   TIMESTAMP NOT NULL,
-    person_id    TEXT     NOT NULL REFERENCES persons(id) ON DELETE CASCADE
+    person_id    TEXT     NOT NULL REFERENCES persons(id) ON DELETE CASCADE,
+    -- 'SAVINGS' or 'LOAN'; NULL is a plain cash account. Migration 0013.
+    kind              TEXT,
+    -- Declared balance (minor units) and when; set = the account is an
+    -- estimate, its transactions do not move the balance. Migration 0013.
+    estimated_balance INTEGER,
+    estimated_at      TIMESTAMP
 );
 
 CREATE TABLE portfolios (
