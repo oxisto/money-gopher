@@ -71,6 +71,37 @@ export function formatUnits(units: number): string {
 }
 
 /** What a cash account is, for sublines and badges. */
+/** What a schedule's kind is called in lists and forms. */
+export function scheduleTypeLabel(type: string, accountKind?: string | null): string {
+	switch (type) {
+		case 'TRANSFER':
+			return 'Transfer';
+		case 'DEPOSIT_CASH':
+			return 'Deposit';
+		case 'WITHDRAW_CASH':
+			return 'Withdrawal';
+		case 'INTEREST':
+			return accountKind === 'LOAN' ? 'Interest charged' : 'Interest';
+		case 'ACCOUNT_FEES':
+			return 'Fees';
+		case 'DIVIDEND':
+			return 'Dividend / rent';
+		default:
+			return type;
+	}
+}
+
+export function intervalLabel(interval: string): string {
+	switch (interval) {
+		case 'QUARTERLY':
+			return 'quarterly';
+		case 'YEARLY':
+			return 'yearly';
+		default:
+			return 'monthly';
+	}
+}
+
 export function accountKindLabel(kind: string | null | undefined): string {
 	switch (kind) {
 		case 'SAVINGS':

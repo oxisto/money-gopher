@@ -1,0 +1,251 @@
+package api
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"testing"
+
+	"github.com/oxisto/money-gopher/internal/auth"
+	"github.com/oxisto/money-gopher/internal/importer"
+	"github.com/oxisto/money-gopher/internal/persistence"
+	"github.com/oxisto/money-gopher/internal/quotes"
+)
+
+const scheduleFields = `id displayName type interval dayOfMonth start end books booked
+	cashAccount { id } counterpartAccount { id } steps { from amount { amount } }
+	currentAmount { amount } nextDate unconfirmed { id }`
+
+func createSchedule(t *testing.T, h transferHelpers, input string) map[string]any {
+	t.Helper()
+	data := exec(t, h.schema, h.ctx, fmt.Sprintf(`mutation { createSchedule(input: { %s }) { %s } }`, input, scheduleFields), nil)
+	return data["createSchedule"].(map[string]any)
+}
+
+func TestSchedule_Lifecycle(t *testing.T) {
+	schema, ctx := newTestSchema(t)
+	h := transferHelpers{t, schema, ctx}
+	giro := h.account("Giro", "CASH", nil)
+	bauspar := h.account("Bausparvertrag", "SAVINGS", nil)
+	loan := h.account("Vorfinanzierung", "LOAN", nil)
+
+	sparrate := createSchedule(t, h, fmt.Sprintf(`displayName: "Sparrate", type: TRANSFER, interval: MONTHLY, dayOfMonth: 1,
+		start: "2026-01-01T00:00:00Z", cashAccountID: %q, counterpartAccountID: %q,
+		steps: [{ from: "2026-01-01T00:00:00Z", amount: 53582 }]`, bauspar, giro))
+	if sparrate["currentAmount"].(map[string]any)["amount"] != 53582.0 || sparrate["books"] != false || sparrate["end"] != nil {
+		t.Errorf("created = %v, want +535.82 on the Bausparvertrag, not booking, no end", sparrate)
+	}
+	if sparrate["nextDate"] == nil {
+		t.Error("nextDate is nil for a schedule without end")
+	}
+
+	// Interest on a loan is charged: negative as it hits the loan.
+	interest := createSchedule(t, h, fmt.Sprintf(`displayName: "Zinsen", type: INTEREST, interval: MONTHLY, dayOfMonth: 31,
+		start: "2026-01-01T00:00:00Z", cashAccountID: %q, steps: [{ from: "2026-01-01T00:00:00Z", amount: 62542 }]`, loan))
+	if interest["currentAmount"].(map[string]any)["amount"] != -62542.0 {
+		t.Errorf("loan interest = %v, want -62542", interest["currentAmount"])
+	}
+
+	// The Giro sees the Sparrate too: it is paid from there.
+	data := exec(t, schema, ctx, `query ($id: ID!) { cashAccount(id: $id) { schedules { displayName } } }`, map[string]any{"id": giro})
+	if got := data["cashAccount"].(map[string]any)["schedules"].([]any); len(got) != 1 || got[0].(map[string]any)["displayName"] != "Sparrate" {
+		t.Errorf("Giro schedules = %v, want the Sparrate", got)
+	}
+
+	// Steps replace; a step from a later date raises the amount; end and clearEnd.
+	id := sparrate["id"].(string)
+	data = exec(t, schema, ctx, fmt.Sprintf(`mutation ($id: ID!) { updateSchedule(id: $id, input: {
+		steps: [{ from: "2026-01-01T00:00:00Z", amount: 53582 }, { from: "2027-01-01T00:00:00Z", amount: 60000 }],
+		end: "2030-12-31T00:00:00Z" }) { %s } }`, scheduleFields), map[string]any{"id": id})
+	upd := data["updateSchedule"].(map[string]any)
+	if len(upd["steps"].([]any)) != 2 || upd["end"] == nil || upd["currentAmount"].(map[string]any)["amount"] != 53582.0 {
+		t.Errorf("after update = %v, want two steps, an end, and 535.82 still in force", upd)
+	}
+	data = exec(t, schema, ctx, fmt.Sprintf(`mutation ($id: ID!) { updateSchedule(id: $id, input: { clearEnd: true }) { %s } }`, scheduleFields), map[string]any{"id": id})
+	if data["updateSchedule"].(map[string]any)["end"] != nil {
+		t.Error("clearEnd left an end")
+	}
+
+	// Expected flows: one Sparrate per month (+ on the Bausparvertrag) and
+	// the interest charge (− on the loan), by date.
+	data = exec(t, schema, ctx, `{ expectedFlows(from: "2026-03-01T00:00:00Z", to: "2026-05-01T00:00:00Z") {
+		date amount { amount } booked schedule { displayName } } }`, nil)
+	flows := data["expectedFlows"].([]any)
+	var got []string
+	for _, f := range flows {
+		m := f.(map[string]any)
+		got = append(got, fmt.Sprintf("%s %s %v", m["date"].(string)[:10], m["schedule"].(map[string]any)["displayName"], m["amount"].(map[string]any)["amount"]))
+	}
+	want := []string{"2026-03-01 Sparrate 53582", "2026-03-31 Zinsen -62542", "2026-04-01 Sparrate 53582", "2026-04-30 Zinsen -62542"}
+	if fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("flows = %v, want %v", got, want)
+	}
+
+	// Validation.
+	for name, input := range map[string]string{
+		"transfer without source":  fmt.Sprintf(`displayName: "x", type: TRANSFER, interval: MONTHLY, dayOfMonth: 1, start: "2026-01-01T00:00:00Z", cashAccountID: %q, steps: [{ from: "2026-01-01T00:00:00Z", amount: 1 }]`, bauspar),
+		"transfer onto itself":     fmt.Sprintf(`displayName: "x", type: TRANSFER, interval: MONTHLY, dayOfMonth: 1, start: "2026-01-01T00:00:00Z", cashAccountID: %q, counterpartAccountID: %q, steps: [{ from: "2026-01-01T00:00:00Z", amount: 1 }]`, giro, giro),
+		"day 32":                   fmt.Sprintf(`displayName: "x", type: DEPOSIT_CASH, interval: MONTHLY, dayOfMonth: 32, start: "2026-01-01T00:00:00Z", cashAccountID: %q, steps: [{ from: "2026-01-01T00:00:00Z", amount: 1 }]`, giro),
+		"no steps":                 fmt.Sprintf(`displayName: "x", type: DEPOSIT_CASH, interval: MONTHLY, dayOfMonth: 1, start: "2026-01-01T00:00:00Z", cashAccountID: %q, steps: []`, giro),
+		"zero amount":              fmt.Sprintf(`displayName: "x", type: DEPOSIT_CASH, interval: MONTHLY, dayOfMonth: 1, start: "2026-01-01T00:00:00Z", cashAccountID: %q, steps: [{ from: "2026-01-01T00:00:00Z", amount: 0 }]`, giro),
+		"end before start":         fmt.Sprintf(`displayName: "x", type: DEPOSIT_CASH, interval: MONTHLY, dayOfMonth: 1, start: "2026-01-01T00:00:00Z", end: "2025-01-01T00:00:00Z", cashAccountID: %q, steps: [{ from: "2026-01-01T00:00:00Z", amount: 1 }]`, giro),
+		"counterpart on a deposit": fmt.Sprintf(`displayName: "x", type: DEPOSIT_CASH, interval: MONTHLY, dayOfMonth: 1, start: "2026-01-01T00:00:00Z", cashAccountID: %q, counterpartAccountID: %q, steps: [{ from: "2026-01-01T00:00:00Z", amount: 1 }]`, giro, bauspar),
+		"unknown account":          `displayName: "x", type: DEPOSIT_CASH, interval: MONTHLY, dayOfMonth: 1, start: "2026-01-01T00:00:00Z", cashAccountID: "nope", steps: [{ from: "2026-01-01T00:00:00Z", amount: 1 }]`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			execExpectError(t, schema, ctx, fmt.Sprintf(`mutation { createSchedule(input: { %s }) { id } }`, input), nil)
+		})
+	}
+
+	// Another person sees nothing and cannot touch it.
+	other := auth.WithPerson(auth.WithUser(context.Background(), &persistence.User{ID: "other"}), &persistence.Person{ID: "other"})
+	if got := len(exec(t, schema, other, `{ schedules { id } }`, nil)["schedules"].([]any)); got != 0 {
+		t.Errorf("other person sees %d schedules", got)
+	}
+	execExpectError(t, schema, other, `mutation ($id: ID!) { deleteSchedule(id: $id) }`, map[string]any{"id": id})
+
+	exec(t, schema, ctx, `mutation ($id: ID!) { deleteSchedule(id: $id) }`, map[string]any{"id": id})
+	if data := exec(t, schema, ctx, `query ($id: ID!) { schedule(id: $id) { id } }`, map[string]any{"id": id}); data["schedule"] != nil {
+		t.Error("the schedule survived its deletion")
+	}
+}
+
+// TestSchedule_Books: a booking schedule writes its past occurrences as
+// real transactions, once each; a statement later confirms them instead
+// of duplicating them.
+func TestSchedule_Books(t *testing.T) {
+	db, err := persistence.OpenDB(":memory:")
+	if err != nil {
+		t.Fatalf("OpenDB: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	user, person, err := auth.EnsureDevUser(context.Background(), db)
+	if err != nil {
+		t.Fatalf("EnsureDevUser: %v", err)
+	}
+	ctx := auth.WithPerson(auth.WithUser(context.Background(), user), person)
+	schema := NewSchema(db, &quotes.Updater{DB: db, Registry: quotes.NewRegistry()})
+	h := transferHelpers{t, schema, ctx}
+
+	declared := 150000
+	giro := h.account("Giro", "CASH", &declared)
+	bauspar := exec(t, schema, ctx, `mutation { createCashAccount(input: { displayName: "LBS Bausparvertrag", currency: "EUR", kind: SAVINGS, reference: "1234567890" }) { id } }`, nil)["createCashAccount"].(map[string]any)["id"].(string)
+	loan := exec(t, schema, ctx, `mutation { createCashAccount(input: { displayName: "LBS Vorfinanzierung", currency: "EUR", kind: LOAN, reference: "1234567890" }) { id } }`, nil)["createCashAccount"].(map[string]any)["id"].(string)
+
+	// Creating a booking schedule books right away, up to today: the test
+	// pins "today" by starting in the past and reading what was booked
+	// through the schedule itself, then books explicitly up to a fixed day.
+	sparrate := createSchedule(t, h, fmt.Sprintf(`displayName: "Sparrate", type: TRANSFER, interval: MONTHLY, dayOfMonth: 1,
+		start: "2025-02-01T00:00:00Z", end: "2025-04-30T00:00:00Z", cashAccountID: %q, counterpartAccountID: %q, books: true,
+		steps: [{ from: "2025-01-01T00:00:00Z", amount: 20000 }]`, bauspar, giro))
+	if sparrate["booked"] != 3.0 {
+		t.Fatalf("booked = %v, want 3 (February to April 2025)", sparrate["booked"])
+	}
+	if h.balance(bauspar) != 60000 {
+		t.Errorf("Bausparvertrag = %v, want 60000", h.balance(bauspar))
+	}
+	data := exec(t, schema, ctx, `query ($id: ID!) { cashAccount(id: $id) { balance { amount } ledgerBalance { amount }
+		transactions { type scheduleID scheduledFor counterpart { id } document { id } } } }`, map[string]any{"id": giro})
+	g := data["cashAccount"].(map[string]any)
+	if g["balance"].(map[string]any)["amount"] != 150000.0 || g["ledgerBalance"].(map[string]any)["amount"] != -60000.0 {
+		t.Errorf("Giro = %v, want the declared 150000 and a ledger of -60000", g)
+	}
+	for _, raw := range g["transactions"].([]any) {
+		tx := raw.(map[string]any)
+		if tx["type"] != "WITHDRAW_CASH" || tx["scheduleID"] != sparrate["id"] || tx["scheduledFor"] == nil || tx["counterpart"] == nil || tx["document"] != nil {
+			t.Errorf("Giro leg = %v, want a scheduled, linked, unconfirmed withdrawal", tx)
+		}
+	}
+
+	// Booking again writes nothing; the loan's interest books as a charge.
+	zinsen := createSchedule(t, h, fmt.Sprintf(`displayName: "Zinsen", type: INTEREST, interval: MONTHLY, dayOfMonth: 31,
+		start: "2025-01-01T00:00:00Z", end: "2025-03-31T00:00:00Z", cashAccountID: %q, books: true,
+		steps: [{ from: "2025-01-01T00:00:00Z", amount: 12500 }]`, loan))
+	if zinsen["booked"] != 3.0 || h.balance(loan) != -37500 {
+		t.Errorf("Zinsen booked %v, loan %v; want 3 and -37500", zinsen["booked"], h.balance(loan))
+	}
+	if n := exec(t, schema, ctx, `mutation { bookSchedules }`, nil)["bookSchedules"]; n != 0.0 {
+		t.Errorf("a second booking run wrote %v, want 0", n)
+	}
+	if n := (&Bookkeeper{DB: db}).BookAll; n == nil {
+		t.Fatal("no bookkeeper")
+	} else if written, err := n(ctx); err != nil || written != 0 {
+		t.Errorf("Bookkeeper.BookAll = %d, %v; want 0, nil", written, err)
+	}
+
+	// A schedule that does not book yet writes nothing until switched on.
+	jahresentgelt := createSchedule(t, h, fmt.Sprintf(`displayName: "Jahresentgelt", type: ACCOUNT_FEES, interval: YEARLY, dayOfMonth: 2,
+		start: "2025-01-02T00:00:00Z", end: "2025-12-31T00:00:00Z", cashAccountID: %q, steps: [{ from: "2025-01-01T00:00:00Z", amount: 3000 }]`, bauspar))
+	if jahresentgelt["booked"] != 0.0 {
+		t.Errorf("a non-booking schedule booked %v", jahresentgelt["booked"])
+	}
+	data = exec(t, schema, ctx, `mutation ($id: ID!) { updateSchedule(id: $id, input: { books: true }) { booked } }`, map[string]any{"id": jahresentgelt["id"]})
+	if data["updateSchedule"].(map[string]any)["booked"] != 1.0 || h.balance(bauspar) != 57000 {
+		t.Errorf("after switching booking on: %v, Bausparvertrag %v; want 1 and 57000", data["updateSchedule"], h.balance(bauspar))
+	}
+
+	// The LBS bundle lists three Sparraten of 200 in February, March and
+	// April (on the 3rd, 3rd and 1st) and the loan's interest; those rows
+	// confirm the scheduled bookings: no second transaction, the bank's
+	// date wins, the document is attached. The fee rows and the rest
+	// import as new transactions.
+	text, err := os.ReadFile("../importer/testdata/lbs/jahresschluss.txt")
+	if err != nil {
+		t.Fatalf("fixture: %v", err)
+	}
+	svc := importer.NewService(db)
+	doc, err := svc.Upload(ctx, person.ID, "LBS.txt", "text/plain", text)
+	if err != nil {
+		t.Fatalf("Upload: %v", err)
+	}
+	if err := svc.Process(ctx, doc.ID, person.ID); err != nil {
+		t.Fatalf("Process: %v", err)
+	}
+	// Shift the fixture's 2025 rows? They are 2025 already: the Sparraten
+	// match February–April, the loan's interest rows (Oct–Dec) do not.
+	data = exec(t, schema, ctx, `{ documents { stagedTransactions { id accountHint type } } }`, nil)
+	var overrides []any
+	for _, raw := range data["documents"].([]any)[0].(map[string]any)["stagedTransactions"].([]any) {
+		stx := raw.(map[string]any)
+		target := bauspar
+		if hint, _ := stx["accountHint"].(string); len(hint) > 0 && hint[0] == 'V' {
+			target = loan
+		}
+		overrides = append(overrides, map[string]any{"id": stx["id"], "cashAccountID": target})
+	}
+	exec(t, schema, ctx, `mutation ($id: ID!, $acct: ID!, $giro: ID!, $tx: [StagedTransactionConfirmInput!]!) {
+		confirmImport(documentID: $id, input: { cashAccountID: $acct, depositsFromCashAccountID: $giro, transactions: $tx }) { id }
+	}`, map[string]any{"id": doc.ID, "acct": bauspar, "giro": giro, "tx": overrides})
+
+	data = exec(t, schema, ctx, `query ($id: ID!) { cashAccount(id: $id) { balance { amount }
+		transactions { type time cashDelta { amount } scheduleID document { id } counterpart { time } } } }`, map[string]any{"id": bauspar})
+	b := data["cashAccount"].(map[string]any)
+	// 3 × 200 Sparrate (confirmed, not doubled) − 30 Jahresentgelt (scheduled)
+	// − 30 − 5 (the statement's fees: the 30 on 2025-07-01 is more than a
+	// week from the scheduled 2025-01-02, so it is a new row) + 0.05.
+	if got := b["balance"].(map[string]any)["amount"]; got != 53505.0 {
+		t.Errorf("Bausparvertrag after the statement = %v, want 53505", got)
+	}
+	confirmed := 0
+	for _, raw := range b["transactions"].([]any) {
+		tx := raw.(map[string]any)
+		if tx["type"] == "DEPOSIT_CASH" {
+			if tx["scheduleID"] == nil || tx["document"] == nil {
+				t.Errorf("Sparrate %v: want scheduled and confirmed by the document", tx)
+			}
+			confirmed++
+			// The bank's date moved onto both legs.
+			if cp := tx["counterpart"].(map[string]any); cp["time"] != tx["time"] {
+				t.Errorf("legs disagree on the date: %v vs %v", tx["time"], cp["time"])
+			}
+		}
+	}
+	if confirmed != 3 {
+		t.Errorf("%d deposits on the Bausparvertrag, want exactly the 3 scheduled ones", confirmed)
+	}
+	// The schedule reports nothing unconfirmed any more.
+	data = exec(t, schema, ctx, `query ($id: ID!) { schedule(id: $id) { unconfirmed { id } } }`, map[string]any{"id": sparrate["id"]})
+	if got := data["schedule"].(map[string]any)["unconfirmed"].([]any); len(got) != 0 {
+		t.Errorf("unconfirmed = %v, want none", got)
+	}
+}

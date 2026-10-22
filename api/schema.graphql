@@ -119,6 +119,8 @@ type CashAccount {
   from transactions. The Giro one does not want to track day to day.
   """
   estimated: Boolean!
+  "Recurring cash flows landing on this account, or paid from it."
+  schedules: [Schedule!]!
   "The declared balance and when it was declared; null for a tracked account."
   declaredBalance: Money
   declaredAt: Time
@@ -310,6 +312,9 @@ type Transaction {
   time: Time!
   "Set on both legs of a transfer between own accounts; null otherwise."
   transferID: ID
+  "The schedule that booked this transaction, and for which occurrence."
+  scheduleID: ID
+  scheduledFor: Time
   "The other leg of a transfer: the deposit for a withdrawal and vice versa."
   counterpart: Transaction
   "The affected portfolio; null for pure cash events."
@@ -481,6 +486,120 @@ type StagedTransaction {
   accountHint: String
 }
 
+"The kind of cash flow a schedule produces."
+enum ScheduleType {
+  DEPOSIT_CASH
+  WITHDRAW_CASH
+  "Credited on a savings account, charged on a loan."
+  INTEREST
+  ACCOUNT_FEES
+  "A dividend or rent an asset pays; an expectation only, never booked."
+  DIVIDEND
+  "Money moved from counterpartAccount into cashAccount: a Sparrate, a repayment."
+  TRANSFER
+}
+
+enum ScheduleInterval {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+"The amount in force from a date on: a raise, a changed Sparrate."
+type ScheduleStep {
+  from: Time!
+  amount: Money!
+}
+
+"""
+A recurring cash flow the person expects: a salary, a Sparrate, a loan's
+monthly interest, the rent an office room brings in. It occurs on
+dayOfMonth every interval, anchored at start's month, until end (null:
+forever), clamped to the month's last day. Its occurrences are
+expectations for the cash-flow view; a schedule that books writes each
+occurrence as a real transaction once its date has passed, and a statement
+that later lists the same movement confirms that booking instead of
+creating a second transaction.
+"""
+type Schedule {
+  id: ID!
+  displayName: String!
+  type: ScheduleType!
+  interval: ScheduleInterval!
+  dayOfMonth: Int!
+  start: Time!
+  end: Time
+  "Where the money lands (for a TRANSFER) or the account it concerns."
+  cashAccount: CashAccount!
+  "A TRANSFER's source."
+  counterpartAccount: CashAccount
+  "A DIVIDEND's payer."
+  asset: Asset
+  steps: [ScheduleStep!]!
+  "The amount in force today, signed as it hits cashAccount; zero before the first step."
+  currentAmount: Money!
+  "The next occurrence after today; null once the schedule has ended."
+  nextDate: Time
+  "Whether due occurrences are written as transactions."
+  books: Boolean!
+  "How many occurrences have been written as transactions."
+  booked: Int!
+  "Bookings on cashAccount that no statement has confirmed yet."
+  unconfirmed: [Transaction!]!
+  "Occurrences with from <= date < to, signed as they hit cashAccount."
+  flows(from: Time!, to: Time!): [ExpectedFlow!]!
+}
+
+"One occurrence of a schedule."
+type ExpectedFlow {
+  schedule: Schedule!
+  date: Time!
+  "Signed as it hits the schedule's cashAccount."
+  amount: Money!
+  "Whether a transaction exists for this occurrence."
+  booked: Boolean!
+}
+
+input ScheduleStepInput {
+  from: Time!
+  "Minor units, positive; the type and account decide the sign."
+  amount: Int!
+}
+
+input CreateScheduleInput {
+  displayName: String!
+  type: ScheduleType!
+  interval: ScheduleInterval!
+  "1 to 31; later days clamp to the month's last day."
+  dayOfMonth: Int!
+  start: Time!
+  end: Time
+  cashAccountID: ID!
+  "Required for a TRANSFER: the account the money is paid from."
+  counterpartAccountID: ID
+  "Required for a DIVIDEND."
+  assetID: ID
+  "At least one; the earliest gates the first occurrence."
+  steps: [ScheduleStepInput!]!
+  "Write due occurrences as transactions (not for DIVIDEND). Default false."
+  books: Boolean
+}
+
+"Type, cash account and asset are fixed: those make it a different schedule."
+input UpdateScheduleInput {
+  displayName: String
+  interval: ScheduleInterval
+  dayOfMonth: Int
+  start: Time
+  end: Time
+  "Removes the end: the schedule runs forever."
+  clearEnd: Boolean
+  counterpartAccountID: ID
+  "Replaces all steps."
+  steps: [ScheduleStepInput!]
+  books: Boolean
+}
+
 type Query {
   "The version of the moneyd server."
   version: String!
@@ -494,6 +613,11 @@ type Query {
   portfolio(id: ID!): Portfolio
   cashAccounts: [CashAccount!]!
   cashAccount(id: ID!): CashAccount
+  "The active person's recurring cash flows."
+  schedules: [Schedule!]!
+  schedule(id: ID!): Schedule
+  "Every schedule's occurrences with from <= date < to, by date."
+  expectedFlows(from: Time!, to: Time!): [ExpectedFlow!]!
   "Listed instruments, shared by everyone on this server."
   securities: [Asset!]!
   "The active person's own assets: the office room, the car, a loan given."
@@ -757,6 +881,19 @@ type Mutation {
   deleteTransaction(id: ID!): ID!
   "Books both legs of a transfer in one go; see Transfer."
   createTransfer(input: CreateTransferInput!): Transfer!
+
+  "A schedule that books writes its past occurrences right away."
+  createSchedule(input: CreateScheduleInput!): Schedule!
+  "Steps, when given, replace the existing ones."
+  updateSchedule(id: ID!, input: UpdateScheduleInput!): Schedule!
+  "Deletes the schedule; transactions it booked stay. Returns the deleted ID."
+  deleteSchedule(id: ID!): ID!
+  """
+  Writes every due occurrence of the person's booking schedules up to
+  until (default: now) that is not in the books yet. Returns how many
+  occurrences were written. moneyd runs this by itself a few times a day.
+  """
+  bookSchedules(until: Time): Int!
 
   """
   Fetches fresh quotes from the configured quote providers — for the given

@@ -25,6 +25,29 @@ export const ActivityTransaction = graphql(`
 		document { id filename }
 		transferID
 		counterpart { id cashAccount { id displayName } }
+		scheduleID
+	}
+`);
+
+/** A recurring cash flow as the account page's panel and form need it. */
+export const ScheduleFields = graphql(`
+	fragment ScheduleFields on Schedule @_unmask {
+		id
+		displayName
+		type
+		interval
+		dayOfMonth
+		start
+		end
+		books
+		booked
+		cashAccount { id displayName }
+		counterpartAccount { id displayName }
+		asset { id displayName }
+		steps { from amount { amount currency } }
+		currentAmount { amount currency }
+		nextDate
+		unconfirmed { id }
 	}
 `);
 

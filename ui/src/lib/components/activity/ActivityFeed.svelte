@@ -188,7 +188,13 @@
 			class="flex items-center gap-2 rounded-lg border border-line bg-raised px-3 py-2.5 text-[13px] hover:bg-hover"
 		>
 			<Icon name="document" size={15} />
-			<span class="min-w-0 flex-1 truncate">{t.document ? t.document.filename : 'Entered manually'}</span>
+			<span class="min-w-0 flex-1 truncate">
+				{t.document
+					? t.document.filename
+					: t.scheduleID
+						? 'Booked by a schedule · not yet confirmed by a statement'
+						: 'Entered manually'}
+			</span>
 			<span class="shrink-0 text-muted">Open →</span>
 		</a>
 		<div class="flex gap-2">

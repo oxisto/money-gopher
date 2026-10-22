@@ -404,6 +404,24 @@ deferred.
   the counterpart and refuses type/asset/price changes; deleting one leg
   deletes both. The ING statement importer does not recognise a transfer
   that has already been booked by hand (no cross-document matching).
+- **Schedules (M10, step 3).** `schedules` + `schedule_steps` (migration
+  0017; package `internal/schedule` expands them: day clamped to the
+  month, anchored at the start's month, steps give the amount from a
+  date on, end inclusive or forever). A schedule lands on
+  `cash_account_id`; a TRANSFER is paid from `counterpart_account_id`; a
+  DIVIDEND names its asset and is an expectation only. `scheduleSign`
+  makes a loan's INTEREST a charge. `books = 1` turns occurrences into
+  real transactions once their day has passed: `bookSchedule` is
+  idempotent on (`transactions.schedule_id`, `scheduled_for`), writes
+  both legs of a transfer, runs on create/update, on
+  `Mutation.bookSchedules`, and from `api.Bookkeeper` at moneyd startup
+  and every six hours. A statement row that matches an unconfirmed
+  booking (same account, type and amount, within seven days) confirms it
+  in `ConfirmImport`: the bank's date and amounts win, `document_id` is
+  set, nothing is created twice; `Schedule.unconfirmed` lists bookings no
+  statement has confirmed. `Query.expectedFlows` and `Schedule.flows`
+  feed the cash-flow view (step 4). The account page has an "Expected
+  cash flows" panel and `ScheduleForm`.
 - **LBS year-end bundles.** `importer.LBS` parses the Landesbausparkasse's
   Jahresschlussdokumente: one PDF, one Kontoauszug per contract part
   (Bausparvertrag, Vorfinanzierungskredit, Bauspardarlehen) under one
