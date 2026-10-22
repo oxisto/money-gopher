@@ -861,7 +861,7 @@ func (r *TransactionResolver) Schedule(ctx context.Context) (*ScheduleResolver, 
 	if err != nil {
 		return nil, err
 	}
-	s, err := r.db.GetSchedule(ctx, persistence.GetScheduleParams{ID: r.transaction.ScheduleID.String, PersonID: person.ID})
+	s, err := scheduleByID(ctx, r.db, r.transaction.ScheduleID.String, person.ID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	} else if err != nil {

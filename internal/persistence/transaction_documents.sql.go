@@ -117,6 +117,82 @@ func (q *Queries) ListTransactionDocuments(ctx context.Context, transactionID st
 	return items, nil
 }
 
+const listTransactionDocumentsByCashAccount = `-- name: ListTransactionDocumentsByCashAccount :many
+SELECT
+    transaction_documents.transaction_id,
+    documents.id,
+    documents.filename,
+    documents.content_type,
+    documents.state,
+    documents.detected_bank,
+    documents.error,
+    documents.settlement_iban,
+    documents.transaction_date,
+    documents.created_at,
+    documents.person_id,
+    documents.content_hash
+FROM
+    transaction_documents
+    JOIN transactions ON transactions.id = transaction_documents.transaction_id
+    JOIN documents ON documents.id = transaction_documents.document_id
+WHERE
+    transactions.cash_account_id = ?
+ORDER BY
+    transaction_documents.linked_at
+`
+
+type ListTransactionDocumentsByCashAccountRow struct {
+	TransactionID   string
+	ID              string
+	Filename        string
+	ContentType     string
+	State           string
+	DetectedBank    sql.NullString
+	Error           sql.NullString
+	SettlementIban  sql.NullString
+	TransactionDate sql.NullTime
+	CreatedAt       time.Time
+	PersonID        string
+	ContentHash     sql.NullString
+}
+
+// The document links of every transaction on an account, in one go.
+func (q *Queries) ListTransactionDocumentsByCashAccount(ctx context.Context, cashAccountID sql.NullString) ([]*ListTransactionDocumentsByCashAccountRow, error) {
+	rows, err := q.db.QueryContext(ctx, listTransactionDocumentsByCashAccount, cashAccountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*ListTransactionDocumentsByCashAccountRow
+	for rows.Next() {
+		var i ListTransactionDocumentsByCashAccountRow
+		if err := rows.Scan(
+			&i.TransactionID,
+			&i.ID,
+			&i.Filename,
+			&i.ContentType,
+			&i.State,
+			&i.DetectedBank,
+			&i.Error,
+			&i.SettlementIban,
+			&i.TransactionDate,
+			&i.CreatedAt,
+			&i.PersonID,
+			&i.ContentHash,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUnconfirmedBySchedule = `-- name: ListUnconfirmedBySchedule :many
 SELECT
     transactions.id, transactions.type, transactions.time, transactions.portfolio_id, transactions.security_id, transactions.cash_account_id, transactions.units, transactions.price, transactions.fees, transactions.taxes, transactions.cash_delta, transactions.currency, transactions.source, transactions.created_at, transactions.document_id, transactions.price_currency, transactions.fx_rate, transactions.transfer_id, transactions.schedule_id, transactions.scheduled_for, transactions.note

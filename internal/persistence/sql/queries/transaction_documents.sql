@@ -47,3 +47,27 @@ WHERE
     AND transaction_documents.transaction_id IS NULL
 ORDER BY
     transactions.scheduled_for;
+
+-- name: ListTransactionDocumentsByCashAccount :many
+-- The document links of every transaction on an account, in one go.
+SELECT
+    transaction_documents.transaction_id,
+    documents.id,
+    documents.filename,
+    documents.content_type,
+    documents.state,
+    documents.detected_bank,
+    documents.error,
+    documents.settlement_iban,
+    documents.transaction_date,
+    documents.created_at,
+    documents.person_id,
+    documents.content_hash
+FROM
+    transaction_documents
+    JOIN transactions ON transactions.id = transaction_documents.transaction_id
+    JOIN documents ON documents.id = transaction_documents.document_id
+WHERE
+    transactions.cash_account_id = ?
+ORDER BY
+    transaction_documents.linked_at;

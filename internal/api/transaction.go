@@ -485,10 +485,7 @@ func (r *TransactionResolver) Portfolio(ctx context.Context) (*PortfolioResolver
 		return nil, err
 	}
 
-	portfolio, err := r.db.GetPortfolio(ctx, persistence.GetPortfolioParams{
-		ID:       r.transaction.PortfolioID.String,
-		PersonID: person.ID,
-	})
+	portfolio, err := portfolioByID(ctx, r.db, r.transaction.PortfolioID.String, person.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -502,7 +499,7 @@ func (r *TransactionResolver) Asset(ctx context.Context) (*AssetResolver, error)
 		return nil, nil
 	}
 
-	security, err := r.db.GetSecurity(ctx, r.transaction.SecurityID.String)
+	security, err := securityByID(ctx, r.db, r.transaction.SecurityID.String)
 	if err != nil {
 		return nil, err
 	}
@@ -521,10 +518,7 @@ func (r *TransactionResolver) CashAccount(ctx context.Context) (*CashAccountReso
 		return nil, err
 	}
 
-	account, err := r.db.GetCashAccount(ctx, persistence.GetCashAccountParams{
-		ID:       r.transaction.CashAccountID.String,
-		PersonID: person.ID,
-	})
+	account, err := cashAccountByID(ctx, r.db, r.transaction.CashAccountID.String, person.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -601,19 +595,13 @@ func (r *TransactionResolver) Source() string {
 // document asks for the same list.
 func (r *TransactionResolver) Documents(ctx context.Context) ([]*DocumentResolver, error) {
 	if r.documents == nil {
-		rows, err := r.db.ListTransactionDocuments(ctx, r.transaction.ID)
+		docs, err := transactionDocuments(ctx, r.db, r.transaction)
 		if err != nil {
 			return nil, err
 		}
-		r.documents = make([]*DocumentResolver, 0, len(rows))
-		for _, row := range rows {
-			// Without data and extracted text; DocumentResolver fields that
-			// need them load the document themselves.
-			r.documents = append(r.documents, &DocumentResolver{db: r.db, doc: &persistence.Document{
-				ID: row.ID, Filename: row.Filename, ContentType: row.ContentType, State: row.State,
-				DetectedBank: row.DetectedBank, Error: row.Error, SettlementIban: row.SettlementIban,
-				TransactionDate: row.TransactionDate, CreatedAt: row.CreatedAt, PersonID: row.PersonID, ContentHash: row.ContentHash,
-			}})
+		r.documents = make([]*DocumentResolver, 0, len(docs))
+		for _, doc := range docs {
+			r.documents = append(r.documents, &DocumentResolver{db: r.db, doc: doc})
 		}
 	}
 	return r.documents, nil
