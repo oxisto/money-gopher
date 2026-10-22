@@ -79,9 +79,19 @@
 	let books = $state(schedule?.books ?? true);
 	let steps = $state<{ from: string; amount: string }[]>(
 		schedule?.steps.map((s) => ({ from: dateOf(s.from), amount: String(Math.abs(s.amount.amount) / 100) })) ?? [
-			{ from: new Date().toISOString().slice(0, 10), amount: '' }
+			{ from: start, amount: '' }
 		]
 	);
+	// The first amount applies from the start unless its date was edited by
+	// hand: an amount dated later than the start would leave the earlier
+	// occurrences without one, and nothing would be adopted or booked.
+	let lastStart = start;
+	$effect(() => {
+		if (start !== lastStart) {
+			if (steps[0] && steps[0].from === lastStart) steps[0].from = start;
+			lastStart = start;
+		}
+	});
 	let error = $state<string | null>(null);
 	let saving = $state(false);
 
@@ -220,7 +230,7 @@
 		<span class="text-xs font-medium text-muted">Amount, and from when</span>
 		{#each steps as step, i (i)}
 			<div class="flex items-end gap-2">
-				<TextField bind:value={step.from} label={i === 0 ? 'From' : undefined} type="date" required />
+				<TextField bind:value={step.from} label={i === 0 ? 'Applies from' : undefined} type="date" required />
 				<TextField bind:value={step.amount} label={i === 0 ? `Amount (${account.currency})` : undefined} placeholder="e.g. 535.82" required />
 				{#if steps.length > 1}
 					<Button variant="secondary" type="button" onclick={() => removeStep(i)}>Remove</Button>
