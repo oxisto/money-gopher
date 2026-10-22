@@ -5,6 +5,7 @@
 		securityId: string;
 		name: string;
 		isin: string | null;
+		kind: string | null;
 		units: number;
 		purchasePrice: Price;
 		marketPrice: Price;
@@ -16,7 +17,12 @@
 	}
 
 	interface Position {
-		security: { id: string; displayName: string; identifiers: { kind: string; value: string }[] };
+		security: {
+			id: string;
+			displayName: string;
+			kind?: string | null;
+			identifiers: { kind: string; value: string }[];
+		};
 		units: number;
 		purchasePrice: Price;
 		marketPrice: Price;
@@ -38,6 +44,7 @@
 					securityId: p.security.id,
 					name: p.security.displayName,
 					isin: p.security.identifiers.find((i) => i.kind === 'ISIN')?.value ?? null,
+					kind: p.security.kind ?? null,
 					units: p.units,
 					purchasePrice: p.purchasePrice,
 					marketPrice: p.marketPrice,
@@ -66,6 +73,7 @@
 
 <script lang="ts">
 	import Icon from '#lib/components/ui/Icon.svelte';
+	import { isValuedByHand, kindLabel, type SecurityKind } from '#lib/securities.js';
 	import { formatUnits } from '#lib/describe.js';
 	import { formatMoney, formatPercent, formatPrice, formatSignedMoney, toneOf } from '#lib/format.js';
 
@@ -159,7 +167,12 @@
 						<tr class="border-t border-line hover:bg-raised">
 							<td class="py-2 pr-3 pl-4">
 								<a href="/holdings/{h.securityId}" class="font-medium hover:underline">{h.name}</a>
-								{#if h.isin}<div class="text-[11px] text-muted">{h.isin}</div>{/if}
+								{#if h.isin}
+									<div class="text-[11px] text-muted">{h.isin}</div>
+								{:else if isValuedByHand(h.kind)}
+									<!-- A personal asset has no ISIN; say what it is instead. -->
+									<div class="text-[11px] text-muted">{kindLabel[h.kind as SecurityKind]} · valued by hand</div>
+								{/if}
 							</td>
 							<td class="px-3 py-2 text-right">{formatUnits(h.units)}</td>
 							<td class="px-3 py-2 text-right text-muted">{formatPrice(h.purchasePrice, 2)}</td>

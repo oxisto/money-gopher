@@ -51,7 +51,10 @@ CREATE TABLE portfolios (
     display_name      TEXT     NOT NULL,
     cash_account_id   TEXT     NOT NULL REFERENCES cash_accounts(id) ON DELETE RESTRICT,
     created_at        TIMESTAMP NOT NULL,
-    person_id         TEXT     NOT NULL REFERENCES persons(id) ON DELETE CASCADE
+    person_id         TEXT     NOT NULL REFERENCES persons(id) ON DELETE CASCADE,
+    -- 'ASSETS' marks the person's "Other assets" portfolio that personal
+    -- assets are booked into; NULL for a brokerage portfolio. Migration 0012.
+    purpose         TEXT
 );
 
 CREATE TABLE securities (
@@ -66,7 +69,10 @@ CREATE TABLE securities (
     -- What the asset is: a SecurityKind of the GraphQL schema (STOCK, ETF,
     -- FUND, BOND, PROPERTY, VEHICLE, LOAN, OTHER), null until set. See
     -- migrations/0011_asset_kind.sql.
-    asset_kind   TEXT
+    asset_kind   TEXT,
+    -- The owner of a personal asset (the office room, the car); visible to
+    -- that person alone. NULL = shared listed instrument. Migration 0012.
+    person_id    TEXT REFERENCES persons(id) ON DELETE CASCADE
 );
 
 CREATE TABLE security_identifiers (

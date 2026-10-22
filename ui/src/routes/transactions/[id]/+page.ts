@@ -31,6 +31,8 @@ const TransactionDetail = graphql(`
 				createdAt
 			}
 		}
+		securities { id displayName }
+		cashAccounts { id displayName }
 	}
 `);
 

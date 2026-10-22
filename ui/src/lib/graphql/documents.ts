@@ -32,6 +32,7 @@ export const HoldingPosition = graphql(`
 		security {
 			id
 			displayName
+			kind
 			identifiers { kind value }
 		}
 		units
@@ -66,6 +67,37 @@ export const LayoutQuery = graphql(`
 	}
 `);
 export type LayoutResult = ResultOf<typeof LayoutQuery>;
+
+/** The person's own assets with their position, for the Assets page. */
+export const AssetsQuery = graphql(
+	`
+		query Assets {
+			assets {
+				id
+				displayName
+				kind
+				listings {
+					id
+					currency
+					latestQuote {
+						time
+						price { amount currency }
+					}
+				}
+			}
+			portfolios {
+				id
+				displayName
+				snapshot {
+					positions { ...HoldingPosition }
+				}
+			}
+			cashAccounts { id displayName currency }
+		}
+	`,
+	[HoldingPosition]
+);
+export type AssetsResult = ResultOf<typeof AssetsQuery>;
 
 export const SecuritiesQuery = graphql(`
 	query Securities {

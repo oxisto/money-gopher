@@ -142,9 +142,10 @@ func (s *Service) Process(ctx context.Context, documentID string, personID strin
 	for _, tx := range staged {
 		securityID := sql.NullString{}
 		if tx.ISIN != "" {
-			security, err := s.DB.FindSecurityByIdentifier(ctx, persistence.FindSecurityByIdentifierParams{
-				Kind:  "ISIN",
-				Value: tx.ISIN,
+			security, err := s.DB.FindSecurityByIdentifierVisibleTo(ctx, persistence.FindSecurityByIdentifierVisibleToParams{
+				Kind:     "ISIN",
+				Value:    tx.ISIN,
+				PersonID: sql.NullString{String: personID, Valid: true},
 			})
 			if err == nil {
 				securityID = sql.NullString{String: security.ID, Valid: true}

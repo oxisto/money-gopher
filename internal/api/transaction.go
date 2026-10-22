@@ -131,7 +131,7 @@ func (d *txData) validate(ctx context.Context, db *persistence.DB, person *persi
 		}
 	}
 	if d.SecurityID != nil {
-		_, err := db.GetSecurity(ctx, *d.SecurityID)
+		_, err := db.GetSecurityVisibleTo(ctx, persistence.GetSecurityVisibleToParams{ID: *d.SecurityID, PersonID: ownedBy(person)})
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("security %q not found", *d.SecurityID)
 		} else if err != nil {

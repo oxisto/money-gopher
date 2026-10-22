@@ -7,13 +7,14 @@ package persistence
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createPortfolio = `-- name: CreatePortfolio :one
 INSERT INTO
-    portfolios (id, person_id, display_name, cash_account_id)
+    portfolios (id, person_id, display_name, cash_account_id, purpose)
 VALUES
-    (?, ?, ?, ?) RETURNING id, user_id, display_name, cash_account_id, created_at, person_id
+    (?, ?, ?, ?, ?) RETURNING id, user_id, display_name, cash_account_id, created_at, person_id, purpose
 `
 
 type CreatePortfolioParams struct {
@@ -21,6 +22,7 @@ type CreatePortfolioParams struct {
 	PersonID      string
 	DisplayName   string
 	CashAccountID string
+	Purpose       sql.NullString
 }
 
 func (q *Queries) CreatePortfolio(ctx context.Context, arg CreatePortfolioParams) (*Portfolio, error) {
@@ -29,6 +31,7 @@ func (q *Queries) CreatePortfolio(ctx context.Context, arg CreatePortfolioParams
 		arg.PersonID,
 		arg.DisplayName,
 		arg.CashAccountID,
+		arg.Purpose,
 	)
 	var i Portfolio
 	err := row.Scan(
@@ -38,6 +41,7 @@ func (q *Queries) CreatePortfolio(ctx context.Context, arg CreatePortfolioParams
 		&i.CashAccountID,
 		&i.CreatedAt,
 		&i.PersonID,
+		&i.Purpose,
 	)
 	return &i, err
 }
@@ -62,9 +66,34 @@ func (q *Queries) DeletePortfolio(ctx context.Context, arg DeletePortfolioParams
 	return result.RowsAffected()
 }
 
+const getAssetsPortfolio = `-- name: GetAssetsPortfolio :one
+SELECT
+    id, user_id, display_name, cash_account_id, created_at, person_id, purpose
+FROM
+    portfolios
+WHERE
+    person_id = ?
+    AND purpose = 'ASSETS'
+`
+
+func (q *Queries) GetAssetsPortfolio(ctx context.Context, personID string) (*Portfolio, error) {
+	row := q.db.QueryRowContext(ctx, getAssetsPortfolio, personID)
+	var i Portfolio
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.DisplayName,
+		&i.CashAccountID,
+		&i.CreatedAt,
+		&i.PersonID,
+		&i.Purpose,
+	)
+	return &i, err
+}
+
 const getPortfolio = `-- name: GetPortfolio :one
 SELECT
-    id, user_id, display_name, cash_account_id, created_at, person_id
+    id, user_id, display_name, cash_account_id, created_at, person_id, purpose
 FROM
     portfolios
 WHERE
@@ -87,13 +116,14 @@ func (q *Queries) GetPortfolio(ctx context.Context, arg GetPortfolioParams) (*Po
 		&i.CashAccountID,
 		&i.CreatedAt,
 		&i.PersonID,
+		&i.Purpose,
 	)
 	return &i, err
 }
 
 const listPortfolios = `-- name: ListPortfolios :many
 SELECT
-    id, user_id, display_name, cash_account_id, created_at, person_id
+    id, user_id, display_name, cash_account_id, created_at, person_id, purpose
 FROM
     portfolios
 WHERE
@@ -118,6 +148,7 @@ func (q *Queries) ListPortfolios(ctx context.Context, personID string) ([]*Portf
 			&i.CashAccountID,
 			&i.CreatedAt,
 			&i.PersonID,
+			&i.Purpose,
 		); err != nil {
 			return nil, err
 		}
@@ -138,7 +169,7 @@ SET
     display_name = ?
 WHERE
     id = ?
-    AND person_id = ? RETURNING id, user_id, display_name, cash_account_id, created_at, person_id
+    AND person_id = ? RETURNING id, user_id, display_name, cash_account_id, created_at, person_id, purpose
 `
 
 type UpdatePortfolioParams struct {
@@ -157,6 +188,7 @@ func (q *Queries) UpdatePortfolio(ctx context.Context, arg UpdatePortfolioParams
 		&i.CashAccountID,
 		&i.CreatedAt,
 		&i.PersonID,
+		&i.Purpose,
 	)
 	return &i, err
 }

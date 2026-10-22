@@ -64,6 +64,7 @@ type Portfolio struct {
 	CashAccountID string
 	CreatedAt     time.Time
 	PersonID      string
+	Purpose       sql.NullString
 }
 
 type Quote struct {
@@ -78,6 +79,7 @@ type Security struct {
 	UnderlyingSecurityID sql.NullString
 	Kind                 sql.NullString
 	AssetKind            sql.NullString
+	PersonID             sql.NullString
 }
 
 type SecurityIdentifier struct {
