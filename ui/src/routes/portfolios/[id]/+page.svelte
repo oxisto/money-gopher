@@ -8,6 +8,7 @@
 	import ErrorNote from '#lib/components/ui/ErrorNote.svelte';
 	import Icon from '#lib/components/ui/Icon.svelte';
 	import Segmented from '#lib/components/ui/Segmented.svelte';
+	import SelectField from '#lib/components/ui/SelectField.svelte';
 	import StatStrip from '#lib/components/ui/StatStrip.svelte';
 	import TextField from '#lib/components/ui/TextField.svelte';
 	import { formatMoney, formatPercent, formatSignedMoney, toneOf } from '#lib/format.js';
@@ -23,30 +24,37 @@
 	const portfolio = $derived(data.portfolio);
 
 	const updatePortfolio = graphql(`
-		mutation RenamePortfolio($id: ID!, $displayName: String!) {
-			updatePortfolio(id: $id, input: { displayName: $displayName }) {
+		mutation UpdatePortfolio($id: ID!, $displayName: String!, $cashAccountID: ID!) {
+			updatePortfolio(id: $id, input: { displayName: $displayName, cashAccountID: $cashAccountID }) {
 				id
 				displayName
+				cashAccount { id displayName }
 			}
 		}
 	`);
-	let renameOpen = $state(false);
+	let editOpen = $state(false);
 	let newName = $state('');
-	let renameError = $state<string | null>(null);
+	let newCashAccountID = $state('');
+	let editError = $state<string | null>(null);
 
-	function openRename() {
+	function openEdit() {
 		newName = portfolio?.displayName ?? '';
-		renameError = null;
-		renameOpen = true;
+		newCashAccountID = portfolio?.cashAccount.id ?? '';
+		editError = null;
+		editOpen = true;
 	}
 
-	async function saveName(event: SubmitEvent) {
+	async function saveEdit(event: SubmitEvent) {
 		event.preventDefault();
-		if (!portfolio || !newName.trim()) return;
-		const result = await mutate(updatePortfolio, { id: portfolio.id, displayName: newName.trim() });
-		renameError = result.error;
-		if (!renameError) {
-			renameOpen = false;
+		if (!portfolio || !newName.trim() || !newCashAccountID) return;
+		const result = await mutate(updatePortfolio, {
+			id: portfolio.id,
+			displayName: newName.trim(),
+			cashAccountID: newCashAccountID
+		});
+		editError = result.error;
+		if (!editError) {
+			editOpen = false;
 			// The sidebar lists portfolios by name too.
 			await refreshAll();
 		}
@@ -69,17 +77,25 @@
 				</a>
 			</p>
 		</div>
-		<Button variant="secondary" onclick={openRename}>Rename</Button>
+		<Button variant="secondary" onclick={openEdit}>Edit</Button>
 		<Button onclick={() => (addOpen = true)}><Icon name="plus" size={15} /> Add transaction</Button>
 	</div>
 
-	<Dialog bind:open={renameOpen} title="Rename portfolio">
-		<form onsubmit={saveName} class="flex flex-col gap-3">
+	<Dialog bind:open={editOpen} title="Edit portfolio">
+		<form onsubmit={saveEdit} class="flex flex-col gap-3">
 			<TextField bind:value={newName} label="Name" required />
-			<ErrorNote message={renameError} />
+			<SelectField bind:value={newCashAccountID} label="Settles against" required>
+				{#each data.cashAccounts as a (a.id)}
+					<option value={a.id}>{a.displayName}</option>
+				{/each}
+			</SelectField>
+			<p class="text-xs text-muted">
+				New trades and dividends default to this account. Transactions already booked keep theirs.
+			</p>
+			<ErrorNote message={editError} />
 			<div class="mt-2 flex justify-end gap-2">
-				<Button variant="secondary" onclick={() => (renameOpen = false)}>Cancel</Button>
-				<Button type="submit" disabled={!newName.trim()}>Save</Button>
+				<Button variant="secondary" onclick={() => (editOpen = false)}>Cancel</Button>
+				<Button type="submit" disabled={!newName.trim() || !newCashAccountID}>Save</Button>
 			</div>
 		</form>
 	</Dialog>

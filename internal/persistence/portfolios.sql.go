@@ -166,20 +166,27 @@ func (q *Queries) ListPortfolios(ctx context.Context, personID string) ([]*Portf
 const updatePortfolio = `-- name: UpdatePortfolio :one
 UPDATE portfolios
 SET
-    display_name = ?
+    display_name = ?,
+    cash_account_id = ?
 WHERE
     id = ?
     AND person_id = ? RETURNING id, user_id, display_name, cash_account_id, created_at, person_id, purpose
 `
 
 type UpdatePortfolioParams struct {
-	DisplayName string
-	ID          string
-	PersonID    string
+	DisplayName   string
+	CashAccountID string
+	ID            string
+	PersonID      string
 }
 
 func (q *Queries) UpdatePortfolio(ctx context.Context, arg UpdatePortfolioParams) (*Portfolio, error) {
-	row := q.db.QueryRowContext(ctx, updatePortfolio, arg.DisplayName, arg.ID, arg.PersonID)
+	row := q.db.QueryRowContext(ctx, updatePortfolio,
+		arg.DisplayName,
+		arg.CashAccountID,
+		arg.ID,
+		arg.PersonID,
+	)
 	var i Portfolio
 	err := row.Scan(
 		&i.ID,

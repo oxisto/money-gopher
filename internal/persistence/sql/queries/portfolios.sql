@@ -35,7 +35,8 @@ ORDER BY
 -- name: UpdatePortfolio :one
 UPDATE portfolios
 SET
-    display_name = ?
+    display_name = ?,
+    cash_account_id = ?
 WHERE
     id = ?
     AND person_id = ? RETURNING *;

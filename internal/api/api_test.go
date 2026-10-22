@@ -369,3 +369,28 @@ func TestUserIsolation(t *testing.T) {
 	execExpectError(t, schema, other, `mutation ($id: ID!) { deletePortfolio(id: $id) }`,
 		map[string]any{"id": portfolioID})
 }
+
+func TestUpdatePortfolio_SettlementAccount(t *testing.T) {
+	schema, ctx := newTestSchema(t)
+	giro := exec(t, schema, ctx, `mutation { createCashAccount(input: { displayName: "Giro", currency: "EUR" }) { id } }`, nil)["createCashAccount"].(map[string]any)["id"].(string)
+	tagesgeld := exec(t, schema, ctx, `mutation { createCashAccount(input: { displayName: "Tagesgeld", currency: "EUR" }) { id } }`, nil)["createCashAccount"].(map[string]any)["id"].(string)
+	portfolio := exec(t, schema, ctx, `mutation ($acct: ID!) { createPortfolio(input: { displayName: "Immobilien", cashAccountID: $acct }) { id } }`, map[string]any{"acct": tagesgeld})["createPortfolio"].(map[string]any)["id"].(string)
+
+	data := exec(t, schema, ctx, `mutation ($id: ID!, $acct: ID!) {
+		updatePortfolio(id: $id, input: { cashAccountID: $acct }) { displayName cashAccount { id } }
+	}`, map[string]any{"id": portfolio, "acct": giro})
+	got := data["updatePortfolio"].(map[string]any)
+	if got["cashAccount"].(map[string]any)["id"] != giro || got["displayName"] != "Immobilien" {
+		t.Errorf("after moving settlement: %v, want the Giro and the name unchanged", got)
+	}
+
+	// An account that is not one of the caller's (the lookup is scoped to
+	// the person, so a foreign ID reads like an unknown one).
+	execExpectError(t, schema, ctx, `mutation ($id: ID!) {
+		updatePortfolio(id: $id, input: { cashAccountID: "nope" }) { id }
+	}`, map[string]any{"id": portfolio})
+	other := auth.WithPerson(auth.WithUser(context.Background(), &persistence.User{ID: "other"}), &persistence.Person{ID: "other"})
+	execExpectError(t, schema, other, `mutation ($id: ID!, $acct: ID!) {
+		updatePortfolio(id: $id, input: { cashAccountID: $acct }) { id }
+	}`, map[string]any{"id": portfolio, "acct": giro})
+}
