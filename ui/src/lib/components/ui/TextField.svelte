@@ -10,7 +10,7 @@
 	}: {
 		value?: string;
 		label?: string;
-		type?: 'text' | 'number' | 'datetime-local';
+		type?: 'text' | 'number' | 'date' | 'datetime-local';
 		placeholder?: string;
 		required?: boolean;
 		maxlength?: number;

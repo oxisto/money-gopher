@@ -8,6 +8,7 @@ const HoldingDetail = graphql(
 			security(id: $id) {
 				id
 				displayName
+				kind
 				identifiers { kind value }
 				underlyingSecurity { id displayName }
 				listings {

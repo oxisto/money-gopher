@@ -1,7 +1,14 @@
 <script lang="ts">
+	import { refreshAll } from '$app/navigation';
 	import PriceChart from '#lib/components/holdings/PriceChart.svelte';
 	import { holdingsOf } from '#lib/components/holdings/HoldingsTable.svelte';
+	import Button from '#lib/components/ui/Button.svelte';
+	import Dialog from '#lib/components/ui/Dialog.svelte';
+	import ErrorNote from '#lib/components/ui/ErrorNote.svelte';
 	import Icon from '#lib/components/ui/Icon.svelte';
+	import TextField from '#lib/components/ui/TextField.svelte';
+	import { graphql, mutate } from '#lib/graphql/client.js';
+	import { kindLabel, type SecurityKind } from '#lib/securities.js';
 	import { describeTransaction, formatUnits } from '#lib/describe.js';
 	import {
 		formatDate,
@@ -18,6 +25,40 @@
 	const d = $derived(data);
 	const security = $derived(d.security);
 	const listing = $derived(security?.listings[0] ?? null);
+	// Without a provider, prices come from whoever owns the asset: a
+	// valuation of the office room, entered here.
+	const valuedByHand = $derived(!!listing && !listing.quoteProvider);
+
+	const recordQuote = graphql(`
+		mutation RecordValuation($listingID: ID!, $time: Time!, $price: Decimal!) {
+			recordQuote(listingID: $listingID, time: $time, price: $price) {
+				time
+			}
+		}
+	`);
+	let valuationOpen = $state(false);
+	let valuationDate = $state(new Date().toISOString().slice(0, 10));
+	let valuationPrice = $state('');
+	let valuationError = $state<string | null>(null);
+	let saving = $state(false);
+
+	async function saveValuation(event: SubmitEvent) {
+		event.preventDefault();
+		if (!listing) return;
+		saving = true;
+		const result = await mutate(recordQuote, {
+			listingID: listing.id,
+			time: new Date(valuationDate + 'T12:00:00Z'),
+			price: valuationPrice.replace(',', '.').trim()
+		});
+		saving = false;
+		valuationError = result.error;
+		if (!valuationError) {
+			valuationOpen = false;
+			valuationPrice = '';
+			await refreshAll();
+		}
+	}
 	const isin = $derived(security?.identifiers.find((i) => i.kind === 'ISIN')?.value ?? null);
 
 	const holding = $derived.by(() => {
@@ -121,11 +162,16 @@
 			<p class="mt-0.5 text-[13px] text-muted">
 				<!-- ING listings use the ISIN as their ticker; don't print it twice. -->
 				{[
+					security.kind ? kindLabel[security.kind as SecurityKind] : null,
 					isin,
-					listing
+					listing && !valuedByHand
 						? `${listing.exchange ?? (listing.ticker !== isin ? listing.ticker : 'traded')} in ${listing.currency}`
 						: null,
-					listing?.quoteProvider ? `quotes: ${listing.quoteProvider}` : 'no quote source'
+					listing?.quoteProvider
+						? `quotes: ${listing.quoteProvider}`
+						: listing
+							? `valued by hand in ${listing.currency}`
+							: 'no price series'
 				]
 					.filter(Boolean)
 					.join(' · ')}
@@ -147,6 +193,9 @@
 				</div>
 			{/if}
 		</div>
+		{#if valuedByHand}
+			<Button onclick={() => (valuationOpen = true)}>Record valuation</Button>
+		{/if}
 		<a
 			href="/securities"
 			class="inline-flex h-8.5 items-center rounded-lg border border-line bg-surface px-3 text-sm font-medium shadow-xs hover:bg-raised"
@@ -154,6 +203,26 @@
 			Edit security
 		</a>
 	</div>
+
+	<Dialog bind:open={valuationOpen} title="Record valuation">
+		<form onsubmit={saveValuation} class="flex flex-col gap-3">
+			<p class="text-xs text-muted">
+				What one unit is worth on that date, in {listing?.currency}. The chart and the market
+				value follow the newest valuation; the date lets you record the past too.
+			</p>
+			<div class="grid grid-cols-2 gap-3">
+				<TextField bind:value={valuationDate} label="Date" type="date" required />
+				<TextField bind:value={valuationPrice} label="Value per unit" placeholder="e.g. 42000" required />
+			</div>
+			<ErrorNote message={valuationError} />
+			<div class="mt-2 flex justify-end gap-2">
+				<Button variant="secondary" onclick={() => (valuationOpen = false)}>Cancel</Button>
+				<Button type="submit" disabled={saving || !valuationPrice.trim()}>
+					{saving ? 'Saving…' : 'Save valuation'}
+				</Button>
+			</div>
+		</form>
+	</Dialog>
 
 	<div class="flex flex-col gap-6">
 		<div class="flex flex-wrap items-start gap-5">

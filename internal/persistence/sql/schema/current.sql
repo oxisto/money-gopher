@@ -60,8 +60,13 @@ CREATE TABLE securities (
     -- The security this one derives from (a right, option or warrant's
     -- underlying stock); see migrations/0007_underlying_security.sql.
     underlying_security_id TEXT REFERENCES securities(id) ON DELETE SET NULL,
-    -- STOCK, ETF, FUND, BOND or OTHER; see migrations/0009_security_kind.sql.
-    kind         TEXT CHECK (kind IN ('STOCK', 'ETF', 'FUND', 'BOND', 'OTHER'))
+    -- Superseded by asset_kind: its CHECK cannot be dropped and lightsql
+    -- cannot rebuild a referenced table. NULL for every new row.
+    kind         TEXT CHECK (kind IN ('STOCK', 'ETF', 'FUND', 'BOND', 'OTHER')),
+    -- What the asset is: a SecurityKind of the GraphQL schema (STOCK, ETF,
+    -- FUND, BOND, PROPERTY, VEHICLE, LOAN, OTHER), null until set. See
+    -- migrations/0011_asset_kind.sql.
+    asset_kind   TEXT
 );
 
 CREATE TABLE security_identifiers (

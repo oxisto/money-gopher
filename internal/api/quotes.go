@@ -2,6 +2,9 @@ package api
 
 import (
 	"context"
+	"database/sql"
+	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -54,6 +57,56 @@ func (r *QuoteUpdateResultResolver) UpdatedListings() int32 {
 
 func (r *QuoteUpdateResultResolver) Errors() []string {
 	return r.errs
+}
+
+// RecordQuote resolves Mutation.recordQuote: a price entered by hand. For a
+// listing without a provider this is how an asset nobody quotes — the
+// office room, the car — gets valued at all; for one with a provider it
+// corrects the feed. The quote at that time is replaced.
+func (r *RootResolver) RecordQuote(ctx context.Context, args struct {
+	ListingID graphql.ID
+	Time      graphql.Time
+	Price     Decimal
+}) (*QuoteResolver, error) {
+	if _, err := auth.UserFromContext(ctx); err != nil {
+		return nil, err
+	}
+
+	listing, err := r.db.GetListing(ctx, string(args.ListingID))
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf("listing %q not found", args.ListingID)
+	} else if err != nil {
+		return nil, err
+	}
+
+	price := persistence.Decimal(args.Price)
+	if !price.Valid || price.Sign() <= 0 {
+		return nil, errors.New("the price must be positive")
+	}
+
+	quote := &persistence.Quote{ListingID: listing.ID, Time: args.Time.Time.UTC(), Price: price}
+	if err := r.db.CreateQuote(ctx, persistence.CreateQuoteParams{
+		ListingID: quote.ListingID, Time: quote.Time, Price: quote.Price,
+	}); err != nil {
+		return nil, err
+	}
+
+	return &QuoteResolver{quote: quote, currency: listing.Currency}, nil
+}
+
+// DeleteQuote resolves Mutation.deleteQuote.
+func (r *RootResolver) DeleteQuote(ctx context.Context, args struct {
+	ListingID graphql.ID
+	Time      graphql.Time
+}) (bool, error) {
+	if _, err := auth.UserFromContext(ctx); err != nil {
+		return false, err
+	}
+
+	n, err := r.db.DeleteQuote(ctx, persistence.DeleteQuoteParams{
+		ListingID: string(args.ListingID), Time: args.Time.Time.UTC(),
+	})
+	return n > 0, err
 }
 
 // Quotes resolves Listing.quotes, oldest first.
