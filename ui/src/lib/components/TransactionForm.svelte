@@ -62,10 +62,13 @@
 	const creditTypes = new Set(['DEPOSIT_CASH', 'INTEREST']);
 	const debitTypes = new Set(['WITHDRAW_CASH', 'ACCOUNT_FEES']);
 	const isGrossDerived = $derived(creditTypes.has(type) || debitTypes.has(type));
+	// On a loan, interest is charged: it deepens what is owed.
+	const onLoan = $derived(cashAccounts.find((a) => a.id === cashAccountID)?.kind === 'LOAN');
+	const debits = $derived(debitTypes.has(type) || (type === 'INTEREST' && onLoan));
 
 	const derivedCashDelta = $derived.by(() => {
 		const net = (parseAmount(gross) ?? 0) - (parseAmount(taxes) ?? 0);
-		return debitTypes.has(type) ? -net : net;
+		return debits ? -net : net;
 	});
 
 	async function submit(event: SubmitEvent) {
@@ -124,7 +127,7 @@
 		</SelectField>
 
 		{#if isGrossDerived}
-			<TextField bind:value={gross} label="Gross amount" placeholder="0.00" />
+			<TextField bind:value={gross} label={type === 'INTEREST' && onLoan ? 'Interest charged' : 'Gross amount'} placeholder="0.00" />
 			<TextField bind:value={taxes} label="Taxes withheld" placeholder="0.00" />
 			<div class="flex flex-col justify-end pb-1.5">
 				<span class="mb-1 block text-sm font-medium text-fg">Cash delta</span>

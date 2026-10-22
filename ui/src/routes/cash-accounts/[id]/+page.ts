@@ -20,7 +20,7 @@ const CashAccountDetail = graphql(
 			}
 			securities { id displayName }
 			assets { id displayName }
-			cashAccounts { id displayName currency }
+			cashAccounts { id displayName currency kind }
 		}
 	`,
 	[ActivityTransaction]
