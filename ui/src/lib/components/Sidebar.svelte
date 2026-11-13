@@ -28,6 +28,7 @@
 			label: 'Income',
 			icon: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 7v10M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4'
 		},
+		{ href: '/cash-flow', label: 'Cash flow', icon: 'M3 17l5-5 4 4 9-9M14 7h7v7' },
 		{ href: '/imports', label: 'Import', icon: 'M12 3v12M7 10l5 5 5-5M4 17v3h16v-3', badge: toReview }
 	]);
 

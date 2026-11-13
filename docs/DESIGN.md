@@ -416,6 +416,19 @@ deferred.
   line). Confirming a scheduled booking does not overwrite a note;
   re-importing after a re-analysis upgrades a note that is empty or a
   prefix of the parser's newer wording (`reconciledNote`).
+- **Cash-flow view (M10, step 4).** `Query.cashFlow(from, months)`
+  (`internal/api/cashflow.go`) buckets every schedule's occurrences by
+  month, seen from the cash accounts only: a DEPOSIT, DIVIDEND or
+  INTEREST landing on a CASH account is in; WITHDRAW and ACCOUNT_FEES
+  there are out; a TRANSFER from a CASH account is saved when it lands on
+  SAVINGS and out when it lands on a LOAN; everything else (a loan's own
+  interest charge, a fee inside a savings account) is not a cash-account
+  movement and does not count twice. free = in − out − saved. Actuals
+  come from the real transactions on tracked CASH accounts for months
+  that are over (trades paid from the account count as saved), null
+  otherwise. The `/cash-flow` page: the current month's four numbers, a
+  bar per month (expected, with the actual beneath), the occurrences on
+  click, and the schedules with what each counts as.
 - **Portfolio returns.** `finance.ReturnsOver(txs, from, to, quote)`
   splits a period's absolute return into four parts that add up: realized
   (FIFO gains of completed sales, gross of their fees and taxes), income
