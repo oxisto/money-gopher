@@ -34,6 +34,8 @@ const Imports = graphql(`
 				asset { id displayName }
 				accountHint
 				note
+				confirms { id schedule { displayName } }
+				duplicateOf { id source document { filename } }
 			}
 		}
 		portfolios {

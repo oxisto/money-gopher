@@ -409,8 +409,21 @@ deferred.
   Verwendungszweck, the LBS row's text; `StagedTransaction.Note`) or what
   the person typed in the Add/Edit forms. Lists title a row by its note,
   then by its schedule's name, then by the generic wording, which moves to
-  the subtitle (`describeTransaction`). Confirming a scheduled booking or
-  reconciling an import does not overwrite a note.
+  the subtitle (`describeTransaction`); a statement note is "Buchungsart
+  counterparty · Verwendungszweck" and lists title by the part before the
+  separator. The ING parser joins a counterparty name the layout wrapped
+  mid-word (a name part that fills the column continues on the next
+  line). Confirming a scheduled booking does not overwrite a note;
+  re-importing after a re-analysis upgrades a note that is empty or a
+  prefix of the parser's newer wording (`reconciledNote`).
+- **Review controls and matching hints.** A staged row can be left out
+  (`StagedTransactionConfirmInput.skip`: dropped from the staging). Each
+  row reports what it meets on the suggested account: `confirms`, the
+  unconfirmed bookings it will attach the document to — one of its amount,
+  or up to three whose amounts add up to it (`pooledBookings`; the LBS
+  collects the Sparrate and the Zinsrate in one debit) — and
+  `duplicateOf`, a transaction already in the books with its type, amount
+  and date, which the review unticks by default.
 - **Schedules (M10, step 3).** `schedules` + `schedule_steps` (migration
   0017; package `internal/schedule` expands them: day clamped to the
   month, anchored at the start's month, steps give the amount from a

@@ -313,7 +313,7 @@ func TestImportLBSBundle(t *testing.T) {
 		t.Fatalf("Process: %v", err)
 	}
 
-	data := exec(t, schema, ctx, `{ documents { detectedBank suggestedCashAccount { id } stagedTransactions { id accountHint } } }`, nil)
+	data := exec(t, schema, ctx, `{ documents { detectedBank suggestedCashAccount { id } stagedTransactions { id accountHint type cashDelta { amount } } } }`, nil)
 	d := data["documents"].([]any)[0].(map[string]any)
 	if d["detectedBank"] != "LBS" || d["suggestedCashAccount"] != nil {
 		t.Errorf("document = %v, want bank LBS and no suggested account (the printed IBAN is the LBS's own)", d)
@@ -330,6 +330,17 @@ func TestImportLBSBundle(t *testing.T) {
 	}
 	if len(overrides) != 11 {
 		t.Fatalf("staged %d rows, want 11", len(overrides))
+	}
+	// One row is left out: the Bausparvertrag's 5.00 fee.
+	for _, raw := range d["stagedTransactions"].([]any) {
+		stx := raw.(map[string]any)
+		if stx["accountHint"] == "Bausparvertrag 1234567890" && stx["type"] == "ACCOUNT_FEES" && stx["cashDelta"].(map[string]any)["amount"] == -500.0 {
+			for _, o := range overrides {
+				if o.(map[string]any)["id"] == stx["id"] {
+					o.(map[string]any)["skip"] = true
+				}
+			}
+		}
 	}
 
 	// A deposit cannot come from the account it lands on.
@@ -363,9 +374,12 @@ func TestImportLBSBundle(t *testing.T) {
 		data := exec(t, schema, ctx, `query ($id: ID!) { cashAccount(id: $id) { balance { amount } } }`, map[string]any{"id": id})
 		return data["cashAccount"].(map[string]any)["balance"].(map[string]any)["amount"].(float64)
 	}
-	// 3 × 200 in, 30 + 5 fees, 0.07 interest less 0.02 tax.
-	if got := balance(savings); got != 56505 {
-		t.Errorf("Bausparvertrag balance = %v, want 56505", got)
+	// 3 × 200 in, the 30 fee (the 5.00 one was skipped), 0.07 interest less 0.02 tax.
+	if got := balance(savings); got != 57005 {
+		t.Errorf("Bausparvertrag balance = %v, want 57005", got)
+	}
+	if got := len(exec(t, schema, ctx, `{ documents { stagedTransactions { id } } }`, nil)["documents"].([]any)[0].(map[string]any)["stagedTransactions"].([]any)); got != 10 {
+		t.Errorf("%d staged rows remain, want 10: the skipped one is dropped", got)
 	}
 	// 125 + 112.50 + 32.96 interest charged, 125 paid, 50,000 disbursed.
 	if got := balance(loan); got != -5014546 {

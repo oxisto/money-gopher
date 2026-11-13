@@ -835,7 +835,8 @@ SET
     cash_delta = ?,
     currency = ?,
     price_currency = ?,
-    fx_rate = ?
+    fx_rate = ?,
+    note = ?
 WHERE
     id = ? RETURNING id, type, time, portfolio_id, security_id, cash_account_id, units, price, fees, taxes, cash_delta, currency, source, created_at, document_id, price_currency, fx_rate, transfer_id, schedule_id, scheduled_for, note
 `
@@ -854,6 +855,7 @@ type UpdateTransactionFromImportParams struct {
 	Currency      string
 	PriceCurrency sql.NullString
 	FxRate        Decimal
+	Note          sql.NullString
 	ID            string
 }
 
@@ -873,6 +875,7 @@ func (q *Queries) UpdateTransactionFromImport(ctx context.Context, arg UpdateTra
 		arg.Currency,
 		arg.PriceCurrency,
 		arg.FxRate,
+		arg.Note,
 		arg.ID,
 	)
 	var i Transaction

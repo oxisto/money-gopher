@@ -169,6 +169,23 @@ func (q *Queries) DeleteDocument(ctx context.Context, arg DeleteDocumentParams) 
 	return result.RowsAffected()
 }
 
+const deleteStagedTransaction = `-- name: DeleteStagedTransaction :exec
+DELETE FROM staged_transactions
+WHERE
+    id = ?
+    AND document_id = ?
+`
+
+type DeleteStagedTransactionParams struct {
+	ID         string
+	DocumentID string
+}
+
+func (q *Queries) DeleteStagedTransaction(ctx context.Context, arg DeleteStagedTransactionParams) error {
+	_, err := q.db.ExecContext(ctx, deleteStagedTransaction, arg.ID, arg.DocumentID)
+	return err
+}
+
 const deleteStagedTransactions = `-- name: DeleteStagedTransactions :exec
 DELETE FROM staged_transactions
 WHERE

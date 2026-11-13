@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -23,8 +24,9 @@ type DocumentResolver struct {
 
 // StagedTransactionResolver resolves the StagedTransaction GraphQL type.
 type StagedTransactionResolver struct {
-	db *persistence.DB
-	tx *persistence.StagedTransaction
+	db  *persistence.DB
+	tx  *persistence.StagedTransaction
+	doc *persistence.Document
 }
 
 // Documents resolves Query.documents.
@@ -110,6 +112,7 @@ type StagedTransactionConfirmInput struct {
 	CashAccountID             *graphql.ID
 	CashDelta                 *int32
 	TransferFromCashAccountID *graphql.ID
+	Skip                      *bool
 }
 
 // ConfirmImport resolves Mutation.confirmImport. It commits all staged
@@ -184,6 +187,12 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 
 		for _, stx := range staged {
 			ov := overrides[stx.ID]
+			if ov.Skip != nil && *ov.Skip {
+				if err := q.DeleteStagedTransaction(ctx, persistence.DeleteStagedTransactionParams{ID: stx.ID, DocumentID: doc.ID}); err != nil {
+					return err
+				}
+				continue
+			}
 
 			d := txData{
 				Type:      stx.Type,
@@ -265,35 +274,44 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 				if err != nil {
 					return err
 				}
-				var hit *persistence.Transaction
+				var near []*persistence.Transaction
 				for _, c := range candidates {
-					if consumed[c.ID] || c.CashDelta != d.CashDelta {
+					if consumed[c.ID] {
 						continue
 					}
 					if diff := c.Time.Sub(d.Time); diff < -7*24*time.Hour || diff > 7*24*time.Hour {
 						continue
 					}
-					hit = c
-					break
+					near = append(near, c)
 				}
-				if hit != nil {
-					consumed[hit.ID] = true
-					tx, err := q.ConfirmScheduledTransaction(ctx, persistence.ConfirmScheduledTransactionParams{
-						Time:       d.Time,
-						Fees:       d.Fees,
-						Taxes:      d.Taxes,
-						CashDelta:  d.CashDelta,
-						DocumentID: sql.NullString{String: doc.ID, Valid: true},
-						Source:     source,
-						ID:         hit.ID,
-					})
-					if err != nil {
-						return err
+				// One booking of the row's amount, or — a bank pooling
+				// several debits into one, as the LBS does with the Sparrate
+				// and the Zinsrate — a few bookings that add up to it.
+				hits := pooledBookings(near, d.CashDelta)
+				if len(hits) > 0 {
+					for _, hit := range hits {
+						consumed[hit.ID] = true
+						cashDelta := hit.CashDelta
+						if len(hits) == 1 {
+							cashDelta = d.CashDelta // the bank's amount wins
+						}
+						tx, err := q.ConfirmScheduledTransaction(ctx, persistence.ConfirmScheduledTransactionParams{
+							Time:       d.Time,
+							Fees:       hit.Fees,
+							Taxes:      hit.Taxes,
+							CashDelta:  cashDelta,
+							DocumentID: sql.NullString{String: doc.ID, Valid: true},
+							Source:     source,
+							ID:         hit.ID,
+						})
+						if err != nil {
+							return err
+						}
+						if err := mirrorOntoCounterpart(ctx, q, hit, d.Time, -cashDelta); err != nil {
+							return err
+						}
+						created = append(created, &TransactionResolver{db: r.db, transaction: tx})
 					}
-					if err := mirrorOntoCounterpart(ctx, q, hit, d.Time, -d.CashDelta); err != nil {
-						return err
-					}
-					created = append(created, &TransactionResolver{db: r.db, transaction: tx})
 					continue
 				}
 			}
@@ -313,6 +331,7 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 					Currency:      d.Currency,
 					PriceCurrency: sql.NullString{String: d.PriceCurrency, Valid: d.PriceCurrency != ""},
 					FxRate:        d.FxRate,
+					Note:          reconciledNote(match.Note, stx.Note),
 					ID:            match.ID,
 				})
 				if err != nil {
@@ -406,6 +425,104 @@ func firstID(ids ...*graphql.ID) *string {
 	return nil
 }
 
+// suggestedAccount is the document's suggested cash account, where the
+// row would land by default; nil without one.
+func (r *StagedTransactionResolver) suggestedAccount(ctx context.Context) (*persistence.CashAccount, error) {
+	if r.doc == nil {
+		return nil, nil
+	}
+	suggested, err := (&DocumentResolver{db: r.db, doc: r.doc}).SuggestedCashAccount(ctx)
+	if err != nil || suggested == nil {
+		return nil, err
+	}
+	return suggested.account, nil
+}
+
+// Confirms resolves StagedTransaction.confirms.
+func (r *StagedTransactionResolver) Confirms(ctx context.Context) ([]*TransactionResolver, error) {
+	account, err := r.suggestedAccount(ctx)
+	if err != nil || account == nil {
+		return []*TransactionResolver{}, err
+	}
+	candidates, err := r.db.ListUnconfirmedScheduledTransactions(ctx, persistence.ListUnconfirmedScheduledTransactionsParams{
+		CashAccountID: sql.NullString{String: account.ID, Valid: true},
+		Type:          r.tx.Type,
+	})
+	if err != nil {
+		return nil, err
+	}
+	var near []*persistence.Transaction
+	for _, c := range candidates {
+		if diff := c.Time.Sub(r.tx.Time); diff >= -7*24*time.Hour && diff <= 7*24*time.Hour {
+			near = append(near, c)
+		}
+	}
+	out := []*TransactionResolver{}
+	for _, hit := range pooledBookings(near, r.tx.CashDelta) {
+		out = append(out, &TransactionResolver{db: r.db, transaction: hit})
+	}
+	return out, nil
+}
+
+// DuplicateOf resolves StagedTransaction.duplicateOf.
+func (r *StagedTransactionResolver) DuplicateOf(ctx context.Context) (*TransactionResolver, error) {
+	account, err := r.suggestedAccount(ctx)
+	if err != nil || account == nil {
+		return nil, err
+	}
+	txs, err := r.db.ListTransactionsByCashAccount(ctx, sql.NullString{String: account.ID, Valid: true})
+	if err != nil {
+		return nil, err
+	}
+	for _, tx := range txs {
+		if tx.Type != r.tx.Type || tx.CashDelta != r.tx.CashDelta {
+			continue
+		}
+		if diff := tx.Time.Sub(r.tx.Time); diff < -3*24*time.Hour || diff > 3*24*time.Hour {
+			continue
+		}
+		// This document's own earlier import reconciles in place; an
+		// unconfirmed booking is what the row confirms, not a double.
+		if tx.DocumentID.Valid && tx.DocumentID.String == r.doc.ID {
+			continue
+		}
+		if tx.ScheduleID.Valid && !tx.DocumentID.Valid {
+			continue
+		}
+		return &TransactionResolver{db: r.db, transaction: tx}, nil
+	}
+	return nil, nil
+}
+
+// pooledBookings picks the bookings a statement row confirms: the first
+// one of exactly its amount, else the smallest set (up to three) whose
+// amounts add up to it, else none.
+func pooledBookings(candidates []*persistence.Transaction, amount int64) []*persistence.Transaction {
+	for _, c := range candidates {
+		if c.CashDelta == amount {
+			return []*persistence.Transaction{c}
+		}
+	}
+	n := len(candidates)
+	for i := 0; i < n; i++ {
+		for j := i + 1; j < n; j++ {
+			if candidates[i].CashDelta+candidates[j].CashDelta == amount {
+				return []*persistence.Transaction{candidates[i], candidates[j]}
+			}
+		}
+	}
+	for i := 0; i < n; i++ {
+		for j := i + 1; j < n; j++ {
+			for k := j + 1; k < n; k++ {
+				if candidates[i].CashDelta+candidates[j].CashDelta+candidates[k].CashDelta == amount {
+					return []*persistence.Transaction{candidates[i], candidates[j], candidates[k]}
+				}
+			}
+		}
+	}
+	return nil
+}
+
 // mirrorOntoCounterpart moves a transfer's other leg to the given time and
 // amount, when tx is a leg; a plain transaction is left alone.
 func mirrorOntoCounterpart(ctx context.Context, q *persistence.Queries, tx *persistence.Transaction, at time.Time, cashDelta int64) error {
@@ -422,9 +539,21 @@ func mirrorOntoCounterpart(ctx context.Context, q *persistence.Queries, tx *pers
 		Type: other.Type, Time: at, CashAccountID: other.CashAccountID,
 		CashDelta: cashDelta, Currency: other.Currency, Price: other.Price, FxRate: other.FxRate,
 		PriceCurrency: other.PriceCurrency, Units: other.Units, Fees: other.Fees, Taxes: other.Taxes,
-		PortfolioID: other.PortfolioID, SecurityID: other.SecurityID, ID: other.ID,
+		PortfolioID: other.PortfolioID, SecurityID: other.SecurityID, Note: other.Note, ID: other.ID,
 	})
 	return err
+}
+
+// reconciledNote keeps a note the person wrote and takes the parser's
+// newer wording when the existing note is empty or a truncated form of it.
+func reconciledNote(existing, parsed sql.NullString) sql.NullString {
+	if !parsed.Valid {
+		return existing
+	}
+	if !existing.Valid || strings.HasPrefix(parsed.String, existing.String) {
+		return parsed
+	}
+	return existing
 }
 
 // isCashOnlyType reports whether a transaction type is a pure cash event (no
@@ -476,7 +605,7 @@ func (r *DocumentResolver) StagedTransactions(ctx context.Context) ([]*StagedTra
 	}
 	resolvers := make([]*StagedTransactionResolver, len(txs))
 	for i, tx := range txs {
-		resolvers[i] = &StagedTransactionResolver{db: r.db, tx: tx}
+		resolvers[i] = &StagedTransactionResolver{db: r.db, tx: tx, doc: r.doc}
 	}
 	return resolvers, nil
 }
