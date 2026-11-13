@@ -76,6 +76,7 @@
 				(account === 'all' || t.portfolio?.id === account || t.cashAccount?.id === account) &&
 				(!q ||
 					describeTransaction(t).title.toLowerCase().includes(q) ||
+					(t.note ?? '').toLowerCase().includes(q) ||
 					t.document?.filename.toLowerCase().includes(q))
 		);
 	});

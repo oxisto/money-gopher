@@ -27,6 +27,7 @@
 		assetKindHint: string | null;
 		asset: { id: string; displayName: string } | null;
 		accountHint?: string | null;
+		note?: string | null;
 	}
 	interface Document {
 		id: string;
@@ -388,6 +389,9 @@
 										<span class="text-muted"><Icon name={describeTransaction(tx).icon} size={13} /></span>
 										{labelOf(tx.type)}
 									</span>
+									{#if tx.note}
+										<span class="block max-w-[220px] truncate text-xs text-muted" title={tx.note}>{tx.note}</span>
+									{/if}
 								</td>
 								<td class="px-2 py-2 max-w-[220px]">
 									{#if tx.asset}

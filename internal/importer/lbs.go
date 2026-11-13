@@ -190,6 +190,7 @@ func (LBS) Parse(text string) ([]StagedTransaction, error) {
 			Taxes:       tax,
 			Currency:    "EUR",
 			AccountHint: r.hint,
+			Note:        r.desc,
 		})
 	}
 

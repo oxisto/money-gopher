@@ -19,9 +19,10 @@ INSERT INTO
         fx_rate,
         transfer_id,
         schedule_id,
-        scheduled_for)
+        scheduled_for,
+        note)
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *;
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *;
 
 -- name: GetTransaction :one
 SELECT
@@ -94,7 +95,8 @@ SET
     fees = ?,
     taxes = ?,
     cash_delta = ?,
-    currency = ?
+    currency = ?,
+    note = ?
 WHERE
     id = ? RETURNING *;
 

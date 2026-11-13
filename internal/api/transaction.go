@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -210,6 +211,7 @@ type CreateTransactionInput struct {
 	Taxes         *int32
 	CashDelta     *int32
 	Currency      string
+	Note          *string
 }
 
 // CreateTransaction resolves Mutation.createTransaction.
@@ -267,6 +269,7 @@ func (r *RootResolver) CreateTransaction(ctx context.Context, args struct{ Input
 		CashDelta:     d.CashDelta,
 		Currency:      d.Currency,
 		Source:        "MANUAL",
+		Note:          noteColumn(ptrStr(args.Input.Note)),
 	})
 	if err != nil {
 		return nil, err
@@ -287,6 +290,7 @@ type UpdateTransactionInput struct {
 	Taxes         *int32
 	CashDelta     *int32
 	Currency      *string
+	Note          *string
 }
 
 // UpdateTransaction resolves Mutation.updateTransaction.
@@ -379,7 +383,11 @@ func (r *RootResolver) UpdateTransaction(ctx context.Context, args struct {
 		Taxes:         d.Taxes,
 		CashDelta:     d.CashDelta,
 		Currency:      d.Currency,
+		Note:          current.Note,
 		ID:            string(args.ID),
+	}
+	if args.Input.Note != nil {
+		params.Note = noteColumn(*args.Input.Note)
 	}
 	if !current.TransferID.Valid {
 		transaction, err := r.db.UpdateTransaction(ctx, params)
@@ -413,6 +421,7 @@ func (r *RootResolver) UpdateTransaction(ctx context.Context, args struct {
 			Taxes:         other.Taxes,
 			CashDelta:     -d.CashDelta,
 			Currency:      d.Currency,
+			Note:          other.Note,
 			ID:            other.ID,
 		})
 		return err
@@ -624,4 +633,28 @@ func int64Value(i *int32) int64 {
 	}
 
 	return int64(*i)
+}
+
+// noteColumn stores a note trimmed; empty means none.
+func noteColumn(note string) sql.NullString {
+	note = strings.TrimSpace(note)
+	if note == "" {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: note, Valid: true}
+}
+
+func ptrStr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
+// Note resolves Transaction.note.
+func (r *TransactionResolver) Note() *string {
+	if !r.transaction.Note.Valid {
+		return nil
+	}
+	return &r.transaction.Note.String
 }

@@ -25,6 +25,7 @@
 		['FX rate', tx.fxRate ? `1 ${tx.cashDelta.currency} = ${tx.fxRate} ${tx.price?.currency ?? ''}` : null],
 		['Fees', formatMoney(tx.fees)],
 		['Taxes', formatMoney(tx.taxes)],
+		['Note', tx.note],
 		['Source', tx.source]
 	].filter(([, v]) => v)}
 	<nav aria-label="Breadcrumb" class="mb-4 flex gap-1.5 text-[13px] text-muted">

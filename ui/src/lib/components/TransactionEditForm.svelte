@@ -54,6 +54,7 @@
 	let taxes = $state(minorToStr(tx.taxes?.amount));
 	let cashDelta = $state(minorToStr(tx.cashDelta?.amount));
 	let currency = $state(tx.cashDelta?.currency ?? 'EUR');
+	let note = $state(tx.note ?? '');
 	let error = $state<string | null>(null);
 
 	async function submit(event: SubmitEvent) {
@@ -71,7 +72,8 @@
 				price: parsePrice(price) ?? undefined,
 				fees: parseAmount(fees) ?? undefined,
 				taxes: parseAmount(taxes) ?? undefined,
-				cashDelta: parseAmount(cashDelta) ?? undefined
+				cashDelta: parseAmount(cashDelta) ?? undefined,
+				note
 			}
 		});
 
@@ -114,6 +116,7 @@
 	<TextField bind:value={taxes} label="Taxes" placeholder="0.00" />
 	<TextField bind:value={cashDelta} label="Cash delta" placeholder="e.g. 1000.00 or -50.00" />
 	<TextField bind:value={currency} label="Currency" maxlength={3} required />
+	<TextField bind:value={note} label="Note" placeholder="Shown as the title, e.g. Gehalt Oktober" />
 
 	<div class="flex items-end gap-2 sm:col-span-2 lg:col-span-4">
 		<Button type="submit">Save changes</Button>

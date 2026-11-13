@@ -352,6 +352,7 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 				DocumentID:    sql.NullString{String: doc.ID, Valid: true},
 				PriceCurrency: sql.NullString{String: d.PriceCurrency, Valid: d.PriceCurrency != ""},
 				FxRate:        d.FxRate,
+				Note:          stx.Note,
 			})
 			if err != nil {
 				return err
@@ -602,6 +603,13 @@ func (r *StagedTransactionResolver) Isin() *string {
 		return nil
 	}
 	return &r.tx.Isin.String
+}
+
+func (r *StagedTransactionResolver) Note() *string {
+	if !r.tx.Note.Valid {
+		return nil
+	}
+	return &r.tx.Note.String
 }
 
 func (r *StagedTransactionResolver) AccountHint() *string {

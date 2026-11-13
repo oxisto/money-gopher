@@ -8,6 +8,8 @@ interface DescribableTransaction {
 	counterpart?: { cashAccount: { displayName: string } | null } | null;
 	/** The schedule it is an occurrence of: its name becomes the title. */
 	schedule?: { displayName: string } | null;
+	/** Free text; the title when set, before the schedule's name. */
+	note?: string | null;
 }
 
 /**
@@ -20,11 +22,12 @@ export function describeTransaction(tx: DescribableTransaction): {
 	/** The generic description, when the title is a schedule's name. */
 	subtitle?: string;
 } {
-	// A scheduled occurrence goes by its schedule's name — "Sparrate",
-	// "Zinsen" — with the generic wording as the subtitle.
-	if (tx.schedule) {
-		const generic = describeTransaction({ ...tx, schedule: null });
-		return { title: tx.schedule.displayName, icon: generic.icon, subtitle: generic.title };
+	// A note — the statement's wording, or the person's — is the title; so
+	// is a schedule's name ("Sparrate", "Zinsen"). The generic wording
+	// moves to the subtitle either way.
+	if (tx.note || tx.schedule) {
+		const generic = describeTransaction({ ...tx, schedule: null, note: null });
+		return { title: tx.note || tx.schedule!.displayName, icon: generic.icon, subtitle: generic.title };
 	}
 	const name = tx.asset?.displayName ?? 'unknown asset';
 	const units = formatUnits(tx.units);

@@ -21,6 +21,8 @@ export interface TransactionRow {
 	/** Booked by a schedule; not yet confirmed by a statement when document is null. */
 	scheduleID?: string | null;
 	schedule?: { id: string; displayName: string } | null;
+	/** Free text: the statement's wording or the person's own; the title when set. */
+	note?: string | null;
 	counterpart?: { id: string; cashAccount: { id: string; displayName: string } | null } | null;
 }
 

@@ -141,6 +141,7 @@ type StagedTransaction struct {
 	FxRate        Decimal
 	SecurityKind  sql.NullString
 	AccountHint   sql.NullString
+	Note          sql.NullString
 }
 
 type Transaction struct {
@@ -164,6 +165,7 @@ type Transaction struct {
 	TransferID    sql.NullString
 	ScheduleID    sql.NullString
 	ScheduledFor  sql.NullTime
+	Note          sql.NullString
 }
 
 type User struct {

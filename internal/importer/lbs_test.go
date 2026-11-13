@@ -68,6 +68,9 @@ func TestLBS_ParseJahresschluss(t *testing.T) {
 				tx.Type, tx.Time.Format("2006-01-02"), tx.CashDelta, tx.Taxes, tx.AccountHint,
 				w.typ, w.date, w.delta, w.taxes, w.hint)
 		}
+		if i == 6 && tx.Note != "Zinsausgl. für Bereithaltung" {
+			t.Errorf("row %d: note %q, want the statement's wording", i, tx.Note)
+		}
 		if tx.Currency != "EUR" || tx.SettlementIBAN != "" {
 			t.Errorf("row %d: currency %q, IBAN %q; want EUR and no IBAN (the one printed is the LBS's own)", i, tx.Currency, tx.SettlementIBAN)
 		}

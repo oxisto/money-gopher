@@ -33,6 +33,7 @@ const Imports = graphql(`
 				assetKindHint
 				asset { id displayName }
 				accountHint
+				note
 			}
 		}
 		portfolios {

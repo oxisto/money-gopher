@@ -404,6 +404,13 @@ deferred.
   the counterpart and refuses type/asset/price changes; deleting one leg
   deletes both. The ING statement importer does not recognise a transfer
   that has already been booked by hand (no cross-document matching).
+- **Notes on transactions.** `transactions.note` (migration 0018) holds
+  the statement's wording for an imported row (the ING Kontoauszug's
+  Verwendungszweck, the LBS row's text; `StagedTransaction.Note`) or what
+  the person typed in the Add/Edit forms. Lists title a row by its note,
+  then by its schedule's name, then by the generic wording, which moves to
+  the subtitle (`describeTransaction`). Confirming a scheduled booking or
+  reconciling an import does not overwrite a note.
 - **Schedules (M10, step 3).** `schedules` + `schedule_steps` (migration
   0017; package `internal/schedule` expands them: day clamped to the
   month, anchored at the start's month, steps give the amount from a

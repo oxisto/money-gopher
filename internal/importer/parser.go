@@ -51,6 +51,9 @@ type StagedTransaction struct {
 	// contract number and no IBAN of the customer's). Empty when the
 	// document is about one account.
 	AccountHint string
+	// Note is the statement's own wording for the row ("Gehalt Firma X",
+	// "Zinsausgl. für Bereithaltung"), for statements that have one.
+	Note string
 }
 
 // Parser understands one bank's (or format's) documents.
