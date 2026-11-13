@@ -237,3 +237,69 @@ func (r *PerformanceResolver) To() graphql.Time {
 func (r *PerformanceResolver) TimeWeightedReturn() float64 {
 	return r.twr
 }
+
+// ReturnsResolver resolves the Returns GraphQL type.
+type ReturnsResolver struct {
+	period *string
+	r      finance.Returns
+	twr    float64
+}
+
+func (r *ReturnsResolver) Period() *string             { return r.period }
+func (r *ReturnsResolver) From() graphql.Time          { return graphql.Time{Time: r.r.From} }
+func (r *ReturnsResolver) To() graphql.Time            { return graphql.Time{Time: r.r.To} }
+func (r *ReturnsResolver) Realized() Money             { return money(r.r.Realized, r.currency()) }
+func (r *ReturnsResolver) Income() Money               { return money(r.r.Income, r.currency()) }
+func (r *ReturnsResolver) Costs() Money                { return money(r.r.Costs, r.currency()) }
+func (r *ReturnsResolver) ValueChange() Money          { return money(r.r.ValueChange, r.currency()) }
+func (r *ReturnsResolver) Total() Money                { return money(r.r.Total, r.currency()) }
+func (r *ReturnsResolver) TimeWeightedReturn() float64 { return r.twr }
+func (r *ReturnsResolver) currency() string {
+	if r.r.Currency != "" {
+		return r.r.Currency
+	}
+	return defaultCurrency
+}
+
+// Returns resolves PortfolioSnapshot.returns.
+func (r *SnapshotResolver) Returns(args struct{ Period string }) (*ReturnsResolver, error) {
+	to := r.snap.Time
+	from, err := periodStart(args.Period, to, r.snap.FirstTransactionTime)
+	if err != nil {
+		return nil, err
+	}
+	// The window is (from, to]; a transaction exactly at the period's
+	// start — the first one ever for ALL_TIME, one dated 1 January for
+	// YEAR_TO_DATE — belongs to it, so the start moves a second before.
+	// Whole seconds: a browser rounds finer fractions up.
+	from = from.Add(-time.Second)
+	period := args.Period
+	return &ReturnsResolver{
+		period: &period,
+		r:      finance.ReturnsOver(r.txs, from, to, r.quote),
+		twr:    finance.TimeWeightedReturn(r.txs, from, to, r.quote),
+	}, nil
+}
+
+// ReturnsByYear resolves PortfolioSnapshot.returnsByYear: one Returns per
+// calendar year from the first transaction's to the snapshot's, the last
+// one ending at the snapshot time.
+func (r *SnapshotResolver) ReturnsByYear() []*ReturnsResolver {
+	out := []*ReturnsResolver{}
+	if r.snap.FirstTransactionTime.IsZero() {
+		return out
+	}
+	to := r.snap.Time
+	for year := r.snap.FirstTransactionTime.Year(); year <= to.Year(); year++ {
+		from := time.Date(year, time.January, 1, 0, 0, 0, 0, time.UTC).Add(-time.Second)
+		end := time.Date(year+1, time.January, 1, 0, 0, 0, 0, time.UTC).Add(-time.Second)
+		if end.After(to) {
+			end = to
+		}
+		out = append(out, &ReturnsResolver{
+			r:   finance.ReturnsOver(r.txs, from, end, r.quote),
+			twr: finance.TimeWeightedReturn(r.txs, from, end, r.quote),
+		})
+	}
+	return out
+}

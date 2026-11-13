@@ -109,8 +109,27 @@
 				]
 					.filter(Boolean)
 					.join(' · ')
-			}
+			},
+			...(month
+				? [
+						{
+							label: 'Free cash flow',
+							value: `≈ ${formatSignedMoney(month.expectedFree)}`,
+							tone: tone(month.expectedFree.amount),
+							sub: `per month · from your schedules`
+						}
+					]
+				: [])
 		];
+	});
+	// This month's expected cash flow, when any schedule touches a cash account.
+	const month = $derived.by(() => {
+		const now = new Date();
+		const m = d.cashFlow.months.find((x) => {
+			const t = new Date(x.month);
+			return t.getUTCFullYear() === now.getUTCFullYear() && t.getUTCMonth() === now.getUTCMonth();
+		});
+		return m && (m.expectedIn.amount || m.expectedFree.amount) ? m : null;
 	});
 
 	// The biggest holdings across all portfolios, then everything else, then

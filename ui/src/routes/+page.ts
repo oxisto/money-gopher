@@ -21,6 +21,9 @@ const OverviewTransaction = graphql(`
 
 const Dashboard = graphql(`
 	query Dashboard {
+		cashFlow(months: 6) {
+			months { month expectedFree { amount currency } expectedIn { amount currency } }
+		}
 		portfolios {
 			id
 			displayName

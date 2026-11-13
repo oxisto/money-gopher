@@ -2,6 +2,19 @@ import { graphql, query } from '#lib/graphql/client.js';
 import { ActivityTransaction, HoldingPosition } from '#lib/graphql/documents.js';
 import type { PageLoad } from './$types';
 
+const ReturnsFields = graphql(`
+	fragment ReturnsFields on Returns @_unmask {
+		from
+		to
+		realized { amount currency }
+		income { amount currency }
+		costs { amount currency }
+		valueChange { amount currency }
+		total { amount currency }
+		timeWeightedReturn
+	}
+`);
+
 const PortfolioDetail = graphql(
 	`
 		query PortfolioDetail($id: ID!) {
@@ -15,6 +28,10 @@ const PortfolioDetail = graphql(
 					totalProfitOrLoss { amount currency }
 					totalGains
 					performance(period: ALL_TIME) { timeWeightedReturn }
+					ytd: returns(period: YEAR_TO_DATE) { ...ReturnsFields }
+					oneYear: returns(period: ONE_YEAR) { ...ReturnsFields }
+					allTime: returns(period: ALL_TIME) { ...ReturnsFields }
+					returnsByYear { ...ReturnsFields }
 					positions { ...HoldingPosition }
 				}
 				transactions { ...ActivityTransaction }
@@ -24,7 +41,7 @@ const PortfolioDetail = graphql(
 			cashAccounts { id displayName currency kind }
 		}
 	`,
-	[HoldingPosition, ActivityTransaction]
+	[HoldingPosition, ActivityTransaction, ReturnsFields]
 );
 
 export const load: PageLoad = async ({ fetch, params }) =>
