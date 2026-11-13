@@ -168,7 +168,7 @@
 		[
 			'Expected',
 			t.schedule
-				? `${t.schedule.displayName} · ${t.document ? 'confirmed by the statement' : 'booked, not confirmed yet'}`
+				? `${t.schedule.displayName} · ${t.document ? `confirmed by ${t.documents && t.documents.length > 1 ? `${t.documents.length} statements` : 'the statement'}` : 'booked, not confirmed yet'}`
 				: null
 		]
 	].filter(([, v]) => v)}
@@ -197,7 +197,7 @@
 			<Icon name="document" size={15} />
 			<span class="min-w-0 flex-1 truncate">
 				{t.document
-					? t.document.filename
+					? (t.documents ?? [t.document]).map((d) => d.filename).join(' · ')
 					: t.scheduleID
 						? 'Booked by a schedule · not yet confirmed by a statement'
 						: 'Entered manually'}

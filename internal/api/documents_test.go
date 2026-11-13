@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 
 	"github.com/graph-gophers/graphql-go"
@@ -263,7 +262,7 @@ func TestConfirmImport_ReconcilesReprocessedDocument(t *testing.T) {
 
 	// The document must still have exactly one linked transaction — no
 	// duplicate was created alongside the reconciled one.
-	txs, err := db.ListTransactionsByDocument(ctx, sql.NullString{String: doc.ID, Valid: true})
+	txs, err := db.ListTransactionsByDocument(ctx, doc.ID)
 	if err != nil {
 		t.Fatalf("ListTransactionsByDocument() error = %v", err)
 	}
@@ -302,7 +301,7 @@ func TestConfirmImport_RollsBackOnFailure(t *testing.T) {
 		{ id }
 	}`, map[string]any{"docID": doc.ID, "account": accountID})
 
-	txs, err := db.ListTransactionsByDocument(ctx, sql.NullString{String: doc.ID, Valid: true})
+	txs, err := db.ListTransactionsByDocument(ctx, doc.ID)
 	if err != nil {
 		t.Fatalf("ListTransactionsByDocument() error = %v", err)
 	}

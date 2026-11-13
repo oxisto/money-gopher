@@ -596,26 +596,26 @@ func (r *TransactionResolver) Source() string {
 	return r.transaction.Source
 }
 
-// Document resolves Transaction.document.
+// Documents resolves Transaction.documents.
+func (r *TransactionResolver) Documents(ctx context.Context) ([]*DocumentResolver, error) {
+	docs, err := r.db.ListTransactionDocuments(ctx, r.transaction.ID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*DocumentResolver, 0, len(docs))
+	for _, doc := range docs {
+		out = append(out, &DocumentResolver{db: r.db, doc: doc})
+	}
+	return out, nil
+}
+
+// Document resolves Transaction.document: the first of Documents.
 func (r *TransactionResolver) Document(ctx context.Context) (*DocumentResolver, error) {
-	if !r.transaction.DocumentID.Valid {
-		return nil, nil
-	}
-
-	person, err := auth.PersonFromContext(ctx)
-	if err != nil {
+	docs, err := r.Documents(ctx)
+	if err != nil || len(docs) == 0 {
 		return nil, err
 	}
-
-	doc, err := r.db.GetDocument(ctx, persistence.GetDocumentParams{
-		ID:       r.transaction.DocumentID.String,
-		PersonID: person.ID,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &DocumentResolver{db: r.db, doc: doc}, nil
+	return docs[0], nil
 }
 
 func idPtr(id *graphql.ID) *string {

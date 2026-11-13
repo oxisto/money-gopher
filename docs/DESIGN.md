@@ -416,6 +416,17 @@ deferred.
   line). Confirming a scheduled booking does not overwrite a note;
   re-importing after a re-analysis upgrades a note that is empty or a
   prefix of the parser's newer wording (`reconciledNote`).
+- **Several documents per transaction.** `transaction_documents`
+  (migration 0019, backfilled from `transactions.document_id`, which
+  stays as the origin) holds every document describing a transaction:
+  the one it was imported from and each statement that confirmed it.
+  `Transaction.documents` lists them, `document` is the first. A
+  statement row confirms a schedule's booking or a transfer leg on its
+  account (`ListConfirmableTransactions`) whether or not another document
+  already describes it, so a Giro leg created by the LBS bundle's
+  "paid from" later carries the Giro statement as well; "unconfirmed"
+  means no document at all. `Document.transactions` is every transaction
+  the document describes.
 - **Review controls and matching hints.** A staged row can be left out
   (`StagedTransactionConfirmInput.skip`: dropped from the staging). Each
   row reports what it meets on the suggested account: `confirms`, the

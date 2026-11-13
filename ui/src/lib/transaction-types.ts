@@ -47,6 +47,8 @@ export interface FeedTransaction extends Omit<TransactionRow, 'cashAccount'> {
 	portfolio: { id: string; displayName: string } | null;
 	cashAccount: { id: string; displayName: string } | null;
 	document: { id: string; filename: string } | null;
+	/** Every document describing it: the origin, and each statement that confirmed it. */
+	documents?: { id: string; filename: string }[];
 }
 
 /** Every TransactionType in api/schema.graphql, in its order. */
