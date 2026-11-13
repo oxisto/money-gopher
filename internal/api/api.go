@@ -43,5 +43,5 @@ func NewSchema(db *persistence.DB, updater *quotes.Updater) *graphql.Schema {
 
 // NewHandler returns the HTTP handler serving the GraphQL API.
 func NewHandler(schema *graphql.Schema) http.Handler {
-	return &relay.Handler{Schema: schema}
+	return withRequestLoaders(&relay.Handler{Schema: schema})
 }

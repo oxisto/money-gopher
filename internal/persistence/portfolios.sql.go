@@ -121,6 +121,44 @@ func (q *Queries) GetPortfolio(ctx context.Context, arg GetPortfolioParams) (*Po
 	return &i, err
 }
 
+const getPortfolioHoldingSecurity = `-- name: GetPortfolioHoldingSecurity :one
+SELECT
+    portfolios.id, portfolios.user_id, portfolios.display_name, portfolios.cash_account_id, portfolios.created_at, portfolios.person_id, portfolios.purpose
+FROM
+    portfolios
+    JOIN transactions ON transactions.portfolio_id = portfolios.id
+WHERE
+    portfolios.person_id = ?
+    AND transactions.security_id = ?
+    AND transactions.type IN ('BUY', 'DELIVERY_INBOUND')
+ORDER BY
+    transactions.time DESC
+LIMIT
+    1
+`
+
+type GetPortfolioHoldingSecurityParams struct {
+	PersonID   string
+	SecurityID sql.NullString
+}
+
+// The person's portfolio that last took the security in: where a rent or
+// dividend schedule books its income.
+func (q *Queries) GetPortfolioHoldingSecurity(ctx context.Context, arg GetPortfolioHoldingSecurityParams) (*Portfolio, error) {
+	row := q.db.QueryRowContext(ctx, getPortfolioHoldingSecurity, arg.PersonID, arg.SecurityID)
+	var i Portfolio
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.DisplayName,
+		&i.CashAccountID,
+		&i.CreatedAt,
+		&i.PersonID,
+		&i.Purpose,
+	)
+	return &i, err
+}
+
 const listPortfolios = `-- name: ListPortfolios :many
 SELECT
     id, user_id, display_name, cash_account_id, created_at, person_id, purpose

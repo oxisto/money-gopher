@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -140,7 +141,11 @@ func validateSchedule(ctx context.Context, db *persistence.DB, person *persisten
 			return err
 		}
 		if s.Books == 1 {
-			return errors.New("a dividend schedule is an expectation only; its confirmations book it")
+			if _, err := db.GetPortfolioHoldingSecurity(ctx, persistence.GetPortfolioHoldingSecurityParams{PersonID: person.ID, SecurityID: sql.NullString{String: s.SecurityID.String, Valid: true}}); errors.Is(err, sql.ErrNoRows) {
+				return errors.New("to book its income, the asset must be held in one of your portfolios")
+			} else if err != nil {
+				return err
+			}
 		}
 	default:
 		if s.CounterpartAccountID.Valid || s.SecurityID.Valid {
@@ -604,12 +609,48 @@ func (r *RootResolver) UpdateSchedule(ctx context.Context, args struct {
 	if err != nil {
 		return nil, err
 	}
+	// A narrower range drops the expectations now outside it: rows the
+	// schedule wrote itself that no statement has confirmed. Adopted rows
+	// and confirmed ones stay.
+	if err := pruneExpectations(ctx, r.db, updated); err != nil {
+		return nil, err
+	}
 	if updated.Books == 1 {
 		if _, err := bookSchedule(ctx, r.db, updated, time.Now()); err != nil {
 			return nil, err
 		}
 	}
 	return &ScheduleResolver{db: r.db, s: updated}, nil
+}
+
+// pruneExpectations deletes the schedule's own unconfirmed bookings whose
+// occurrence lies before its start or after its end.
+func pruneExpectations(ctx context.Context, db *persistence.DB, s *persistence.Schedule) error {
+	txs, err := db.ListTransactionsBySchedule(ctx, sql.NullString{String: s.ID, Valid: true})
+	if err != nil {
+		return err
+	}
+	start := schedule.Midnight(s.StartDate)
+	var outside []*persistence.Transaction
+	for _, tx := range txs {
+		if tx.Source != "schedule" || !tx.ScheduledFor.Valid {
+			continue
+		}
+		at := tx.ScheduledFor.Time
+		if !at.Before(start) && (!s.EndDate.Valid || !at.After(schedule.Midnight(s.EndDate.Time))) {
+			continue
+		}
+		if cnt, err := db.CountTransactionDocuments(ctx, tx.ID); err != nil {
+			return err
+		} else if cnt > 0 {
+			continue
+		}
+		outside = append(outside, tx)
+	}
+	if len(outside) == 0 {
+		return nil
+	}
+	return deleteBookings(ctx, db, outside)
 }
 
 // DeleteSchedule resolves Mutation.deleteSchedule. Transactions it booked
@@ -672,9 +713,6 @@ func (r *RootResolver) BookSchedules(ctx context.Context, args struct{ Until *gr
 // until's day that have no transaction yet. Idempotent: an occurrence is
 // identified by (schedule, date). Returns how many were written.
 func bookSchedule(ctx context.Context, db *persistence.DB, s *persistence.Schedule, until time.Time) (int, error) {
-	if s.Type == "DIVIDEND" {
-		return 0, nil
-	}
 	steps, err := db.ListScheduleSteps(ctx, s.ID)
 	if err != nil {
 		return 0, err
@@ -686,6 +724,17 @@ func bookSchedule(ctx context.Context, db *persistence.DB, s *persistence.Schedu
 	}
 	sign := scheduleSign(s.Type, kindOf(account))
 	scheduleID := sql.NullString{String: s.ID, Valid: true}
+	// A rent or dividend lands on the account and is income of the asset,
+	// in the portfolio that holds it.
+	var holding *persistence.Portfolio
+	if s.Type == "DIVIDEND" {
+		holding, err = db.GetPortfolioHoldingSecurity(ctx, persistence.GetPortfolioHoldingSecurityParams{PersonID: s.PersonID, SecurityID: s.SecurityID})
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, nil // an expectation only until the asset is held
+		} else if err != nil {
+			return 0, err
+		}
+	}
 
 	n := 0
 	for _, occ := range scheduleModel(s, steps).Occurrences(s.StartDate, schedule.Midnight(until).AddDate(0, 0, 1)) {
@@ -694,6 +743,29 @@ func bookSchedule(ctx context.Context, db *persistence.DB, s *persistence.Schedu
 			return n, err
 		}
 		if len(existing) > 0 {
+			// An expectation no statement has confirmed gives way to a real
+			// row that turned up since — the July salary with its bonus,
+			// imported after the schedule booked the usual amount.
+			confirmed := false
+			for _, e := range existing {
+				if cnt, err := db.CountTransactionDocuments(ctx, e.ID); err != nil {
+					return n, err
+				} else if cnt > 0 {
+					confirmed = true
+				}
+			}
+			if confirmed {
+				continue
+			}
+			adopted, err := adoptOccurrence(ctx, db, s, account, occ.Date, sign*occ.Amount, scheduleID)
+			if err != nil {
+				return n, err
+			}
+			if adopted {
+				if err := deleteBookings(ctx, db, existing); err != nil {
+					return n, err
+				}
+			}
 			continue
 		}
 		// A transaction already in the books for this occurrence — imported
@@ -716,6 +788,9 @@ func bookSchedule(ctx context.Context, db *persistence.DB, s *persistence.Schedu
 				{Type: "DEPOSIT_CASH", Time: occ.Date, CashAccountID: &to, CashDelta: occ.Amount, Currency: account.Currency},
 			}
 			transferID = sql.NullString{String: uuid.NewString(), Valid: true}
+		} else if s.Type == "DIVIDEND" {
+			to, portfolio, security := s.CashAccountID, holding.ID, s.SecurityID.String
+			legs = []txData{{Type: "DIVIDEND", Time: occ.Date, PortfolioID: &portfolio, SecurityID: &security, CashAccountID: &to, CashDelta: occ.Amount, Currency: account.Currency}}
 		} else {
 			to := s.CashAccountID
 			legs = []txData{{Type: s.Type, Time: occ.Date, CashAccountID: &to, CashDelta: sign * occ.Amount, Currency: account.Currency}}
@@ -731,6 +806,8 @@ func bookSchedule(ctx context.Context, db *persistence.DB, s *persistence.Schedu
 					ID:            uuid.NewString(),
 					Type:          d.Type,
 					Time:          d.Time,
+					PortfolioID:   nullString(d.PortfolioID),
+					SecurityID:    nullString(d.SecurityID),
 					CashAccountID: nullString(d.CashAccountID),
 					CashDelta:     d.CashDelta,
 					Currency:      d.Currency,
@@ -753,30 +830,82 @@ func bookSchedule(ctx context.Context, db *persistence.DB, s *persistence.Schedu
 }
 
 // adoptOccurrence links an existing transaction on the schedule's account
-// (same type and amount, within a week of the occurrence, not yet any
-// schedule's) to the occurrence, both legs when it is a transfer.
+// (same type, within a week of the occurrence, not yet any schedule's,
+// and either of the amount or from the counterparty the schedule is
+// named after) to the occurrence, both legs when it is a transfer. The
+// counterparty match is what makes a salary month with a bonus still
+// that month's salary.
 func adoptOccurrence(ctx context.Context, db *persistence.DB, s *persistence.Schedule, account *persistence.CashAccount, date time.Time, cashDelta int64, scheduleID sql.NullString) (bool, error) {
-	typ := s.Type
-	if typ == "TRANSFER" {
-		typ = "DEPOSIT_CASH"
+	types := []string{s.Type}
+	switch s.Type {
+	case "TRANSFER":
+		types = []string{"DEPOSIT_CASH"}
+	case "DIVIDEND":
+		// A statement books rent as a plain deposit; adopting makes it the
+		// asset's income.
+		types = []string{"DIVIDEND", "DEPOSIT_CASH"}
 	}
-	candidates, err := db.ListAdoptableTransactions(ctx, persistence.ListAdoptableTransactionsParams{
-		CashAccountID: sql.NullString{String: account.ID, Valid: true},
-		Type:          typ,
-		CashDelta:     cashDelta,
-		Time:          date.AddDate(0, 0, -7),
-		Time_2:        date.AddDate(0, 0, 7),
-	})
-	if err != nil || len(candidates) == 0 {
+	var all []*persistence.Transaction
+	for _, typ := range types {
+		rows, err := db.ListAdoptableTransactionsInWindow(ctx, persistence.ListAdoptableTransactionsInWindowParams{
+			CashAccountID: sql.NullString{String: account.ID, Valid: true},
+			Type:          typ,
+			Time:          date.AddDate(0, 0, -7),
+			Time_2:        date.AddDate(0, 0, 7),
+		})
+		if err != nil {
+			return false, err
+		}
+		all = append(all, rows...)
+	}
+	parties, err := scheduleParties(ctx, db, s)
+	if err != nil {
 		return false, err
 	}
+	var candidates []*persistence.Transaction
+	for _, c := range all {
+		if c.CashDelta == cashDelta {
+			candidates = append(candidates, c)
+			continue
+		}
+		if c.Note.Valid {
+			if key, _ := schedule.Counterparty(c.Note.String); parties[key] {
+				candidates = append(candidates, c)
+			}
+		}
+	}
+	if len(candidates) == 0 {
+		return false, nil
+	}
+	// The closest in time; on the same day, the closest in amount — the
+	// salary rather than the travel refund paid alongside it.
+	absAmount := func(a int64) int64 {
+		if a < 0 {
+			return -a
+		}
+		return a
+	}
 	tx := candidates[0]
-	for _, c := range candidates { // the closest one
-		if abs(c.Time.Sub(date)) < abs(tx.Time.Sub(date)) {
+	for _, c := range candidates[1:] {
+		dc, dt := abs(c.Time.Sub(date)), abs(tx.Time.Sub(date))
+		if dc < dt || dc == dt && absAmount(c.CashDelta-cashDelta) < absAmount(tx.CashDelta-cashDelta) {
 			tx = c
 		}
 	}
 	return true, db.Tx(ctx, func(q *persistence.Queries) error {
+		if s.Type == "DIVIDEND" && tx.Type != "DIVIDEND" {
+			holding, err := q.GetPortfolioHoldingSecurity(ctx, persistence.GetPortfolioHoldingSecurityParams{PersonID: s.PersonID, SecurityID: s.SecurityID})
+			if err != nil {
+				return err
+			}
+			if _, err := q.UpdateTransaction(ctx, persistence.UpdateTransactionParams{
+				Type: "DIVIDEND", Time: tx.Time, PortfolioID: sql.NullString{String: holding.ID, Valid: true}, SecurityID: s.SecurityID,
+				CashAccountID: tx.CashAccountID, Units: tx.Units, Price: tx.Price, Fees: tx.Fees, Taxes: tx.Taxes,
+				CashDelta: tx.CashDelta, Currency: tx.Currency, Note: tx.Note, ID: tx.ID,
+			}); err != nil {
+				return err
+			}
+		}
 		for _, id := range []string{tx.ID} {
 			if err := q.LinkTransactionToSchedule(ctx, persistence.LinkTransactionToScheduleParams{ScheduleID: scheduleID, ScheduledFor: sql.NullTime{Time: date, Valid: true}, ID: id}); err != nil {
 				return err
@@ -787,6 +916,53 @@ func adoptOccurrence(ctx context.Context, db *persistence.DB, s *persistence.Sch
 			if err == nil {
 				return q.LinkTransactionToSchedule(ctx, persistence.LinkTransactionToScheduleParams{ScheduleID: scheduleID, ScheduledFor: sql.NullTime{Time: date, Valid: true}, ID: other.ID})
 			} else if !errors.Is(err, sql.ErrNoRows) {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// scheduleParties is who the schedule's money comes from or goes to: the
+// counterparties named on its occurrences so far, plus its own name. A
+// schedule called "Gehalt" learns the employer from the first statement
+// row it adopts.
+func scheduleParties(ctx context.Context, db *persistence.DB, s *persistence.Schedule) (map[string]bool, error) {
+	parties := map[string]bool{}
+	if key := schedule.CounterpartyKey(s.DisplayName); key != "" {
+		parties[key] = true
+	}
+	txs, err := db.ListTransactionsBySchedule(ctx, sql.NullString{String: s.ID, Valid: true})
+	if err != nil {
+		return nil, err
+	}
+	for _, tx := range txs {
+		if tx.Note.Valid {
+			if key, _ := schedule.Counterparty(tx.Note.String); key != "" {
+				parties[key] = true
+			}
+		}
+	}
+	return parties, nil
+}
+
+// deleteBookings removes a schedule's own bookings for one occurrence,
+// both legs of a transfer.
+func deleteBookings(ctx context.Context, db *persistence.DB, bookings []*persistence.Transaction) error {
+	return db.Tx(ctx, func(q *persistence.Queries) error {
+		done := map[string]bool{}
+		for _, b := range bookings {
+			if b.TransferID.Valid {
+				if done[b.TransferID.String] {
+					continue
+				}
+				done[b.TransferID.String] = true
+				if _, err := q.DeleteTransfer(ctx, b.TransferID); err != nil {
+					return err
+				}
+				continue
+			}
+			if _, err := q.DeleteTransaction(ctx, b.ID); err != nil {
 				return err
 			}
 		}
@@ -860,7 +1036,7 @@ func (r *TransactionResolver) Schedule(ctx context.Context) (*ScheduleResolver, 
 	if err != nil {
 		return nil, err
 	}
-	s, err := r.db.GetSchedule(ctx, persistence.GetScheduleParams{ID: r.transaction.ScheduleID.String, PersonID: person.ID})
+	s, err := scheduleByID(ctx, r.db, r.transaction.ScheduleID.String, person.ID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	} else if err != nil {
@@ -875,4 +1051,59 @@ func (r *TransactionResolver) ScheduledFor() *graphql.Time {
 		return nil
 	}
 	return &graphql.Time{Time: r.transaction.ScheduledFor.Time}
+}
+
+// ScheduleSuggestionResolver resolves ScheduleSuggestion.
+type ScheduleSuggestionResolver struct {
+	s        schedule.Suggestion
+	currency string
+	covered  bool
+}
+
+func (r *ScheduleSuggestionResolver) Name() string           { return r.s.Name }
+func (r *ScheduleSuggestionResolver) Incoming() bool         { return r.s.Incoming }
+func (r *ScheduleSuggestionResolver) Interval() string       { return string(r.s.Recurrence) }
+func (r *ScheduleSuggestionResolver) DayOfMonth() int32      { return int32(r.s.DayOfMonth) }
+func (r *ScheduleSuggestionResolver) Start() graphql.Time    { return graphql.Time{Time: r.s.Start} }
+func (r *ScheduleSuggestionResolver) LastSeen() graphql.Time { return graphql.Time{Time: r.s.LastSeen} }
+func (r *ScheduleSuggestionResolver) Count() int32           { return int32(r.s.Count) }
+func (r *ScheduleSuggestionResolver) Variable() bool         { return r.s.Variable }
+func (r *ScheduleSuggestionResolver) Covered() bool          { return r.covered }
+func (r *ScheduleSuggestionResolver) Steps() []*ScheduleStepResolver {
+	out := make([]*ScheduleStepResolver, 0, len(r.s.Steps))
+	for _, st := range r.s.Steps {
+		out = append(out, &ScheduleStepResolver{step: &persistence.ScheduleStep{FromDate: st.From, Amount: st.Amount}, currency: r.currency})
+	}
+	return out
+}
+
+// SuggestedSchedules resolves CashAccount.suggestedSchedules.
+func (r *CashAccountResolver) SuggestedSchedules(ctx context.Context) ([]*ScheduleSuggestionResolver, error) {
+	txs, err := r.db.ListTransactionsByCashAccount(ctx, sql.NullString{String: r.account.ID, Valid: true})
+	if err != nil {
+		return nil, err
+	}
+	var ms []schedule.Movement
+	for _, tx := range txs {
+		if tx.ScheduleID.Valid || tx.TransferID.Valid || !tx.Note.Valid {
+			continue
+		}
+		if tx.Type != "DEPOSIT_CASH" && tx.Type != "WITHDRAW_CASH" {
+			continue
+		}
+		ms = append(ms, schedule.Movement{Time: tx.Time, Amount: tx.CashDelta, Note: tx.Note.String})
+	}
+	existing, err := r.Schedules(ctx)
+	if err != nil {
+		return nil, err
+	}
+	names := map[string]bool{}
+	for _, s := range existing {
+		names[strings.ToLower(s.s.DisplayName)] = true
+	}
+	out := []*ScheduleSuggestionResolver{}
+	for _, s := range schedule.Suggest(ms, 3) {
+		out = append(out, &ScheduleSuggestionResolver{s: s, currency: r.account.Currency, covered: names[strings.ToLower(s.Name)]})
+	}
+	return out, nil
 }

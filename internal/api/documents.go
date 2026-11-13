@@ -269,12 +269,16 @@ func (r *RootResolver) ConfirmImport(ctx context.Context, args struct {
 			// linked, nothing is created twice. A leg seen by both banks
 			// ends up with both statements.
 			if d.CashAccountID != nil {
-				candidates, err := q.ListConfirmableTransactions(ctx, persistence.ListConfirmableTransactionsParams{
-					CashAccountID: nullString(d.CashAccountID),
-					Type:          d.Type,
-				})
-				if err != nil {
-					return err
+				var candidates []*persistence.Transaction
+				for _, typ := range confirmableTypes(d.Type) {
+					rows, err := q.ListConfirmableTransactions(ctx, persistence.ListConfirmableTransactionsParams{
+						CashAccountID: nullString(d.CashAccountID),
+						Type:          typ,
+					})
+					if err != nil {
+						return err
+					}
+					candidates = append(candidates, rows...)
 				}
 				var near []*persistence.Transaction
 				for _, c := range candidates {
@@ -455,12 +459,16 @@ func (r *StagedTransactionResolver) Confirms(ctx context.Context) ([]*Transactio
 	if err != nil || account == nil {
 		return []*TransactionResolver{}, err
 	}
-	candidates, err := r.db.ListConfirmableTransactions(ctx, persistence.ListConfirmableTransactionsParams{
-		CashAccountID: sql.NullString{String: account.ID, Valid: true},
-		Type:          r.tx.Type,
-	})
-	if err != nil {
-		return nil, err
+	var candidates []*persistence.Transaction
+	for _, typ := range confirmableTypes(r.tx.Type) {
+		rows, err := r.db.ListConfirmableTransactions(ctx, persistence.ListConfirmableTransactionsParams{
+			CashAccountID: sql.NullString{String: account.ID, Valid: true},
+			Type:          typ,
+		})
+		if err != nil {
+			return nil, err
+		}
+		candidates = append(candidates, rows...)
 	}
 	var near []*persistence.Transaction
 	for _, c := range candidates {
@@ -527,6 +535,16 @@ func (r *StagedTransactionResolver) linkedToThisDocument(ctx context.Context, tx
 		}
 	}
 	return false, nil
+}
+
+// confirmableTypes is which bookings a statement row of the type may
+// confirm: a deposit also the rent or dividend a schedule booked on the
+// account, since the statement knows it only as money arriving.
+func confirmableTypes(typ string) []string {
+	if typ == "DEPOSIT_CASH" {
+		return []string{"DEPOSIT_CASH", "DIVIDEND"}
+	}
+	return []string{typ}
 }
 
 // pooledBookings picks the bookings a statement row confirms: the first

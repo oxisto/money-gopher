@@ -19,6 +19,10 @@ const CashAccountDetail = graphql(
 			ledgerBalance { amount currency }
 				transactions { ...ActivityTransaction }
 				schedules { ...ScheduleFields }
+				suggestedSchedules {
+					name incoming interval dayOfMonth start lastSeen count variable covered
+					steps { from amount { amount currency } }
+				}
 			}
 			securities { id displayName }
 			assets { id displayName }
