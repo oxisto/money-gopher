@@ -9,6 +9,7 @@ import (
 
 	"github.com/oxisto/money-gopher/internal/auth"
 	"github.com/oxisto/money-gopher/internal/finance"
+	"github.com/oxisto/money-gopher/internal/persistence"
 )
 
 // NetWorthHistory resolves Query.netWorthHistory.
@@ -25,7 +26,7 @@ func (r *RootResolver) NetWorthHistory(ctx context.Context, args struct {
 		return nil, err
 	}
 
-	txs, err := allPersonTransactions(ctx, r.db, person.ID)
+	txs, estimated, currency, err := netWorthInputs(ctx, r.db, person.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -51,31 +52,39 @@ func (r *RootResolver) NetWorthHistory(ctx context.Context, args struct {
 	// Land exactly on now, so the last point matches the current balances.
 	times[len(times)-1] = to
 
-	// All of a person's accounts share one currency for now; take it from
-	// the transactions, like the snapshot totals do.
-	currency := defaultCurrency
-	if len(txs) > 0 {
-		currency = txs[0].Currency
-	}
-
-	// The declared balances of the estimated accounts count as constants.
-	accounts, err := r.db.ListCashAccounts(ctx, person.ID)
-	if err != nil {
-		return nil, err
-	}
-	estimated := map[string]int64{}
-	for _, a := range accounts {
-		if a.EstimatedBalance.Valid {
-			estimated[a.ID] = a.EstimatedBalance.Int64
-		}
-	}
-
 	points := finance.NetWorthAt(txs, estimated, times, latestQuote(ctx, r.db))
 	resolvers := make([]*NetWorthPointResolver, len(points))
 	for i := range points {
 		resolvers[i] = &NetWorthPointResolver{point: points[i], currency: currency}
 	}
 	return resolvers, nil
+}
+
+// netWorthInputs gathers what finance.NetWorthAt needs for a person: every
+// transaction, the declared balances of the estimated accounts (constants
+// in the net worth), and the currency. All of a person's accounts share
+// one currency for now; it is taken from the transactions, like the
+// snapshot totals do.
+func netWorthInputs(ctx context.Context, db *persistence.DB, personID string) (txs []*persistence.Transaction, estimated map[string]int64, currency string, err error) {
+	txs, err = allPersonTransactions(ctx, db, personID)
+	if err != nil {
+		return nil, nil, "", err
+	}
+	currency = defaultCurrency
+	if len(txs) > 0 {
+		currency = txs[0].Currency
+	}
+	accounts, err := db.ListCashAccounts(ctx, personID)
+	if err != nil {
+		return nil, nil, "", err
+	}
+	estimated = map[string]int64{}
+	for _, a := range accounts {
+		if a.EstimatedBalance.Valid {
+			estimated[a.ID] = a.EstimatedBalance.Int64
+		}
+	}
+	return txs, estimated, currency, nil
 }
 
 // NetWorthPointResolver resolves the NetWorthPoint GraphQL type.

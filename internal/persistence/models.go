@@ -61,6 +61,26 @@ type Person struct {
 	CreatedAt   time.Time
 }
 
+type Plan struct {
+	ID             string
+	PersonID       string
+	DisplayName    string
+	StartDate      time.Time
+	HorizonMonths  int64
+	StartingAmount sql.NullInt64
+	Contribution   sql.NullInt64
+	CostBp         int64
+	CreatedAt      time.Time
+}
+
+type PlanAssumption struct {
+	PlanID       string
+	Bucket       string
+	WeightBp     sql.NullInt64
+	ReturnBp     int64
+	VolatilityBp int64
+}
+
 type Portfolio struct {
 	ID            string
 	UserID        sql.NullString

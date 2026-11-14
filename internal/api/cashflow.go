@@ -173,9 +173,15 @@ func (r *RootResolver) CashFlow(ctx context.Context, args struct {
 	if args.Months != nil && *args.Months > 0 && *args.Months <= 60 {
 		months = int(*args.Months)
 	}
+	return cashFlowFor(ctx, r.db, person, from, months)
+}
+
+// cashFlowFor buckets the schedules' occurrences and the cash accounts'
+// real movements into the months from from on.
+func cashFlowFor(ctx context.Context, db *persistence.DB, person *persistence.Person, from time.Time, months int) (*CashFlowResolver, error) {
 	to := from.AddDate(0, months, 0)
 
-	accounts, err := r.db.ListCashAccounts(ctx, person.ID)
+	accounts, err := db.ListCashAccounts(ctx, person.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +196,7 @@ func (r *RootResolver) CashFlow(ctx context.Context, args struct {
 		}
 	}
 
-	schedules, err := r.db.ListSchedules(ctx, person.ID)
+	schedules, err := db.ListSchedules(ctx, person.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +210,7 @@ func (r *RootResolver) CashFlow(ctx context.Context, args struct {
 	var resolvers []*ScheduleResolver
 	for _, s := range schedules {
 		kind := expectedKind(s, kinds)
-		sr := &ScheduleResolver{db: r.db, s: s}
+		sr := &ScheduleResolver{db: db, s: s}
 		resolvers = append(resolvers, sr)
 		if kind == flowNone {
 			continue
@@ -239,11 +245,11 @@ func (r *RootResolver) CashFlow(ctx context.Context, args struct {
 	// included — their imported rows are the truth for the months a
 	// statement covers. An expectation no statement has confirmed is not.
 	for _, a := range cashAccounts {
-		txs, err := r.db.ListTransactionsByCashAccount(ctx, sql.NullString{String: a.ID, Valid: true})
+		txs, err := db.ListTransactionsByCashAccount(ctx, sql.NullString{String: a.ID, Valid: true})
 		if err != nil {
 			return nil, err
 		}
-		links, err := r.db.ListTransactionDocumentsByCashAccount(ctx, sql.NullString{String: a.ID, Valid: true})
+		links, err := db.ListTransactionDocumentsByCashAccount(ctx, sql.NullString{String: a.ID, Valid: true})
 		if err != nil {
 			return nil, err
 		}
@@ -264,7 +270,7 @@ func (r *RootResolver) CashFlow(ctx context.Context, args struct {
 			}
 			counterpart := ""
 			if tx.TransferID.Valid {
-				if other, err := r.db.GetTransferCounterpart(ctx, persistence.GetTransferCounterpartParams{TransferID: tx.TransferID, ID: tx.ID}); err == nil && other.CashAccountID.Valid {
+				if other, err := db.GetTransferCounterpart(ctx, persistence.GetTransferCounterpartParams{TransferID: tx.TransferID, ID: tx.ID}); err == nil && other.CashAccountID.Valid {
 					counterpart = kinds[other.CashAccountID.String]
 				}
 			}
@@ -290,7 +296,7 @@ func (r *RootResolver) CashFlow(ctx context.Context, args struct {
 				case flowSaved:
 					b.unSaved += amount
 				}
-				b.unscheduled = append(b.unscheduled, &TransactionResolver{db: r.db, transaction: tx})
+				b.unscheduled = append(b.unscheduled, &TransactionResolver{db: db, transaction: tx})
 			}
 		}
 	}

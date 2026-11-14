@@ -1,15 +1,15 @@
-import type { IconName } from './icons';
+import type { IconName } from "./icons";
 
 interface DescribableTransaction {
-	type: string;
-	units: number;
-	asset: { displayName: string; kind?: string | null } | null;
-	/** The other leg of a transfer between own accounts, when it is one. */
-	counterpart?: { cashAccount: { displayName: string } | null } | null;
-	/** The schedule it is an occurrence of: its name becomes the title. */
-	schedule?: { displayName: string } | null;
-	/** Free text; the title when set, before the schedule's name. */
-	note?: string | null;
+  type: string;
+  units: number;
+  asset: { displayName: string; kind?: string | null } | null;
+  /** The other leg of a transfer between own accounts, when it is one. */
+  counterpart?: { cashAccount: { displayName: string } | null } | null;
+  /** The schedule it is an occurrence of: its name becomes the title. */
+  schedule?: { displayName: string } | null;
+  /** Free text; the title when set, before the schedule's name. */
+  note?: string | null;
 }
 
 /**
@@ -17,122 +17,177 @@ interface DescribableTransaction {
  * Allianz SE" — what activity lists show instead of the raw type code.
  */
 export function describeTransaction(tx: DescribableTransaction): {
-	title: string;
-	icon: IconName;
-	/** The generic description, when the title is a schedule's name. */
-	subtitle?: string;
+  title: string;
+  icon: IconName;
+  /** The generic description, when the title is a schedule's name. */
+  subtitle?: string;
 } {
-	// A schedule's name ("Sparrate", "Miete Büro") is the title of its
-	// occurrences, over the statement's wording, which goes to the
-	// subtitle. Without a schedule, the note is the title: a statement's
-	// note is "Buchungsart counterparty · Verwendungszweck", so its first
-	// part names the row and the rest explains it. The generic wording
-	// comes last either way.
-	if (tx.note || tx.schedule) {
-		const generic = describeTransaction({ ...tx, schedule: null, note: null });
-		if (tx.schedule) {
-			const head = tx.note ? tx.note.split(' · ')[0] : null;
-			return { title: tx.schedule.displayName, icon: generic.icon, subtitle: [head, generic.title].filter(Boolean).join(' · ') };
-		}
-		const [head, ...rest] = tx.note!.split(' · ');
-		return { title: head, icon: generic.icon, subtitle: [...rest, generic.title].join(' · ') };
-	}
-	const name = tx.asset?.displayName ?? 'unknown asset';
-	const units = formatUnits(tx.units);
-	switch (tx.type) {
-		case 'BUY':
-			return { title: `Bought ${units} × ${name}`, icon: 'plus' };
-		case 'SELL':
-			return { title: `Sold ${units} × ${name}`, icon: 'minus' };
-		case 'DELIVERY_INBOUND':
-			return { title: `Received ${units} × ${name}`, icon: 'transferIn' };
-		case 'DELIVERY_OUTBOUND':
-			return { title: `Transferred out ${units} × ${name}`, icon: 'transferOut' };
-		case 'DIVIDEND':
-			// Income against a property is rent; the engine treats it alike.
-			return { title: `${tx.asset?.kind === 'PROPERTY' ? 'Rent' : 'Dividend'} · ${name}`, icon: 'coin' };
-		case 'INTEREST':
-			return { title: 'Interest', icon: 'percent' };
-		case 'DEPOSIT_CASH':
-			if (tx.counterpart) {
-				return { title: `Transfer from ${tx.counterpart.cashAccount?.displayName ?? 'another account'}`, icon: 'transferIn' };
-			}
-			return { title: 'Deposit', icon: 'arrowIn' };
-		case 'WITHDRAW_CASH':
-			if (tx.counterpart) {
-				return { title: `Transfer to ${tx.counterpart.cashAccount?.displayName ?? 'another account'}`, icon: 'transferOut' };
-			}
-			return { title: 'Withdrawal', icon: 'arrowOut' };
-		case 'ACCOUNT_FEES':
-			return { title: 'Account fees', icon: 'receipt' };
-		case 'TAX_REFUND':
-			return { title: 'Tax refund', icon: 'refund' };
-		default:
-			return { title: tx.type, icon: 'document' };
-	}
+  // A schedule's name ("Sparrate", "Miete Büro") is the title of its
+  // occurrences, over the statement's wording, which goes to the
+  // subtitle. Without a schedule, the note is the title: a statement's
+  // note is "Buchungsart counterparty · Verwendungszweck", so its first
+  // part names the row and the rest explains it. The generic wording
+  // comes last either way.
+  if (tx.note || tx.schedule) {
+    const generic = describeTransaction({ ...tx, schedule: null, note: null });
+    if (tx.schedule) {
+      const head = tx.note ? tx.note.split(" · ")[0] : null;
+      return {
+        title: tx.schedule.displayName,
+        icon: generic.icon,
+        subtitle: [head, generic.title].filter(Boolean).join(" · "),
+      };
+    }
+    const [head, ...rest] = tx.note!.split(" · ");
+    return {
+      title: head,
+      icon: generic.icon,
+      subtitle: [...rest, generic.title].join(" · "),
+    };
+  }
+  const name = tx.asset?.displayName ?? "unknown asset";
+  const units = formatUnits(tx.units);
+  switch (tx.type) {
+    case "BUY":
+      return { title: `Bought ${units} × ${name}`, icon: "plus" };
+    case "SELL":
+      return { title: `Sold ${units} × ${name}`, icon: "minus" };
+    case "DELIVERY_INBOUND":
+      return { title: `Received ${units} × ${name}`, icon: "transferIn" };
+    case "DELIVERY_OUTBOUND":
+      return {
+        title: `Transferred out ${units} × ${name}`,
+        icon: "transferOut",
+      };
+    case "DIVIDEND":
+      // Income against a property is rent; the engine treats it alike.
+      return {
+        title: `${tx.asset?.kind === "PROPERTY" ? "Rent" : "Dividend"} · ${name}`,
+        icon: "coin",
+      };
+    case "INTEREST":
+      return { title: "Interest", icon: "percent" };
+    case "DEPOSIT_CASH":
+      if (tx.counterpart) {
+        return {
+          title: `Transfer from ${tx.counterpart.cashAccount?.displayName ?? "another account"}`,
+          icon: "transferIn",
+        };
+      }
+      return { title: "Deposit", icon: "arrowIn" };
+    case "WITHDRAW_CASH":
+      if (tx.counterpart) {
+        return {
+          title: `Transfer to ${tx.counterpart.cashAccount?.displayName ?? "another account"}`,
+          icon: "transferOut",
+        };
+      }
+      return { title: "Withdrawal", icon: "arrowOut" };
+    case "ACCOUNT_FEES":
+      return { title: "Account fees", icon: "receipt" };
+    case "TAX_REFUND":
+      return { title: "Tax refund", icon: "refund" };
+    default:
+      return { title: tx.type, icon: "document" };
+  }
 }
 
 /** A short label for a transaction type, e.g. "Buy" or "Tax refund". */
 export function labelOf(type: string): string {
-	const labels: Record<string, string> = {
-		BUY: 'Buy',
-		SELL: 'Sell',
-		DELIVERY_INBOUND: 'Transfer in',
-		DELIVERY_OUTBOUND: 'Transfer out',
-		DIVIDEND: 'Dividend',
-		INTEREST: 'Interest',
-		DEPOSIT_CASH: 'Deposit',
-		WITHDRAW_CASH: 'Withdrawal',
-		ACCOUNT_FEES: 'Fees',
-		TAX_REFUND: 'Tax refund'
-	};
-	return labels[type] ?? type;
+  const labels: Record<string, string> = {
+    BUY: "Buy",
+    SELL: "Sell",
+    DELIVERY_INBOUND: "Transfer in",
+    DELIVERY_OUTBOUND: "Transfer out",
+    DIVIDEND: "Dividend",
+    INTEREST: "Interest",
+    DEPOSIT_CASH: "Deposit",
+    WITHDRAW_CASH: "Withdrawal",
+    ACCOUNT_FEES: "Fees",
+    TAX_REFUND: "Tax refund",
+  };
+  return labels[type] ?? type;
 }
 
 /** Units without trailing zeros: 25, 4.71, 0.0532. */
 export function formatUnits(units: number): string {
-	return new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 }).format(units);
+  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 }).format(
+    units,
+  );
 }
 
 /** What a cash account is, for sublines and badges. */
 /** What a schedule's kind is called in lists and forms. */
-export function scheduleTypeLabel(type: string, accountKind?: string | null): string {
-	switch (type) {
-		case 'TRANSFER':
-			return 'Transfer';
-		case 'DEPOSIT_CASH':
-			return 'Deposit';
-		case 'WITHDRAW_CASH':
-			return 'Withdrawal';
-		case 'INTEREST':
-			return accountKind === 'LOAN' ? 'Interest charged' : 'Interest';
-		case 'ACCOUNT_FEES':
-			return 'Fees';
-		case 'DIVIDEND':
-			return 'Dividend / rent';
-		default:
-			return type;
-	}
+export function scheduleTypeLabel(
+  type: string,
+  accountKind?: string | null,
+): string {
+  switch (type) {
+    case "TRANSFER":
+      return "Transfer";
+    case "DEPOSIT_CASH":
+      return "Deposit";
+    case "WITHDRAW_CASH":
+      return "Withdrawal";
+    case "INTEREST":
+      return accountKind === "LOAN" ? "Interest charged" : "Interest";
+    case "ACCOUNT_FEES":
+      return "Fees";
+    case "DIVIDEND":
+      return "Dividend / rent";
+    default:
+      return type;
+  }
 }
 
 export function intervalLabel(interval: string): string {
-	switch (interval) {
-		case 'QUARTERLY':
-			return 'quarterly';
-		case 'YEARLY':
-			return 'yearly';
-		default:
-			return 'monthly';
-	}
+  switch (interval) {
+    case "QUARTERLY":
+      return "quarterly";
+    case "YEARLY":
+      return "yearly";
+    default:
+      return "monthly";
+  }
 }
 
 export function accountKindLabel(kind: string | null | undefined): string {
-	switch (kind) {
-		case 'SAVINGS':
-			return 'Savings account';
-		case 'LOAN':
-			return 'Loan';
-		default:
-			return 'Cash account';
-	}
+  switch (kind) {
+    case "SAVINGS":
+      return "Savings account";
+    case "LOAN":
+      return "Loan";
+    default:
+      return "Cash account";
+  }
+}
+
+/** What a plan's bucket holds, as a heading. */
+export function planBucketLabel(bucket: string): string {
+  switch (bucket) {
+    case "STOCK":
+      return "Shares";
+    case "ETF":
+      return "ETFs";
+    case "FUND":
+      return "Funds";
+    case "BOND":
+      return "Bonds";
+    case "PROPERTY":
+      return "Property";
+    case "VEHICLE":
+      return "Vehicles";
+    case "LENT":
+      return "Money lent";
+    case "OTHER":
+      return "Other assets";
+    case "CASH":
+      return "Cash";
+    case "SAVINGS":
+      return "Savings";
+    case "DEBT":
+      return "Debt";
+    default:
+      return bucket;
+  }
 }
