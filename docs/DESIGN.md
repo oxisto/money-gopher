@@ -543,8 +543,30 @@ deferred.
   per staged transaction (`security_kind`: a face value and a percentage
   price make it a bond, a Zinsgutschrift a bond coupon, "ETF"/"ETC"/"ETN" in
   the name an ETF, "Fonds"/"Fund" a fund, anything else a stock); the import
-  dialog preselects it. Nothing computes on it yet — an allocation by asset
-  class is the obvious consumer.
+  dialog preselects it. The plan's allocation (M12) is its first consumer.
+- **Plans (M12, step 1).** A plan per person (`plans`, `plan_assumptions`,
+  migration 0020) projects the whole net worth from a start month over a
+  horizon. `internal/plan` is the pure engine: every bucket (the asset
+  kinds, plus CASH, SAVINGS and DEBT from the cash accounts; money lent
+  is LENT) grows monthly at its compound annual return net of cost,
+  receives its share of the contribution, and the fan comes from
+  `Paths` geometric Brownian paths per bucket seeded from the plan ID
+  (the median follows the expected path). Buckets are uncorrelated and a
+  debt stays flat: its interest is a cash-flow expense, its repayment a
+  transfer. `internal/api/plan.go` values the buckets from every
+  portfolio's snapshot by asset kind (no kind → OTHER) and every cash
+  account's balance (the declared one when estimated), which sums to the
+  net worth as `netWorthHistory` has it; the starting amount is the net
+  worth at start unless declared, the contribution the next twelve
+  months' average in − out from `cashFlowFor` unless declared; the
+  contribution split defaults to the liquid holdings' proportions. The
+  projection is re-based on today's books on every read, so a plan is a
+  forecast, not a record. `Plan.actual` samples the net worth at start,
+  each month end and now; `Plan.status` compares the current month's
+  expectation with the net worth now. The `/plan` page: stat strip, fan
+  chart (actual, expected, 25–75 and 10–90 % bands, money put in), the
+  assumptions edited in place. Not yet: the tax layer and inflation, the
+  agent's plan tool, bucket correlations.
 
 **Where M4 landed:**
 

@@ -737,6 +737,100 @@ input UpdateScheduleInput {
   books: Boolean
 }
 
+"""
+PlanBucket is one kind of wealth as a plan sees it: the asset kinds, plus
+cash, savings and debt from the cash accounts (money lent is LENT).
+"""
+enum PlanBucket {
+  STOCK
+  ETF
+  FUND
+  BOND
+  PROPERTY
+  VEHICLE
+  LENT
+  OTHER
+  CASH
+  SAVINGS
+  DEBT
+}
+
+"What a plan assumes for one bucket, and what the bucket holds today."
+type PlanAssumption {
+  bucket: PlanBucket!
+  "What the person holds in this bucket today; negative for DEBT."
+  value: Money!
+  "The share of every contribution this bucket receives, 0–1."
+  weight: Float!
+  "Whether the weight was set by hand rather than following the allocation."
+  weightDeclared: Boolean!
+  "The compound annual growth rate assumed, e.g. 0.07; 0 keeps the bucket flat."
+  annualReturn: Float!
+  "The annual volatility of the bucket's return, e.g. 0.15."
+  volatility: Float!
+}
+
+"The projection at the start of one month."
+type PlanPoint {
+  month: Time!
+  "The deterministic path: every bucket grown at its return net of cost, plus the contributions."
+  expected: Money!
+  "The contributions up to this month."
+  contributed: Money!
+  p10: Money!
+  p25: Money!
+  p50: Money!
+  p75: Money!
+  p90: Money!
+}
+
+"Where the person stands against the plan right now."
+type PlanStatus {
+  "The month compared: the current one."
+  month: Time!
+  expected: Money!
+  actual: Money!
+  "actual − expected."
+  gap: Money!
+}
+
+"""
+Plan projects the active person's whole net worth — securities, cash,
+savings, the house, the loans — from a start month over a horizon: a
+deterministic path from per-bucket return assumptions and a fan of
+simulated paths from their volatilities. Buckets are uncorrelated and a
+debt stays flat: its interest is a cash-flow expense, its repayment a
+transfer. The starting amount and the contribution follow the books and
+the schedules unless declared.
+"""
+type Plan {
+  id: ID!
+  displayName: String!
+  "The first of a month, midnight UTC."
+  start: Time!
+  horizonMonths: Int!
+  "The annual cost drag taken off every growing bucket's return, e.g. 0.002."
+  annualCost: Float!
+  "The net worth at start unless declared."
+  startingAmount: Money!
+  startingAmountDeclared: Boolean!
+  """
+  Added every month: the average of the next twelve months' expected
+  in − out from the schedules (what stays on the cash accounts plus what
+  moves to savings) unless declared.
+  """
+  contribution: Money!
+  contributionDeclared: Boolean!
+  "Every bucket, with its value today and the assumptions in force."
+  assumptions: [PlanAssumption!]!
+  "horizonMonths + 1 points, the first at start."
+  projection: [PlanPoint!]!
+  "The net worth at start, at each month end since, and now; empty before start."
+  actual: [NetWorthPoint!]!
+  "The current month's expected value against the net worth now; null before start."
+  status: PlanStatus
+}
+
 type Query {
   "The version of the moneyd server."
   version: String!
@@ -761,6 +855,9 @@ type Query {
   (default 12, at most 60).
   """
   cashFlow(from: Time, months: Int): CashFlow!
+  "The active person's plans, oldest first."
+  plans: [Plan!]!
+  plan(id: ID!): Plan
   "Listed instruments, shared by everyone on this server."
   securities: [Asset!]!
   "The active person's own assets: the office room, the car, a loan given."
@@ -781,6 +878,45 @@ type Query {
   spaced times from the period's start up to now (at least 2, at most 365).
   """
   netWorthHistory(period: Period!, points: Int = 60): [NetWorthPoint!]!
+}
+
+input PlanAssumptionInput {
+  bucket: PlanBucket!
+  "The share of every contribution, 0–1; the declared shares are scaled to sum to one."
+  weight: Float
+  "The compound annual growth rate, −1 to 1; the bucket's default when omitted."
+  annualReturn: Float
+  "The annual volatility, 0 or more; the bucket's default when omitted."
+  volatility: Float
+}
+
+input CreatePlanInput {
+  displayName: String!
+  "Any time in the first month; the current month when omitted."
+  start: Time
+  "1 to 600; 240 when omitted."
+  horizonMonths: Int
+  "In minor units; the net worth at start when omitted."
+  startingAmount: Int
+  "Per month, in minor units; from the schedules when omitted."
+  contribution: Int
+  "0 to 0.1; 0 when omitted."
+  annualCost: Float
+  assumptions: [PlanAssumptionInput!]
+}
+
+input UpdatePlanInput {
+  displayName: String
+  start: Time
+  horizonMonths: Int
+  startingAmount: Int
+  "Back to the net worth at start."
+  clearStartingAmount: Boolean
+  contribution: Int
+  "Back to the schedules."
+  clearContribution: Boolean
+  annualCost: Float
+  assumptions: [PlanAssumptionInput!]
 }
 
 input CreatePortfolioInput {
@@ -1044,6 +1180,12 @@ type Mutation {
   occurrences were written. moneyd runs this by itself a few times a day.
   """
   bookSchedules(until: Time): Int!
+
+  createPlan(input: CreatePlanInput!): Plan!
+  "Assumptions, when given, replace the existing ones; buckets left out get the defaults."
+  updatePlan(id: ID!, input: UpdatePlanInput!): Plan!
+  "Deletes the plan. Returns the deleted ID."
+  deletePlan(id: ID!): ID!
 
   """
   Fetches fresh quotes from the configured quote providers — for the given
